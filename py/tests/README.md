@@ -1,0 +1,1 @@
+To run the tests, call `pytest` from `py`
