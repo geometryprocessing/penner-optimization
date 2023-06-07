@@ -66,6 +66,20 @@ compute_penner_coordinates(
 }
 
 void
+normalize_penner_coordinates(
+	const VectorX& reduced_penner_coords,
+	VectorX& normalized_reduced_penner_coords
+) {
+	// Compute correction vector
+	Scalar penner_coord_sum = reduced_penner_coords.sum();
+	int num_edges = reduced_penner_coords.size();
+	VectorX correction = VectorX::Constant(num_edges, penner_coord_sum / num_edges);
+
+	// Normalize Penner coordinates
+	normalized_reduced_penner_coords = reduced_penner_coords - correction;
+}
+
+void
 compute_shear_dual_coordinates(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,

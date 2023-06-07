@@ -49,7 +49,7 @@ compute_log_edge_lengths(
 /// @param[in] V: mesh vertices
 /// @param[in] F: mesh faces
 /// @param[in] Theta_hat: input mesh target angles
-/// @param[out] reduced_penner_coords: Penner coordiantes
+/// @param[out] reduced_penner_coords: Penner coordinates
 /// @param[out] flip_sequence: sequence of flips
 void
 compute_penner_coordinates(
@@ -58,6 +58,16 @@ compute_penner_coordinates(
   const std::vector<Scalar>& Theta_hat,
 	VectorX& reduced_penner_coords,
 	std::vector<int>& flip_sequence
+);
+
+/// Normalize Penner coordinates to have sum 0 (due to scale invariance)
+///
+/// @param[in] reduced_penner_coords: input Penner coordinates
+/// @param[out] normalized_reduced_penner_coords: Penner coordinates after normalization
+void
+normalize_penner_coordinates(
+	const VectorX& reduced_penner_coords,
+	VectorX& normalized_reduced_penner_coords
 );
 
 /// Compute the shear dual coordinates of a VF mesh and the flip sequence from the

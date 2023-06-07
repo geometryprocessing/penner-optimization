@@ -34,3 +34,5 @@
 # Build directories
 build*
 ext
+data*
+output*
