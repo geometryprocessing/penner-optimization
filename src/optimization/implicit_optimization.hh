@@ -16,6 +16,7 @@ OptimizationLog {
   Scalar beta; // Step size
   Scalar energy; // Energy
   Scalar error; // Max angle constraint error
+  int num_flips; // Number of flips for MakeDelaunay
   Scalar convergence_ratio; // Convergence ratio
   Scalar max_change_in_metric_coords; // Maximum change per edge in the metric coordinates
   Scalar max_total_change_in_metric_coords; // Maximum change per edge from the target coordinates

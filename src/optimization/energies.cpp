@@ -1077,11 +1077,13 @@ Scalar EnergyFunctor::compute_cone_energy(const VectorX& metric_coords) const
 {
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = false;
   constraint_with_jacobian(m_mesh,
                            metric_coords,
                            constraint,
                            J_constraint,
+                           flip_seq,
                            need_jacobian,
                            m_opt_params.use_edge_lengths);
 
@@ -1170,11 +1172,13 @@ VectorX EnergyFunctor::compute_cone_gradient(const VectorX& metric_coords) const
 {
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   constraint_with_jacobian(m_mesh,
                            metric_coords,
                            constraint,
                            J_constraint,
+                           flip_seq,
                            need_jacobian,
                            m_opt_params.use_edge_lengths);
 

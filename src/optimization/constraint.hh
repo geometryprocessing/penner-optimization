@@ -56,6 +56,7 @@ vertex_angles_with_jacobian(const Mesh<Scalar>& m,
 /// angles
 /// @param[out] J_constraint: Jacobian of constraint as a function of log edge
 /// lengths
+/// @param[out] flip_seq: sequence of flips used
 /// @param[in] need_jacobian: create Jacobian iff true
 /// @param[in] use_edge_lengths: use edge lengths directly iff true
 /// @return: true iff the mesh satisfies the triangle inequality
@@ -64,6 +65,7 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
                          const VectorX& metric_coords,
                          VectorX& constraint,
                          MatrixX& J_constraint,
+                         std::vector<int>& flip_seq,
                          bool need_jacobian = true,
                          bool use_edge_lengths = true);
 
@@ -74,7 +76,7 @@ vertex_angles_with_jacobian_pybind(const Mesh<Scalar>& m,
                                    const VectorX& metric_coords,
                                    bool need_jacobian = true);
 
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, bool>
+std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, std::vector<int>, bool>
 constraint_with_jacobian_pybind(const Mesh<Scalar>& m,
                                 const VectorX& metric_coords,
                                 bool need_jacobian = true,

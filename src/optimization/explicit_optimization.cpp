@@ -65,11 +65,13 @@ write_explicit_data_log_entry(
   // Get the full per vertex constraint Jacobian with respect to Penner coordinates
   VectorX constraint;
   MatrixX full_constraint_penner_jacobian;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   constraint_with_jacobian(m,
                            optimized_metric_coords,
                            constraint,
                            full_constraint_penner_jacobian,
+                           flip_seq,
                            need_jacobian,
                            opt_params->use_edge_lengths);
 
@@ -270,11 +272,13 @@ compute_domain_coordinate_energy_with_gradient(
   // Get the full per vertex constraint Jacobian with respect to Penner coordinates
   VectorX constraint;
   MatrixX full_constraint_penner_jacobian;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   bool success = constraint_with_jacobian(m,
                            metric_coords,
                            constraint,
                            full_constraint_penner_jacobian,
+                           flip_seq,
                            need_jacobian,
                            opt_params->use_edge_lengths);
   if (!success)

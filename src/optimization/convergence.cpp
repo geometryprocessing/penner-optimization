@@ -248,12 +248,14 @@ compute_projected_descent_direction_stability_values(
     // Compute constraint values
     VectorX constraint;
     MatrixX J_constraint;
+    std::vector<int> flip_seq;
     bool need_jacobian = false;
     bool use_edge_lengths = false;
     constraint_with_jacobian(m,
                             updated_metric_coords,
                             constraint,
                             J_constraint,
+                            flip_seq,
                             need_jacobian,
                             use_edge_lengths);
 

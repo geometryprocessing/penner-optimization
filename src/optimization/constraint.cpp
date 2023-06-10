@@ -183,6 +183,7 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
                          const VectorX& metric_coords,
                          VectorX& constraint,
                          MatrixX& J_constraint,
+                         std::vector<int>& flip_seq,
                          bool need_jacobian,
                          bool use_edge_lengths)
 {
@@ -191,7 +192,6 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
   VectorX vertex_angles;
   MatrixX J_vertex_angles;
   MatrixX J_del;
-  std::vector<int> flip_seq;
 
   // For Penner coordinates, make mesh Deluanay (and thus satisfying the
   // triangle inequality)
@@ -248,22 +248,24 @@ vertex_angles_with_jacobian_pybind(const Mesh<Scalar>& m,
   return std::make_tuple(vertex_angles, J_vertex_angles);
 }
 
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, bool>
+std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, std::vector<int>, bool>
 constraint_with_jacobian_pybind(const Mesh<Scalar>& m,
                                 const VectorX& metric_coords,
-                                bool need_jacobian ,
+                                bool need_jacobian,
                                 bool use_edge_lengths)
 {
   VectorX constraint;
   Eigen::SparseMatrix<Scalar, Eigen::RowMajor> J_constraint;
+  std::vector<int> flip_seq;
   bool success = constraint_with_jacobian(m,
                                           metric_coords,
                                           constraint,
                                           J_constraint,
+                                          flip_seq,
                                           need_jacobian,
                                           use_edge_lengths);
 
-  return std::make_tuple(constraint, J_constraint, success);
+  return std::make_tuple(constraint, J_constraint, flip_seq, success);
 }
 #endif
 

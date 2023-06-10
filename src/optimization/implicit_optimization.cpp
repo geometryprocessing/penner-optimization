@@ -83,11 +83,13 @@ update_data_log(
   // Compute constraint values
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = false;
   constraint_with_jacobian(m,
                            updated_metric_coords,
                            constraint,
                            J_constraint,
+                           flip_seq,
                            need_jacobian,
                            opt_params->use_edge_lengths);
 
@@ -98,6 +100,7 @@ update_data_log(
   // Compute numerics
   log.energy = opt_energy.energy(updated_metric_coords);
   log.error = sup_norm(constraint);
+  log.num_flips = flip_seq.size();
   log.convergence_ratio = convergence_ratio;
   log.max_change_in_metric_coords = sup_norm(change_in_metric_coords);
   log.max_total_change_in_metric_coords = sup_norm(total_change_in_metric_coords);
@@ -139,11 +142,13 @@ void write_checkpoint(
     reduction_maps.proj, reduced_metric_coords, metric_coords);
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   constraint_with_jacobian(m,
                             metric_coords,
                             constraint,
                             J_constraint,
+                            flip_seq,
                             need_jacobian,
                             use_edge_lengths);
   MatrixX J_restricted_constraint;
@@ -283,11 +288,13 @@ constrain_descent_direction(const Mesh<Scalar>& m,
   // Compute the constraint function and its Jacobian
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   bool success = constraint_with_jacobian(m,
                                           metric_coords,
                                           constraint,
                                           J_constraint,
+                                          flip_seq,
                                           need_jacobian,
                                           opt_params.use_edge_lengths);
   if (!success)
@@ -416,11 +423,13 @@ compute_optimal_tangent_space_descent_direction(
   // Compute the constraint function and its Jacobian
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   bool success = constraint_with_jacobian(m,
                                           metric_coords,
                                           constraint,
                                           J_constraint,
+                                          flip_seq,
                                           need_jacobian,
                                           opt_params.use_edge_lengths);
   if (!success)
@@ -529,11 +538,13 @@ check_line_step_success(
   // Compute the contraint values after the line step
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = false;
   bool success = constraint_with_jacobian(m,
                                           line_step_metric_coords,
                                           constraint,
                                           J_constraint,
+                                          flip_seq,
                                           need_jacobian,
                                           opt_params->use_edge_lengths);
 
@@ -576,12 +587,14 @@ check_projection_success(
   // Compute the constraint values after the projection
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = false;
   bool success;
   success = constraint_with_jacobian(m,
                                       metric_coords,
                                       constraint,
                                       J_constraint,
+                                      flip_seq,
                                       need_jacobian,
                                       opt_params->use_edge_lengths);
 
@@ -689,11 +702,13 @@ line_search_with_projection(const Mesh<Scalar>& m,
   // Compute the initial constraint function and its Jacobian
   VectorX initial_constraint;
   MatrixX J_initial_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = false;
   bool success = constraint_with_jacobian(m,
                                           initial_metric_coords,
                                           initial_constraint,
                                           J_initial_constraint,
+                                          flip_seq,
                                           need_jacobian,
                                           opt_params->use_edge_lengths);
   if (!success)
