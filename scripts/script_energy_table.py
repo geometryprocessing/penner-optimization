@@ -70,7 +70,6 @@ def energy_table(args):
                 lambdas = np.loadtxt(lambdas_dir, dtype=float)
             except:
                 logger.error("Could not load lambdas for {}".format(name))
-                return
 
             # Get delaunay mesh
             C_del, lambdas_init_del_full, _, flip_seq = opt.make_delaunay_with_jacobian(C, lambdas_init[proj], False)
@@ -99,7 +98,9 @@ def energy_table(args):
             u = opt.best_fit_conformal(C, lambdas_target[proj], lambdas[proj])
 
             logger.info("Getting constraint error")
-            constraint, _, _ = opt.constraint_with_jacobian(C, lambdas[proj], False, args['use_edge_lengths'])
+            constraint, _, _, success = opt.constraint_with_jacobian(C, lambdas[proj], False, args['use_edge_lengths'])
+            if not success:
+                raise Exception("Triangle inequality error")
             
             # Record energy_dict
             logger.info("Adding energies")

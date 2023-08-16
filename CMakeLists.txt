@@ -6,14 +6,16 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
+option(USE_PYBIND "Generate pybindings" ON)
+option(USE_MULTIPRECISION "Use high precision floating point" OFF)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Options for the project
-option(USE_PYBIND "Generate pybindings" ON)
-option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+#option(USE_PYBIND "Generate pybindings" ON)
+#option(USE_MULTIPRECISION "Use high precision floating point" OFF)
 option(BUILD_CURVATURE_METRIC_TESTS "Build tests" TRUE)
 
 # Set libigl options
@@ -52,7 +54,6 @@ add_compile_definitions(_USE_MATH_DEFINES)
 # Get external libraries
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 include(conformal_ideal_delaunay)
-include(pybind11)
 include(libigl)
 include(polyscope)
 include(spectra)
@@ -74,7 +75,10 @@ endif()
 add_subdirectory(src/optimization)
 
 # Build pybind optimization functions
+message("FIXME Building pybind libraries")
 if (USE_PYBIND)
+  message("Building pybind libraries")
+  include(pybind11)
   add_library(optimization_py MODULE
     src/optimization/optimization_pybind.cpp
   )

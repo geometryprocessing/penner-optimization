@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	std::string Th_hat_filename = argv[2];
   std::string output_dir = argv[3];
   std::string energy_choice = argv[4];
-  double range = std::stod(argv[5]);
+  Scalar range = std::stod(argv[5]);
   std::filesystem::create_directories(output_dir);
 	int num_grid_steps = 800;
 
@@ -89,19 +89,19 @@ int main(int argc, char *argv[])
     constraint_domain_matrix.cols(),
     constraint_codomain_matrix.cols()
   );
-	double x0 = domain_coords[0];
-	double y0 = domain_coords[1];
+	Scalar x0 = domain_coords[0];
+	Scalar y0 = domain_coords[1];
 
 	// Iterate over grid
-	double delta = 2.0 * range / static_cast<double>(num_grid_steps - 1);
+	Scalar delta = 2.0 * range / static_cast<Scalar>(num_grid_steps - 1);
 	Eigen::MatrixXd energy_grid(num_grid_steps, num_grid_steps);
 	for (int i = 0; i < num_grid_steps; ++i)
 	{
 		for (int j = 0; j < num_grid_steps; ++j)
 		{
 			// Update metric
-			double dx = -range + delta * i;
-			double dy = -range + delta * j;
+			Scalar dx = -range + delta * i;
+			Scalar dy = -range + delta * j;
 			domain_coords[0] = x0 + dx;
 			domain_coords[1] = y0 + dy;
 
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 					domain_coords,
 					constraint_domain_matrix,
 					proj_params);
-			energy_grid(i, j) = energy;
+			energy_grid(i, j) = double(energy);
 		}
 	}
 

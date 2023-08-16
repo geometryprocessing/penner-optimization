@@ -263,6 +263,128 @@ write_obj_with_uv(
   ); 
 }
 
+std::tuple<
+        std::vector<std::vector<Scalar>>,       // V_out
+        std::vector<std::vector<int>>,          // F_out
+        std::vector<Scalar>,                    // layout u (per vertex)
+        std::vector<Scalar>,                    // layout v (per vertex)
+        std::vector<std::vector<int>>,          // FT_out
+        std::vector<bool>,                      // is_cut_o
+        std::vector<int>,                       // Fn_to_F
+        std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
+consistent_overlay_mesh_to_VL(const Eigen::MatrixXi& F,
+                   const std::vector<Scalar>& Theta_hat,
+                   OverlayMesh<Scalar>& mo,
+                   std::vector<Scalar> &u,
+                   std::vector<std::vector<Scalar>>& V_overlay,
+                   std::vector<int>& vtx_reindex,
+                   std::vector<std::pair<int, int>>& endpoints,
+									 std::vector<bool>& is_cut)
+{
+    // get cones and bd
+    std::vector<int> cones, bd;
+    std::vector<bool> is_bd = igl::is_border_vertex(F);
+    for (size_t i = 0; i < is_bd.size(); i++)
+    {
+        if (is_bd[i])
+        {
+            bd.push_back(i);
+        }
+    }
+    for (size_t i = 0; i < Theta_hat.size(); i++)
+    {
+        if ((!is_bd[i]) && abs(Theta_hat[i] -  2 * M_PI) > 1e-15)
+        {
+            cones.push_back(i);
+        }
+    }
+
+    std::vector<int> f_labels = get_overlay_face_labels(mo);
+
+    // reindex cones and bd
+    std::vector<int> vtx_reindex_rev(vtx_reindex.size());
+    for (size_t i = 0; i < vtx_reindex.size(); i++)
+    {
+        vtx_reindex_rev[vtx_reindex[i]] = i;
+    }
+    for (size_t i = 0; i < cones.size(); i++)
+    {
+        cones[i] = vtx_reindex_rev[cones[i]];
+    }
+    for (size_t i = 0; i < bd.size(); i++)
+    {
+        bd[i] = vtx_reindex_rev[bd[i]];
+    }
+
+    spdlog::info("#bd_vt: {}", bd.size());
+    spdlog::info("#cones: {}", cones.size());
+    spdlog::info("vtx reindex size: {}", vtx_reindex.size());
+    spdlog::info("mc.out size: {}", mo.cmesh().out.size());
+
+    // get layout
+    auto layout_res = get_consistent_layout(mo, u, bd, cones, is_cut);
+    auto u_o = std::get<0>(layout_res);
+    auto v_o = std::get<1>(layout_res);
+    auto is_cut_o = std::get<2>(layout_res);
+
+    // get output VF and metric
+    auto FVFT_res = get_FV_FTVT(mo, endpoints, is_cut_o, V_overlay, u_o, v_o);
+    auto v3d = std::get<0>(FVFT_res); 
+    auto u_o_out = std::get<1>(FVFT_res);
+    auto v_o_out = std::get<2>(FVFT_res);
+    auto F_out = std::get<3>(FVFT_res);
+    auto FT_out = std::get<4>(FVFT_res);
+    auto Fn_to_F = std::get<5>(FVFT_res);
+    auto remapped_endpoints = std::get<6>(FVFT_res);
+
+    // v3d_out = v3d^T
+    std::vector<std::vector<Scalar>> v3d_out(v3d[0].size());
+    for (size_t i = 0; i < v3d[0].size(); i++)
+    {
+        v3d_out[i].resize(3);
+        for (int j = 0; j < 3; j++)
+        {
+            v3d_out[i][j] = v3d[j][i];
+        }
+    }
+
+    // reindex back
+    auto u_o_out_copy = u_o_out;
+    auto v_o_out_copy = v_o_out;
+    auto v3d_out_copy = v3d_out;
+    auto endpoints_out = remapped_endpoints;
+		int num_vertices = vtx_reindex.size();
+    for (size_t i = 0; i < F_out.size(); i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (F_out[i][j] < num_vertices)
+            {
+                F_out[i][j] = vtx_reindex[F_out[i][j]];
+            }
+            if (FT_out[i][j] < num_vertices)
+            {
+                FT_out[i][j] = vtx_reindex[FT_out[i][j]];
+            }
+        }
+    }
+    for (size_t i = 0; i < vtx_reindex.size(); i++)
+    {
+        u_o_out[vtx_reindex[i]] = u_o_out_copy[i];
+        v_o_out[vtx_reindex[i]] = v_o_out_copy[i];
+        v3d_out[vtx_reindex[i]] = v3d_out_copy[i];
+    }
+    for(size_t i = vtx_reindex.size(); i < endpoints_out.size(); i++)
+    {
+        int a = vtx_reindex[endpoints_out[i].first];
+        int b = vtx_reindex[endpoints_out[i].second];
+        endpoints_out[i] = std::make_pair(a, b);
+    }
+
+    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut_o, Fn_to_F, endpoints_out);
+}
+
+
 #ifdef PYBIND
 
 std::vector<Scalar>

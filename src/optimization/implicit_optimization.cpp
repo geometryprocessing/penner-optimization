@@ -874,7 +874,7 @@ optimize_metric_log(const Mesh<Scalar>& m,
   bool use_optimal_projection = opt_params->use_optimal_projection;
   bool use_checkpoints = opt_params->use_checkpoints;
   bool use_edge_lengths = opt_params->use_edge_lengths;
-  double max_grad_range = opt_params->max_grad_range;
+  Scalar max_grad_range = opt_params->max_grad_range;
 
   // Log mesh data
   create_log(output_dir, "mesh_data");

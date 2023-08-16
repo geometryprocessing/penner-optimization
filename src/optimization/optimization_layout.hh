@@ -104,6 +104,31 @@ extract_embedded_mesh(
   Eigen::MatrixXi& corner_to_halfedge
 );
 
+std::vector<bool>
+pullback_cut_to_overlay(
+  OverlayMesh<Scalar> &m_o,
+  const std::vector<bool>& is_cut_h
+);
+
+/**
+* Given a metric defined by original edge lengths and scale factor u, do a bfs on dual graph of mesh or 
+* using given cuts to singularities defined in is_cut_h to compute per-corner u, v coordinates
+* 
+* @param m, mesh data structure
+* @param is_cut_h, (optional) pre-defined cut to singularities
+* @param start_h, the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
+* @return is_cut_h #h vector, mark whether the current halfedge is part of cut-to-singularity(when true)
+*/
+std::vector<bool>
+compute_layout_topology(const Mesh<Scalar> &m, const std::vector<bool>& is_cut_h, int start_h = -1);
+
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_consistent_layout(
+             OverlayMesh<Scalar> &m_o,
+             const std::vector<Scalar> &u_vec,
+             const std::vector<int>& bd,
+             std::vector<int> singularities,
+             const std::vector<bool>& is_cut);
+
 #ifdef PYBIND
 std::tuple<
   Eigen::MatrixXi, // F

@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 {
 #ifdef MULTIPRECISION
 	spdlog::info("Using multiprecision");
-	mpfr::mpreal::set_default_prec(53);
+	mpfr::mpreal::set_default_prec(200);
 	mpfr::mpreal::set_emax(mpfr::mpreal::get_emax_max());
 	mpfr::mpreal::set_emin(mpfr::mpreal::get_emin_min());
 #endif
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	opt_params->require_energy_decr = true;
 	//opt_params->require_energy_decr = false;
 	opt_params->require_gradient_proj_negative = true;
-	proj_params->error_eps = 1e-12;
+	//proj_params->error_eps = 1e-12;
 	opt_params->direction_choice = "conjugate_gradient";
 
 	// Optimize the metric

@@ -99,7 +99,10 @@ def render_layout_one(args, fname):
     v_cut = script_util.cut_mesh(v3d, f, uv, fuv)
 
     # Generate energy colormap
-    logger.info("Generating layout colormap")
+    logger.info("Generating layout colormap {} with scale {}".format(
+        args['colormap'],
+        args['colormap_scale']
+    ))
     c = render.get_layout_colormap(
         v_cut,
         fuv,
@@ -111,11 +114,6 @@ def render_layout_one(args, fname):
         args['use_log_scale'],
         args['average_per_vertex']
     )
-    print(len(c))
-    print(v_cut.shape)
-    print(uv.shape)
-    print(fuv.shape)
-    print(args['average_per_vertex'])
 
     # Render layout
     logger.info("Rendering layout")

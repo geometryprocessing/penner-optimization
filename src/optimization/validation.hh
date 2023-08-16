@@ -150,12 +150,14 @@ validate_constraint(
   // Validate energy
   VectorX constraint;
   MatrixX J_constraint;
+  std::vector<int> flip_seq;
   bool need_jacobian = true;
   bool use_edge_lengths = false;
   constraint_with_jacobian(m,
                             metric_coords,
                             constraint,
                             J_constraint,
+                            flip_seq,
                             need_jacobian,
                             use_edge_lengths);
   for (int i = 0; i < num_tests; ++i)
@@ -170,12 +172,14 @@ validate_constraint(
                               metric_coords + h,
                               constraint_plus,
                               J_constraint_temp,
+                              flip_seq,
                               need_jacobian,
                               use_edge_lengths);
     constraint_with_jacobian(m,
                               metric_coords - h,
                               constraint_minus,
                               J_constraint_temp,
+                              flip_seq,
                               need_jacobian,
                               use_edge_lengths);
 

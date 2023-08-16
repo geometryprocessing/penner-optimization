@@ -60,6 +60,7 @@
 namespace CurvatureMetric {
 
 #ifdef PYBIND
+#ifndef MULTIPRECISION
 
 std::tuple<Mesh<Scalar>, std::vector<int>>
 FV_to_double_pybind(const Eigen::MatrixXd& V,
@@ -784,5 +785,6 @@ PYBIND11_MODULE(optimization_py, m)
         pybind11::scoped_estream_redirect>());
 
 }
+#endif
 #endif
 }

@@ -10,6 +10,8 @@
 #include <Eigen/Sparse>
 #include <filesystem>
 
+#include <igl/facet_components.h>
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
@@ -173,6 +175,35 @@ void read_vector_from_file(
     T value;
     iss >> value;
     vec.push_back(value);
+  }
+
+  // Close file
+  input_file.close();
+}
+
+/// Read a vector of pairs from a file.
+///
+/// @param[in] filename: file with vector to read
+/// @param[out] vec: vector from file
+template <typename T>
+void read_vector_of_pairs_from_file(
+  const std::string &filename,
+  std::vector<std::pair<T, T>> &vec
+) {
+  vec.clear();
+
+  // Open file
+  std::ifstream input_file(filename);
+  if (!input_file) return;
+
+  // Read file
+  std::string line;
+  while (std::getline(input_file, line))
+  {
+    std::istringstream iss(line);
+    T first_value, second_value;
+    iss >> first_value >> second_value;
+    vec.push_back(std::make_pair(first_value, second_value));
   }
 
   // Close file
@@ -358,14 +389,15 @@ compute_condition_number(
 ///
 /// @param[in] vector_std: standard template library vector to copy
 /// @param[out] vector_eigen: copied vector
-inline void
-convert_std_to_eigen_vector(const std::vector<Scalar>& vector_std,
-                            VectorX& vector_eigen)
+template <typename VectorScalar, typename MatrixScalar>
+void
+convert_std_to_eigen_vector(const std::vector<VectorScalar>& vector_std,
+                            Eigen::Matrix<MatrixScalar, Eigen::Dynamic, 1>& vector_eigen)
 {
   size_t vector_size = vector_std.size();
   vector_eigen.resize(vector_size);
   for (size_t i = 0; i < vector_size; ++i) {
-    vector_eigen[i] = vector_std[i];
+    vector_eigen[i] = MatrixScalar(vector_std[i]);
   }
 }
 
@@ -738,6 +770,19 @@ enumerate_boolean_array(
 /// ****
 /// Mesh
 /// ****
+
+/// Compute the number of connected components of a mesh
+///
+/// @param[in] F: mesh faces
+/// @return number of connected components
+inline int
+count_components(
+  const Eigen::MatrixXi& F
+) {
+	Eigen::VectorXi face_components;
+	igl::facet_components(F, face_components);
+	return face_components.maxCoeff() + 1;
+}
 
 /// Given a mesh with a parametrization, cut the mesh along the parametrization seams to
 /// create a vertex set corresponding to the faces of the uv domain.

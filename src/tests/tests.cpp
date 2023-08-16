@@ -6,3 +6,4 @@
 #include "test_energies.cpp"
 #include "test_optimize.cpp"
 #include "test_shear.cpp"
+#include "test_refinement.cpp"

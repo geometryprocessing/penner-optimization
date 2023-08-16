@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	// Get conformal mesh
 	std::vector<int> pt_fids(0);
 	std::vector<Eigen::Matrix<double, 3, 1>> pt_bcs(0);
-	auto conformal_res = conformal_metric<double>(
+	auto conformal_res = conformal_metric<Scalar>(
 		V,
 		F,
 		Th_hat,
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   std::vector<std::pair<int,int>> endpoints = std::get<6>(conformal_res);
 
 	// Build output mesh
-	auto parametrize_res = overlay_mesh_to_VL<double>(
+	auto parametrize_res = overlay_mesh_to_VL<Scalar>(
 		V,
 		F,
 		Th_hat,

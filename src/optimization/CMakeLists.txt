@@ -12,11 +12,13 @@ add_library(MetricOptimizationLib
   optimization_interface.cpp
   optimization_layout.cpp
   projection.cpp
+  refinement.cpp
   reparametrization.cpp
   shear.cpp
   targets.cpp
   transitions.cpp
   translation.cpp
+  viewers.cpp
 )
 target_include_directories(MetricOptimizationLib PUBLIC .)
 target_link_libraries(MetricOptimizationLib PUBLIC

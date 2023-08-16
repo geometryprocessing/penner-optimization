@@ -1,6 +1,7 @@
 #include "optimization_layout.hh"
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
+#include "conformal_ideal_delaunay/Layout.hh"
 #include "embedding.hh"
 #include "targets.hh"
 #include "interpolation.hh"
@@ -369,6 +370,371 @@ extract_embedded_mesh(
     face_count++;
   }
 }
+
+// Helper function to triangulate a polygon mesh
+// WARNING: This only updates the topology and will generally invalidate the lengths
+void triangulate_mesh(Mesh<Scalar>& m) {
+    int n_f0 = m.n_faces();
+    for(int f = 0; f < n_f0; f++){
+        int n_f = m.n_faces();
+        int h0 = m.h[f];
+        int hc = h0;
+        std::vector<int> hf;
+        do{
+            hf.push_back(hc);
+            hc = m.n[hc];
+        }while(h0 != hc);
+        int face_size = hf.size();
+        if(face_size == 3) continue;
+        spdlog::debug("triangulate face {}, #e {}", f, face_size);
+        int N = hf.size();
+        int n_new_f = N-3;
+        int n_new_he = 2*(N-3);
+        int n_he = m.n.size();
+        m.n.resize(n_he   + n_new_he);
+        m.to.resize(n_he  + n_new_he);
+        m.opp.resize(n_he + n_new_he);
+        m.l.resize(n_he + n_new_he);
+        m.f.resize(n_he + n_new_he);
+        m.h.resize(n_f + n_new_f);
+        m.n[n_he] = hf[0];
+        m.n[hf[1]] = n_he;
+        m.opp[n_he] = n_he+1;
+        m.to[n_he] = m.to[hf.back()];
+        m.h[f] = n_he;
+        m.f[n_he] = f;
+        assert(hf.back() < m.to.size() && hf[0] < m.to.size());
+        m.l[n_he] = 0.0; // Set invalid 0 length
+        for(int k = 1; k < 2*(N-3); k++){
+            if(k%2 == 0){
+                m.n[n_he+k] = n_he+k-1;
+                m.opp[n_he+k] = n_he+k+1;
+                m.to[n_he+k] = m.to[hf.back()];
+                m.l[n_he+k] = 0.0; // Set invalid 0 length
+                m.f[n_he+k] = n_f+k/2-1;
+                m.h[n_f+k/2-1] = n_he+k;
+            }else{
+                m.n[n_he+k] = hf[(k-1)/2+2];
+                if((k-1)/2+2 != face_size-2)
+                    m.n[hf[(k-1)/2+2]] = n_he+k+1;
+                m.opp[n_he+k] = n_he+k-1;
+                m.to[n_he+k] = m.to[m.n[m.n[m.opp[n_he+k]]]];
+                m.l[n_he+k] = 0.0; // Set invalid 0 length
+                m.f[n_he+k] = n_f+(k+1)/2-1;
+                m.h[n_f+(k+1)/2-1] = n_he+k;
+                m.f[m.n[n_he+k]] = n_f+(k+1)/2-1;
+            }                
+        }
+        m.n[hf.back()] = n_he + n_new_he - 1;
+        m.f[hf.back()] = n_f + n_new_f - 1;
+    }
+}
+
+std::vector<bool>
+pullback_cut_to_overlay(
+  OverlayMesh<Scalar> &m_o,
+  const std::vector<bool>& is_cut_h
+) {
+  std::vector<bool> is_cut_o(m_o.n_halfedges(), false);
+  for (int hi = 0; hi < m_o.n_halfedges(); ++hi)
+  {
+    // Don't cut edges not in the original mesh
+    if (m_o.edge_type[hi] == CURRENT_EDGE)
+    {
+      continue;
+    }
+    else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE)
+    {
+      is_cut_o[hi] = is_cut_h[m_o.origin[hi]];
+    }
+    else if (m_o.edge_type[hi] == ORIGINAL_EDGE)
+    {
+      is_cut_o[hi] = is_cut_h[m_o.origin[hi]];
+    }
+
+  }
+
+  return is_cut_o;
+}
+
+/**
+ * @brief Given overlay mesh with associated flat metric compute the layout
+ * 
+ * @tparam Scalar double/mpfr::mpreal
+ * @param m_o, overlay mesh
+ * @param u_vec, per-vertex scale factor
+ * @param bd, list of boundary vertex ids
+ * @param singularities, list of singularity vertex ids
+ * @return _u_o, _v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
+ */
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_consistent_layout(
+             OverlayMesh<Scalar> &m_o,
+             const std::vector<Scalar> &u_vec,
+             const std::vector<int>& bd,
+             std::vector<int> singularities,
+             const std::vector<bool>& is_cut)
+{
+  // Get original overlay face labels 
+  auto f_labels = get_overlay_face_labels(m_o);
+  
+  // Compute layout of the underlying flipped mesh
+  std::vector<bool> _is_cut_place_holder;
+  auto mc = m_o.cmesh();
+  m_o.garbage_collection();
+  mc.type = std::vector<char>(mc.n_halfedges(), 0);
+  auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
+  auto _u_c = std::get<0>(layout_res);
+  auto _v_c = std::get<1>(layout_res);
+  auto is_cut_c = std::get<2>(layout_res);
+
+  // Interpolate layout to the overlay mesh
+  Eigen::Matrix<Scalar, -1, 1> u_eig;
+  u_eig.resize(u_vec.size());
+  for (size_t i = 0; i < u_vec.size(); i++)
+  {
+    u_eig(i) = u_vec[i];
+  }
+  m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
+  auto u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
+  auto v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
+  spdlog::info("Interpolate on overlay mesh done.");
+
+  // Build a new mesh directly from the triangulated overlay mesh
+  Mesh<Scalar> m;
+  m.n = m_o.n;
+  m.opp = m_o.opp;
+  m.f = m_o.f;
+  m.h = m_o.h;
+  m.out = m_o.out;
+  m.to = m_o.to;
+  m.l = std::vector<Scalar>(m.n.size(), 0.0);
+  for(int i = 0; i < m.n_halfedges(); i++){
+      int h0 = i; 
+      int h1 = h0;
+      do{
+          if(m.n[h1] == h0)
+              break;
+          h1 = m.n[h1];
+      }while(h0 != h1);
+      if(m.to[m.opp[h0]] != m.to[h1]){
+          spdlog::error("h0 h1 picked wrong.");
+          exit(0);
+      }
+      m.l[h0] = sqrt((u_o[h0]-u_o[h1])*(u_o[h0]-u_o[h1]) + (v_o[h0]-v_o[h1])*(v_o[h0]-v_o[h1]));
+  }
+  triangulate_polygon_mesh(m, u_o, v_o, f_labels);
+  m.type = std::vector<char>(m.n.size(), 0);
+  m.type_input = m.type;
+  m.R = std::vector<int>(m.n.size(), 0);
+  m.v_rep = range(0, m.out.size());
+  m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
+  OverlayMesh<Scalar> m_o_tri(m);
+  for(int i = m_o.n_halfedges(); i < m_o_tri.n_halfedges(); i++){
+      m_o_tri.edge_type[i] = ORIGINAL_EDGE; // make sure do not use the new diagonal
+  }
+
+  // Pullback cut on the original mesh to the overlay
+  std::vector<bool> is_cut_poly = pullback_cut_to_overlay(m_o, is_cut);
+
+  // Extend the overlay cut to the triangulated mesh
+  // WARNING: Assumes triangulation halfedges added to the end
+  std::vector<bool> is_cut_o = std::vector<bool>(m.n_halfedges(), false);
+  for (int h = 0; h < m_o.n_halfedges(); ++h)
+  {
+    is_cut_o[h] = is_cut_poly[h];
+  }
+
+  if (bd.empty()) {spdlog::info("No boundary");} //FIXME
+  // now directly do layout on triangulated overlay mesh
+  // TODO Make sure don't need to change edge type or other data fields
+  std::vector<Scalar> _u_o, _v_o;
+  std::vector<Scalar> phi(m.n_vertices(), 0.0);
+  auto overlay_layout_res = compute_layout(m, phi, is_cut_o);
+  _u_o = std::get<0>(overlay_layout_res);
+  _v_o = std::get<1>(overlay_layout_res);
+  is_cut_o = std::get<2>(overlay_layout_res);
+
+  // Restrict back to original overlay
+  // WARNING: Assumes triangulation halfedges added to the end
+  _u_o.resize(m_o.n.size());
+  _v_o.resize(m_o.n.size());
+  is_cut_o.resize(m_o.n.size()); 
+  trim_open_branch(m_o, f_labels, singularities, is_cut_o);
+
+  return std::make_tuple(_u_o, _v_o, is_cut_o);
+  
+}
+
+
+bool
+is_valid_layout(
+  const OverlayMesh<Scalar>& mo,
+  const std::vector<bool> &is_cut_o,
+  const Eigen::MatrixXd& V,
+  const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv
+) {
+  // Check consistency of uv lengths across cuts
+  check_uv(V, F, uv, F_uv);
+  // TODO
+
+  // Check for inverted elements
+  // TODO
+
+  // Triangulate the overlay mesh
+  Mesh<Scalar> m(mo);
+  triangulate_mesh(m);
+  
+  // Get cut edges for the triangulated mesh (new edges are not cut)
+  std::vector<bool> is_cut_tri(m.n_halfedges(), false);
+  for (int h = 0; h < mo.n_halfedges(); ++h)
+  {
+    is_cut_tri[h] = is_cut_o[h];
+  }
+
+  // Check if the cuts agree with the is_cut mask
+  // TODO May not be feasible to do reasonably; the face correspondence is lost
+  return false;
+
+}
+
+void
+check_if_flipped(
+  Mesh<Scalar> &m,
+  const std::vector<Scalar>& u,
+  const std::vector<Scalar>& v
+) {
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> uv(u.size(), 2);
+  Eigen::MatrixXi F_uv(m.n_faces(), 3);
+
+  for (size_t i = 0; i < u.size(); ++i)
+  {
+    uv(i, 0) = static_cast<double>(u[i]);
+    uv(i, 1) = static_cast<double>(v[i]);
+  }
+
+  for (int fi = 0; fi < m.n_faces(); ++fi)
+  {
+    int h = m.h[fi];
+    F_uv(fi, 0) = h;
+    F_uv(fi, 1) = m.n[h];
+    F_uv(fi, 2) = m.n[m.n[h]];
+  }
+
+  Eigen::VectorXi flipped_f;
+  igl::flipped_triangles(uv, F_uv, flipped_f);
+  spdlog::info("{} flipped elements in mesh", flipped_f.size());
+  for (int i = 0; i < flipped_f.size(); ++i)
+  {
+    int fi = flipped_f[i];
+    spdlog::info("Face {} is flipped", F_uv.row(fi));
+    spdlog::info(
+      "Vertices {}, {}, {}",
+      uv.row(F_uv(fi, 0)),
+      uv.row(F_uv(fi, 1)),
+      uv.row(F_uv(fi, 2))
+    );
+  }
+}
+
+std::vector<bool>
+compute_layout_topology(const Mesh<Scalar> &m, const std::vector<bool>& is_cut_h, int start_h)
+{
+  auto _u = std::vector<Scalar>(m.n_halfedges(), 0.0);
+  auto _v = std::vector<Scalar>(m.n_halfedges(), 0.0);
+
+  bool cut_given = !is_cut_h.empty();
+  auto is_cut_h_gen = std::vector<bool>(m.n_halfedges(), false);
+
+  // set starting point - use a boundary edge
+  int h = 0;
+  if (start_h == -1)
+  {
+    for (int i = 0; i < m.n_halfedges(); i++)
+    {
+      if (m.type[i] == 1 && m.type[m.opp[i]] == 2)
+      {
+        h = i;
+        is_cut_h_gen[i] = true;
+      }
+    }
+  }
+
+  auto done = std::vector<bool>(m.n_faces(), false);
+
+  // discard part 2
+  for (size_t i = 0; i < done.size(); i++)
+  {
+    int hh = m.h[i];
+    if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2)
+    {
+      done[i] = true;
+    }
+  }
+  // set edge type 2 as cut
+  for (size_t i = 0; i < is_cut_h.size(); i++)
+  {
+    if (m.type[i] == 2)
+    {
+      is_cut_h_gen[i] = true;
+    }
+  }
+
+  // Initialize queue and record of faces to process
+  std::queue<int> Q;
+  Q.push(h);
+  done[m.f[h]] = true;
+
+  while (!Q.empty())
+  {
+    // Get next halfedge to process
+    h = Q.front();
+    Q.pop();
+    
+    // Get other triangle edges
+    int hn = m.n[h];
+    int hp = m.n[hn];
+    int hno = m.opp[hn];
+    int hpo = m.opp[hp];
+    int ho = m.opp[h];
+
+    // Check if next edge triangle should be laid out
+    if (m.f[hno] != -1 && !done[m.f[hno]] && !(cut_given && is_cut_h[hn]))
+    {
+      done[m.f[hno]] = true;
+      Q.push(hno);
+    }
+    else
+    {
+      is_cut_h_gen[hn] = true;
+      is_cut_h_gen[m.opp[hn]] = true;
+    }
+
+    // Check if previous edge triangle should be laid out
+    if (m.f[hpo] != -1 && !done[m.f[hpo]] && !(cut_given && is_cut_h[hp]))
+    {
+      done[m.f[hpo]] = true;
+      Q.push(hpo);
+    }
+    else
+    {
+      is_cut_h_gen[hp] = true;
+      is_cut_h_gen[m.opp[hp]] = true;
+    }
+
+    // Check if current edge triangle should be laid out
+    // WARNING: Should only be used once for original edge
+    if (m.f[ho] != -1 && !done[m.f[ho]] && !(cut_given && is_cut_h[ho]))
+    {
+      done[m.f[ho]] = true;
+      Q.push(ho);
+    }
+  }
+
+  return is_cut_h_gen;
+  
+};
 
 #ifdef PYBIND
 std::tuple<

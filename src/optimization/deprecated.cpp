@@ -2428,3 +2428,481 @@ Eigen::MatrixXd get_per_corner_uv(const std::vector<std::vector<int>> &F,
     // double sum = m_o.seg_bcs[h][0] + m_o.seg_bcs[h][1];
     // m_o.seg_bcs[h][0] /= sum;
     // m_o.seg_bcs[h][1] /= sum;
+
+// refinement
+
+void
+triangulate_self_overlapping_subpolygon(
+	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
+	const std::vector<std::vector<int>>& splitting_vertices,
+	int start_vertex,
+	int end_vertex,
+	std::vector<std::array<int, 3>>& faces
+) {
+	int face_size = is_self_overlapping_subpolygon.size();
+	spdlog::info(
+		"Triangulating subpolygon ({}, {}) of polygon of size {}",
+		start_vertex,
+		end_vertex,
+		face_size
+	);
+
+	// Get starting edge (j,i)
+	int j = start_vertex;
+	int i = (j + 1) % face_size; // j = i - 1
+
+	// Do nothing in base case of a single vertex or edge
+	if ((i == end_vertex) || (j == end_vertex))
+	{
+		return;
+	}
+
+	// Iterate over the subpolygon vertices to find a splitting vertex
+	while (j != end_vertex)
+	{
+		if (is_self_overlapping_subpolygon[i][j])
+		{
+			// Add splitting face Tikj
+			int k = splitting_vertices[i][j];
+			faces.push_back( {i, k, j} );
+			spdlog::info("Adding triangle ({}, {}, {})", i, k, j);
+
+			// Triangulate subpolygon (i, k) unless the current subpolygon is (k, i)
+			// We skip the (k, i) case as the full polygon is (i, k) union (k, i), and 
+			// we assume the 
+			spdlog::info("Recursing to subpolygon ({}, {})", i, k);
+			triangulate_self_overlapping_subpolygon(
+				is_self_overlapping_subpolygon,
+				splitting_vertices,
+				i,
+				k,
+				faces
+			);
+
+			// Triangulate subpolygon (k, j) = (k, i-1) unless the current subpolygon is (j, k)
+			spdlog::info("Recursing to subpolygon ({}, {})", k, j);
+			if ((k != ))
+			triangulate_self_overlapping_subpolygon(
+				is_self_overlapping_subpolygon,
+				splitting_vertices,
+				k,
+				j,
+				faces
+			);
+
+			return;
+		}
+
+		// Iterate edge
+		j = (j + 1) % face_size;
+		i = (i + 1) % face_size;
+	}
+}
+
+void
+triangulate_self_overlapping_polygon(
+	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
+	const std::vector<std::vector<int>>& splitting_vertices,
+	std::vector<std::array<int, 3>>& faces
+) {
+	faces.clear();
+	int face_size = is_self_overlapping_subpolygon.size();
+	if (face_size < 3)
+	{
+		spdlog::warn("Triangulated trivial face");
+		return;
+	}
+
+	// Call recursive subroutine on the whole polygon
+	triangulate_self_overlapping_subpolygon(
+		is_self_overlapping_subpolygon,
+		splitting_vertices,
+		0,
+		face_size - 1,
+		faces
+	);
+}
+
+// Layout
+
+
+template <typename Scalar>
+void
+add_edge_to_mask(
+  OverlayMesh<Scalar> &mo,
+  std::vector<bool> &mask,
+  int h,
+  bool value
+) {
+  int seg = h;
+  while (true) {
+    // Add segment to the spanning tree
+    mask[seg] = value;
+    mask[mo.opp[seg]] = value;
+
+    // Break if last segment or continue to next segment
+    if (mo.vertex_type[mo.to[seg]] == ORIGINAL_VERTEX) break;
+    seg = mo.n[mo.opp[mo.n[seg]]];
+  }
+}
+
+// Compute a cut for the overlay mesh that only uses edges in the original mesh
+template <typename Scalar>
+void
+compute_overlay_cut(
+  OverlayMesh<Scalar> &mo,
+  std::vector<bool> &is_cut_h
+) {
+  // Initialize an array to keep track of vertices
+  int num_vertices = mo.n_vertices();
+  if (num_vertices == 0)
+  {
+    spdlog::error("Cannot cut a trivial mesh");
+    return;
+  }
+
+  // Initialize spanning tree
+  int num_halfedges = mo.n_halfedges();
+  std::vector<bool> is_spanning_tree_h(num_halfedges, false);
+  std::vector<bool> is_found_vertex(num_vertices, false);
+
+  // Initialize the stack of vertices to process with an arbitrary on the original
+  // connectivity
+  std::deque<int> vertices_to_process;
+  for (int vi = 0; vi < num_vertices; ++vi)
+  {
+    if (mo.vertex_type[vi] == ORIGINAL_VERTEX)
+    {
+      vertices_to_process.push_back(vi);
+      is_found_vertex[vi] = true;
+      break;
+    }
+  }
+
+  // Check that some vertex was found
+  if (vertices_to_process.empty())
+  {
+    spdlog::error("Could not find starting vertex for overlay cut");
+    return;
+  }
+
+  // Perform breadth first search
+  while (!vertices_to_process.empty())
+  {
+    // Get the next vertex to process
+    int current_vertex = vertices_to_process.front();
+    vertices_to_process.pop_front();
+
+    // Iterate over the vertex circulator via halfedges
+    int h_start = mo.out[current_vertex];
+    int h = h_start;
+    do
+    {
+      // Get the vertex in the one ring at the tip of the halfedge
+      int one_ring_vertex = mo.find_end_origin(h);
+
+      // Check if the edge is in the original mesh and the tip vertex hasn't been processed yet
+      if ((mo.edge_type[h] != CURRENT_EDGE) && (!is_found_vertex[one_ring_vertex]))
+      {
+        // Add segments for the entire edge to the spanning tree
+        add_edge_to_mask(mo, is_spanning_tree_h, h, true);
+        add_edge_to_mask(mo, is_spanning_tree_h, mo.opp[h], true);
+
+        // Mark the vertex as found and add it to the vertices to process
+        vertices_to_process.push_back(one_ring_vertex);
+        is_found_vertex[one_ring_vertex] = true;
+      }
+
+      // Progress to the next halfedge in the vertex circulator
+      h = mo.n[mo.opp[h]];
+    }
+    while (h != h_start);
+  }
+
+  // Now, perform breadth first search over faces to build a cotree of edges not to cut
+  int num_faces = mo.n_faces();
+  is_cut_h = std::vector<bool>(num_halfedges, true);
+  std::vector<bool> is_found_face(num_faces, false);
+  std::deque<int> faces_to_process = {0};
+  is_found_face[0] = true;
+  while (!faces_to_process.empty())
+  {
+    // Get the next face to process
+    int current_face = faces_to_process.front();
+    faces_to_process.pop_front();
+
+    // Iterate over the face via halfedges
+    int h_start = mo.h[current_face];
+    int h = h_start;
+    do
+    {
+      // Get the face adjacent to the given edge
+      int adjacent_face = mo.f[mo.opp[h]];
+
+      // If the edge is a current edge, circulate around the vertex at the tip
+      if (mo.edge_type[h] == CURRENT_EDGE)
+      {
+        // Do not cut edges not in the original connectivity
+        add_edge_to_mask(mo, is_cut_h, h, false);
+        add_edge_to_mask(mo, is_cut_h, mo.opp[h], false);
+
+        // Mark the adjacent face as found
+        is_found_face[adjacent_face] = true;
+
+        // Circulate and continue
+        h = mo.n[mo.opp[h]];
+        continue;
+      }
+      
+      // Check if the edge is not in the spanning tree and the adjacent face is not processed yet
+      if ((!is_spanning_tree_h[h]) && (!is_found_face[adjacent_face]))
+      {
+        // Add the edge to the spanning cotree
+        add_edge_to_mask(mo, is_cut_h, h, false);
+        add_edge_to_mask(mo, is_cut_h, mo.opp[h], false);
+
+        // Mark the face as found and add it to the face to process
+        faces_to_process.push_back(adjacent_face);
+        is_found_face[adjacent_face] = true;
+      }
+
+      // Progress to the next halfedge in the face circulator
+      h = mo.n[h];
+    }
+    while (h != h_start);
+  }
+
+
+}
+
+/**
+ * @brief Given overlay mesh with associated flat metric compute the layout
+ * 
+ * @tparam Scalar double/mpfr::mpreal
+ * @param m_o, overlay mesh
+ * @param u_vec, per-vertex scale factor
+ * @param bd, list of boundary vertex ids
+ * @param singularities, list of singularity vertex ids
+ * @param root (optional) index of a boundary vertex, when not -1, this will be the only intersection of the cut to singularity edges with boundary
+ * @param use_original_edge_cut (optional) cut to singularities using only original mesh edges if true
+ * @return _u_c, _v_c, is_cut_c (per-corner u/v assignment of current mesh and marked cut edges) 
+ *         _u_o, _v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
+ */
+template <typename Scalar>
+static
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
+           std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_layout(OverlayMesh<Scalar> &m_o, const std::vector<Scalar> &u_vec, std::vector<int> bd, std::vector<int> singularities, bool do_trim = false, int root=-1)
+{
+    
+  auto f_labels = get_overlay_face_labels(m_o);
+  
+  // Compute layout of the underlying flipped mesh
+  std::vector<bool> _is_cut_place_holder;
+  auto mc = m_o.cmesh();
+  m_o.garbage_collection();
+  mc.type = std::vector<char>(mc.n_halfedges(), 0);
+  auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
+  auto _u_c = std::get<0>(layout_res);
+  auto _v_c = std::get<1>(layout_res);
+  auto is_cut_c = std::get<2>(layout_res);
+  check_if_flipped(mc, _u_c, _v_c);
+  std::vector<Scalar> _u_o, _v_o;
+  std::vector<bool> is_cut_o;
+
+  // Interpolate layout to the overlay mesh
+  Eigen::Matrix<Scalar, -1, 1> u_eig;
+  u_eig.resize(u_vec.size());
+  for (int i = 0; i < u_vec.size(); i++)
+  {
+    u_eig(i) = u_vec[i];
+  }
+  m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
+  auto u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
+  auto v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
+  spdlog::info("Interpolate on overlay mesh done.");
+  check_if_flipped(m_o, u_o, v_o);
+
+  if(!bd.empty()){ 
+    // FIXME TODO
+    // compute edge lengths of overlay mesh and triangulate it
+    Mesh<Scalar> m;
+    m.n = m_o.n;
+    m.opp = m_o.opp;
+    m.f = m_o.f;
+    m.h = m_o.h;
+    m.out = m_o.out;
+    m.to = m_o.to;
+    m.l = std::vector<Scalar>(m.n.size(), 0.0);
+    for(int i = 0; i < m.n.size(); i++){
+        int h0 = i; 
+        int h1 = h0;
+        do{
+            if(m.n[h1] == h0)
+                break;
+            h1 = m.n[h1];
+        }while(h0 != h1);
+        if(m.to[m.opp[h0]] != m.to[h1]){
+            spdlog::error("h0 h1 picked wrong.");
+            exit(0);
+        }
+        m.l[h0] = sqrt((u_o[h0]-u_o[h1])*(u_o[h0]-u_o[h1]) + (v_o[h0]-v_o[h1])*(v_o[h0]-v_o[h1]));
+    }
+    triangulate_polygon_mesh(m, u_o, v_o, f_labels);
+    check_if_flipped(m, u_o, v_o);
+
+    m.type = std::vector<char>(m.n.size(), 0);
+    m.type_input = m.type;
+    m.R = std::vector<int>(m.n.size(), 0);
+    m.v_rep = range(0, m.out.size());
+    m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
+    
+    // try to connect to singularties again with overlay mesh edges
+    spdlog::info("try to connect to singularities using a tree rooted at root");
+  
+    OverlayMesh<Scalar> m_o_tri(m);
+    for(int i = m_o.n.size(); i < m_o_tri.n.size(); i++){
+        m_o_tri.edge_type[i] = ORIGINAL_EDGE; // make sure do not use the new diagonal
+    }
+    spdlog::info("root = {}", root);
+    //connect_to_singularities(m_o_tri, f_labels, bd, singularities, is_cut_o, root);
+    // FIXME Check on this; we have replaced the cut to singularity with an overlay cut
+
+    // Get overlay cut using only original edges
+    std::vector<bool> is_cut_poly;
+    //compute_overlay_cut(m_o, is_cut_poly);
+    connect_to_singularities(m_o, f_labels, bd, singularities, is_cut_poly, root);
+
+    // Optionally do trim
+    // FIXME Check if should be optional
+    //trim_open_branch(m_o, f_labels, singularities, is_cut_poly);
+
+    // Extend the overlay cut to the triangulated mesh
+    // WARNING: Assumes new halfedges added to the end
+    is_cut_o = std::vector<bool>(m.n_halfedges(), false);
+    for (int h = 0; h < m_o.n_halfedges(); ++h)
+    {
+      is_cut_o[h] = is_cut_poly[h];
+    }
+    
+    int start_h = 0;
+    for(int i = 0; i < m_o_tri.n.size(); i++){
+        if(f_labels[m_o_tri.f[i]] == 1 && f_labels[m_o_tri.f[m_o_tri.opp[i]]] == 2){
+            start_h = i; break;
+        }
+    }
+    spdlog::info("selected start h: {}, left: {}, right: {}", start_h, f_labels[m_o_tri.f[start_h]], f_labels[m_o_tri.f[m_o_tri.opp[start_h]]]);
+
+    // sanity check for the input of compute layout
+    // - opposite halfedges should have same edge lenghts (up to numerical error)
+    // - all halfedges that belongs to a face with type 1 should have non-zero edge lengths
+    for(int i = 0; i < m_o_tri.n.size(); i++){
+        int h0 = i, h1 = m_o_tri.opp[h0];
+        int ft0 = f_labels[m_o_tri.f[h0]];
+        int ft1 = f_labels[m_o_tri.f[h1]];
+        if(std::abs<Scalar>(m_o_tri._m.l[h0]-m_o_tri._m.l[h1]) > 1e-8 && ft0 == ft1 && ft0 == 1){
+            spdlog::error("halfedge lengths mismatch, {}: {}, {}: {}; {}/{}", h0, m_o_tri._m.l[h0], h1, m_o_tri._m.l[h1], ft0, ft1);
+        }
+        int f0 = m_o_tri.f[h0];
+        int f1 = m_o_tri.f[h1];
+        if(f_labels[f0] == 1 && m_o_tri._m.l[h0] == 0)
+            spdlog::error("copy 1 has zero edge at {}, f{}", h0, f0);
+        if(f_labels[f1] == 1 && m_o_tri._m.l[h1] == 0)
+            spdlog::error("copy 1 has zero edge at {}, f{}", h1, f1);
+    }
+    spdlog::info("sanity check done.");
+
+    // mark boundary as cut
+    for (int i = 0; i < is_cut_o.size(); i++)
+    {
+        if (f_labels[m_o_tri.f[i]] != f_labels[m_o_tri.f[m_o_tri.opp[i]]])
+        {
+            is_cut_o[i] = true;
+        }
+    }
+
+    // now directly do layout on overlay mesh
+    for(int f = 0; f < f_labels.size(); f++){
+        int h0 = m_o_tri.h[f];
+        int h1 = m_o_tri.n[h0];
+        int h2 = m_o_tri.n[h1];
+        m_o_tri._m.type[h0] = f_labels[f];
+        m_o_tri._m.type[h1] = f_labels[f];
+        m_o_tri._m.type[h2] = f_labels[f];
+    }
+
+    // get output connectivity and metric
+    std::vector<Scalar> phi(m_o_tri.out.size(), 0.0);
+    auto overlay_layout_res = compute_layout(m_o_tri._m, phi, is_cut_o, start_h);
+    _u_o = std::get<0>(overlay_layout_res);
+    _v_o = std::get<1>(overlay_layout_res);
+    check_if_flipped(m, _u_o, _v_o);
+
+    // recursively remove degree-1 edges unless it's connected to a singularity
+    if (do_trim){
+      spdlog::info("Trimming cut");
+      is_cut_o = std::get<2>(overlay_layout_res);
+      //trim_open_branch(m_o_tri, f_labels, singularities, is_cut_o);
+    }
+
+    _u_o.resize(m_o.n.size());
+    _v_o.resize(m_o.n.size());
+    is_cut_o.resize(m_o.n.size()); 
+
+  }else{
+    // Compute overlay mesh with lengths obtained from the uv layout
+    Mesh<Scalar> m;
+    m.n = m_o.n;
+    m.opp = m_o.opp;
+    m.f = m_o.f;
+    m.h = m_o.h;
+    m.out = m_o.out;
+    m.to = m_o.to;
+    m.l = std::vector<Scalar>(m.n.size(), 0.0);
+    for(int i = 0; i < m.n.size(); i++){
+        int h0 = i; 
+        int h1 = h0;
+        do{
+            if(m.n[h1] == h0)
+                break;
+            h1 = m.n[h1];
+        }while(h0 != h1);
+        if(m.to[m.opp[h0]] != m.to[h1]){
+            spdlog::error("h0 h1 picked wrong.");
+            exit(0);
+        }
+        m.l[h0] = sqrt((u_o[h0]-u_o[h1])*(u_o[h0]-u_o[h1]) + (v_o[h0]-v_o[h1])*(v_o[h0]-v_o[h1]));
+    }
+    triangulate_polygon_mesh(m, u_o, v_o, f_labels);
+    m.type = std::vector<char>(m.n.size(), 0);
+    m.type_input = m.type;
+    m.R = std::vector<int>(m.n.size(), 0);
+    m.v_rep = range(0, m.out.size());
+    m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
+
+    // Get overlay cut using only original edges
+    std::vector<bool> is_cut_poly;
+    compute_overlay_cut(m_o, is_cut_poly);
+
+    // Optionally do trim
+    // FIXME Check if should be optional
+    trim_open_branch(m_o, f_labels, singularities, is_cut_poly);
+
+    // Extend the overlay cut to the triangulated mesh
+    // WARNING: Assumes new halfedges added to the end
+    is_cut_o = std::vector<bool>(m.n_halfedges(), false);
+    for (int h = 0; h < m_o.n_halfedges(); ++h)
+    {
+      is_cut_o[h] = is_cut_poly[h];
+    }
+    
+    // now directly do layout on overlay mesh
+    // TODO Make sure don't need to change edge type or other data fields
+    std::vector<Scalar> phi(m.n_vertices(), 0.0);
+    auto overlay_layout_res = compute_layout(m, phi, is_cut_o);
+    _u_o = std::get<0>(overlay_layout_res);
+    _v_o = std::get<1>(overlay_layout_res);
+  }
+
+  return std::make_tuple(_u_c, _v_c, is_cut_c, _u_o, _v_o, is_cut_o);
+  
+}

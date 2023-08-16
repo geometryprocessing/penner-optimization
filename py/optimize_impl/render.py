@@ -239,8 +239,8 @@ def generate_colormap(x,
         norm = colors.CenteredNorm(scale*0.5, scale*0.6)
     else:
         norm = colors.CenteredNorm(0, 1)
-        r = r * 0
 
+    print(np.max(c), np.average(c)) # FIXME
     # Use the coolwarm color scheme
     return np.array(cm.coolwarm(norm(c))[:,:3])
 
@@ -257,16 +257,13 @@ def get_layout_colormap(
     average_per_vertex=False
 ):
     # Get energy
-    print(colormap)
     energy = energies.get_face_energy(v, f, uv, fuv, colormap, use_sqrt_scale=use_sqrt_scale, use_log_scale=use_log_scale)
-    print(energy.shape)
+    print(np.max(energy), np.average(energy))
 
     # Generate colormap
     c = generate_colormap(energy, shift=0, scale=scale)
-    print(c.shape)
     if (average_per_vertex):
         c = igl.average_onto_vertices(v, f, c)
-    print(c.shape)
 
     return c
 

@@ -18,6 +18,8 @@ import optimize_impl.render as render
 import optimize_impl.interpolation as interpolation
 import optimize_impl.targets as targets
 
+# TODO Generate version of this script for direct minimal refinement method; save original mesh cut and fn_to_f
+# TODO Make command line interface that does full optimization and uv generation (leave rendering and analysis separate)
 
 def add_convert_to_vf_arguments(parser):
     parser.add_argument("-o",  "--output_dir",
@@ -28,6 +30,7 @@ def add_convert_to_vf_arguments(parser):
     parser.add_argument("--flip_in_original_metric",
                         help="use original metric for edge flips",
                         action="store_true")
+
 
 
 def convert_to_vf_one(args, fname):
@@ -76,6 +79,7 @@ def convert_to_vf_one(args, fname):
         return
 
     # Get overlay
+    # TODO Replace with method akin to generate_VF_mesh_from_metric for log edge lenghts
     if args['use_edge_lengths']:
         logger.info("Using edge lengths")
         u = np.zeros(len(v3d))
@@ -106,6 +110,7 @@ def convert_to_vf_one(args, fname):
     else:
         logger.info("Using Penner coordinates")
 
+        # TODO Rename to _from_penner_coordinates
         parametrize_res = opt.generate_VF_mesh_from_metric(
             v3d,
             f,
