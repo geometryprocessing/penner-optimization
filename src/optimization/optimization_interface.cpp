@@ -194,21 +194,34 @@ generate_VF_mesh_from_metric(
 		}
 	}
 
+	// Get layout topology from original mesh
+	std::vector<bool> is_cut_place_holder(0);
+	std::vector<bool> is_cut = compute_layout_topology(m, is_cut_place_holder);
+
 	// Convert overlay mesh to VL format
 	spdlog::info("Getting layout");
 	std::vector<int> vtx_reindex_mutable = vtx_reindex;
   std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
 	convert_eigen_to_std_vector(scale_factors, u);
-	auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec, vtx_reindex_mutable, endpoints, -1);
+	// auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec, vtx_reindex_mutable, endpoints, -1); FIXME
+	auto parametrize_res = consistent_overlay_mesh_to_VL(
+		F,
+		Th_hat,
+		m_o,
+		u,
+		V_overlay_vec,
+		vtx_reindex_mutable,
+		endpoints,
+		is_cut
+	);
 	std::vector<std::vector<Scalar>> V_o_vec = std::get<0>(parametrize_res);
 	std::vector<std::vector<int>> F_o_vec = std::get<1>(parametrize_res);
 	std::vector<Scalar> u_o_vec = std::get<2>(parametrize_res);
 	std::vector<Scalar> v_o_vec = std::get<3>(parametrize_res);
 	std::vector<std::vector<int>> FT_o_vec = std::get<4>(parametrize_res);
-	std::vector<bool> is_cut_h = std::get<5>(parametrize_res);
-	std::vector<bool> is_cut_o = std::get<6>(parametrize_res);
-	std::vector<int> Fn_to_F = std::get<7>(parametrize_res);
-	std::vector<std::pair<int,int>> endpoints_o = std::get<8>(parametrize_res);
+	std::vector<bool> is_cut_o = std::get<5>(parametrize_res);
+	std::vector<int> Fn_to_F = std::get<6>(parametrize_res);
+	std::vector<std::pair<int,int>> endpoints_o = std::get<7>(parametrize_res);
 
 	// Convert vector formats to matrices
 	Eigen::MatrixXd V_o, uv_o;
@@ -235,7 +248,7 @@ generate_VF_mesh_from_metric(
 		F_o,
 		uv_o,
 		FT_o,
-		is_cut_h,
+		is_cut,
 		is_cut_o,
 		Fn_to_F,
 		endpoints_o
@@ -279,7 +292,7 @@ consistent_overlay_mesh_to_VL(const Eigen::MatrixXi& F,
                    std::vector<std::vector<Scalar>>& V_overlay,
                    std::vector<int>& vtx_reindex,
                    std::vector<std::pair<int, int>>& endpoints,
-									 std::vector<bool>& is_cut)
+									 const std::vector<bool>& is_cut)
 {
     // get cones and bd
     std::vector<int> cones, bd;
@@ -322,7 +335,7 @@ consistent_overlay_mesh_to_VL(const Eigen::MatrixXi& F,
     spdlog::info("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
-    auto layout_res = get_consistent_layout(mo, u, bd, cones, is_cut);
+    auto layout_res = get_consistent_layout(mo, u, cones, is_cut);
     auto u_o = std::get<0>(layout_res);
     auto v_o = std::get<1>(layout_res);
     auto is_cut_o = std::get<2>(layout_res);

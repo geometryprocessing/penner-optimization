@@ -49,6 +49,7 @@
 #include "optimization_interface.hh"
 #include "projection.hh"
 #include "reparametrization.hh"
+#include "refinement.hh"
 #include "shapes.hh"
 #include "shear.hh"
 #include "targets.hh"
@@ -242,6 +243,27 @@ init_classes_pybind(pybind11::module& m)
                         >())
     .def("get_overlay_mesh",
       &InterpolationMesh::get_overlay_mesh,
+      pybind11::return_value_policy::copy);
+
+  pybind11::class_<RefinementMesh>(m, "RefinementMesh")
+    .def(pybind11::init<const Eigen::MatrixXd &, // V
+                        const Eigen::MatrixXi &, // F
+                        const Eigen::MatrixXd &, // uv
+                        const Eigen::MatrixXi &, // F_uv
+                        const std::vector<int>&, // Fn_to_F,
+                        const std::vector<std::pair<int, int>>& // endpoints
+                        >())
+    .def("get_VF_mesh",
+      static_cast<
+            std::tuple<
+                  Eigen::MatrixXd, // V
+                  Eigen::MatrixXi, // F
+                  Eigen::MatrixXd, // uv
+                  Eigen::MatrixXi, // F_uv
+                  std::vector<int>, // Fn_to_F
+                  std::vector<std::pair<int, int>> // endpoints
+            >(RefinementMesh::*)() const
+      >(&RefinementMesh::get_VF_mesh),
       pybind11::return_value_policy::copy);
 }
 
@@ -482,6 +504,10 @@ init_optimization_interface_pybind(pybind11::module& m)
         &correct_cone_angles_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+  m.def("consistent_overlay_mesh_to_VL",
+        &consistent_overlay_mesh_to_VL,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
 }
 
 
@@ -652,13 +678,12 @@ init_layout_pybind(pybind11::module& m)
         &check_uv,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("parametrize_mesh",
-        &parametrize_mesh,
-        "generate parametrization for mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("extract_embedded_mesh",
         &extract_embedded_mesh_pybind,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
+  m.def("compute_layout_topology",
+        &compute_layout_topology,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
@@ -741,7 +766,7 @@ load_simplify_overlay_output(
 PYBIND11_MODULE(optimization_py, m)
 {
   m.doc() = "pybind for optimization module";
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::info);
 
   init_classes_pybind(m);
   init_conformal_pybind(m);

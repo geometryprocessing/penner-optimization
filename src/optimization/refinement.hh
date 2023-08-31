@@ -7,6 +7,8 @@
 
 namespace CurvatureMetric {
 
+// TODO Add code to get vn_to_v, endpoints, and Fn_to_F maps; should also test this
+
 /// A class to represent a mesh that supports an overlay refinement scheme.
 class RefinementMesh
 {
@@ -27,8 +29,20 @@ get_VF_mesh(
 	Eigen::MatrixXd& V,
 	Eigen::MatrixXi& F,
 	Eigen::MatrixXd& uv,
-	Eigen::MatrixXi& F_uv
+	Eigen::MatrixXi& F_uv,
+	std::vector<int>& Fn_to_F,
+	std::vector<std::pair<int, int>>& endpoints
 ) const;
+
+std::tuple<
+	Eigen::MatrixXd, // V
+	Eigen::MatrixXi, // F
+	Eigen::MatrixXd, // uv
+	Eigen::MatrixXi, // F_uv
+	std::vector<int>, // Fn_to_F
+	std::vector<std::pair<int, int>> // endpoints
+>
+get_VF_mesh() const;
 
 void view_original_mesh() const;
 
@@ -151,13 +165,16 @@ get_face_uv_vertices(
 	std::vector<VectorX>& uv_vertices
 ) const;
 
+void clear();
+
+bool empty();
+
 private:
 // Connectivity
 std::vector<Index> n;
 std::vector<Index> prev;
 std::vector<Index> opp;
 std::vector<Index> to;
-//std::vector<Index> out; FIXME
 std::vector<Index> f;
 std::vector<Index> h;
 std::vector<bool> is_bnd_loop;
@@ -168,10 +185,18 @@ std::vector<Index> uv_to;
 // Vertex attributes
 Eigen::MatrixXd m_V;
 Eigen::MatrixXd m_uv;
+std::vector<std::pair<int, int>> m_endpoints;
 
 // Halfedge attributes
-std::vector<std::vector<Index>> h_v_points;
-std::vector<std::vector<Index>> h_uv_points;
+std::vector<std::deque<Index>> h_v_points;
+std::vector<std::deque<Index>> h_uv_points;
+
+// Inserted halfedges pointing to inserted vertices (stored for simplification)
+std::vector<Index> m_inserted_vertex_halfedges;
+
+// Original connectivity
+std::vector<std::vector<std::array<int, 3>>> m_overlay_face_triangles;
+std::vector<std::vector<std::array<int, 3>>> m_overlay_uv_face_triangles;
 
 // Constructor helper functions
 
@@ -194,17 +219,22 @@ build_vertex_points(
 void
 refine_mesh();
 
+bool
+simplify_vertex(
+	Index halfedge_index
+);
+
 void
 simplify_mesh();
 
 // Mesh manipulation
 
-void
+bool
 refine_halfedge(
 	Index halfedge_index
 );
 
-void
+bool
 refine_face(
 	Index face_index
 );

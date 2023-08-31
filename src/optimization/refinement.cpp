@@ -9,6 +9,8 @@
 #include <igl/flipped_triangles.h>
 #include <igl/boundary_facets.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/doublearea.h>
 #include <stack>
 #include <set>
 
@@ -26,6 +28,10 @@ RefinementMesh::RefinementMesh(
   Eigen::VectorXi flipped_f;
   igl::flipped_triangles(uv, F_uv, flipped_f);
   spdlog::info("{} flipped elements in overlay mesh", flipped_f.size());
+	if (flipped_f.size() > 0)
+	{
+		spdlog::warn("Cannot refine a mesh with flipped elements in the overlay");
+	}
 
 	// Build initial topology with refinement data
 	build_vertex_points(V, uv);
@@ -51,21 +57,20 @@ RefinementMesh::get_VF_mesh(
 	Eigen::MatrixXd& V,
 	Eigen::MatrixXi& F,
 	Eigen::MatrixXd& uv,
-	Eigen::MatrixXi& F_uv
+	Eigen::MatrixXi& F_uv,
+	std::vector<int>& Fn_to_F,
+	std::vector<std::pair<int, int>>& endpoints
 ) const {
 	// Ensure mesh is triangulated
 	// TODO
 
-	// Build vertices
-	V = m_V;
-	uv = m_uv;
-	// TODO Remove unreferenced
-
 	// Build triangle faces
 	std::vector<std::array<int, 3>> mesh_triangles(0);
 	std::vector<std::array<int, 3>> uv_mesh_triangles(0);
+	Fn_to_F.clear();
 	mesh_triangles.reserve(n_faces());
 	uv_mesh_triangles.reserve(n_faces());
+	Fn_to_F.reserve(n_faces());
 	for (Index fi = 0; fi < n_faces(); ++fi)
 	{
 		// Skip boundary faces
@@ -89,8 +94,9 @@ RefinementMesh::get_VF_mesh(
 			uv_face_triangles.begin(),
 			uv_face_triangles.end()
 		);
+		Fn_to_F.insert(Fn_to_F.end(), face_triangles.size(), fi);
 
-		// Print triangles if more than 1
+		// Print triangles if more than 1 FIXME
 		if (face_triangles.size() > 1)
 		{
 			for (size_t j = 0; j < face_triangles.size(); ++j)
@@ -107,16 +113,57 @@ RefinementMesh::get_VF_mesh(
 
 	// Copy vectors of mesh triangles to the face matrices
 	int num_triangles = mesh_triangles.size();
-	F.resize(num_triangles, 3);
-	F_uv.resize(num_triangles, 3);
+	Eigen::MatrixXi F_full(num_triangles, 3);
+  Eigen::MatrixXi F_uv_full(num_triangles, 3);
 	for (int fi = 0; fi < num_triangles; ++fi)
 	{
 		for (int j = 0; j < 3; ++j)
 		{
-			F(fi, j) = mesh_triangles[fi][j];
-			F_uv(fi, j) = uv_mesh_triangles[fi][j];
+			if (mesh_triangles[fi][j] < 0)
+			{
+				spdlog::warn("Invalid vertex index");
+			}
+			if (uv_mesh_triangles[fi][j] < 0)
+			{
+				spdlog::warn("Invalid uv vertex index");
+			}
+
+			F_full(fi, j) = mesh_triangles[fi][j];
+			F_uv_full(fi, j) = uv_mesh_triangles[fi][j];
 		}
 	}
+
+	// Remove unreferenced vertices
+	Eigen::VectorXi I, J, I_uv, J_uv;
+	igl::remove_unreferenced(m_V, F_full, V, F, I, J);
+	igl::remove_unreferenced(m_uv, F_uv_full, uv, F_uv, I_uv, J_uv);
+
+	// Get endpoints, removing the unreferenced consistently with the removed vertices
+	endpoints.resize(V.rows());
+	for (int vi = 0; vi < V.rows(); ++vi)
+	{
+		endpoints[vi] = m_endpoints[J[vi]];
+	}
+}
+
+std::tuple<
+	Eigen::MatrixXd, // V
+	Eigen::MatrixXi, // F
+	Eigen::MatrixXd, // uv
+	Eigen::MatrixXi, // F_uv
+	std::vector<int>, // Fn_to_F
+	std::vector<std::pair<int, int>> // endpoints
+>
+RefinementMesh::get_VF_mesh() const
+{
+	Eigen::MatrixXd V;
+	Eigen::MatrixXi F;
+	Eigen::MatrixXd uv;
+	Eigen::MatrixXi F_uv;
+	std::vector<int> Fn_to_F;
+	std::vector<std::pair<int, int>> endpoints;
+	get_VF_mesh(V, F, uv, F_uv, Fn_to_F, endpoints);
+	return std::make_tuple(V, F, uv, F_uv, Fn_to_F, endpoints);
 }
 
 /// Get the number of edges of a given face
@@ -184,6 +231,29 @@ RefinementMesh::get_face_uv_vertices(
 	}
 }
 
+void RefinementMesh::clear()
+{
+	n.clear();
+	prev.clear();
+	opp.clear();
+	to.clear();
+	f.clear();
+	h.clear();
+	is_bnd_loop.clear();
+	uv_to.clear();
+	m_V.setZero(0, 0);
+	m_uv.setZero(0, 0);
+	m_endpoints.clear();
+	h_v_points.clear();
+	h_uv_points.clear();
+	m_inserted_vertex_halfedges.clear();
+}
+
+bool RefinementMesh::empty()
+{
+	return n.empty();
+}
+
 void
 build_face(
 	const Eigen::MatrixXi& F,
@@ -205,17 +275,29 @@ build_face(
 		F_uv_face.row(fi) = F_uv.row(subfaces[fi]);
 	}
 
+	// Remove unreferenced vertices to get local face indices
+	Eigen::MatrixXi F_local;
+	std::vector<int> new_to_old_map;
+	remove_unreferenced(F_face, F_local, new_to_old_map);
+
 	// Get the (ordered) boundary loop of the faces
-	std::vector<int> loop, uv_loop;
-	igl::boundary_loop(F_face, loop);
-	if (static_cast<int>(loop.size()) != (F_face.rows() + 2))
+	std::vector<int> local_loop, loop, uv_loop;
+	igl::boundary_loop(F_local, local_loop);
+	if (static_cast<int>(local_loop.size()) != (F_local.rows() + 2))
 	{
-		spdlog::error("Loop of size {} for face {}", loop.size(), F_face);
+		spdlog::error("Loop of size {} for face {}", local_loop.size(), F_local);
+	}
+
+	// Remap local boundary loop to global
+	int num_boundary_vertices = local_loop.size();
+	loop.resize(num_boundary_vertices);
+	for (int i = 0; i < num_boundary_vertices; ++i)
+	{
+		loop[i] = new_to_old_map[local_loop[i]];
 	}
 
 	// Get the three original vertices of the loop
 	int count = 0;
-	int num_boundary_vertices = loop.size();
 	std::array<int, 3> vertex_indices;
 	for (int i = 0; i < num_boundary_vertices; ++i)
 	{
@@ -355,6 +437,7 @@ RefinementMesh::build_connectivity(
 	const std::vector<int>& Fn_to_F,
 	const std::vector<std::pair<int, int>>& endpoints
 ) {
+	m_inserted_vertex_halfedges.clear();
 	// Combine (almost) identical uv vertices
 	// TODO Make sure to check for validity
 	//Eigen::MatrixXd uv;
@@ -408,16 +491,32 @@ RefinementMesh::build_connectivity(
 		corner_uv_points
 	);
 
+	// Record the original overlay triangulations
+	m_overlay_face_triangles.resize(num_faces);
+	m_overlay_uv_face_triangles.resize(num_faces);
+	for (int fi = 0; fi < num_faces; ++fi)
+	{
+		m_overlay_face_triangles[fi].clear();
+		m_overlay_uv_face_triangles[fi].clear();
+		for (auto fij : F_to_Fn[fi])
+		{
+			m_overlay_face_triangles[fi].push_back({F(fij, 0), F(fij, 1), F(fij, 2)});
+			m_overlay_uv_face_triangles[fi].push_back({F_uv(fij, 0), F_uv(fij, 1), F_uv(fij, 2)});
+		}
+	}
+
 	// TODO View flipped triangles
 	//view_flipped_triangles(V, F, uv, F_uv);
-	view_flipped_triangles(V, F_orig, uv, F_uv_orig);
+	//view_flipped_triangles(V, F_orig, uv, F_uv_orig);
   Eigen::VectorXi flipped_f;
   igl::flipped_triangles(uv, F_uv_orig, flipped_f);
   spdlog::info("{} flipped elements", flipped_f.size());
 
 	// TODO Check topology directly here before building halfedge
 	Eigen::VectorXi face_components;
-	igl::facet_components(F_uv_orig, face_components);
+	igl::facet_components(F_uv, face_components);
+	Eigen::VectorXi face_components_orig;
+	igl::facet_components(F_uv_orig, face_components_orig);
 	Eigen::MatrixXd V_cut, V_orig_cut;
 	cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
 	cut_mesh_along_parametrization_seams(V, F_orig, uv, F_uv_orig, V_orig_cut);
@@ -432,24 +531,38 @@ RefinementMesh::build_connectivity(
 		int k = (K[i] + 1)%3;		
 		boundary_edges[3 * j + k] = 1.0;
 	}
-	polyscope::init();
-	polyscope::registerSurfaceMesh("original mesh", V_orig_cut, F_uv_orig)
-		->addVertexParameterizationQuantity("uv", uv);
-	polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
-		->addVertexParameterizationQuantity("uv", uv);
-	polyscope::getSurfaceMesh("original mesh")
-		->addFaceScalarQuantity("components", face_components);
-	polyscope::registerSurfaceMesh2D("original uv mesh", uv, F_uv_orig);
-	polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv);
-	polyscope::getSurfaceMesh("original uv mesh")
-		->addFaceScalarQuantity("components", face_components);
-	polyscope::getSurfaceMesh("uv mesh")
-		->addHalfedgeScalarQuantity("boundary", boundary_edges);
-	polyscope::show();
-	polyscope::removeStructure("mesh");
-	polyscope::removeStructure("uv mesh");
-	polyscope::removeStructure("original mesh");
-	polyscope::removeStructure("original uv mesh");
+	if (false) // TODO
+	{
+		Eigen::VectorXd doublearea;
+		igl::doublearea(V_cut, F, doublearea);
+		Eigen::VectorXd area = 0.5 * doublearea;
+		polyscope::init();
+		polyscope::registerSurfaceMesh("original mesh", V_orig_cut, F_uv_orig)
+			->addVertexParameterizationQuantity("uv", uv);
+		polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
+			->addVertexParameterizationQuantity("uv", uv);
+		polyscope::getSurfaceMesh("mesh")
+			->addHalfedgeScalarQuantity("boundary", boundary_edges);
+		polyscope::getSurfaceMesh("mesh")
+			->addFaceScalarQuantity("area", area);
+		polyscope::getSurfaceMesh("original mesh")
+			->addFaceScalarQuantity("components", face_components_orig);
+		polyscope::getSurfaceMesh("mesh")
+			->addFaceScalarQuantity("components", face_components);
+		polyscope::registerSurfaceMesh2D("original uv mesh", uv, F_uv_orig);
+		polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv);
+		polyscope::getSurfaceMesh("original uv mesh")
+			->addFaceScalarQuantity("components", face_components_orig);
+		polyscope::getSurfaceMesh("uv mesh")
+			->addHalfedgeScalarQuantity("boundary", boundary_edges);
+		polyscope::getSurfaceMesh("uv mesh")
+			->addFaceScalarQuantity("components", face_components);
+		polyscope::show();
+		polyscope::removeStructure("mesh");
+		polyscope::removeStructure("uv mesh");
+		polyscope::removeStructure("original mesh");
+		polyscope::removeStructure("original uv mesh");
+	}
 
 	// Build halfedges for the faces
 	std::vector<int> next_he;
@@ -523,8 +636,16 @@ RefinementMesh::build_connectivity(
 			uv_to[hi] = F_uv_orig(ci.first, (ci.second + 2)%3); // offset of 2 as corner is opposite edge
 
 			// Build halfedge refinement points
-			h_v_points[hi] = corner_v_points[ci.first][ci.second];
-			h_uv_points[hi] = corner_uv_points[ci.first][ci.second];
+			h_v_points[hi].insert(
+				h_v_points[hi].end(),
+				corner_v_points[ci.first][ci.second].begin(),
+				corner_v_points[ci.first][ci.second].end()
+			);
+			h_uv_points[hi].insert(
+				h_uv_points[hi].end(),
+				corner_uv_points[ci.first][ci.second].begin(),
+				corner_uv_points[ci.first][ci.second].end()
+			);
 		}
 
 		// FIXME
@@ -532,6 +653,9 @@ RefinementMesh::build_connectivity(
 		//{
 		//	spdlog::info("Face {} has nontrivial refinement", fi);
 		//}
+
+		// Store endpoints
+		m_endpoints = endpoints;
 	}
 
 	// FIXME
@@ -592,12 +716,22 @@ RefinementMesh::refine_mesh()
 	}
 
 	// Refine faces until all are valid
+	std::vector<bool> is_refined(num_faces, false);
 	while (!invalid_faces.empty())
 	{
 		// Get invalid face
 		Index current_face = invalid_faces.top();
 		invalid_faces.pop();
 		spdlog::info("Processing face {}", current_face);
+
+		// Check if face already processed to prevent an infinite loop
+		// NOTE: This should not happen, but may do to floating point error
+		// or invalid inputs
+		if (is_refined[current_face])
+		{
+			spdlog::warn("Attempted to refine face {} twice", current_face);
+			continue;
+		}
 
 		// Get (unique) list of adjacent faces
 		std::set<Index> adjacent_faces;
@@ -609,14 +743,14 @@ RefinementMesh::refine_mesh()
 			adjacent_faces.insert(adjacent_face);
 		}
 
-		// Refine the given face
-		refine_face(current_face);
+		// Refine the given face, marking if it is refined
+		is_refined[current_face] = refine_face(current_face);
 
 		// Check if the adjacent faces are valid
 		// WARNING: Assumes the face indices are fixed
 		for (auto face_index : adjacent_faces)
 		{
-			if (!is_self_overlapping_face(face_index))
+			if ((compute_face_size(face_index) >= 50) || (!is_self_overlapping_face(face_index)))
 			{
 				invalid_faces.push(face_index);
 			}
@@ -624,15 +758,130 @@ RefinementMesh::refine_mesh()
 	}
 }
 
+// Remove the vertex at the tip of the halfedge if possible
+bool
+RefinementMesh::simplify_vertex(
+	Index halfedge_index
+) {
+	// Local halfedges for vertex k
+	Index hik = halfedge_index;
+	Index hki = opp[hik];
+	Index hkj = n[hik];
+	Index hjk = opp[hkj];
+	if (n[hjk] != hki)
+	{
+		spdlog::error("Cannot simplify a vertex that is not valence 2");
+		return false;
+	}
+	Index h_prev = prev[hik];
+	Index ho_next = n[hki];
+
+	// Local vertices
+	Index vi = to[hki];
+	Index vk = to[hik];
+	Index uvjk = uv_to[hjk];
+	Index uvki = uv_to[hki];
+
+	// Local faces 
+	Index f0 = f[hik];
+	Index f1 = f[hki];
+
+	// Do not simplify if the face is too large
+	if ((compute_face_size(f0) >= 50) || (compute_face_size(f1) >= 50))
+	{
+		return false;
+	}
+	
+	// Check validity of current local halfedge information
+	if (
+		   (prev[hkj] != hik)
+		|| (n[h_prev] != hik)
+		|| (prev[ho_next] != hki)
+		|| (n[hjk] != hki)
+		|| (to[hjk] != vk)
+		|| (uv_to[hjk] != uvjk)
+	) {
+		spdlog::error("Invalid halfedge at vertex {}", vk);
+		return false;
+	}
+
+	// Remove the vertex (replace k with j)
+	prev[hkj] = h_prev;
+	n[h_prev] = hkj;
+	prev[ho_next] = hjk;
+	n[hjk] = ho_next;
+	to[hjk] = vi;
+	uv_to[hjk] = uvki;
+
+	// Ensure the face->halfedge map does not reference a removed halfedge
+	h[f0] = hkj; 
+	h[f1] = hjk; 
+
+	// Test for self-overlapping adjacent faces
+	if (!is_self_overlapping_face(f0) || !is_self_overlapping_face(f1))
+	{
+		// Replace the vertex vk if the adjacent faces are no longer self overlapping
+		prev[hkj] = hik;
+		n[h_prev] = hik;
+		prev[ho_next] = hki;
+		n[hjk] = hki;
+		to[hjk] = vk;
+		uv_to[hjk] = uvjk;
+
+		return false;
+	}
+	else
+	{
+		// Set all edge ik information to invalid (should not be necessary, but to be safe)
+		n[hik] = n[hki] = -1;
+		prev[hik] = prev[hki] = -1;
+		to[hik] = to[hki] = -1;
+		f[hik] = f[hki] = -1;
+		uv_to[hik] = uv_to[hki] = -1;
+
+		return true;
+	}
+}
+
+// Simplify mesh by removing inserted vertices until none can be removed
 void
 RefinementMesh::simplify_mesh()
 {
-	// TODO
+	spdlog::info("Simplifying mesh");
+
+	// Initialize record of found vertices
+	int num_inserted_vertices = m_inserted_vertex_halfedges.size();
+	std::vector<bool> is_removed(num_inserted_vertices, false);
+	bool vertex_removed = false;
+
+	// Iterate until no vertices can be removed
+	do
+	{
+		// Loop over all inserted vertices to see if one can be removed
+		vertex_removed = false;
+		for (int i = 0; i < num_inserted_vertices; ++i)
+		{
+			if (is_removed[i]) continue;
+
+			// Attempt to remove a vertex
+			Index hik = m_inserted_vertex_halfedges[i];
+			bool vertex_k_removed = simplify_vertex(hik);
+
+			// Update vertex found query
+			if (vertex_k_removed)
+			{
+				is_removed[i] = true;
+				vertex_removed = true;
+			}
+		}
+	}
+	while (vertex_removed);
 }
 
 // Mesh manipulation
 
-void
+// Refine a halfedge and return true iff it is fully refined
+bool
 RefinementMesh::refine_halfedge(
 	Index halfedge_index
 ) {
@@ -640,7 +889,7 @@ RefinementMesh::refine_halfedge(
 
 	// Get the number of vertices to add (and do nothing if none)
 	int num_new_vertices = h_v_points[halfedge_index].size();
-	if (num_new_vertices == 0) return;
+	if (num_new_vertices == 0) return true;
 	spdlog::trace("Refining edge with {} vertices", num_new_vertices);
 
 	// Get initial next and prev halfedges
@@ -670,20 +919,40 @@ RefinementMesh::refine_halfedge(
 	Index uvki = uvji;
 	for (int k = 0; k < num_new_vertices; ++k)
 	{
+		// Terminate early if face containing the halfedge is small and self overlapping
+		if ((compute_face_size(f0) < 50) && (is_self_overlapping_face(f0)))
+		{
+			return false;
+		}
+
 		// Get new vertex and halfedge indices
 		Index hkj = n.size();
 		Index hjk = hkj + 1;
-		Index vk = h_v_points[hij][k];
-		if (vk != h_v_points[hji][num_new_vertices - 1 - k])
+		Index vk = h_v_points[hij].back(); // Get last vertex so hik can retain halfedge attributes
+		if ((!is_bnd_loop[f1]) && (vk != h_v_points[hji].front()))
 		{
 			spdlog::warn(
 				"Inconsistent halfedge vertices {} and {}",
 				vk,
-				h_v_points[hji][num_new_vertices - 1 - k]
+				h_v_points[hji].front()
 			);
 		}
-		Index uvik = is_bnd_loop[f0] ? -1 : h_uv_points[hij][k];
-		Index uvjk = is_bnd_loop[f1] ? -1 : h_uv_points[hji][num_new_vertices - 1 - k];
+		h_v_points[hij].pop_back();
+		h_v_points[hji].pop_front();
+
+		// Get new uv vertex indices (or -1 for boundary halfedges)
+		Index uvik = -1;
+		if (!is_bnd_loop[f0])
+		{
+			uvik = h_uv_points[hij].back();
+			h_uv_points[hij].pop_back();
+		}
+		Index uvjk = -1;
+		if (!is_bnd_loop[f1])
+		{
+			uvjk = h_uv_points[hji].front();
+			h_uv_points[hji].pop_front();
+		}
 
 		// Update next
 		n.push_back(0);
@@ -734,25 +1003,27 @@ RefinementMesh::refine_halfedge(
 		uv_to[hki] = uvki; 
 
 		// Update halfedge points with trivial data
-		h_v_points.push_back(std::vector<Index>(0));
-		h_v_points.push_back(std::vector<Index>(0));
+		h_v_points.push_back(std::deque<Index>(0));
+		h_v_points.push_back(std::deque<Index>(0));
+		h_uv_points.push_back(std::deque<Index>(0));
+		h_uv_points.push_back(std::deque<Index>(0));
 
-		// Iterate vertex i to k and k to j
-		hik = hkj;
-		hki = hjk;
-		vi = vk;
-		uvki = uvjk;
-		// vj and uvkj do not change
+		// Record halfedge hjk pointing to inserted vk as inserted
+		m_inserted_vertex_halfedges.push_back(hjk);
+
+		// Iterate vertex j to k
+		vj = vk;
+		uvkj = uvik;
+	  next_h = hkj;
+  	prev_ho = hjk;
+		// vi and uvki do not change
 	}
 
-	// Remove halfedge points
-	h_v_points[hij].clear();
-	h_v_points[hji].clear();
-	h_uv_points[hij].clear();
-	h_uv_points[hji].clear();
+	// Fully refined halfedge
+	return true;
 }
 
-void
+bool
 RefinementMesh::refine_face(
 	Index face_index
 ) {
@@ -768,8 +1039,14 @@ RefinementMesh::refine_face(
 	// WARNING Assumes refine_halfedge only changes the halfedge and its opposite
 	for (auto hij: face_halfedges)
 	{
-		refine_halfedge(hij);
+		bool is_halfedge_refined = refine_halfedge(hij);
+
+		// If the halfedge is not fully refined, the face is already WSO
+		if (!is_halfedge_refined) return false;
 	}
+
+	// The face is fully refined if all halfedges are refined
+	return true;
 }
 
 // Mesh predicates
@@ -1028,6 +1305,12 @@ RefinementMesh::is_self_overlapping_face(
 	get_face_uv_vertices(face_index, uv_vertices);
 	get_face_vertices(face_index, vertices);
 
+	if (vertices.size() > 100)
+	{
+		spdlog::warn("Face of size {}", vertices.size());
+		//view_face(face_index);
+	}
+
 	// Determine if the face is self overlapping
 	std::vector<std::vector<bool>> is_self_overlapping_subpolygon;
 	std::vector<std::vector<int>> splitting_vertices;
@@ -1074,6 +1357,14 @@ RefinementMesh::triangulate_face(
 		spdlog::trace("Face vertices are {}", formatted_vector(vertex_indices));
 	}
 
+	// Triangulate the face the same as the overlay if it is too large
+	if (compute_face_size(face_index) >= 50)
+	{
+		face_triangles = m_overlay_face_triangles[face_index];
+		uv_face_triangles = m_overlay_uv_face_triangles[face_index];
+		return true;
+	}
+
 	// Determine if the face is self overlapping
 	std::vector<std::vector<bool>> is_self_overlapping_subpolygon;
 	std::vector<std::vector<int>> splitting_vertices;
@@ -1113,6 +1404,19 @@ RefinementMesh::triangulate_face(
 			face_triangles[fi][j] = vertex_indices[polygon_faces[fi][j]];
 			uv_face_triangles[fi][j] = uv_vertex_indices[polygon_faces[fi][j]];
 		}
+		if (compute_face_area({
+			vertices[polygon_faces[fi][0]],
+			vertices[polygon_faces[fi][1]],
+			vertices[polygon_faces[fi][2]]
+		}) < 1e-8) {
+			spdlog::info(
+				"Degenerate face {}, {}, {} in polygon {}",
+				polygon_faces[fi][0],
+				polygon_faces[fi][1],
+				polygon_faces[fi][2],
+				formatted_vector(vertices)
+			);
+		} // FIXME
 	}
 
 	// Optionally view the triangulated face
@@ -1199,6 +1503,17 @@ bool RefinementMesh::is_valid_refinement_mesh() const
 	int num_halfedges = n_halfedges();
 	for (int hij = 0; hij < num_halfedges; ++hij)
 	{
+		// Skip invalidated halfedges if they are not corrupted
+		if (n[hij] == -1)
+		{
+			if ((prev[hij] != -1) || (prev[hij] != -1) || (to[hij] != -1) || (f[hij] != -1))
+			{
+				spdlog::error("invalid halfedge corrupted");
+				return false;
+			}
+			continue;
+		}
+
 		// Check next and prev are inverse
 		if ((n[prev[hij]] != hij) || (prev[n[hij]] != hij))
 		{
@@ -1259,12 +1574,17 @@ RefinementMesh::view_original_mesh() const
 	Eigen::MatrixXi F;
 	Eigen::MatrixXd uv;
 	Eigen::MatrixXi F_uv;
-	get_VF_mesh(V, F, uv, F_uv);
+	std::vector<int> Fn_to_F;
+	std::vector<std::pair<int,int>> endpoints;
+	get_VF_mesh(V, F, uv, F_uv, Fn_to_F, endpoints);
 
   // Get the flipped elements
   Eigen::VectorXi flipped_f;
   igl::flipped_triangles(uv, F_uv, flipped_f);
   spdlog::info("{} flipped elements", flipped_f.size());
+	Eigen::VectorXd doublearea;
+	igl::doublearea(V, F, doublearea);
+	Eigen::VectorXd area = 0.5 * doublearea;
 
 	// Cut mesh
 	Eigen::MatrixXd V_cut;
@@ -1274,6 +1594,14 @@ RefinementMesh::view_original_mesh() const
 	polyscope::registerSurfaceMesh("original mesh", V_cut, F_uv)
 		->addVertexParameterizationQuantity("uv", uv);
 	polyscope::registerSurfaceMesh2D("layout mesh", uv, F_uv);
+
+	// Add Fn_to_F map
+	polyscope::getSurfaceMesh("original mesh")
+		->addFaceScalarQuantity("face map", Fn_to_F);
+	polyscope::getSurfaceMesh("original mesh")
+		->addFaceScalarQuantity("area", area);
+	polyscope::getSurfaceMesh("layout mesh")
+		->addFaceScalarQuantity("face map", Fn_to_F);
 
 	// Show meshes
 	polyscope::show();

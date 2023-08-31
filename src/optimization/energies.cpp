@@ -735,11 +735,11 @@ compute_weighted_norm(
   const VectorX &weights,
   const VectorX &values
 ) {
-  size_t num_values = values.size();
+  int num_values = values.size();
   assert( weights.size() == num_values );
 
   Scalar weighted_norm = 0;
-  for (size_t i = 0; i < num_values; ++i)
+  for (int i = 0; i < num_values; ++i)
   {
     weighted_norm += weights[i] * values[i] * values[i];
   }
@@ -753,11 +753,11 @@ compute_kronecker_product(
   const VectorX &second_vector,
   VectorX &product_vector
 ) {
-  size_t vector_size = first_vector.size();
+  int vector_size = first_vector.size();
   assert( second_vector.size() == vector_size );
 
   product_vector.resize(vector_size);
-  for (size_t i = 0; i < vector_size; ++i)
+  for (int i = 0; i < vector_size; ++i)
   {
     product_vector[i] = first_vector[i] * second_vector[i];
   }

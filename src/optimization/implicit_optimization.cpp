@@ -10,6 +10,7 @@
 #include "logging.hh"
 #include "projection.hh"
 #include "nonlinear_optimization.hh"
+#include <igl/timer.h>
 
 /// FIXME Do cleaning pass
 
@@ -43,6 +44,7 @@ initialize_data_log(
 
   // Write header
   output_file << "num_iter,";
+  output_file << "time,";
   output_file << "step_size,";
   output_file << "energy,";
   output_file << "max_error,";
@@ -51,6 +53,7 @@ initialize_data_log(
   output_file << "max_total_change_in_metric_coords,";
   output_file << "actual_to_unconstrained_direction_ratio,";
   output_file << "max_constrained_descent_direction,";
+  output_file << "num_linear_solves,";
   output_file << std::endl;
 
   // Close file
@@ -191,6 +194,7 @@ write_data_log_entry(
 
   // Write iteration row
   output_file << log.num_iterations << ",";
+  output_file << std::fixed << std::setprecision(17) << log.time << ",";
   output_file << std::fixed << std::setprecision(17) << log.beta << ",";
   output_file << std::fixed << std::setprecision(17) << log.energy << ",";
   output_file << std::fixed << std::setprecision(17) << log.error << ",";
@@ -199,6 +203,7 @@ write_data_log_entry(
   output_file << std::fixed << std::setprecision(17) << log.max_total_change_in_metric_coords << ",";
   output_file << std::fixed << std::setprecision(17) << log.actual_to_unconstrained_direction_ratio << ",";
   output_file << std::fixed << std::setprecision(17) << log.max_constrained_descent_direction << ",";
+  output_file << log.num_linear_solves << ",";
   output_file << std::endl;
 
   // Close file
@@ -276,7 +281,7 @@ constrain_descent_direction(const Mesh<Scalar>& m,
                             const OptimizationParameters& opt_params,
                             VectorX& projected_descent_direction)
 {
-  size_t num_reduced_edges = reduction_maps.num_reduced_edges;
+  int num_reduced_edges = reduction_maps.num_reduced_edges;
   assert(reduced_metric_coords.size() == num_reduced_edges);
   assert(descent_direction.size() == num_reduced_edges);
 
@@ -682,6 +687,7 @@ line_search_with_projection(const Mesh<Scalar>& m,
                             const EnergyFunctor& opt_energy,
                             Scalar& beta,
                             Scalar& convergence_ratio,
+                            int& num_linear_solves,
                             VectorX& reduced_line_step_metric_coords,
                             VectorX& u,
                             VectorX& reduced_metric_coords)
@@ -765,13 +771,15 @@ line_search_with_projection(const Mesh<Scalar>& m,
     // Project to the constraint
     u.setZero(m.n_ind_vertices());
     VectorX metric_coords;
-    project_to_constraint(m,
+    auto projection_out = project_to_constraint(m,
                           reduced_line_step_metric_coords,
                           reduced_metric_coords,
                           u,
                           proj_params);
     expand_reduced_function(
       reduction_maps.proj, reduced_metric_coords, metric_coords);
+    SolveStats<Scalar> solve_stats = std::get<1>(projection_out);
+    num_linear_solves += solve_stats.n_solves;
 
     // Check if the projection was successful and reduce beta if not
     bool projection_success = check_projection_success(
@@ -929,6 +937,9 @@ optimize_metric_log(const Mesh<Scalar>& m,
       constrained_descent_direction;
   VectorX prev_gradient(0);
   VectorX prev_descent_direction(0);
+  igl::Timer timer;
+  timer.start();
+  int num_linear_solves = 0;
   for (int iter = 0; iter < num_iter; ++iter) {
     spdlog::get("optimize_metric")->info("\nStarting Iteration {}", iter);
 
@@ -957,6 +968,7 @@ optimize_metric_log(const Mesh<Scalar>& m,
         opt_energy,
         constrained_descent_direction
       );
+      num_linear_solves++; // TODO Would be better to have near solver code
     }
     else
     {
@@ -966,6 +978,7 @@ optimize_metric_log(const Mesh<Scalar>& m,
                                   reduction_maps,
                                   *opt_params,
                                   constrained_descent_direction);
+      num_linear_solves++; // TODO Would be better to have near solver code
     }
     spdlog::get("optimize_metric")->info("Constrained descent direction found with norm {}", constrained_descent_direction.norm());
 
@@ -990,6 +1003,7 @@ optimize_metric_log(const Mesh<Scalar>& m,
                                 opt_energy,
                                 beta,
                                 convergence_ratio,
+                                num_linear_solves,
                                 reduced_line_step_metric_coords,
                                 u,
                                 updated_reduced_metric_coords);
@@ -997,6 +1011,8 @@ optimize_metric_log(const Mesh<Scalar>& m,
     // Write iteration data if output directory specified
     log.num_iterations = iter;
     log.beta = beta;
+    log.time = timer.getElapsedTime();
+    log.num_linear_solves = num_linear_solves;
     update_data_log(log,
                     m,
                     reduction_maps,

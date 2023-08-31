@@ -2906,3 +2906,217 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
   return std::make_tuple(_u_c, _v_c, is_cut_c, _u_o, _v_o, is_cut_o);
   
 }
+
+// optimization_layout
+
+std::tuple<std::vector<std::vector<Scalar>>, // V_out
+           std::vector<std::vector<int>>,    // F_out
+           std::vector<Scalar>,              // layout u (per vertex)
+           std::vector<Scalar>,              // layout v (per vertex)
+           std::vector<std::vector<int>>,    // FT_out
+           std::vector<bool>,                // is_cut
+           std::vector<bool>,                // is_cut_o
+           std::vector<int>,                 // Fn_to_F
+           std::vector<std::pair<int, int>>  // endpoints
+           >
+parametrize_mesh(const Eigen::MatrixXd& V,
+                 const Eigen::MatrixXi& F,
+                 const std::vector<Scalar>& Theta_hat,
+                 const Mesh<Scalar> &m,
+                 const std::vector<int>& vtx_reindex,
+                 const VectorX reduced_metric_coords)
+{
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
+  // Build refl projection and embedding
+  std::vector<int> proj;
+  std::vector<int> embed;
+  build_refl_proj(m, proj, embed);
+
+  // Get initial penner coordinates for the mesh
+  VectorX reduced_metric_init;
+  std::vector<int> flip_sequence;
+  compute_penner_coordinates(V, F, Theta_hat, reduced_metric_init, flip_sequence);
+
+  // Expand metric coordinates to the full mesh
+	int num_edges = e2he.size();
+  VectorX metric_coords(num_edges);
+  VectorX metric_init(num_edges);
+  for (int e = 0; e < num_edges; ++e)
+  {
+    metric_coords[e] = reduced_metric_coords[proj[e]];
+    metric_init[e] = reduced_metric_init[proj[e]];
+  }
+
+  // Expand metric coordinates to halfedges
+	int num_halfedges = he2e.size();
+  VectorX he_metric_coords(num_halfedges);
+  VectorX he_metric_init(num_halfedges);
+  for (int h = 0; h < num_halfedges; ++h)
+  {
+    he_metric_coords[h] = metric_coords[he2e[h]];
+    he_metric_init[h] = metric_init[he2e[h]];
+  }
+
+  // Remove fit scale factors to reduce numerical instability
+  VectorX scale_factors = best_fit_conformal(m, metric_init, metric_coords);
+  MatrixX B = conformal_scaling_matrix(m);
+  VectorX metric_scaled = metric_coords - B * scale_factors;
+  VectorX he_metric_scaled(num_halfedges);
+  for (int h = 0; h < num_halfedges; ++h)
+  {
+    he_metric_scaled[h] = metric_scaled[he2e[h]];
+  }
+
+  // Interpolate coordinates
+  InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
+  interpolate_penner_coordinates(
+    m,
+    he_metric_scaled,
+    scale_factors,
+    interpolation_mesh,
+    reverse_interpolation_mesh
+  );
+
+  // Get interpolated vertex positions
+  Eigen::MatrixXd V_overlay;
+  interpolate_vertex_positions(
+    V,
+    vtx_reindex,
+    interpolation_mesh,
+    reverse_interpolation_mesh,
+    V_overlay
+  );
+
+  // Convert overlay vertices to transposed array form
+  std::vector<std::vector<Scalar>> V_overlay_vec(V_overlay.cols());
+  for (Eigen::Index i = 0; i < V_overlay.cols(); ++i)
+  {
+    V_overlay_vec[i].resize(V_overlay.rows());
+    for (Eigen::Index j = 0; j < V_overlay.cols(); ++j)
+    {
+      V_overlay_vec[i][j] = V_overlay(j, i);
+    }
+  }
+
+  // Get tufted overlay mesh
+  OverlayMesh<Scalar> mo = interpolation_mesh.get_overlay_mesh();
+  make_tufted_overlay(mo, V, F, Theta_hat);
+
+  // Get endpoints
+  std::vector<std::pair<int, int>> endpoints;
+  find_origin_endpoints(mo, endpoints);
+
+  // Convert scale factors to vector
+  std::vector<Scalar> u;
+  convert_eigen_to_std_vector(scale_factors, u);
+
+  // Convert overlay to VL
+  std::vector<int> vtx_reindex_mutable = vtx_reindex;
+  return overlay_mesh_to_VL<Scalar>(
+    V,
+    F,
+    Theta_hat,
+    mo,
+    u,
+    V_overlay_vec,
+    vtx_reindex_mutable,
+    endpoints,
+    -1
+  );
+}
+
+// Helper function to triangulate a polygon mesh
+// WARNING: This only updates the topology and will generally invalidate the lengths
+void triangulate_mesh(Mesh<Scalar>& m) {
+    int n_f0 = m.n_faces();
+    for(int f = 0; f < n_f0; f++){
+        int n_f = m.n_faces();
+        int h0 = m.h[f];
+        int hc = h0;
+        std::vector<int> hf;
+        do{
+            hf.push_back(hc);
+            hc = m.n[hc];
+        }while(h0 != hc);
+        int face_size = hf.size();
+        if(face_size == 3) continue;
+        spdlog::debug("triangulate face {}, #e {}", f, face_size);
+        int N = hf.size();
+        int n_new_f = N-3;
+        int n_new_he = 2*(N-3);
+        int n_he = m.n.size();
+        m.n.resize(n_he   + n_new_he);
+        m.to.resize(n_he  + n_new_he);
+        m.opp.resize(n_he + n_new_he);
+        m.l.resize(n_he + n_new_he);
+        m.f.resize(n_he + n_new_he);
+        m.h.resize(n_f + n_new_f);
+        m.n[n_he] = hf[0];
+        m.n[hf[1]] = n_he;
+        m.opp[n_he] = n_he+1;
+        m.to[n_he] = m.to[hf.back()];
+        m.h[f] = n_he;
+        m.f[n_he] = f;
+        assert(hf.back() < m.to.size() && hf[0] < m.to.size());
+        m.l[n_he] = 0.0; // Set invalid 0 length
+        for(int k = 1; k < 2*(N-3); k++){
+            if(k%2 == 0){
+                m.n[n_he+k] = n_he+k-1;
+                m.opp[n_he+k] = n_he+k+1;
+                m.to[n_he+k] = m.to[hf.back()];
+                m.l[n_he+k] = 0.0; // Set invalid 0 length
+                m.f[n_he+k] = n_f+k/2-1;
+                m.h[n_f+k/2-1] = n_he+k;
+            }else{
+                m.n[n_he+k] = hf[(k-1)/2+2];
+                if((k-1)/2+2 != face_size-2)
+                    m.n[hf[(k-1)/2+2]] = n_he+k+1;
+                m.opp[n_he+k] = n_he+k-1;
+                m.to[n_he+k] = m.to[m.n[m.n[m.opp[n_he+k]]]];
+                m.l[n_he+k] = 0.0; // Set invalid 0 length
+                m.f[n_he+k] = n_f+(k+1)/2-1;
+                m.h[n_f+(k+1)/2-1] = n_he+k;
+                m.f[m.n[n_he+k]] = n_f+(k+1)/2-1;
+            }                
+        }
+        m.n[hf.back()] = n_he + n_new_he - 1;
+        m.f[hf.back()] = n_f + n_new_f - 1;
+    }
+}
+
+bool
+is_valid_layout(
+  const OverlayMesh<Scalar>& mo,
+  const std::vector<bool> &is_cut_o,
+  const Eigen::MatrixXd& V,
+  const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv
+) {
+  // Check consistency of uv lengths across cuts
+  check_uv(V, F, uv, F_uv);
+  // TODO
+
+  // Check for inverted elements
+  // TODO
+
+  // Triangulate the overlay mesh
+  Mesh<Scalar> m(mo);
+  triangulate_mesh(m);
+  
+  // Get cut edges for the triangulated mesh (new edges are not cut)
+  std::vector<bool> is_cut_tri(m.n_halfedges(), false);
+  for (int h = 0; h < mo.n_halfedges(); ++h)
+  {
+    is_cut_tri[h] = is_cut_o[h];
+  }
+
+  // Check if the cuts agree with the is_cut mask
+  // TODO May not be feasible to do reasonably; the face correspondence is lost
+  return false;
+
+}

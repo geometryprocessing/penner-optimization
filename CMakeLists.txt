@@ -24,6 +24,7 @@ option(RENDER_TEXTURE                  "Render results"     ON)
 option(LIBIGL_OPENGL            "Use OpenGL"         ON)
 option(LIBIGL_GLFW              "Use GLFW"           ON)
 option(LIBIGL_PNG               "Use PNG"            ON)
+option(LIBIGL_EMBREE              "Use EMBREE"         ON)
 
 if (USE_MULTIPRECISION)
   # Turning this on activates mpfr in the conformal code
@@ -136,7 +137,3 @@ if (NOT USE_MULTIPRECISION)
     )
   endif()
 endif()
-
-# Needed for simplification method
-include(mesh_simplification)
-

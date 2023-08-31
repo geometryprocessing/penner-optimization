@@ -21,7 +21,7 @@ import optimize_impl.targets as targets
 # TODO Generate version of this script for direct minimal refinement method; save original mesh cut and fn_to_f
 # TODO Make command line interface that does full optimization and uv generation (leave rendering and analysis separate)
 
-def add_convert_to_vf_arguments(parser):
+def add_overlay_arguments(parser):
     parser.add_argument("-o",  "--output_dir",
                         help="directory for output lambdas and logs")
     parser.add_argument("--suffix",
@@ -33,7 +33,7 @@ def add_convert_to_vf_arguments(parser):
 
 
 
-def convert_to_vf_one(args, fname):
+def overlay_one(args, fname):
     # Get mesh and test name
     dot_index = fname.rfind(".")
     m = fname[:dot_index] 
@@ -121,8 +121,8 @@ def convert_to_vf_one(args, fname):
             lambdas,
             True
         )
-        C_o,v_o, f_o, uvt_o, ft_o, is_cut_h, is_cut_o, fn_to_f, endpoints = parametrize_res
-        C = C_o._m
+        C_o, v_o, f_o, uvt_o, ft_o, is_cut_h, is_cut_o, fn_to_f, endpoints = parametrize_res
+        # C = C_o._m FIXME
 
     # Check uvs are consistent
     if not opt.check_uv(v_o, f_o, uvt_o, ft_o):
@@ -139,6 +139,7 @@ def convert_to_vf_one(args, fname):
     np.savetxt(simp_path, is_cut_h)
 
     # Save cut to singularity information
+    # TODO Generate this from file data instead of pickle
     cut_to_sin_list = render.add_cut_to_sin(C.n, C.opp, C.to, cones, C.type, is_cut_h, vtx_reindex, build_double)
     simp_path = os.path.join(output_dir, name + '_cut_to_sin_list.pickle')
     logger.info("Saving cut to singularity information at {}".format(simp_path))
@@ -149,6 +150,10 @@ def convert_to_vf_one(args, fname):
     with open(simp_path, 'wb') as file:
         pickle.dump(cut_to_sin_list, file)
     simp_path = os.path.join(output_dir, name + '_simplified_with_uv_cut_to_sin_list.pickle')
+    logger.info("Saving cut to singularity information at {}".format(simp_path))
+    with open(simp_path, 'wb') as file:
+        pickle.dump(cut_to_sin_list, file)
+    simp_path = os.path.join(output_dir, name + '_refined_with_uv_cut_to_sin_list.pickle')
     logger.info("Saving cut to singularity information at {}".format(simp_path))
     with open(simp_path, 'wb') as file:
         pickle.dump(cut_to_sin_list, file)
@@ -177,17 +182,17 @@ def convert_to_vf_one(args, fname):
 
 
 
-def convert_to_vf_many(args):
-    script_util.run_many(convert_to_vf_one, args)
+def overlay_many(args):
+    script_util.run_many(overlay_one, args)
 
 
 if __name__ == "__main__":
     # Parse arguments for the script 
-    parser = script_util.generate_parser("Convert mesh to VF representation")
-    add_convert_to_vf_arguments(parser)
+    parser = script_util.generate_parser("Build overlay mesh parameterization")
+    add_overlay_arguments(parser)
     args = vars(parser.parse_args())
 
     # Run method in parallel
-    convert_to_vf_many(args)
+    overlay_many(args)
 
 

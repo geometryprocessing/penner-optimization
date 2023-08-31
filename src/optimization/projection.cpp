@@ -42,7 +42,7 @@ conformal_scaling_matrix(const Mesh<Scalar>& m)
   return B;
 }
 
-void
+std::tuple<std::vector<int>, SolveStats<Scalar>>
 project_to_constraint(
   const Mesh<Scalar>& m,
   const VectorX& reduced_metric_coords,
@@ -95,6 +95,8 @@ project_to_constraint(
 
   // Update u with conformal output
   u = std::get<0>(conformal_out);
+  std::vector<int> flip_seq = std::get<1>(conformal_out);
+  SolveStats<Scalar> solve_stats = std::get<2>(conformal_out);
 
   // Conformally scale edge lengths and obtain log lengths for the embedded mesh
   reduced_metric_coords_proj.resize(reduced_metric_coords.size());
@@ -105,6 +107,8 @@ project_to_constraint(
     reduced_metric_coords_proj[E] =
       reduced_metric_coords[E] + (u[m.v_rep[m.to[h0]]] + u[m.v_rep[m.to[h1]]]);
   }
+
+  return std::make_tuple(flip_seq, solve_stats);
 }
 
 //bool

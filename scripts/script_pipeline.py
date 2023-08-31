@@ -6,8 +6,9 @@ import numpy as np
 import script_util
 import script_optimize
 import script_optimize_shear
-import script_convert_to_vf
+import script_overlay
 import script_simplify_vf
+import script_refine
 import script_render_uv
 import script_slim
 import script_energy_table
@@ -97,11 +98,11 @@ if __name__ == "__main__":
                 
                 # Run method
                 script_interpolate.interpolate_many(args)
-        if ((method == 'convert_to_vf') or (method == 'vf_pipeline')):
+        if ((method == 'overlay') or (method == 'vf_pipeline')):
             for args_spec in args_list:
                 # Get default arguments for conversion
                 parser_method = script_util.generate_parser()
-                script_convert_to_vf.add_convert_to_vf_arguments(parser_method)
+                script_overlay.add_overlay_arguments(parser_method)
                 args_default = vars(parser_method.parse_args(""))
 
                 # Overwrite arguments 
@@ -109,8 +110,21 @@ if __name__ == "__main__":
                 args = script_util.overwrite_args(args_default, args_spec)
                 
                 # Run method
-                script_convert_to_vf.convert_to_vf_many(args)
-        if ((method == 'simplify_vf') or (method == 'vf_pipeline')):
+                script_overlay.overlay_many(args)
+        if ((method == 'refine') or (method == 'vf_pipeline')):
+            for args_spec in args_list:
+                # Get default arguments for simplification
+                parser_method = script_util.generate_parser()
+                script_refine.add_refine_arguments(parser_method)
+                args_default = vars(parser_method.parse_args(""))
+
+                # Overwrite arguments 
+                args = script_util.overwrite_args(args_default, global_args)
+                args = script_util.overwrite_args(args_default, args_spec)
+
+                # Run method
+                script_refine.refine_many(args)
+        if (method == 'simplify_vf'):
             for args_spec in args_list:
                 # Get default arguments for simplification
                 parser_method = script_util.generate_parser()
@@ -162,7 +176,7 @@ if __name__ == "__main__":
 
                 # Run method
                 script_error_table.error_table(args)
-        if (method == 'colormap_histogram'):
+        if ((method == 'colormap_histogram') or (method == 'uv_analysis_pipeline')):
             for args_spec in args_list:
                 # Get default arguments for method
                 parser_method = script_util.generate_parser()

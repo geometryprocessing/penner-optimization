@@ -23,9 +23,8 @@ conformal_scaling_matrix(const Mesh<Scalar>& m);
 /// @param[in, out] u: initial conformal scale factors and final scale factors
 /// @param[in] proj_params: projection parameters to pass to the conformal
 /// method
-/// @return log edge lengths for the embedded original mesh that satisfy the
-/// angle constraints to some precision defined by the proj_params
-void
+/// @return flip sequence and solve statistics for the conformal projection
+std::tuple<std::vector<int>, SolveStats<Scalar>>
 project_to_constraint(
   const Mesh<Scalar>& m,
   const VectorX& reduced_metric_coords,

@@ -4,6 +4,7 @@
 #include "logging.hh"
 #include "optimization_interface.hh"
 #include "targets.hh"
+#include "refinement.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 using namespace CurvatureMetric;
@@ -65,18 +66,7 @@ int main(int argc, char *argv[])
 	auto proj_params = std::make_shared<ProjectionParameters>();
 	auto opt_params = std::make_shared<OptimizationParameters>();
 	opt_params->output_dir = output_dir;
-	opt_params->num_iter = 500;
-	opt_params->min_ratio = 0;
-	//opt_params->energy_choice = "default";
-	opt_params->use_checkpoints = true;
-	opt_params->max_beta = 1.0;
-	//opt_params->max_grad_range = 10.0;
-	opt_params->max_energy_incr = 1e-8;
-	opt_params->require_energy_decr = true;
-	//opt_params->require_energy_decr = false;
-	opt_params->require_gradient_proj_negative = true;
-	//proj_params->error_eps = 1e-12;
-	opt_params->direction_choice = "conjugate_gradient";
+	opt_params->num_iter = 5;
 
 	// Optimize the metric
 	VectorX optimized_reduced_metric_coords;
@@ -89,6 +79,45 @@ int main(int argc, char *argv[])
 
 	// Write the output
 	std::string output_filename = join_path(output_dir, "reduced_optimized_metric_coords");
-	write_vector(optimized_reduced_metric_coords, output_filename, 80);
+	write_vector(optimized_reduced_metric_coords, output_filename, 17);
+
+	// Generate overlay VF mesh with parametrization
+	bool do_best_fit_scaling = false;
+	auto vf_res = generate_VF_mesh_from_metric(
+		V,
+		F,
+		Th_hat,
+		m,
+		vtx_reindex,
+		reduced_metric_target,
+		optimized_reduced_metric_coords,
+		do_best_fit_scaling
+	);
+  OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
+  Eigen::MatrixXd V_o = std::get<1>(vf_res);
+  Eigen::MatrixXi F_o = std::get<2>(vf_res);
+  Eigen::MatrixXd uv_o = std::get<3>(vf_res);
+  Eigen::MatrixXi FT_o = std::get<4>(vf_res);
+  std::vector<int> fn_to_f_o = std::get<7>(vf_res);
+  std::vector<std::pair<int,int>> endpoints_o = std::get<8>(vf_res);
+
+	// Write the overlay output
+	output_filename = join_path(output_dir, "overlay_mesh_with_uv.obj");
+	write_obj_with_uv(output_filename, V_o, F_o, uv_o, FT_o);
+
+	// Get refinement mesh
+	// Build mesh
+	Eigen::MatrixXd V_r;
+	Eigen::MatrixXi F_r;
+	Eigen::MatrixXd uv_r;
+	Eigen::MatrixXi FT_r;
+	std::vector<int> fn_to_f_r;
+	std::vector<std::pair<int,int>> endpoints_r;
+	RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
+	refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+
+	// Write the refined output
+	output_filename = join_path(output_dir, "refined_mesh_with_uv.obj");
+	write_obj_with_uv(output_filename, V_r, F_r, uv_r, FT_r);
 }
 

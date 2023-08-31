@@ -119,7 +119,7 @@ consistent_overlay_mesh_to_VL(
                    std::vector<std::vector<Scalar>>& V_overlay,
                    std::vector<int>& vtx_reindex,
                    std::vector<std::pair<int, int>>& endpoints,
-									 std::vector<bool>& is_cut);
+									 const std::vector<bool>& is_cut);
 
 #ifdef PYBIND
 std::vector<Scalar>

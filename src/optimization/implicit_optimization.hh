@@ -13,6 +13,7 @@ namespace CurvatureMetric {
 struct
 OptimizationLog {
   int num_iterations; // Number of iterations so far
+  Scalar time; // Step size
   Scalar beta; // Step size
   Scalar energy; // Energy
   Scalar error; // Max angle constraint error
@@ -22,6 +23,7 @@ OptimizationLog {
   Scalar max_total_change_in_metric_coords; // Maximum change per edge from the target coordinates
   Scalar actual_to_unconstrained_direction_ratio; // Ratio of change in coordinates to the unconstrained direction
   Scalar max_constrained_descent_direction; // Maximum per edge constrained descent direction
+  int num_linear_solves; // Number of iterations so far
 };
 
 /// Compute the convergence ratio for implicit optimization from the unconstrained and

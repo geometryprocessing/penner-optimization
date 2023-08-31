@@ -576,6 +576,11 @@ InterpolationMesh::make_delaunay(std::vector<int> &flip_sequence)
   ConformalIdealDelaunay<Scalar>::MakeDelaunay(
     m_overlay_mesh, m_scale_factors, del_stats, solve_stats, use_ptolemy_flip);
 	m_overlay_mesh.garbage_collection();
+	// FIXME
+  if (!overlay_has_all_original_halfedges(m_overlay_mesh))
+  {
+    spdlog::error("Overlay mesh is missing an original edge");
+  }
 
 	// Get flip sequence
 	flip_sequence = del_stats.flip_seq;
@@ -923,6 +928,33 @@ bool InterpolationMesh::are_valid_halfedge_translations(const VectorX &halfedge_
 
 	return true;
 }
+
+bool
+overlay_has_all_original_halfedges(
+  OverlayMesh<Scalar>& mo
+) {
+  std::vector<bool> has_original_halfedge(mo.cmesh().n_halfedges(), false);
+    for (int hi = 0; hi < mo.n_halfedges(); ++ hi)
+    {
+        if (mo.n[hi] == -1) continue; // Deleted halfedge
+        if (mo.edge_type[hi] == ORIGINAL_EDGE)
+        {
+            has_original_halfedge[mo.origin_of_origin[hi]] = true;
+        }
+        else if (mo.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE)
+        {
+            has_original_halfedge[mo.origin_of_origin[hi]] = true;
+        }
+    }
+  int num_missing_original_halfedges = std::count(
+    has_original_halfedge.begin(),
+    has_original_halfedge.end(),
+    false
+  );
+
+  return (num_missing_original_halfedges == 0);
+}
+
 
 
 #ifdef PYBIND

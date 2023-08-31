@@ -784,6 +784,64 @@ count_components(
 	return face_components.maxCoeff() + 1;
 }
 
+/// Given a face index matrix, reindex the vertex indices to removed unreferenced
+/// vertex indices in O(|F|) time.
+///
+/// Note that libigl has function with similar behavior, but it is a O(|V| + |F|)
+/// algorithm due to their bookkeeping method
+///
+/// @param[in] F: initial mesh faces
+/// @param[out] FN: reindexed mesh faces
+/// @param[out] new_to_old_map: map from new to old vertex indices
+/// @return number of connected components
+inline void
+remove_unreferenced(
+  const Eigen::MatrixXi& F,
+  Eigen::MatrixXi& FN,
+  std::vector<int>& new_to_old_map
+) {
+  int num_faces = F.rows();
+
+  // Iterate over faces to find all referenced vertices in sorted order
+  std::vector<int> referenced_vertices;
+  for (int fi = 0; fi < num_faces; ++fi)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      int vk = F(fi, j);
+      referenced_vertices.push_back(vk);
+    }
+  }
+
+  // Make the list of referenced vertices sorted and unique
+  std::sort(referenced_vertices.begin(), referenced_vertices.end());
+  auto last_sorted = std::unique(referenced_vertices.begin(), referenced_vertices.end()); 
+
+  // Get the new to old map from the sorted referenced vertices list
+  new_to_old_map.assign(referenced_vertices.begin(), last_sorted);
+
+  // Build a (compact) map from old to new vertices
+  int num_vertices = new_to_old_map.size();
+  std::unordered_map<int, int> old_to_new_map;
+  for (int k = 0; k < num_vertices; ++k)
+  {
+    int vk = new_to_old_map[k];
+    old_to_new_map[vk] = k;
+  }
+
+  // Reindex the vertices in the face list
+  FN.resize(num_faces, 3);
+  for (int fi = 0; fi < num_faces; ++fi)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      int vk = F(fi, j);
+      int k = old_to_new_map[vk];
+      FN(fi, j) = k;
+    }
+  }
+}
+
 /// Given a mesh with a parametrization, cut the mesh along the parametrization seams to
 /// create a vertex set corresponding to the faces of the uv domain.
 ///
