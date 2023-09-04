@@ -1,6 +1,8 @@
 #include "viewers.hh"
 #include <igl/flipped_triangles.h>
+#if ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"
+#endif // ENABLE_VISUALIZATION
 
 namespace CurvatureMetric {
 
@@ -31,6 +33,7 @@ view_flipped_triangles(
     spdlog::info("Face {}: {} is flipped", fi, F_uv.row(fi));
   }
 
+#if ENABLE_VISUALIZATION
   // Add the mesh and uv mesh with flipped element maps
   polyscope::init();
 	polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
@@ -40,6 +43,7 @@ view_flipped_triangles(
 	polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv)
     ->addFaceScalarQuantity("is_flipped", is_flipped);
   polyscope::show();
+#endif // ENABLE_VISUALIZATION
 }
 
 }

@@ -4100,3 +4100,45 @@ build_refl_matrix_pybind(const Mesh<Scalar>& m)
 	//Connectivity C_uv;
 	//FV_to_NOB(F_uv_orig, next_he_uv, opp_uv, bnd_loops_uv, vtx_reindex_uv, corner_to_he_uv, he_to_corner_uv);
 	//NOB_to_connectivity(next_he_uv, opp_uv, bnd_loops_uv, C_uv);
+
+		// Open viewer
+
+		polyscope::init();
+		
+		polyscope::registerPointCloud("face vertices", vertices);
+		polyscope::registerSurfaceMesh("face mesh", m_V, face_triangles);
+		polyscope::show();
+		polyscope::removeStructure("face mesh");
+		polyscope::removeStructure("face vertices");
+
+		// Print faces
+		for (int fi = 0; fi < num_polygon_faces; ++fi)
+		{
+			spdlog::trace(
+				"Layout face {} is {}, {}, {}",
+				fi,
+				uv_face_triangles[fi][0],
+				uv_face_triangles[fi][1],
+				uv_face_triangles[fi][2]
+			);
+		}
+
+		polyscope::registerPointCloud2D("face layout vertices", uv_vertices);
+		polyscope::registerSurfaceMesh2D("face layout mesh", m_uv, uv_face_triangles);
+		polyscope::show();
+		polyscope::removeStructure("face layout mesh");
+		polyscope::removeStructure("face layout vertices");
+    
+		if (compute_face_area({
+			vertices[polygon_faces[fi][0]],
+			vertices[polygon_faces[fi][1]],
+			vertices[polygon_faces[fi][2]]
+		}) < 1e-8) {
+			spdlog::trace(
+				"Degenerate face {}, {}, {} in polygon {}",
+				polygon_faces[fi][0],
+				polygon_faces[fi][1],
+				polygon_faces[fi][2],
+				formatted_vector(vertices)
+			);
+		} // FIXME

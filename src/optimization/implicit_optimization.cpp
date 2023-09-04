@@ -10,7 +10,7 @@
 #include "logging.hh"
 #include "projection.hh"
 #include "nonlinear_optimization.hh"
-#include <igl/timer.h>
+#include <igl/Timer.h>
 
 /// FIXME Do cleaning pass
 

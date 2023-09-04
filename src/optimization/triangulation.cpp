@@ -1,7 +1,5 @@
 #include "refinement.hh"
 #include "area.hh"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/point_cloud.h"
 #include "viewers.hh"
 #include <igl/is_vertex_manifold.h>
 #include <igl/is_edge_manifold.h>
@@ -13,6 +11,11 @@
 #include <igl/doublearea.h>
 #include <stack>
 #include <set>
+
+#if ENABLE_VISUALIZATION
+#include "polyscope/surface_mesh.h"
+#include "polyscope/point_cloud.h"
+#endif
 
 /// FIXME Do cleaning pass
 
@@ -259,5 +262,64 @@ triangulate_self_overlapping_polygon(
 		faces.clear();
 	}
 }
+
+// Helper function to view the triangulated face
+void
+view_triangulation(
+	const std::vector<VectorX>& uv_vertices,
+	const std::vector<VectorX>& vertices,
+	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
+	const std::vector<std::vector<int>>& splitting_vertices,
+	const std::vector<std::vector<Scalar>>& min_face_areas,
+	const std::vector<std::array<int, 3>>& faces
+)
+{
+	spdlog::trace("uv_vertices: {}", formatted_vector(uv_vertices));
+	spdlog::trace("vertices: {}", formatted_vector(vertices));
+	spdlog::trace("SO table");
+	for (size_t i = 0; i < is_self_overlapping_subpolygon.size(); ++i)
+	{
+		spdlog::trace("row {}: {}", i, formatted_vector(is_self_overlapping_subpolygon[i]));
+	}
+	spdlog::trace("splitting vertices table");
+	for (size_t i = 0; i < splitting_vertices.size(); ++i)
+	{
+		spdlog::trace("row {}: {}", i, formatted_vector(splitting_vertices[i]));
+	}
+	spdlog::trace("min face area table");
+	for (size_t i = 0; i < min_face_areas.size(); ++i)
+	{
+		spdlog::trace("row {}: {}", i, formatted_vector(min_face_areas[i]));
+	}
+
+	// Print faces
+	int num_faces = faces.size();
+	for (int fi = 0; fi < num_faces; ++fi)
+	{
+		spdlog::trace(
+			"Local face {} is {}, {}, {}",
+			fi,
+			faces[fi][0],
+			faces[fi][1],
+			faces[fi][2]
+		);
+	}
+
+#if ENABLE_VISUALIZATION
+	// Open viewer
+	polyscope::init();
+	
+	polyscope::registerPointCloud("vertices", vertices);
+	polyscope::registerPointCloud2D("uv vertices", uv_vertices);
+	polyscope::registerSurfaceMesh("face mesh", vertices, faces);
+	polyscope::registerSurfaceMesh2D("uv face mesh", uv_vertices, faces);
+	polyscope::show();
+	polyscope::removeStructure("vertices");
+	polyscope::removeStructure("uv_vertices");
+	polyscope::removeStructure("face mesh");
+	polyscope::removeStructure("uv face mesh");
+#endif // ENABLE_VISUALIZATION
+}
+
 
 }

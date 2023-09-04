@@ -8,6 +8,7 @@ add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 option(USE_PYBIND "Generate pybindings" ON)
 option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+option(ENABLE_VISUALIZATION "Generate viewers for visualization" OFF)
 option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
@@ -61,7 +62,6 @@ add_compile_definitions(_USE_MATH_DEFINES)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 include(conformal_ideal_delaunay)
 include(libigl)
-include(polyscope)
 include(spectra)
 
 # Optionally create visualization library
@@ -77,8 +77,19 @@ if (RENDER_TEXTURE)
   )
 endif() 
 
+
 # Make main cpp library
 add_subdirectory(src/optimization)
+
+if (ENABLE_VISUALIZATION)
+  add_compile_definitions(ENABLE_VISUALIZATION)
+  include(polyscope)
+  target_link_libraries(MetricOptimizationLib PUBLIC
+    plot
+    polyscope
+  )
+endif()
+
 
 # Build pybind optimization functions
 message("FIXME Building pybind libraries")

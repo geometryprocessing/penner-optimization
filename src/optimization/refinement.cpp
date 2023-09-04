@@ -1,7 +1,5 @@
 #include "refinement.hh"
 #include "area.hh"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/point_cloud.h"
 #include "triangulation.hh"
 #include "viewers.hh"
 #include <igl/is_vertex_manifold.h>
@@ -14,6 +12,11 @@
 #include <igl/doublearea.h>
 #include <stack>
 #include <set>
+
+#if ENABLE_VISUALIZATION
+#include "polyscope/surface_mesh.h"
+#include "polyscope/point_cloud.h"
+#endif
 
 /// FIXME Do cleaning pass (Done through viewers)
 
@@ -251,9 +254,11 @@ bool RefinementMesh::empty()
 	return n.empty();
 }
 
+
 void
 RefinementMesh::view_refinement_mesh() const
 {
+#if ENABLE_VISUALIZATION
 	polyscope::init();
 
 	// Build mesh
@@ -298,6 +303,7 @@ RefinementMesh::view_refinement_mesh() const
 	// Remove meshes
 	polyscope::removeStructure("refinement mesh");
 	polyscope::removeStructure("refinement layout");
+#endif // ENABLE_VISUALIZATION
 }
 
 void
@@ -305,6 +311,9 @@ RefinementMesh::view_face(
 	Index face_index
 ) const
 {
+	spdlog::trace("Viewing face {}", face_index);
+	
+#if ENABLE_VISUALIZATION
 	polyscope::init();
 
 	// Register corner and halfedge vertices
@@ -337,6 +346,7 @@ RefinementMesh::view_face(
 		polyscope::removeStructure("corner vertex " + std::to_string(hi));
 		polyscope::removeStructure("halfedge vertices " + std::to_string(hi));
 	}
+#endif // ENABLE_VISUALIZATION
 }
 
 
@@ -345,6 +355,9 @@ RefinementMesh::view_uv_face(
 	Index face_index
 ) const
 {
+	spdlog::trace("Viewing uv face {}", face_index);
+
+#if ENABLE_VISUALIZATION
 	polyscope::init();
 
 	// Register corner and halfedge vertices
@@ -377,6 +390,7 @@ RefinementMesh::view_uv_face(
 		polyscope::removeStructure("uv corner vertex " + std::to_string(hi));
 		polyscope::removeStructure("halfedge uv vertices " + std::to_string(hi));
 	}
+#endif // ENABLE_VISUALIZATION
 }
 
 void
@@ -1202,95 +1216,7 @@ RefinementMesh::triangulate_face(
 			face_triangles[fi][j] = vertex_indices[polygon_faces[fi][j]];
 			uv_face_triangles[fi][j] = uv_vertex_indices[polygon_faces[fi][j]];
 		}
-		if (compute_face_area({
-			vertices[polygon_faces[fi][0]],
-			vertices[polygon_faces[fi][1]],
-			vertices[polygon_faces[fi][2]]
-		}) < 1e-8) {
-			spdlog::trace(
-				"Degenerate face {}, {}, {} in polygon {}",
-				polygon_faces[fi][0],
-				polygon_faces[fi][1],
-				polygon_faces[fi][2],
-				formatted_vector(vertices)
-			);
-		} // FIXME
 	}
-
-	// Optionally view the triangulated face
-	bool view_triangulated_face = false;
-	if ((view_triangulated_face) && (num_polygon_faces > 1))
-	{
-		// Print triangulation table
-		spdlog::trace("SO table");
-		for (size_t i = 0; i < is_self_overlapping_subpolygon.size(); ++i)
-		{
-			spdlog::trace("row {}: {}", i, formatted_vector(is_self_overlapping_subpolygon[i]));
-		}
-		spdlog::trace("splitting vertices table");
-		for (size_t i = 0; i < splitting_vertices.size(); ++i)
-		{
-			spdlog::trace("row {}: {}", i, formatted_vector(splitting_vertices[i]));
-		}
-		spdlog::trace("min face area table");
-		for (size_t i = 0; i < min_face_areas.size(); ++i)
-		{
-			spdlog::trace("row {}: {}", i, formatted_vector(min_face_areas[i]));
-		}
-
-		// Print vertices
-		for (size_t vi = 0; vi < vertices.size(); ++vi)
-		{
-			spdlog::trace("Vertex {} with index {} at {}", vi, vertex_indices[vi], vertices[vi]);
-		}
-
-		// Print faces
-		for (int fi = 0; fi < num_polygon_faces; ++fi)
-		{
-			spdlog::trace(
-				"Local face {} is {}, {}, {}",
-				fi,
-				polygon_faces[fi][0],
-				polygon_faces[fi][1],
-				polygon_faces[fi][2]
-			);
-			spdlog::trace(
-				"Global face {} is {}, {}, {}",
-				fi,
-				face_triangles[fi][0],
-				face_triangles[fi][1],
-				face_triangles[fi][2]
-			);
-		}
-
-		// Open viewer
-		polyscope::init();
-		
-		polyscope::registerPointCloud("face vertices", vertices);
-		polyscope::registerSurfaceMesh("face mesh", m_V, face_triangles);
-		polyscope::show();
-		polyscope::removeStructure("face mesh");
-		polyscope::removeStructure("face vertices");
-
-		// Print faces
-		for (int fi = 0; fi < num_polygon_faces; ++fi)
-		{
-			spdlog::trace(
-				"Layout face {} is {}, {}, {}",
-				fi,
-				uv_face_triangles[fi][0],
-				uv_face_triangles[fi][1],
-				uv_face_triangles[fi][2]
-			);
-		}
-
-		polyscope::registerPointCloud2D("face layout vertices", uv_vertices);
-		polyscope::registerSurfaceMesh2D("face layout mesh", m_uv, uv_face_triangles);
-		polyscope::show();
-		polyscope::removeStructure("face layout mesh");
-		polyscope::removeStructure("face layout vertices");
-	}
-
 
 	return true;
 }

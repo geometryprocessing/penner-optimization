@@ -28,8 +28,6 @@ target_link_libraries(MetricOptimizationLib PUBLIC
   igl::core
   igl::predicates
   igl::glfw
-  plot
-  polyscope
   spdlog::spdlog
   igl::embree
   pybind11::module
