@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common.hh"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace CurvatureMetric {
 
@@ -50,6 +49,10 @@ vertex_angles_with_jacobian(const Mesh<Scalar>& m,
 /// lengths metric_coords from the target angles m.Th_hat. Also compute the
 /// Jacobian of the constraint if needed.
 ///
+/// If use_edge_lengths is true, the input edge lengths are used without
+/// changing connectivity. Otherwise, the input edge lengths are interpreted
+/// as Penner coordinates and retriangulation is done to make the mesh Delaunay
+///
 /// @param[in] m: (possibly symmetric) mesh
 /// @param[in] metric_coords: metric coordinates for m
 /// @param[out] constraint: difference of the vertex angles from the target
@@ -59,7 +62,7 @@ vertex_angles_with_jacobian(const Mesh<Scalar>& m,
 /// @param[out] flip_seq: sequence of flips used
 /// @param[in] need_jacobian: create Jacobian iff true
 /// @param[in] use_edge_lengths: use edge lengths directly iff true
-/// @return: true iff the mesh satisfies the triangle inequality
+/// @return: true iff the mesh and metric coordinates are valid
 bool
 constraint_with_jacobian(const Mesh<Scalar>& m,
                          const VectorX& metric_coords,

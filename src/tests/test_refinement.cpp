@@ -2,6 +2,7 @@
 
 #include "common.hh"
 #include "refinement.hh"
+#include "triangulation.hh"
 
 using namespace CurvatureMetric;
 

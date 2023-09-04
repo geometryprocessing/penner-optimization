@@ -73,11 +73,6 @@ def refine_one(args, fname):
     logger.info("Running refinement")
     refinement_mesh = opt.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
     V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = refinement_mesh.get_VF_mesh()
-    
-    # Check uvs are consistent
-    if not opt.check_uv(V_r, F_r, uv_r, FT_r):
-        logger.error("UVs are inconsistent")
-        return
 
     # Write combined refined mesh with uv
     uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')

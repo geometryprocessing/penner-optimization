@@ -62,8 +62,10 @@ def lambdas_from_mesh(C):
     param[in] Mesh C: (possibly symmetric) mesh
     return np.array: embedded log edge lengths for C
     """
-    proj, embed = opt.build_refl_proj(C)
-    he2e, e2he = opt.build_edge_maps(C)
+    reduction_maps = opt.ReductionMaps(C)
+    embed = np.array(reduction_maps.embed)
+    e2he = np.array(reduction_maps.e2he)
+
     lambdas = 2*np.log(C.l)[np.array(e2he)[embed]]
     return lambdas
     

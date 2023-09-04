@@ -25,7 +25,7 @@ def energy_table(args):
     energy_dict['two_norm_energy'] = []
     energy_dict['surface_hencky_strain_energy'] = []
     energy_dict['symmetric_dirichlet_energy'] = []
-    energy_dict['delaunay_symmetric_dirichlet_energy'] = []
+    #energy_dict['delaunay_symmetric_dirichlet_energy'] = []
     energy_dict['constraint_error'] = []
     energy_dict['range_scale'] = []
     energy_dict['max_sym_dirichlet_distortion'] = []
@@ -60,10 +60,11 @@ def energy_table(args):
 
         try:
             # Get mesh
+            logger.info("Getting mesh {}", m)
             m, C, lambdas_init, lambdas_target, v, f, Th_hat = script_util.generate_mesh(args, fname)
             name = m + '_'+args['suffix']
-            he2e, e2he = opt.build_edge_maps(C)
-            proj, embed = opt.build_refl_proj(C)
+            reduction_maps = opt.ReductionMaps(C)
+            proj = np.array(reduction_maps.proj)
             try:
                 lambdas_dir = os.path.join(args['output_dir'], m + '_output', 'lambdas_' + args['suffix'])
                 logger.info("Loading lambdas at {}".format(lambdas_dir))
@@ -72,8 +73,9 @@ def energy_table(args):
                 logger.error("Could not load lambdas for {}".format(name))
 
             # Get delaunay mesh
-            C_del, lambdas_init_del_full, _, flip_seq = opt.make_delaunay_with_jacobian(C, lambdas_init[proj], False)
-            _, lambdas_del_full = opt.flip_edges(C, lambdas[proj], flip_seq)
+            #logger.info("Making mesh Delaunay")
+            #C_del, lambdas_init_del_full, _, flip_seq = opt.make_delaunay_with_jacobian(C, lambdas_init[proj], False)
+            #_, lambdas_del_full = opt.flip_edges(C, lambdas[proj], flip_seq)
 
             # Get energy_dict
             logger.info("Getting symmetric stretches")
@@ -82,7 +84,7 @@ def energy_table(args):
             # Build energy functor
             _, opt_params = script_util.generate_parameters(args)
             opt_energy = opt.EnergyFunctor(C, lambdas_target[proj], opt_params)
-            del_opt_energy = opt.EnergyFunctor(C_del, lambdas_init_del_full, opt_params)
+            #del_opt_energy = opt.EnergyFunctor(C_del, lambdas_init_del_full, opt_params)
 
             logger.info("Getting invariants")
             f2J1, _ = opt.first_invariant(C, lambdas_target[proj], lambdas[proj], False)
@@ -107,7 +109,7 @@ def energy_table(args):
             energy_dict['two_norm_energy'].append(opt_energy.compute_two_norm_energy(lambdas[proj]))
             energy_dict['surface_hencky_strain_energy'].append(opt_energy.compute_surface_hencky_strain_energy(lambdas[proj]))
             energy_dict['symmetric_dirichlet_energy'].append(opt_energy.compute_symmetric_dirichlet_energy(lambdas[proj]))
-            energy_dict['delaunay_symmetric_dirichlet_energy'].append(del_opt_energy.compute_symmetric_dirichlet_energy(lambdas_del_full))
+            #energy_dict['delaunay_symmetric_dirichlet_energy'].append(del_opt_energy.compute_symmetric_dirichlet_energy(lambdas_del_full))
             energy_dict['constraint_error'].append(np.max(np.abs(constraint)))
             energy_dict['max_stretch'].append(np.max(stretches))
             energy_dict['norm_stretch'].append(np.linalg.norm(stretches))
@@ -130,7 +132,7 @@ def energy_table(args):
             energy_dict['two_norm_energy'].append(-1)
             energy_dict['surface_hencky_strain_energy'].append(-1)
             energy_dict['symmetric_dirichlet_energy'].append(-1)
-            energy_dict['delaunay_symmetric_dirichlet_energy'].append(-1)
+            #energy_dict['delaunay_symmetric_dirichlet_energy'].append(-1)
             energy_dict['constraint_error'].append(-1)
             energy_dict['max_stretch'].append(-1)
             energy_dict['norm_stretch'].append(-1)

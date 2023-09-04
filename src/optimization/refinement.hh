@@ -7,14 +7,22 @@
 
 namespace CurvatureMetric {
 
-// TODO Add code to get vn_to_v, endpoints, and Fn_to_F maps; should also test this
-
 /// A class to represent a mesh that supports an overlay refinement scheme.
 class RefinementMesh
 {
 public:
 typedef int Index;
 
+/// Constructor for the refinement mesh from an overlay VF mesh and a corresponding
+/// parameterization with overlay face to original face and endpoint annotation.
+///
+/// @param[in] V: overlay mesh vertices
+/// @param[in] F: overlay mesh faces
+/// @param[in] uv: overlay uv vertices
+/// @param[in] F_uv: overlay uv faces
+/// @param[in] Fn_to_F: map from overlay faces to original face indices
+/// @param[in] endpoints: map from overlay vertices to endpoints of the edge containing
+///     the vertex in the original mesh, or (-1, -1) if the vertex is from the original
 RefinementMesh(
 	const Eigen::MatrixXd& V,
 	const Eigen::MatrixXi& F,
@@ -24,6 +32,16 @@ RefinementMesh(
 	const std::vector<std::pair<int, int>>& endpoints
 );
 
+/// Get a VF representation of the refinement mesh with uv coordinates with overlay face
+/// to original face and endpoint annotation.
+///
+/// @param[in] V: refinement mesh vertices
+/// @param[in] F: refinement mesh faces
+/// @param[in] uv: refinement uv vertices
+/// @param[in] F_uv: refinement uv faces
+/// @param[in] Fn_to_F: map from refinement faces to original face indices
+/// @param[in] endpoints: map from refinement vertices to endpoints of the edge containing
+///     the vertex in the original mesh, or (-1, -1) if the vertex is from the original
 void
 get_VF_mesh(
 	Eigen::MatrixXd& V,
@@ -43,8 +61,6 @@ std::tuple<
 	std::vector<std::pair<int, int>> // endpoints
 >
 get_VF_mesh() const;
-
-void view_original_mesh() const;
 
 /// Get the number of vertices in the mesh
 ///
@@ -93,6 +109,7 @@ compute_face_size(Index face_index) const;
 class FaceIterator
 {
 public:
+	/// Constructor
 	FaceIterator(
 		const RefinementMesh& parent,
 		Index face_index)
@@ -105,6 +122,7 @@ public:
 		m_num_loops = 0;
 	}
 
+	/// Iterate halfedge (prefix)
 	FaceIterator& operator++()
 	{
 		// Iterate to next halfedge
@@ -119,6 +137,7 @@ public:
 		return *this;
 	}
 
+	/// Iterate halfedge (postfix)
 	FaceIterator operator++(int)
 	{
 		FaceIterator temp = *this;
@@ -126,12 +145,14 @@ public:
 		return temp;
 	}
 
+	/// Check if full loop made
 	bool done()
 	{ 
 		// Done if a full loop has been made
 		return (m_num_loops > 0);
 	}
 
+	/// Get current halfedge
 	Index operator*() { return m_current_h; }
 
 private:
@@ -141,33 +162,71 @@ private:
 	int m_num_loops;
 };
 
+/// Get an iterator for the given face index
+///
+/// @param[in] face_index: face to iterate over
+/// @return iterator for the face
 FaceIterator get_face_iterator(Index face_index) const;
  
+/// Get the position in space of a vertex
+///
+/// @param[in] vertex_index: index of the vertex in the mesh
+/// @return vertex position
 VectorX
 get_vertex(
 	Index vertex_index
 ) const;
 
+/// Get the parametric domain coordinates of a vertex
+///
+/// @param[in] vertex_index: index of the vertex in the mesh
+/// @return parametric domain coordinates of the vertex
 VectorX
 get_uv_vertex(
 	Index vertex_index
 ) const;
 
+/// Get the positions in space of the vertices of a face
+///
+/// @param[in] face_index: index of the face in the mesh
+/// @return list of face vertex positions 
 void
 get_face_vertices(
 	Index face_index,
 	std::vector<VectorX>& vertices
 ) const;
 
+/// Get the parametric domain coordinates of the vertices of a face
+///
+/// @param[in] face_index: index of the face in the mesh
+/// @return list of face vertex parametric coordinates
 void
 get_face_uv_vertices(
 	Index face_index,
 	std::vector<VectorX>& uv_vertices
 ) const;
 
+/// Clear the data of the mesh
 void clear();
 
+/// Return true iff the mesh is empty.
+///
+/// @return true iff the mesh is empty
 bool empty();
+
+/// Viewer for the refinement mesh
+void view_refinement_mesh() const;
+
+/// Viewer for a face of the mesh in space
+///
+/// @param[in] face_index: index of the face in the mesh
+void view_face(Index face_index) const;
+
+/// Viewer for a face of the mesh in the parametric domain
+///
+/// @param[in] face_index: index of the face in the mesh
+void view_uv_face(Index face_index) const;
+
 
 private:
 // Connectivity
@@ -202,9 +261,7 @@ std::vector<std::vector<std::array<int, 3>>> m_overlay_uv_face_triangles;
 
 void
 build_connectivity(
-	const Eigen::MatrixXd& V,
 	const Eigen::MatrixXi& F,
-	const Eigen::MatrixXd& uv,
 	const Eigen::MatrixXi& F_uv,
 	const std::vector<int>& Fn_to_F,
 	const std::vector<std::pair<int, int>>& endpoints
@@ -256,67 +313,6 @@ triangulate_face(
 
 bool is_valid_refinement_mesh() const;
 
-
-// Viewers
-
-void view_face(Index face_index) const;
-
-void view_uv_face(Index face_index) const;
-
 };
-
-/// Given three vertices in the plane, determine if the triangle they form
-/// has negative orientation.
-///
-/// @param[in] vertices: three triangle vertices
-/// @return true iff the triangle is inverted in the uv plane
-bool
-is_inverted_triangle(
-	const std::array<VectorX, 3>& vertices
-);
-
-/// Given a list of vertices in the plane, determine if the polygon they
-/// determine is self-overlapping.
-///
-/// Also generates a table indicating if the subpolygons with vertices
-/// (i,...,j) are self overlapping and the corresponding splitting vertices.
-///
-/// @param[in] uv_vertices: list of vertices in the uv plane
-/// @param[in] vertices: list of vertices (for minimum face area computation)
-/// @param[out] is_self_overlapping_subpolygon: table of subpolygon self
-/// 		overlapping predicate truth values
-/// @param[out] splitting_vertices: table of splitting vertices for self
-///     overlapping subpolygons
-/// @param[out] min_face_areas: table of minimum areas of subpolygon areas
-/// @return true iff the polygon is self-overlapping
-bool
-is_self_overlapping_polygon(
-	const std::vector<VectorX>& uv_vertices,
-	const std::vector<VectorX>& vertices,
-	std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
-	std::vector<std::vector<int>>& splitting_vertices,
-	std::vector<std::vector<Scalar>>& min_face_areas
-);
-
-/// Given a table indicating if the subpolygons of a polygon with vertices
-/// (i,...,j) are self overlapping and the corresponding splitting vertices,
-/// construct a triangulation of the full polygon.
-///
-/// The tables can be generated by is_self_overlapping_polygon.
-///
-/// @param[in] is_self_overlapping_subpolygon: table of subpolygon self
-/// 		overlapping predicate truth values
-/// @param[in] splitting_vertices: table of splitting vertices for self
-///     overlapping subpolygons
-/// @param[in] min_face_areas: table of minimum areas of subpolygon areas
-/// @param[out] faces: list of triangles that triangulate the polygon
-void
-triangulate_self_overlapping_polygon(
-	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
-	const std::vector<std::vector<int>>& splitting_vertices,
-	const std::vector<std::vector<Scalar>>& min_face_areas,
-	std::vector<std::array<int, 3>>& faces
-);
-
 
 }

@@ -1,5 +1,5 @@
 #include "logging.hh"
-#include "energies.hh"
+#include "energy_functor.hh"
 #include "embedding.hh"
 
 /// FIXME Do cleaning pass

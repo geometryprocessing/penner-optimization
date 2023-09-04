@@ -52,10 +52,6 @@ def overlay_one(args, fname):
     logger.info("Loading mesh")
     try:
         m, C, lambdas, lambdas_target, v3d, f, Th_hat = script_util.generate_mesh(args, fname)
-        proj, embed = opt.build_refl_proj(C)
-        he2e, e2he = opt.build_edge_maps(C)
-        proj = np.array(proj)
-        he2e = np.array(he2e)
     except:
         logger.error("Could not load mesh")
         return
@@ -123,10 +119,6 @@ def overlay_one(args, fname):
         )
         C_o, v_o, f_o, uvt_o, ft_o, is_cut_h, is_cut_o, fn_to_f, endpoints = parametrize_res
         # C = C_o._m FIXME
-
-    # Check uvs are consistent
-    if not opt.check_uv(v_o, f_o, uvt_o, ft_o):
-        logger.warn("UVs are inconsistent")
 
     # Save new meshes
     uv_mesh_path = os.path.join(output_dir, name + '_overlay_with_uv.obj')

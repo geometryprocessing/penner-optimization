@@ -59,8 +59,6 @@ def error_table(args):
             # Get input mesh
             m, C, lambdas_init, lambdas_target, v_orig, f_orig, Th_hat = script_util.generate_mesh(args, fname)
             name = m + '_'+args['suffix']
-            he2e, e2he = opt.build_edge_maps(C)
-            proj, embed = opt.build_refl_proj(C)
 
             # Load input mesh information
             try:

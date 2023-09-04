@@ -2,9 +2,7 @@
 
 #include "area.hh"
 #include "embedding.hh"
-#include "transitions.hh"
-
-/// FIXME Do cleaning pass
+#include "delaunay.hh"
 
 namespace CurvatureMetric {
 
@@ -133,10 +131,6 @@ vertex_angles_with_jacobian(const Mesh<Scalar>& m,
   VectorX he2angle;
   VectorX he2cot;
   corner_angles(m, log_length_coords, he2angle, he2cot);
-  // TODO Replace with below code and remove log length coordinates
-  //VectorX u;
-  //u.setZero(m.n_ind_vertices());
-  //ConformalIdealDelaunay<Scalar>::ComputeAngles(m, u, he2angle, he2cot);
 
   // Sum up angles around vertices
   int num_halfedges = m.n.size();
@@ -187,14 +181,17 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
                          bool need_jacobian,
                          bool use_edge_lengths)
 {
+  constraint.setZero(0);
+  J_constraint.setZero();
+  flip_seq.clear();
+
+  // For Penner coordinates, make mesh Delaunay (and thus satisfying the
+  // triangle inequality)
   Mesh<Scalar> m_tri;
   VectorX metric_coords_tri;
   VectorX vertex_angles;
   MatrixX J_vertex_angles;
   MatrixX J_del;
-
-  // For Penner coordinates, make mesh Deluanay (and thus satisfying the
-  // triangle inequality)
   if (!use_edge_lengths) {
     make_delaunay_with_jacobian(m,
                                 metric_coords,
@@ -209,7 +206,6 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
     if (!satisfies_triangle_inequality(m, metric_coords))
       return false;
     m_tri = m;
-    // If remove metric coords in these methods, need to update lengths of tri
     metric_coords_tri = metric_coords;
   }
   vertex_angles_with_jacobian(
@@ -220,14 +216,17 @@ constraint_with_jacobian(const Mesh<Scalar>& m,
   for (int v = 0; v < vertex_angles.size(); ++v) {
     constraint[v] = vertex_angles[v] - m.Th_hat[v];
   }
-  spdlog::info("Constraint at 0 {}", constraint[0]);
 
   // Compute the Jacobian of the constraint if needed
   if (need_jacobian) {
-    if (!use_edge_lengths)
-      J_constraint = J_vertex_angles * J_del;
     if (use_edge_lengths)
+    {
       J_constraint = J_vertex_angles;
+    }
+    else
+    {
+      J_constraint = J_vertex_angles * J_del;
+    }
   }
 
   return true;

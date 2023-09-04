@@ -18,7 +18,7 @@ compute_log_edge_lengths(const Mesh<Scalar> &m, VectorX& reduced_log_edge_length
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
 	// Build log edge lengths
 	size_t num_reduced_edges = embed.size();

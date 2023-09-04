@@ -8,6 +8,7 @@ add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 option(USE_PYBIND "Generate pybindings" ON)
 option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
@@ -33,6 +34,10 @@ if (USE_MULTIPRECISION)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})
+endif()
+
+if (CHECK_VALIDITY)
+  add_compile_definitions(CHECK_VALIDITY)
 endif()
 
 ## Add highfive library

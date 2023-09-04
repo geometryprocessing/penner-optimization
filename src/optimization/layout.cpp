@@ -1,4 +1,4 @@
-#include "optimization_layout.hh"
+#include "layout.hh"
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/Layout.hh"
@@ -6,7 +6,7 @@
 #include "targets.hh"
 #include "interpolation.hh"
 #include "refinement.hh"
-#include "transitions.hh"
+#include "delaunay.hh"
 #include "translation.hh"
 #include "projection.hh"
 #include "energies.hh"
@@ -27,7 +27,7 @@ add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
   // Build refl projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Build overlay mesh from mesh m
   Mesh<Scalar> m_l = m;
@@ -452,8 +452,8 @@ compute_layout_topology(
   // TODO Move to separate validity check function
   int num_done = std::count(done.begin(), done.end(), true);
   int num_cut = std::count(is_cut_h_gen.begin(), is_cut_h_gen.end(), true);
-  spdlog::info("{}/{} faces seen", num_done, m.n_faces());
-  spdlog::info("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
+  spdlog::trace("{}/{} faces seen", num_done, m.n_faces());
+  spdlog::trace("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
   auto is_found_vertex = std::vector<bool>(m.n_vertices(), false);
   for (int hi = 0; hi < m.n_halfedges(); ++hi)
   {
@@ -464,7 +464,7 @@ compute_layout_topology(
     }
   }
   int num_found_vertices = std::count(is_found_vertex.begin(), is_found_vertex.end(), true);
-  spdlog::info("{}/{} vertices seen", num_found_vertices, m.n_vertices());
+  spdlog::trace("{}/{} vertices seen", num_found_vertices, m.n_vertices());
 
   Eigen::MatrixXi F, F_uv;
   compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
@@ -769,7 +769,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_cons
   m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
   auto u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
   auto v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
-  spdlog::info("Interpolate on overlay mesh done.");
+  spdlog::trace("Interpolate on overlay mesh done.");
 
   // Build a new mesh directly from the triangulated overlay mesh
   Mesh<Scalar> m;
@@ -845,7 +845,6 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_cons
   is_cut_o.resize(m_o.n.size()); 
 
   // Trim unnecessary branches of the cut graph
-  spdlog::info("{}", formatted_vector(singularities));
   trim_open_branch(m_o, f_labels, singularities, is_cut_o);
 
   return std::make_tuple(_u_o, _v_o, is_cut_o);

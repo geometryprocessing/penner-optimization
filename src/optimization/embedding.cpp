@@ -1,8 +1,63 @@
 #include "embedding.hh"
 
-/// FIXME Do cleaning pass
-
 namespace CurvatureMetric {
+
+ReductionMaps::ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths)
+{
+  // Build embedding and halfedge information
+  build_edge_maps(m, he2e, e2he);
+  build_refl_proj(m, he2e, e2he, proj, embed);
+  build_refl_matrix(proj, embed, projection);
+
+  // Get element counts from constructed maps
+  num_edges = e2he.size();
+  num_halfedges = he2e.size();
+  num_reduced_edges = embed.size();
+
+  // Get fixed and free vertices from the mesh
+  fixed_v.clear();
+  free_v.clear();
+  fixed_v.reserve(m.fixed_dof.size());
+  free_v.reserve(m.fixed_dof.size());
+  for (size_t v = 0; v < m.fixed_dof.size(); ++v) {
+    if (m.fixed_dof[v]) {
+      fixed_v.push_back(v);
+    } else {
+      free_v.push_back(v);
+    }
+  }
+
+  // Identify boundary edges as the fixed points of the reflection map
+  bd_e.clear();
+  int_e.clear();
+  bd_e.reserve(num_reduced_edges);
+  int_e.reserve(num_reduced_edges);
+  for (size_t E = 0; E < num_reduced_edges; ++E) {
+    size_t e = embed[E];
+    size_t h = e2he[e];
+    size_t Rh = m.R[h];
+    size_t Re = he2e[Rh];
+    // Note: We check if edge type is 0 as in this case there is no reflection map
+    if ((m.type[h] != 0) && (e == Re)) {
+      bd_e.push_back(E);
+    } else {
+      int_e.push_back(E);
+    }
+  }
+
+  fixed_e.clear();
+  free_e.clear();
+  // Optionally set boundary as fixed
+  if (fix_bd_lengths) {
+    fixed_e = bd_e;
+    free_e = int_e;
+  }
+  // Otherwise, all edges are free
+  else
+  {
+    arange(num_reduced_edges, free_e);
+  }
+}
 
 void
 build_edge_maps(const Mesh<Scalar>& m,
@@ -23,7 +78,7 @@ build_edge_maps(const Mesh<Scalar>& m,
     }
   }
 
-  // Construct map from halfedges to edges
+  // Construct 2-to-1 map from halfedges to edges
   for (int e = 0; e < num_edges; ++e) {
     int h = e2he[e];
     he2e[h] = e;
@@ -33,14 +88,11 @@ build_edge_maps(const Mesh<Scalar>& m,
 
 void
 build_refl_proj(const Mesh<Scalar>& m,
+                const std::vector<int>& he2e,
+                const std::vector<int>& e2he,
                 std::vector<int>& proj,
                 std::vector<int>& embed)
 {
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
   // Resize arrays
   proj.resize(e2he.size());
   embed.clear();
@@ -75,14 +127,11 @@ build_refl_proj(const Mesh<Scalar>& m,
 
 void
 build_refl_he_proj(const Mesh<Scalar>& m,
+                   const std::vector<int>& he2e,
+                   const std::vector<int>& e2he,
                    std::vector<int>& he_proj,
                    std::vector<int>& he_embed)
 {
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
   // Resize arrays
   int num_halfedges = he2e.size();
   int num_edges = e2he.size();
@@ -115,14 +164,12 @@ build_refl_he_proj(const Mesh<Scalar>& m,
 }
 
 void
-build_refl_matrix(const Mesh<Scalar>& m, MatrixX& projection)
-{
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
-
-  // Creatae projection matrix
+build_refl_matrix(
+  const std::vector<int>& proj,
+  const std::vector<int>& embed,
+  MatrixX& projection
+) {
+  // Convert linear projection function e -> P(e) to a matrix
   int num_edges = proj.size();
   int num_embedded_edges = embed.size();
   std::vector<T> tripletList;
@@ -174,13 +221,11 @@ expand_reduced_function(const std::vector<int>& proj,
 }
 
 void
-restrict_he_func(const Mesh<Scalar>& m, const VectorX& f_he, VectorX& f_e)
-{
-  // Build edge to halfedge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
+restrict_he_func(
+  const std::vector<int>& e2he,
+  const VectorX& f_he,
+  VectorX& f_e
+) {
   // Restrict f_he to edges
   int n_edges = e2he.size();
   f_e.resize(n_edges);
@@ -191,13 +236,11 @@ restrict_he_func(const Mesh<Scalar>& m, const VectorX& f_he, VectorX& f_e)
 }
 
 void
-expand_edge_func(const Mesh<Scalar>& m, const VectorX& f_e, VectorX& f_he)
-{
-  // Build edge to halfedge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
+expand_edge_func(
+  const std::vector<int>& he2e,
+  const VectorX& f_e,
+  VectorX& f_he
+) {
   // Expand f_e to halfedges
   int n_halfedges = he2e.size();
   f_he.resize(n_halfedges);
@@ -210,7 +253,7 @@ expand_edge_func(const Mesh<Scalar>& m, const VectorX& f_e, VectorX& f_he)
 bool
 is_valid_halfedge(const Mesh<Scalar>& m)
 {
-  // Build prev array
+  // Build prev array (inverse of n if n is a permutation)
   int num_halfedges = m.n.size();
   std::vector<int> prev(num_halfedges);
   for (int h = 0; h < num_halfedges; ++h) {
@@ -225,8 +268,11 @@ is_valid_halfedge(const Mesh<Scalar>& m)
     // opp has no fixed points
     if (m.opp[h] == h)
       return false;
-    // Triangle mesh
-    if (m.n[m.n[m.n[h]]] != h)
+    // Prev is left inverse
+    if (prev[m.n[h]] != h)
+      return false;
+    // Prev is right inverse
+    if (m.n[prev[h]] != h)
       return false;
   }
 
@@ -244,12 +290,12 @@ is_valid_halfedge(const Mesh<Scalar>& m)
 bool
 is_valid_symmetry(const Mesh<Scalar>& m)
 {
-  bool error_found = true;
+  bool is_valid = true;
 
   // Check mesh is valid
   if (!is_valid_halfedge(m)) {
     std::cerr << "Invalid halfedge" << std::endl;
-    error_found = false;
+    is_valid = false;
   }
 
   // Check halfedge conditions
@@ -258,30 +304,30 @@ is_valid_symmetry(const Mesh<Scalar>& m)
     // Reversing n
     if (m.n[m.n[m.R[h]]] != m.R[m.n[h]]) {
       std::cerr << "R does not reverse n at " << h << std::endl;
-      error_found = false;
+      is_valid = false;
     }
 
     // Commuting with opp
     if (m.opp[m.R[h]] != m.R[m.opp[h]]) {
       std::cerr << "R does not commute with opp at " << h << std::endl;
-      error_found = false;
+      is_valid = false;
     }
 
     // Halfedges partitioned
     if ((m.type[h] == 1) && (m.type[m.R[h]] != 2)) {
       std::cerr << "Type 1 halfedge does not map to a type 1 halfedge at " << h
                 << std::endl;
-      error_found = false;
+      is_valid = false;
     }
     if ((m.type[h] == 2) && (m.type[m.R[h]] != 1)) {
       std::cerr << "Type 1 halfedge does not map to a type 1 halfedge at " << h
                 << std::endl;
-      error_found = false;
+      is_valid = false;
     }
     if ((m.type[h] == 3) && (m.R[h] != h)) {
       std::cerr << "Type 3 halfedge does not map to itself at " << h
                 << std::endl;
-      error_found = false;
+      is_valid = false;
     }
   }
 
@@ -297,71 +343,29 @@ is_valid_symmetry(const Mesh<Scalar>& m)
       if ((m.n[h] != 1) || (m.n[m.n[h]] != 1)) {
         std::cerr << "Interior face not labelled consistently at " << f
                   << std::endl;
-        error_found = false;
+        is_valid = false;
       }
       if ((m.R[h] != 2) || (m.n[m.R[h]] != 2) || (m.n[m.n[m.R[h]]] != 2)) {
         std::cerr << "Interior face not labelled consistently at " << f
                   << std::endl;
-        error_found = false;
+        is_valid = false;
       }
     }
     if (h == 2) {
       if ((m.n[h] != 2) || (m.n[m.n[h]] != 2)) {
         std::cerr << "Interior face not labelled consistently at " << f
                   << std::endl;
-        error_found = false;
+        is_valid = false;
       }
       if ((m.R[h] != 1) || (m.n[m.R[h]] != 1) || (m.n[m.n[m.R[h]]] != 1)) {
         std::cerr << "Interior face not labelled consistently at " << f
                   << std::endl;
-        error_found = false;
+        is_valid = false;
       }
     }
   }
 
-  return error_found;
+  return is_valid;
 }
-
-#ifdef PYBIND
-// Pybind definitions
-std::tuple<std::vector<int>, std::vector<int>>
-build_edge_maps_pybind(const Mesh<Scalar>& m)
-{
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  return std::make_tuple(he2e, e2he);
-}
-
-std::tuple<std::vector<int>, std::vector<int>>
-build_refl_proj_pybind(const Mesh<Scalar>& m)
-{
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
-
-  return std::make_tuple(proj, embed);
-}
-
-std::tuple<std::vector<int>, std::vector<int>>
-build_refl_he_proj_pybind(const Mesh<Scalar>& m)
-{
-  std::vector<int> he_proj;
-  std::vector<int> he_embed;
-  build_refl_he_proj(m, he_proj, he_embed);
-
-  return std::make_tuple(he_proj, he_embed);
-}
-
-MatrixX
-build_refl_matrix_pybind(const Mesh<Scalar>& m)
-{
-  MatrixX projection;
-  build_refl_matrix(m, projection);
-  return projection;
-}
-
-#endif
 
 }

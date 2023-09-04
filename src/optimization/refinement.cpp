@@ -2,6 +2,7 @@
 #include "area.hh"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/point_cloud.h"
+#include "triangulation.hh"
 #include "viewers.hh"
 #include <igl/is_vertex_manifold.h>
 #include <igl/is_edge_manifold.h>
@@ -14,6 +15,8 @@
 #include <stack>
 #include <set>
 
+/// FIXME Do cleaning pass (Done through viewers)
+
 namespace CurvatureMetric {
 
 RefinementMesh::RefinementMesh(
@@ -25,31 +28,46 @@ RefinementMesh::RefinementMesh(
 	const std::vector<std::pair<int, int>>& endpoints
 ) 
 {
+	clear();
+
+	// Check for flipped elements in the overlay mesh
+#if CHECK_VALIDITY
   Eigen::VectorXi flipped_f;
   igl::flipped_triangles(uv, F_uv, flipped_f);
-  spdlog::info("{} flipped elements in overlay mesh", flipped_f.size());
+  spdlog::trace("{} flipped elements in overlay mesh", flipped_f.size());
 	if (flipped_f.size() > 0)
 	{
-		spdlog::warn("Cannot refine a mesh with flipped elements in the overlay");
+		spdlog::warn("Refining a mesh with flipped elements in the overlay");
 	}
+#endif
 
 	// Build initial topology with refinement data
 	build_vertex_points(V, uv);
-	build_connectivity(V, F, uv, F_uv, Fn_to_F, endpoints);
+	build_connectivity(F, F_uv, Fn_to_F, endpoints);
+
+	// Check for validity before refining and simplifying
+#if CHECK_VALIDITY
 	if (!is_valid_refinement_mesh())
 	{
 		spdlog::error("Initial refinement mesh is invalid");
+		clear();
 		return;
 	}
+#endif
 
-	// Refine (and simplify) mesh as necessary
+	// Refine the mesh as necessary and greedily simplify the refinement
 	refine_mesh();
 	simplify_mesh();
+
+	// Check for validity after refining and simplifying
+#if CHECK_VALIDITY
 	if (!is_valid_refinement_mesh())
 	{
 		spdlog::error("Final refinement mesh is invalid");
+		clear();
 		return;
 	}
+#endif
 }
 
 void
@@ -61,13 +79,16 @@ RefinementMesh::get_VF_mesh(
 	std::vector<int>& Fn_to_F,
 	std::vector<std::pair<int, int>>& endpoints
 ) const {
-	// Ensure mesh is triangulated
-	// TODO
+	V.setZero(0, 0);
+	F.setZero(0, 0);
+	uv.setZero(0, 0);
+	F_uv.setZero(0, 0);
+	Fn_to_F.clear();
+	endpoints.clear();
 
 	// Build triangle faces
 	std::vector<std::array<int, 3>> mesh_triangles(0);
 	std::vector<std::array<int, 3>> uv_mesh_triangles(0);
-	Fn_to_F.clear();
 	mesh_triangles.reserve(n_faces());
 	uv_mesh_triangles.reserve(n_faces());
 	Fn_to_F.reserve(n_faces());
@@ -95,20 +116,6 @@ RefinementMesh::get_VF_mesh(
 			uv_face_triangles.end()
 		);
 		Fn_to_F.insert(Fn_to_F.end(), face_triangles.size(), fi);
-
-		// Print triangles if more than 1 FIXME
-		if (face_triangles.size() > 1)
-		{
-			for (size_t j = 0; j < face_triangles.size(); ++j)
-			spdlog::info(
-				"Triangle {} for face {} is ({}, {}, {})",
-				j,
-				fi,
-				face_triangles[j][0],
-				face_triangles[j][1],
-				face_triangles[j][2]
-			);
-		}
 	}
 
 	// Copy vectors of mesh triangles to the face matrices
@@ -119,26 +126,20 @@ RefinementMesh::get_VF_mesh(
 	{
 		for (int j = 0; j < 3; ++j)
 		{
-			if (mesh_triangles[fi][j] < 0)
-			{
-				spdlog::warn("Invalid vertex index");
-			}
-			if (uv_mesh_triangles[fi][j] < 0)
-			{
-				spdlog::warn("Invalid uv vertex index");
-			}
-
 			F_full(fi, j) = mesh_triangles[fi][j];
 			F_uv_full(fi, j) = uv_mesh_triangles[fi][j];
+			// TODO Check if valid indices with function in common.hh
 		}
 	}
+  
 
 	// Remove unreferenced vertices
 	Eigen::VectorXi I, J, I_uv, J_uv;
 	igl::remove_unreferenced(m_V, F_full, V, F, I, J);
 	igl::remove_unreferenced(m_uv, F_uv_full, uv, F_uv, I_uv, J_uv);
 
-	// Get endpoints, removing the unreferenced consistently with the removed vertices
+	// Get endpoints from the overlay, removing unreferenced entries consistently
+	// with the removed vertices
 	endpoints.resize(V.rows());
 	for (int vi = 0; vi < V.rows(); ++vi)
 	{
@@ -166,10 +167,6 @@ RefinementMesh::get_VF_mesh() const
 	return std::make_tuple(V, F, uv, F_uv, Fn_to_F, endpoints);
 }
 
-/// Get the number of edges of a given face
-///
-/// @param[in] face_index: polygon face index
-/// @return number of edges in the given face
 int
 RefinementMesh::compute_face_size(RefinementMesh::Index face_index) const
 {
@@ -252,6 +249,134 @@ void RefinementMesh::clear()
 bool RefinementMesh::empty()
 {
 	return n.empty();
+}
+
+void
+RefinementMesh::view_refinement_mesh() const
+{
+	polyscope::init();
+
+	// Build mesh
+	Eigen::MatrixXd V;
+	Eigen::MatrixXi F;
+	Eigen::MatrixXd uv;
+	Eigen::MatrixXi F_uv;
+	std::vector<int> Fn_to_F;
+	std::vector<std::pair<int,int>> endpoints;
+	get_VF_mesh(V, F, uv, F_uv, Fn_to_F, endpoints);
+
+  // Get the flipped elements
+  Eigen::VectorXi flipped_f;
+  igl::flipped_triangles(uv, F_uv, flipped_f);
+  spdlog::trace("{} flipped elements", flipped_f.size());
+
+	// Cut mesh along seams
+	Eigen::MatrixXd V_cut;
+	cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
+
+	// Register refinement mesh with parameterization and layout
+	polyscope::registerSurfaceMesh("refinement mesh", V_cut, F_uv)
+		->addVertexParameterizationQuantity("uv", uv);
+	polyscope::registerSurfaceMesh2D("refinement layout", uv, F_uv);
+
+	// Add Fn_to_F map
+	polyscope::getSurfaceMesh("refinement mesh")
+		->addFaceScalarQuantity("face map", Fn_to_F);
+	polyscope::getSurfaceMesh("refinement layout")
+		->addFaceScalarQuantity("face map", Fn_to_F);
+
+	// Add face areas
+	Eigen::VectorXd doublearea;
+	igl::doublearea(V, F, doublearea);
+	Eigen::VectorXd area = 0.5 * doublearea;
+	polyscope::getSurfaceMesh("refinement mesh")
+		->addFaceScalarQuantity("area", area);
+
+	// Show meshes
+	polyscope::show();
+
+	// Remove meshes
+	polyscope::removeStructure("refinement mesh");
+	polyscope::removeStructure("refinement layout");
+}
+
+void
+RefinementMesh::view_face(
+	Index face_index
+) const
+{
+	polyscope::init();
+
+	// Register corner and halfedge vertices
+	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
+	{
+		Index hi = *iter;
+		Index vi = to[hi];
+		polyscope::registerPointCloud(
+			"corner vertex " + std::to_string(hi),
+			get_vertex(vi).transpose()
+		);
+
+		int num_h_points = h_v_points[hi].size();
+		Eigen::MatrixXd h_V(num_h_points, 3);
+		for (int k = 0; k < num_h_points; ++k)
+		{
+			Index vk = h_v_points[hi][k];
+			h_V.row(k) = get_vertex(vk);
+		}
+		polyscope::registerPointCloud("halfedge vertices " + std::to_string(hi), h_V);
+	}
+	
+	// Show meshes
+	polyscope::show();
+
+	// Remove meshes
+	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
+	{
+		Index hi = *iter;
+		polyscope::removeStructure("corner vertex " + std::to_string(hi));
+		polyscope::removeStructure("halfedge vertices " + std::to_string(hi));
+	}
+}
+
+
+void
+RefinementMesh::view_uv_face(
+	Index face_index
+) const
+{
+	polyscope::init();
+
+	// Register corner and halfedge vertices
+	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
+	{
+		Index hi = *iter;
+		Index uvi = uv_to[hi];
+		polyscope::registerPointCloud(
+			"uv corner vertex " + std::to_string(hi),
+			get_uv_vertex(uvi).transpose()
+		);
+
+		int num_h_points = h_v_points[hi].size();
+		Eigen::MatrixXd h_uv(num_h_points, 3);
+		for (int k = 0; k < num_h_points; ++k)
+		{
+			Index uvk = h_uv_points[hi][k];
+			h_uv.row(k) = get_uv_vertex(uvk);
+		}
+		polyscope::registerPointCloud("halfedge uv vertices " + std::to_string(hi), h_uv);
+	}
+	
+	// Show meshes
+	polyscope::show();
+
+	// Remove meshes
+	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
+	{
+		Index hi = *iter;
+		polyscope::removeStructure("uv corner vertex " + std::to_string(hi));
+		polyscope::removeStructure("halfedge uv vertices " + std::to_string(hi));
+	}
 }
 
 void
@@ -430,27 +555,12 @@ build_faces(
 
 void
 RefinementMesh::build_connectivity(
-	const Eigen::MatrixXd& V,
 	const Eigen::MatrixXi& F,
-	const Eigen::MatrixXd& uv,
 	const Eigen::MatrixXi& F_uv,
 	const std::vector<int>& Fn_to_F,
 	const std::vector<std::pair<int, int>>& endpoints
 ) {
 	m_inserted_vertex_halfedges.clear();
-	// Combine (almost) identical uv vertices
-	// TODO Make sure to check for validity
-	//Eigen::MatrixXd uv;
-	//Eigen::VectorXi SVI, SVJ;
-	//igl::remove_duplicate_vertices(uv_in, 1e-12, uv, SVI, SVJ);
-	//Eigen::MatrixXi F_uv(F_uv_in.rows(), 3);
-	//for (int fi = 0; fi < F_uv_in.rows(); ++fi)
-	//{
-	//	for (int j = 0; j < 3; ++j)
-	//	{
-	//		F_uv(fi, j) = SVJ[F_uv_in(fi, j)];
-	//	}
-	//}
 
 	// Check if uv faces are a single component
 	int num_components = count_components(F_uv);
@@ -505,65 +615,6 @@ RefinementMesh::build_connectivity(
 		}
 	}
 
-	// TODO View flipped triangles
-	//view_flipped_triangles(V, F, uv, F_uv);
-	//view_flipped_triangles(V, F_orig, uv, F_uv_orig);
-  Eigen::VectorXi flipped_f;
-  igl::flipped_triangles(uv, F_uv_orig, flipped_f);
-  spdlog::info("{} flipped elements", flipped_f.size());
-
-	// TODO Check topology directly here before building halfedge
-	Eigen::VectorXi face_components;
-	igl::facet_components(F_uv, face_components);
-	Eigen::VectorXi face_components_orig;
-	igl::facet_components(F_uv_orig, face_components_orig);
-	Eigen::MatrixXd V_cut, V_orig_cut;
-	cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
-	cut_mesh_along_parametrization_seams(V, F_orig, uv, F_uv_orig, V_orig_cut);
-	Eigen::MatrixXi E;
-	Eigen::VectorXi J, K;
-	igl::boundary_facets(F_uv, E, J, K);
-	VectorX boundary_edges;
-	boundary_edges.setZero(num_new_faces * 3);
-	for (int i = 0; i < J.size(); ++i)
-	{
-		int j = J[i];		
-		int k = (K[i] + 1)%3;		
-		boundary_edges[3 * j + k] = 1.0;
-	}
-	if (false) // TODO
-	{
-		Eigen::VectorXd doublearea;
-		igl::doublearea(V_cut, F, doublearea);
-		Eigen::VectorXd area = 0.5 * doublearea;
-		polyscope::init();
-		polyscope::registerSurfaceMesh("original mesh", V_orig_cut, F_uv_orig)
-			->addVertexParameterizationQuantity("uv", uv);
-		polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
-			->addVertexParameterizationQuantity("uv", uv);
-		polyscope::getSurfaceMesh("mesh")
-			->addHalfedgeScalarQuantity("boundary", boundary_edges);
-		polyscope::getSurfaceMesh("mesh")
-			->addFaceScalarQuantity("area", area);
-		polyscope::getSurfaceMesh("original mesh")
-			->addFaceScalarQuantity("components", face_components_orig);
-		polyscope::getSurfaceMesh("mesh")
-			->addFaceScalarQuantity("components", face_components);
-		polyscope::registerSurfaceMesh2D("original uv mesh", uv, F_uv_orig);
-		polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv);
-		polyscope::getSurfaceMesh("original uv mesh")
-			->addFaceScalarQuantity("components", face_components_orig);
-		polyscope::getSurfaceMesh("uv mesh")
-			->addHalfedgeScalarQuantity("boundary", boundary_edges);
-		polyscope::getSurfaceMesh("uv mesh")
-			->addFaceScalarQuantity("components", face_components);
-		polyscope::show();
-		polyscope::removeStructure("mesh");
-		polyscope::removeStructure("uv mesh");
-		polyscope::removeStructure("original mesh");
-		polyscope::removeStructure("original uv mesh");
-	}
-
 	// Build halfedges for the faces
 	std::vector<int> next_he;
 	std::vector<int> opposite;
@@ -587,17 +638,6 @@ RefinementMesh::build_connectivity(
 	{
 		spdlog::error("uv original face connectivity has {} components", num_orig_components);
 	}
-
-	// Build halfedges for the uv faces
-	//std::vector<int> next_he_uv;
-	//std::vector<int> opp_uv;
-	//std::vector<int> bnd_loops_uv;
-	//std::vector<int> vtx_reindex_uv;
-	//std::vector<std::vector<int>> corner_to_he_uv;
-	//std::vector<std::pair<int, int>> he_to_corner_uv;
-	//Connectivity C_uv;
-	//FV_to_NOB(F_uv_orig, next_he_uv, opp_uv, bnd_loops_uv, vtx_reindex_uv, corner_to_he_uv, he_to_corner_uv);
-	//NOB_to_connectivity(next_he_uv, opp_uv, bnd_loops_uv, C_uv);
 
 	n = C.n;
 	prev = C.prev;
@@ -651,7 +691,7 @@ RefinementMesh::build_connectivity(
 		// FIXME
 		//if (!corner_v_points[ci.first][ci.second].empty())
 		//{
-		//	spdlog::info("Face {} has nontrivial refinement", fi);
+		//	spdlog::trace("Face {} has nontrivial refinement", fi);
 		//}
 
 		// Store endpoints
@@ -710,7 +750,7 @@ RefinementMesh::refine_mesh()
 		// Check if the face is inverted
 		if (is_inverted_triangle(triangle))
 		{
-			spdlog::info("Inverted face {}, {}, {}", triangle[0], triangle[1], triangle[2]); // FIXME
+			spdlog::trace("Inverted face {}, {}, {}", triangle[0], triangle[1], triangle[2]); // FIXME
 			invalid_faces.push(fijk);
 		}
 	}
@@ -722,7 +762,7 @@ RefinementMesh::refine_mesh()
 		// Get invalid face
 		Index current_face = invalid_faces.top();
 		invalid_faces.pop();
-		spdlog::info("Processing face {}", current_face);
+		spdlog::trace("Processing face {}", current_face);
 
 		// Check if face already processed to prevent an infinite loop
 		// NOTE: This should not happen, but may do to floating point error
@@ -847,7 +887,7 @@ RefinementMesh::simplify_vertex(
 void
 RefinementMesh::simplify_mesh()
 {
-	spdlog::info("Simplifying mesh");
+	spdlog::trace("Simplifying mesh");
 
 	// Initialize record of found vertices
 	int num_inserted_vertices = m_inserted_vertex_halfedges.size();
@@ -1051,248 +1091,6 @@ RefinementMesh::refine_face(
 
 // Mesh predicates
 
-Scalar
-compute_face_area(
-	const std::array<VectorX, 3>& vertices
-) {
-	// Get edge lengths for triangle
-	Scalar li = (vertices[1] - vertices[0]).norm();
-	Scalar lj = (vertices[2] - vertices[1]).norm();
-	Scalar lk = (vertices[0] - vertices[2]).norm();
-
-	// Compute area from lengths
-	return sqrt(area_squared(li, lj, lk));
-}
-
-bool
-is_inverted_triangle(
-	const std::array<VectorX, 3>& vertices
-) {
-	// Build matrix of triangle homogenous coordinates
-	Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
-	tri_homogenous_coords.col(0) << vertices[0][0], vertices[0][1], 1.0;
-	tri_homogenous_coords.col(1) << vertices[1][0], vertices[1][1], 1.0;
-	tri_homogenous_coords.col(2) << vertices[2][0], vertices[2][1], 1.0;
-
-	// Triangle is flipped iff the determinant is negative
-	double det = tri_homogenous_coords.determinant();
-	return (det < 0.0);
-}
-
-
-bool
-is_self_overlapping_polygon(
-	const std::vector<VectorX>& uv_vertices,
-	const std::vector<VectorX>& vertices,
-	std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
-	std::vector<std::vector<int>>& splitting_vertices,
-	std::vector<std::vector<Scalar>>& min_face_areas 
-) {
-	is_self_overlapping_subpolygon.clear();
-	splitting_vertices.clear();
-	min_face_areas.clear();
-	if (vertices.size() != uv_vertices.size())
-	{
-		spdlog::error("Inconsistent uv and 3D vertices");
-		return false;
-	}
-
-	// Build a table to record if the subpolygon between vertex i and j is self
-	// overlapping and the corresponding splitting vertex indices
-	int face_size = uv_vertices.size();
-	is_self_overlapping_subpolygon.resize(face_size);
-	splitting_vertices.resize(face_size);
-	min_face_areas.resize(face_size);
-	for (int i = 0; i < face_size; ++i)
-	{
-		is_self_overlapping_subpolygon[i] = std::vector<bool>(face_size, false);
-		splitting_vertices[i] = std::vector<int>(face_size, -1);
-		min_face_areas[i] = std::vector<Scalar>(face_size, 0.0);
-	}
-
-	// Set diagonal and superdiagonal to true as trivial polygons with less than 3 faces can be
-	// triangulated with positive orientation (by convention)
-	for (int i = 0; i < face_size; ++i)
-	{
-		is_self_overlapping_subpolygon[i][i] = true;
-		is_self_overlapping_subpolygon[i][(i + 1)%face_size] = true;
-	}
-
-	// Check for degenerate (line, point, empty) polygons
-	if (face_size < 3)
-	{
-		spdlog::warn("Checking if trivial polygon is self overlapping");
-		return true;
-	}
-
-	// Build table iteratively by distance between vertices in ccw order
-	for (int d = 2; d < face_size; ++d)
-	{
-		for (int i = 0; i < face_size; ++i)
-		{
-			// Checking for subpolygon between i and the vertex d away ccw around
-			// the polygon
-			int j = (i + d) % face_size;
-
-			// Look for a splitting vertex k between i and j
-			for (int k = (i + 1) % face_size; k != j; k = (k + 1) % face_size)
-			{
-				// Check if triangle T_ikj is positively oriented
-				std::array<VectorX, 3> uv_triangle = { uv_vertices[i], uv_vertices[k], uv_vertices[j] };
-				std::array<VectorX, 3> triangle = { vertices[i], vertices[k], vertices[j] };
-				if (is_inverted_triangle(uv_triangle)) continue;
-
-				// Check if the two subpolygons (i, k) and (k, j) are self overlapping
-				if (!is_self_overlapping_subpolygon[i][k]) continue;
-				if (!is_self_overlapping_subpolygon[k][j]) continue;
-
-				// Otherwise, k is a splitting vertex and (i, j) is self overlapping
-				is_self_overlapping_subpolygon[i][j] = true;
-
-				// Compute minimum of uv and 3D triangle areas for the subpolygon ij with
-				// splitting vertex k
-				Scalar uv_triangle_area = compute_face_area(uv_triangle);
-				Scalar triangle_area = compute_face_area(triangle);
-				Scalar min_area = std::min(uv_triangle_area, triangle_area);
-				if (k != (i + 1) % face_size)
-				{
-					min_area = std::min(min_area, min_face_areas[i][k]);
-				}
-				if (j != (k + 1) % face_size)
-				{
-					min_area = std::min(min_area, min_face_areas[k][j]);
-				}
-
-				// Set splitting vertex, overwriting existing values iff it increase the min area
-				if ((splitting_vertices[i][j] < 0) || (min_face_areas[i][j] < min_area))
-				{
-					splitting_vertices[i][j] = k;
-					min_face_areas[i][j] = min_area;
-				}
-			}
-		}
-	}
-
-	// Check if a subdiagonal element is true (and thus the polygon is self overlapping)
-	for (int j = 0; j < face_size; ++j)
-	{
-		int i = (j + 1) % face_size; // j = i - 1
-		if (is_self_overlapping_subpolygon[i][j])
-		{
-			return true;
-		}
-	}
-
-	// Polygon is not self overlapping otherwise
-	return false;
-}
-
-// Helper function to triangulate subpolygons
-void
-triangulate_self_overlapping_subpolygon(
-	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
-	const std::vector<std::vector<int>>& splitting_vertices,
-	int start_vertex,
-	int end_vertex,
-	std::vector<std::array<int, 3>>& faces
-) {
-	int face_size = is_self_overlapping_subpolygon.size();
-	spdlog::trace(
-		"Triangulating subpolygon ({}, {}) of polygon of size {}",
-		start_vertex,
-		end_vertex,
-		face_size
-	);
-
-	// Get starting edge (j,i)
-	int i = start_vertex;
-	int j = end_vertex;
-
-	// Do not triangulate edges or vertices
-	if ((i == j) || ((i + 1) % face_size == j))
-	{
-		spdlog::trace("Base case vertex or edge");
-		return;
-	}
-
-	// Add splitting face Tikj
-	int k = splitting_vertices[i][j];
-	faces.push_back( {i, k, j} );
-	spdlog::trace("Adding triangle ({}, {}, {})", i, k, j);
-
-	// Triangulate subpolygon (i, k)
-	spdlog::trace("Recursing to subpolygon ({}, {})", i, k);
-	triangulate_self_overlapping_subpolygon(
-		is_self_overlapping_subpolygon,
-		splitting_vertices,
-		i,
-		k,
-		faces
-	);
-
-	// Triangulate subpolygon (k, j)
-	spdlog::trace("Recursing to subpolygon ({}, {})", k, j);
-	triangulate_self_overlapping_subpolygon(
-		is_self_overlapping_subpolygon,
-		splitting_vertices,
-		k,
-		j,
-		faces
-	);
-}
-
-void
-triangulate_self_overlapping_polygon(
-	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
-	const std::vector<std::vector<int>>& splitting_vertices,
-	const std::vector<std::vector<Scalar>>& min_face_areas,
-	std::vector<std::array<int, 3>>& faces
-) {
-	faces.clear();
-	int face_size = is_self_overlapping_subpolygon.size();
-	if (face_size < 3)
-	{
-		spdlog::warn("Triangulated trivial face");
-		return;
-	}
-
-	// Find (j, i) so that the triangulation of the polygon containing it has maximal min area
-	int optimal_j = -1;
-	Scalar max_min_area = -1.0;
-	for (int j = 0; j < face_size; ++j)
-	{
-		int i = (j + 1) % face_size; // j = i - 1
-		if ((is_self_overlapping_subpolygon[i][j]) && (min_face_areas[i][j] > max_min_area))
-		{
-			optimal_j = j;
-			max_min_area = min_face_areas[i][j];
-		}
-	}
-
-	// Call recursive subroutine on the whole polygon for the optimal edge (j, i)
-	int j = optimal_j;
-	int i = (j + 1) % face_size; // j = i - 1
-	triangulate_self_overlapping_subpolygon(
-		is_self_overlapping_subpolygon,
-		splitting_vertices,
-		i,
-		j,
-		faces
-	);
-
-	// Check triangulation is the right size
-	int num_tri = faces.size();
-	if (face_size != num_tri + 2)
-	{
-		spdlog::error(
-			"Invalid triangulation of size {} for polygon of size {}",
-			num_tri,
-			face_size
-		);
-		faces.clear();
-	}
-}
-
 bool
 RefinementMesh::is_self_overlapping_face(
 	RefinementMesh::Index face_index
@@ -1409,7 +1207,7 @@ RefinementMesh::triangulate_face(
 			vertices[polygon_faces[fi][1]],
 			vertices[polygon_faces[fi][2]]
 		}) < 1e-8) {
-			spdlog::info(
+			spdlog::trace(
 				"Degenerate face {}, {}, {} in polygon {}",
 				polygon_faces[fi][0],
 				polygon_faces[fi][1],
@@ -1424,39 +1222,39 @@ RefinementMesh::triangulate_face(
 	if ((view_triangulated_face) && (num_polygon_faces > 1))
 	{
 		// Print triangulation table
-		spdlog::info("SO table");
+		spdlog::trace("SO table");
 		for (size_t i = 0; i < is_self_overlapping_subpolygon.size(); ++i)
 		{
-			spdlog::info("row {}: {}", i, formatted_vector(is_self_overlapping_subpolygon[i]));
+			spdlog::trace("row {}: {}", i, formatted_vector(is_self_overlapping_subpolygon[i]));
 		}
-		spdlog::info("splitting vertices table");
+		spdlog::trace("splitting vertices table");
 		for (size_t i = 0; i < splitting_vertices.size(); ++i)
 		{
-			spdlog::info("row {}: {}", i, formatted_vector(splitting_vertices[i]));
+			spdlog::trace("row {}: {}", i, formatted_vector(splitting_vertices[i]));
 		}
-		spdlog::info("min face area table");
+		spdlog::trace("min face area table");
 		for (size_t i = 0; i < min_face_areas.size(); ++i)
 		{
-			spdlog::info("row {}: {}", i, formatted_vector(min_face_areas[i]));
+			spdlog::trace("row {}: {}", i, formatted_vector(min_face_areas[i]));
 		}
 
 		// Print vertices
 		for (size_t vi = 0; vi < vertices.size(); ++vi)
 		{
-			spdlog::info("Vertex {} with index {} at {}", vi, vertex_indices[vi], vertices[vi]);
+			spdlog::trace("Vertex {} with index {} at {}", vi, vertex_indices[vi], vertices[vi]);
 		}
 
 		// Print faces
 		for (int fi = 0; fi < num_polygon_faces; ++fi)
 		{
-			spdlog::info(
+			spdlog::trace(
 				"Local face {} is {}, {}, {}",
 				fi,
 				polygon_faces[fi][0],
 				polygon_faces[fi][1],
 				polygon_faces[fi][2]
 			);
-			spdlog::info(
+			spdlog::trace(
 				"Global face {} is {}, {}, {}",
 				fi,
 				face_triangles[fi][0],
@@ -1477,7 +1275,7 @@ RefinementMesh::triangulate_face(
 		// Print faces
 		for (int fi = 0; fi < num_polygon_faces; ++fi)
 		{
-			spdlog::info(
+			spdlog::trace(
 				"Layout face {} is {}, {}, {}",
 				fi,
 				uv_face_triangles[fi][0],
@@ -1563,130 +1361,5 @@ bool RefinementMesh::is_valid_refinement_mesh() const
 	// Valid otherwise
 	return true;
 }
-
-void
-RefinementMesh::view_original_mesh() const
-{
-	polyscope::init();
-
-	// Build mesh
-	Eigen::MatrixXd V;
-	Eigen::MatrixXi F;
-	Eigen::MatrixXd uv;
-	Eigen::MatrixXi F_uv;
-	std::vector<int> Fn_to_F;
-	std::vector<std::pair<int,int>> endpoints;
-	get_VF_mesh(V, F, uv, F_uv, Fn_to_F, endpoints);
-
-  // Get the flipped elements
-  Eigen::VectorXi flipped_f;
-  igl::flipped_triangles(uv, F_uv, flipped_f);
-  spdlog::info("{} flipped elements", flipped_f.size());
-	Eigen::VectorXd doublearea;
-	igl::doublearea(V, F, doublearea);
-	Eigen::VectorXd area = 0.5 * doublearea;
-
-	// Cut mesh
-	Eigen::MatrixXd V_cut;
-	cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
-
-	// Register meshes
-	polyscope::registerSurfaceMesh("original mesh", V_cut, F_uv)
-		->addVertexParameterizationQuantity("uv", uv);
-	polyscope::registerSurfaceMesh2D("layout mesh", uv, F_uv);
-
-	// Add Fn_to_F map
-	polyscope::getSurfaceMesh("original mesh")
-		->addFaceScalarQuantity("face map", Fn_to_F);
-	polyscope::getSurfaceMesh("original mesh")
-		->addFaceScalarQuantity("area", area);
-	polyscope::getSurfaceMesh("layout mesh")
-		->addFaceScalarQuantity("face map", Fn_to_F);
-
-	// Show meshes
-	polyscope::show();
-	polyscope::removeStructure("original mesh");
-	polyscope::removeStructure("layout mesh");
-}
-
-void
-RefinementMesh::view_face(
-	Index face_index
-) const
-{
-	polyscope::init();
-
-	// Register corner and halfedge vertices
-	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
-	{
-		Index hi = *iter;
-		Index vi = to[hi];
-		polyscope::registerPointCloud(
-			"corner vertex " + std::to_string(hi),
-			get_vertex(vi).transpose()
-		);
-
-		int num_h_points = h_v_points[hi].size();
-		Eigen::MatrixXd h_V(num_h_points, 3);
-		for (int k = 0; k < num_h_points; ++k)
-		{
-			Index vk = h_v_points[hi][k];
-			h_V.row(k) = get_vertex(vk);
-		}
-		polyscope::registerPointCloud("halfedge vertices " + std::to_string(hi), h_V);
-	}
-	
-	// Show meshes
-	polyscope::show();
-
-	// Remove meshes
-	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
-	{
-		Index hi = *iter;
-		polyscope::removeStructure("corner vertex " + std::to_string(hi));
-		polyscope::removeStructure("halfedge vertices " + std::to_string(hi));
-	}
-}
-
-
-void
-RefinementMesh::view_uv_face(
-	Index face_index
-) const
-{
-	polyscope::init();
-
-	// Register corner and halfedge vertices
-	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
-	{
-		Index hi = *iter;
-		Index uvi = uv_to[hi];
-		polyscope::registerPointCloud(
-			"uv corner vertex " + std::to_string(hi),
-			get_uv_vertex(uvi).transpose()
-		);
-
-		int num_h_points = h_v_points[hi].size();
-		Eigen::MatrixXd h_uv(num_h_points, 3);
-		for (int k = 0; k < num_h_points; ++k)
-		{
-			Index uvk = h_uv_points[hi][k];
-			h_uv.row(k) = get_uv_vertex(uvk);
-		}
-		polyscope::registerPointCloud("halfedge uv vertices " + std::to_string(hi), h_uv);
-	}
-	
-	// Show meshes
-	polyscope::show();
-
-	// Remove meshes
-	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
-	{
-		Index hi = *iter;
-		polyscope::removeStructure("uv corner vertex " + std::to_string(hi));
-		polyscope::removeStructure("halfedge uv vertices " + std::to_string(hi));
-	}
-}
-
 
 }

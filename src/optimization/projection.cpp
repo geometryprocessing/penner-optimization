@@ -5,7 +5,7 @@
 #include "constraint.hh"
 #include "embedding.hh"
 #include "globals.hh"
-#include "transitions.hh"
+#include "delaunay.hh"
 
 /// FIXME Do cleaning pass
 
@@ -23,7 +23,7 @@ conformal_scaling_matrix(const Mesh<Scalar>& m)
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Create projection matrix
   int num_halfedges = he2e.size();
@@ -73,7 +73,7 @@ project_to_constraint(
   // Build refl projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Convert embedded mesh log edge lengths to a halfedge length array l for m
   int num_halfedges = he2e.size();

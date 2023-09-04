@@ -39,7 +39,7 @@ initialize_data_log(
   const std::filesystem::path& data_log_path
 ) {
   // Open file
-  spdlog::info("Writing data to {}", data_log_path);
+  spdlog::trace("Writing data to {}", data_log_path);
   std::ofstream output_file(data_log_path, std::ios::out | std::ios::trunc);
 
   // Write header
@@ -189,7 +189,7 @@ write_data_log_entry(
   const std::filesystem::path& data_log_path
 ) {
   // Open file in append mode
-  spdlog::info("Writing data iteration to {}", data_log_path);
+  spdlog::trace("Writing data iteration to {}", data_log_path);
   std::ofstream output_file(data_log_path, std::ios::out | std::ios::app);
 
   // Write iteration row
@@ -806,7 +806,7 @@ line_search_with_projection(const Mesh<Scalar>& m,
                                 reduction_maps,
                                 *opt_params,
                                 constrained_gradient);
-    spdlog::info("Projected gradient is {}", descent_direction.dot(constrained_gradient));
+    spdlog::trace("Projected gradient is {}", descent_direction.dot(constrained_gradient));
 
     // Update the convergence ratio 
     convergence_ratio = compute_convergence_ratio(gradient, constrained_gradient);

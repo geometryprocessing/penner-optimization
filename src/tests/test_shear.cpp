@@ -191,10 +191,15 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
   // Generate mesh
   generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
 
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   SECTION ( "Zero" )
   {
@@ -325,11 +330,16 @@ TEST_CASE( "Shear dual basis coordinates for a pyramid can be computed", "[shear
 
   // Generate mesh
   generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+  
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
 
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   SECTION ( "Zero" )
   {

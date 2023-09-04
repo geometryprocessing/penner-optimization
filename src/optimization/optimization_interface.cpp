@@ -1,11 +1,11 @@
 #include "optimization_interface.hh"
 #include "targets.hh"
 #include "embedding.hh"
-#include "energies.hh"
+#include "energy_functor.hh"
 #include "translation.hh"
 #include "interpolation.hh"
 #include "projection.hh"
-#include "optimization_layout.cpp"
+#include "layout.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 /// FIXME Do cleaning pass
@@ -149,7 +149,7 @@ generate_VF_mesh_from_metric(
 	scale_factors.setZero(m.n_ind_vertices());
 	if (do_best_fit_scaling)
 	{
-		scale_factors = best_fit_conformal(m, metric_target, metric_coords);
+		best_fit_conformal(m, metric_target, metric_coords, scale_factors);
 		MatrixX B = conformal_scaling_matrix(m);
 		metric_coords = metric_coords - B * scale_factors;
 	}
@@ -172,9 +172,9 @@ generate_VF_mesh_from_metric(
 	// Compute interpolation overlay mesh
 	Eigen::MatrixXd V_overlay;
 	InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
-	spdlog::info("Interpolating penner coordinates");
+	spdlog::trace("Interpolating penner coordinates");
 	interpolate_penner_coordinates(m, he_metric_coords, scale_factors, interpolation_mesh, reverse_interpolation_mesh);
-	spdlog::info("Interpolating vertex positions");
+	spdlog::trace("Interpolating vertex positions");
 	interpolate_vertex_positions(V, vtx_reindex, interpolation_mesh, reverse_interpolation_mesh, V_overlay);
 	OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
 	make_tufted_overlay(m_o, V, F, Th_hat);
@@ -199,7 +199,7 @@ generate_VF_mesh_from_metric(
 	std::vector<bool> is_cut = compute_layout_topology(m, is_cut_place_holder);
 
 	// Convert overlay mesh to VL format
-	spdlog::info("Getting layout");
+	spdlog::trace("Getting layout");
 	std::vector<int> vtx_reindex_mutable = vtx_reindex;
   std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
 	convert_eigen_to_std_vector(scale_factors, u);
@@ -329,10 +329,10 @@ consistent_overlay_mesh_to_VL(const Eigen::MatrixXi& F,
         bd[i] = vtx_reindex_rev[bd[i]];
     }
 
-    spdlog::info("#bd_vt: {}", bd.size());
-    spdlog::info("#cones: {}", cones.size());
-    spdlog::info("vtx reindex size: {}", vtx_reindex.size());
-    spdlog::info("mc.out size: {}", mo.cmesh().out.size());
+    spdlog::trace("#bd_vt: {}", bd.size());
+    spdlog::trace("#cones: {}", cones.size());
+    spdlog::trace("vtx reindex size: {}", vtx_reindex.size());
+    spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
     auto layout_res = get_consistent_layout(mo, u, cones, is_cut);

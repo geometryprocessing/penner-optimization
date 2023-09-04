@@ -58,11 +58,6 @@ def simplify_vf_one(args, fname):
     #print("ft_s shape", ft_s.shape)
     vnt_to_v[ft_s] = vn_to_v[f_s]
 
-    # Check uvs are consistent
-    if not opt.check_uv(v_s, f_s, uvt_s, ft_s):
-        logger.info("UVs are inconsistent")
-        return
-
     # Write combined overlay with uv
     uv_mesh_path = os.path.join(output_dir, name + '_simplified_with_uv.obj')
     logger.info("Saving simplified uv mesh at {}".format(uv_mesh_path))

@@ -1,7 +1,7 @@
 #include "common.hh"
 #include "implicit_optimization.hh"
 #include "optimization_interface.hh"
-#include "optimization_layout.hh"
+#include "layout.hh"
 #include "logging.hh"
 #include "targets.hh"
 #include <igl/readOBJ.h>
