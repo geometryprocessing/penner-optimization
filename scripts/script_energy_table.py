@@ -60,7 +60,7 @@ def energy_table(args):
 
         try:
             # Get mesh
-            logger.info("Getting mesh {}", m)
+            logger.info("Getting mesh {}".format(m))
             m, C, lambdas_init, lambdas_target, v, f, Th_hat = script_util.generate_mesh(args, fname)
             name = m + '_'+args['suffix']
             reduction_maps = opt.ReductionMaps(C)

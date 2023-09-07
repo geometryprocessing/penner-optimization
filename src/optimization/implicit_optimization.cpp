@@ -469,10 +469,14 @@ compute_optimal_tangent_space_descent_direction(
 		);
 
     // Solve for the optimal descent direction
+    igl::Timer timer;
+    timer.start();
 		Eigen::SparseLU<Eigen::SparseMatrix<Scalar>> solver;
 		solver.compute(hessian_lagrangian);
 		VectorX solution = solver.solve(rhs);
 		variable_projected_descent_direction = solution.head(num_variable_edges);
+    double time = timer.getElapsedTime();
+    spdlog::info("Lagrangian descent direction solve took {} s", time);
 	}
 	if (method == "explicit_inverse")
 	{
@@ -775,7 +779,8 @@ line_search_with_projection(const Mesh<Scalar>& m,
                           reduced_line_step_metric_coords,
                           reduced_metric_coords,
                           u,
-                          proj_params);
+                          proj_params,
+                          opt_params);
     expand_reduced_function(
       reduction_maps.proj, reduced_metric_coords, metric_coords);
     SolveStats<Scalar> solve_stats = std::get<1>(projection_out);
@@ -806,6 +811,7 @@ line_search_with_projection(const Mesh<Scalar>& m,
                                 reduction_maps,
                                 *opt_params,
                                 constrained_gradient);
+    num_linear_solves++;
     spdlog::trace("Projected gradient is {}", descent_direction.dot(constrained_gradient));
 
     // Update the convergence ratio 
@@ -899,6 +905,18 @@ optimize_metric_log(const Mesh<Scalar>& m,
   if (!output_dir.empty()) {
     data_log_path = join_path(output_dir, "iteration_data_log.csv");
     initialize_data_log(data_log_path);
+
+    // Clear other data logs
+    std::ofstream error_output_file(
+      join_path(output_dir, "conformal_iteration_error.csv"),
+      std::ios::out | std::ios::trunc
+    );
+    error_output_file.close();
+    std::ofstream time_output_file(
+      join_path(output_dir, "conformal_iteration_times.csv"),
+      std::ios::out | std::ios::trunc
+    );
+    time_output_file.close();
   }
 
   // Get maps for going between halfedge, edge, full, and reduced
@@ -920,7 +938,7 @@ optimize_metric_log(const Mesh<Scalar>& m,
   VectorX u;
   u.setZero(m.n_ind_vertices());
   project_to_constraint(
-    m, reduced_metric_init, reduced_metric_coords, u, proj_params);
+    m, reduced_metric_init, reduced_metric_coords, u, proj_params, opt_params);
   SPDLOG_TRACE("Initial projected metric is {}", reduced_metric_coords);
 
   // Log the initial energy

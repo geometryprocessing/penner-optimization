@@ -153,10 +153,12 @@ def color_mesh_with_grid(fid_mat, bc_mat, h, n, to, u, v, r, H, W, colormap, nor
             # Color additional features
             elif fid_mat[i][j] == -1:
                 color_rgb_gd[i,j,:] = np.array([1.0,1.0,1.0])
-            elif fid_mat[i][j] == -2:
+            elif fid_mat[i][j] == -2: # Red sphere
                 color_rgb_gd[i,j,:] = np.array([0.7,0.1,0.2])
-            elif fid_mat[i][j] == -3:
+                #color_rgb_gd[i,j,:] = np.array([1.0,0.0, 0.75])
+            elif fid_mat[i][j] == -3: # Blue sphere
                 color_rgb_gd[i,j,:] = np.array([0.5,0.7,0.35])
+                #color_rgb_gd[i,j,:] = np.array([0.0,0.75,1.0])
             elif fid_mat[i][j] == -4:
                 color_rgb_gd[i,j,:] = np.array([0,0,0])
             elif fid_mat[i][j] == -5:

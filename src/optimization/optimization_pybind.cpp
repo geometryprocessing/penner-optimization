@@ -436,6 +436,11 @@ init_optimization_interface_pybind(pybind11::module& m)
 void
 init_projection_pybind(pybind11::module& m)
 {
+  m.def("conformal_scaling_matrix",
+        &conformal_scaling_matrix,
+        "Build matrix for scaling edge lengths conformally",
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
   m.def("project_to_constraint",
         &project_to_constraint_py,
         "Project to constraint manifold",

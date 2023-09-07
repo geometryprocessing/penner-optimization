@@ -6,6 +6,7 @@
 #include "embedding.hh"
 #include "globals.hh"
 #include "delaunay.hh"
+#include <igl/Timer.h>
 
 /// FIXME Do cleaning pass
 
@@ -48,10 +49,13 @@ project_to_constraint(
   const VectorX& reduced_metric_coords,
   VectorX& reduced_metric_coords_proj,
   VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   if (proj_params == nullptr)
     proj_params = std::make_shared<ProjectionParameters>();
+  if (opt_params == nullptr)
+    opt_params = std::make_shared<OptimizationParameters>();
 
   // Create parameters for conformal method using restricted set of projection
   // parameters
@@ -64,6 +68,12 @@ project_to_constraint(
   alg_params.use_edge_flips = proj_params->use_edge_flips;
   ls_params.bound_norm_thres = double(proj_params->bound_norm_thres);
   ls_params.do_reduction = proj_params->do_reduction;
+  std::string output_dir = opt_params->output_dir;
+  if (!output_dir.empty()) {
+    stats_params.error_log = true;
+    stats_params.flip_count = true;
+    stats_params.output_dir = output_dir;
+  }
 
   // Get edge maps
   std::vector<int> he2e;
@@ -141,9 +151,13 @@ project_descent_direction(const VectorX& descent_direction,
   // Solve for correction vector mu
   MatrixX L = J_constraint * J_constraint.transpose();
   VectorX w = -(J_constraint * descent_direction + constraint);
+  igl::Timer timer;
+  timer.start();
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
   solver.compute(L);
   VectorX mu = solver.solve(w);
+  double time = timer.getElapsedTime();
+  spdlog::info("Direction projection solve took {} s", time);
 
   // Compute lambdas line search direction
   return descent_direction + (J_constraint.transpose() * mu);
@@ -187,10 +201,11 @@ project_to_constraint(
   const Mesh<Scalar>& m,
   const VectorX& lambdas,
   VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   VectorX lambdas_proj;
-  project_to_constraint(m, lambdas, lambdas_proj, u, proj_params);
+  project_to_constraint(m, lambdas, lambdas_proj, u, proj_params, opt_params);
 
   return lambdas_proj;
 }
@@ -337,11 +352,12 @@ std::tuple<VectorX, VectorX>
 project_to_constraint_py(
   const Mesh<Scalar>& m,
   const VectorX& lambdas,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   VectorX u0;
   u0.setZero(m.n_ind_vertices());
-  VectorX lambdas_proj = project_to_constraint(m, lambdas, u0, proj_params);
+  VectorX lambdas_proj = project_to_constraint(m, lambdas, u0, proj_params, opt_params);
   VectorX u(u0.size());
   for (int i = 0; i < u0.size(); ++i) {
     u[i] = u0[i];
