@@ -58,7 +58,10 @@ def error_table(args):
             logger.info("Processing mesh {}".format(m))
             # Get input mesh
             m, C, lambdas_init, lambdas_target, v_orig, f_orig, Th_hat = script_util.generate_mesh(args, fname)
-            name = m + '_'+args['suffix']
+            if (args['suffix'] == ""):
+                name = m
+            else:
+                name = m + '_'+args['suffix']
 
             # Load input mesh information
             try:
