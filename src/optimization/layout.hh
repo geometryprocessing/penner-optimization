@@ -33,12 +33,25 @@ make_tufted_overlay(OverlayMesh<Scalar>& mo,
 
 /// Given a VF mesh, check that the face areas are nonzero
 ///
-/// @param[in] V: mesh vertices in 3D
+/// @param[in] V: mesh vertices in 2D or 3D
 /// @param[in] F: mesh faces
 /// @return true iff the face areas are all nonzero
 bool check_areas(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F
+);
+
+/// Given a VF mesh with uv coordinates, get the maximum error of the uv lengths
+/// across cuts
+///
+/// @param[in] F: mesh faces
+/// @param[in] uv: mesh uv coordinates in 2D
+/// @param[in] F_uv: mesh uv faces
+/// @return maximum uv length error across cuts
+Scalar compute_uv_length_error(
+  const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv
 );
 
 /// Given a VF mesh with uv coordinates, check that it satisfies fundamental uv
@@ -59,36 +72,6 @@ bool check_uv(
   const Eigen::MatrixXi& F_uv
 );
 
-/// Given a VF mesh with uv coordinates, get the maximum error of the uv lengths
-/// across cuts
-///
-/// @param[in] F: mesh faces
-/// @param[in] uv: mesh uv coordinates in 2D
-/// @param[in] F_uv: mesh uv faces
-/// @return maximum uv length error across cuts
-Scalar compute_uv_length_error(
-  const Eigen::MatrixXi& F,
-  const Eigen::MatrixXd& uv,
-  const Eigen::MatrixXi& F_uv
-);
-
-std::tuple<std::vector<std::vector<Scalar>>, // V_out
-           std::vector<std::vector<int>>,    // F_out
-           std::vector<Scalar>,              // layout u (per vertex)
-           std::vector<Scalar>,              // layout v (per vertex)
-           std::vector<std::vector<int>>,    // FT_out
-           std::vector<bool>,                // is_cut
-           std::vector<bool>,                // is_cut_o
-           std::vector<int>,                 // Fn_to_F
-           std::vector<std::pair<int, int>>  // endpoints
-           >
-parametrize_mesh(const Eigen::MatrixXd& V,
-                 const Eigen::MatrixXi& F,
-                 const std::vector<Scalar>& Theta_hat,
-                 const Mesh<Scalar> &m,
-                 const std::vector<int>& vtx_reindex,
-                 const VectorX reduced_metric_coords);
-
 /// Build a VF mesh for the embedded mesh in the doubled mesh and also extract
 /// the mapping from VF mesh corners to opposite halfedge index
 ///
@@ -103,6 +86,47 @@ extract_embedded_mesh(
   Eigen::MatrixXi& F,
   Eigen::MatrixXi& corner_to_halfedge
 );
+
+/// Given a metric defined by original edge lengths and scale factor u, do a bfs on dual graph of mesh or 
+/// using given cuts to singularities defined in is_cut_h to compute a full layout cut graph
+///
+/// Note that this only lays out the connected component containing the start halfedge.
+/// 
+/// @param m, mesh data structure
+/// @param is_cut_h, (optional) pre-defined cuts to be included
+/// @param start_h, the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
+/// @return is_cut_h #h vector, mark whether the current halfedge is part of cut graph
+std::vector<bool>
+compute_layout_topology(const Mesh<Scalar> &m, const std::vector<bool>& is_cut_h, int start_h = -1);
+
+/// Given a cut defined on the original mesh, pull it back to a cut defined on
+/// an overlay mesh for the given mesh (possibly after flips)
+/// 
+/// @param[in] m_o: overlay mesh data structure
+/// @param[in] is_cut_h: cuts on the original mesh
+/// @param[out] is_cut_o: cuts on the overlay mesh
+void
+pullback_cut_to_overlay(
+  OverlayMesh<Scalar> &m_o,
+  const std::vector<bool>& is_cut_h,
+  std::vector<bool>& is_cut_o
+);
+
+/**
+ * @brief Given overlay mesh with associated flat metric compute the layout
+ * 
+ * @tparam Scalar double/mpfr::mpreal
+ * @param m_o, overlay mesh
+ * @param u_vec, per-vertex scale factor
+ * @param singularities, list of singularity vertex ids
+ * @return u_o, v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
+ */
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>>
+get_consistent_layout(
+             OverlayMesh<Scalar> &m_o,
+             const std::vector<Scalar> &u_vec,
+             std::vector<int> singularities,
+             const std::vector<bool>& is_cut);
 
 #ifdef PYBIND
 std::tuple<

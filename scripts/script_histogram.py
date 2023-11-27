@@ -92,11 +92,11 @@ def histogram_one(args, fname):
     logger.info("Loading mesh")
     try:
         m, C, lambdas, lambdas_target, v3d, f, Th_hat = script_util.generate_mesh(args, fname)
-        proj, embed = opt.build_refl_proj(C)
-        he2e, e2he = opt.build_edge_maps(C)
-        proj = np.array(proj)
-        he2e = np.array(he2e)
+        reduction_maps = opt.ReductionMaps(C)
+        proj = np.array(reduction_maps.proj)
+        he2e = np.array(reduction_maps.he2e)
     except:
+        logger.error('Could not load mesh')
         return
 
     # Get final lambdas

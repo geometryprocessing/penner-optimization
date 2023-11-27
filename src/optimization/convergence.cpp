@@ -5,10 +5,9 @@
 #include "implicit_optimization.hh"
 #include "explicit_optimization.hh"
 
-/// FIXME Do cleaning pass
-
 namespace CurvatureMetric {
 
+// Compute descent directions for given metrics
 void
 compute_descent_directions(
 	const Mesh<Scalar>& m,
@@ -51,8 +50,8 @@ compute_descent_directions(
 															reduction_maps,
 															opt_params,
 															projected_descent_direction);
-  spdlog::info("Unconstrained descent direction found with norm {}", descent_direction.norm());
-  spdlog::info("Constrained descent direction found with norm {}", projected_descent_direction.norm());
+  spdlog::trace("Unconstrained descent direction found with norm {}", descent_direction.norm());
+  spdlog::trace("Constrained descent direction found with norm {}", projected_descent_direction.norm());
 }
 
 Scalar
@@ -79,6 +78,7 @@ compute_metric_convergence_ratio(
   return compute_convergence_ratio(descent_direction, projected_descent_direction);
 }
 
+
 void
 compute_direction_energy_values(
 	const Mesh<Scalar>& m,
@@ -91,10 +91,15 @@ compute_direction_energy_values(
   VectorX& unprojected_energies,
   VectorX& projected_energies
 ) {
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
   // Build refl projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Expand the target metric coordinates to the doubled surface
   VectorX metric_target;
@@ -180,6 +185,55 @@ compute_projected_descent_direction_energy_values(
 }
 
 void
+compute_domain_direction_energy_values(
+	const Mesh<Scalar>& m,
+  const ReductionMaps& reduction_maps,
+  const VectorX& reduced_metric_target,
+  const VectorX& domain_coords,
+  const MatrixX& constraint_domain_matrix,
+  const MatrixX& constraint_codomain_matrix,
+  const std::shared_ptr<OptimizationParameters> opt_params,
+  const std::shared_ptr<ProjectionParameters> proj_params,
+  const VectorX& direction,
+  const VectorX& step_sizes,
+  VectorX& energies
+) {
+  // Expand the target metric coordinates to the doubled surface
+  VectorX metric_target;
+  expand_reduced_function(
+    reduction_maps.proj, reduced_metric_target, metric_target);
+
+  // Build energy functions for given energy
+  EnergyFunctor opt_energy(m, metric_target, *opt_params);
+
+  // Compute energies along descent direction
+  int num_steps = step_sizes.size();
+  energies.resize(num_steps);
+  for (int i = 0; i < num_steps; ++i)
+  {
+    Scalar step_size = step_sizes[i];
+    VectorX line_step_domain_coords = domain_coords + step_size * direction;
+
+    // Compute the gradient for the shear metric coordinates
+    Scalar energy;
+    VectorX gradient;
+    compute_domain_coordinate_energy_with_gradient(
+      m,
+      reduction_maps,
+      opt_energy,
+      line_step_domain_coords,
+      constraint_domain_matrix,
+      constraint_codomain_matrix,
+      proj_params,
+      opt_params,
+      energy,
+      gradient);
+    energies[i] = energy;
+  }
+}
+
+
+void
 compute_projected_descent_direction_stability_values(
 	const Mesh<Scalar>& m,
 	const VectorX& reduced_metric_coords,
@@ -206,10 +260,15 @@ compute_projected_descent_direction_stability_values(
     projected_descent_direction
   );
 
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
   // Build refl projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Expand the target metric coordinates to the doubled surface
   VectorX metric_target;
@@ -281,54 +340,6 @@ compute_projected_descent_direction_stability_values(
     norm_changes_in_metric_coords[i] = change_in_metric_coords.norm();
     convergence_ratios[i] = compute_convergence_ratio(step_descent_direction, step_projected_descent_direction);
     gradient_signs[i] = -step_projected_descent_direction.dot(projected_descent_direction);
-  }
-}
-
-void
-compute_domain_direction_energy_values(
-	const Mesh<Scalar>& m,
-  const ReductionMaps& reduction_maps,
-  const VectorX& reduced_metric_target,
-  const VectorX& domain_coords,
-  const MatrixX& constraint_domain_matrix,
-  const MatrixX& constraint_codomain_matrix,
-  const std::shared_ptr<OptimizationParameters> opt_params,
-  const std::shared_ptr<ProjectionParameters> proj_params,
-  const VectorX& direction,
-  const VectorX& step_sizes,
-  VectorX& energies
-) {
-  // Expand the target metric coordinates to the doubled surface
-  VectorX metric_target;
-  expand_reduced_function(
-    reduction_maps.proj, reduced_metric_target, metric_target);
-
-  // Build energy functions for given energy
-  EnergyFunctor opt_energy(m, metric_target, *opt_params);
-
-  // Compute energies along descent direction
-  int num_steps = step_sizes.size();
-  energies.resize(num_steps);
-  for (int i = 0; i < num_steps; ++i)
-  {
-    Scalar step_size = step_sizes[i];
-    VectorX line_step_domain_coords = domain_coords + step_size * direction;
-
-    // Compute the gradient for the shear metric coordinates
-    Scalar energy;
-    VectorX gradient;
-    compute_domain_coordinate_energy_with_gradient(
-      m,
-      reduction_maps,
-      opt_energy,
-      line_step_domain_coords,
-      constraint_domain_matrix,
-      constraint_codomain_matrix,
-      proj_params,
-      opt_params,
-      energy,
-      gradient);
-    energies[i] = energy;
   }
 }
 

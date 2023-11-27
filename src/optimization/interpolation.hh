@@ -279,6 +279,11 @@ void interpolate_vertex_positions(
   Eigen::MatrixXd& V_overlay
 );
 
+bool
+overlay_has_all_original_halfedges(
+  OverlayMesh<Scalar>& mo
+);
+
 #ifdef PYBIND
 
 std::tuple<

@@ -28,7 +28,7 @@
 
 # Executables
 *.exe
-*.out
+You have divergent branches and need to specify how to reconcile them.*.out
 *.app
 
 # Build directories
@@ -36,3 +36,6 @@ build*
 ext
 data*
 output*
+
+# Python temp
+*__pycache__

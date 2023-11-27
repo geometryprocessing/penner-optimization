@@ -10,6 +10,8 @@
 #include <Eigen/Sparse>
 #include <filesystem>
 
+#include <igl/facet_components.h>
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
@@ -173,6 +175,35 @@ void read_vector_from_file(
     T value;
     iss >> value;
     vec.push_back(value);
+  }
+
+  // Close file
+  input_file.close();
+}
+
+/// Read a vector of pairs from a file.
+///
+/// @param[in] filename: file with vector to read
+/// @param[out] vec: vector from file
+template <typename T>
+void read_vector_of_pairs_from_file(
+  const std::string &filename,
+  std::vector<std::pair<T, T>> &vec
+) {
+  vec.clear();
+
+  // Open file
+  std::ifstream input_file(filename);
+  if (!input_file) return;
+
+  // Read file
+  std::string line;
+  while (std::getline(input_file, line))
+  {
+    std::istringstream iss(line);
+    T first_value, second_value;
+    iss >> first_value >> second_value;
+    vec.push_back(std::make_pair(first_value, second_value));
   }
 
   // Close file
@@ -358,14 +389,15 @@ compute_condition_number(
 ///
 /// @param[in] vector_std: standard template library vector to copy
 /// @param[out] vector_eigen: copied vector
-inline void
-convert_std_to_eigen_vector(const std::vector<Scalar>& vector_std,
-                            VectorX& vector_eigen)
+template <typename VectorScalar, typename MatrixScalar>
+void
+convert_std_to_eigen_vector(const std::vector<VectorScalar>& vector_std,
+                            Eigen::Matrix<MatrixScalar, Eigen::Dynamic, 1>& vector_eigen)
 {
   size_t vector_size = vector_std.size();
   vector_eigen.resize(vector_size);
   for (size_t i = 0; i < vector_size; ++i) {
-    vector_eigen[i] = vector_std[i];
+    vector_eigen[i] = MatrixScalar(vector_std[i]);
   }
 }
 
@@ -738,6 +770,77 @@ enumerate_boolean_array(
 /// ****
 /// Mesh
 /// ****
+
+/// Compute the number of connected components of a mesh
+///
+/// @param[in] F: mesh faces
+/// @return number of connected components
+inline int
+count_components(
+  const Eigen::MatrixXi& F
+) {
+	Eigen::VectorXi face_components;
+	igl::facet_components(F, face_components);
+	return face_components.maxCoeff() + 1;
+}
+
+/// Given a face index matrix, reindex the vertex indices to removed unreferenced
+/// vertex indices in O(|F|) time.
+///
+/// Note that libigl has function with similar behavior, but it is a O(|V| + |F|)
+/// algorithm due to their bookkeeping method
+///
+/// @param[in] F: initial mesh faces
+/// @param[out] FN: reindexed mesh faces
+/// @param[out] new_to_old_map: map from new to old vertex indices
+/// @return number of connected components
+inline void
+remove_unreferenced(
+  const Eigen::MatrixXi& F,
+  Eigen::MatrixXi& FN,
+  std::vector<int>& new_to_old_map
+) {
+  int num_faces = F.rows();
+
+  // Iterate over faces to find all referenced vertices in sorted order
+  std::vector<int> referenced_vertices;
+  for (int fi = 0; fi < num_faces; ++fi)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      int vk = F(fi, j);
+      referenced_vertices.push_back(vk);
+    }
+  }
+
+  // Make the list of referenced vertices sorted and unique
+  std::sort(referenced_vertices.begin(), referenced_vertices.end());
+  auto last_sorted = std::unique(referenced_vertices.begin(), referenced_vertices.end()); 
+
+  // Get the new to old map from the sorted referenced vertices list
+  new_to_old_map.assign(referenced_vertices.begin(), last_sorted);
+
+  // Build a (compact) map from old to new vertices
+  int num_vertices = new_to_old_map.size();
+  std::unordered_map<int, int> old_to_new_map;
+  for (int k = 0; k < num_vertices; ++k)
+  {
+    int vk = new_to_old_map[k];
+    old_to_new_map[vk] = k;
+  }
+
+  // Reindex the vertices in the face list
+  FN.resize(num_faces, 3);
+  for (int fi = 0; fi < num_faces; ++fi)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      int vk = F(fi, j);
+      int k = old_to_new_map[vk];
+      FN(fi, j) = k;
+    }
+  }
+}
 
 /// Given a mesh with a parametrization, cut the mesh along the parametrization seams to
 /// create a vertex set corresponding to the faces of the uv domain.

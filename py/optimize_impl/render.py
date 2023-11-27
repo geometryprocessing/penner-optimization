@@ -153,10 +153,12 @@ def color_mesh_with_grid(fid_mat, bc_mat, h, n, to, u, v, r, H, W, colormap, nor
             # Color additional features
             elif fid_mat[i][j] == -1:
                 color_rgb_gd[i,j,:] = np.array([1.0,1.0,1.0])
-            elif fid_mat[i][j] == -2:
+            elif fid_mat[i][j] == -2: # Red sphere
                 color_rgb_gd[i,j,:] = np.array([0.7,0.1,0.2])
-            elif fid_mat[i][j] == -3:
+                #color_rgb_gd[i,j,:] = np.array([1.0,0.0, 0.75])
+            elif fid_mat[i][j] == -3: # Blue sphere
                 color_rgb_gd[i,j,:] = np.array([0.5,0.7,0.35])
+                #color_rgb_gd[i,j,:] = np.array([0.0,0.75,1.0])
             elif fid_mat[i][j] == -4:
                 color_rgb_gd[i,j,:] = np.array([0,0,0])
             elif fid_mat[i][j] == -5:
@@ -239,8 +241,8 @@ def generate_colormap(x,
         norm = colors.CenteredNorm(scale*0.5, scale*0.6)
     else:
         norm = colors.CenteredNorm(0, 1)
-        r = r * 0
 
+    print(np.max(c), np.average(c)) # FIXME
     # Use the coolwarm color scheme
     return np.array(cm.coolwarm(norm(c))[:,:3])
 
@@ -257,16 +259,13 @@ def get_layout_colormap(
     average_per_vertex=False
 ):
     # Get energy
-    print(colormap)
     energy = energies.get_face_energy(v, f, uv, fuv, colormap, use_sqrt_scale=use_sqrt_scale, use_log_scale=use_log_scale)
-    print(energy.shape)
+    print(np.max(energy), np.average(energy))
 
     # Generate colormap
     c = generate_colormap(energy, shift=0, scale=scale)
-    print(c.shape)
     if (average_per_vertex):
         c = igl.average_onto_vertices(v, f, c)
-    print(c.shape)
 
     return c
 

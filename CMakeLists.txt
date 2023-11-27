@@ -6,14 +6,18 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
+option(USE_PYBIND "Generate pybindings" ON)
+option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+option(ENABLE_VISUALIZATION "Generate viewers for visualization" OFF)
+option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Options for the project
-option(USE_PYBIND "Generate pybindings" ON)
-option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+#option(USE_PYBIND "Generate pybindings" ON)
+#option(USE_MULTIPRECISION "Use high precision floating point" OFF)
 option(BUILD_CURVATURE_METRIC_TESTS "Build tests" TRUE)
 
 # Set libigl options
@@ -22,6 +26,7 @@ option(RENDER_TEXTURE                  "Render results"     ON)
 option(LIBIGL_OPENGL            "Use OpenGL"         ON)
 option(LIBIGL_GLFW              "Use GLFW"           ON)
 option(LIBIGL_PNG               "Use PNG"            ON)
+option(LIBIGL_EMBREE              "Use EMBREE"         ON)
 
 if (USE_MULTIPRECISION)
   # Turning this on activates mpfr in the conformal code
@@ -30,6 +35,10 @@ if (USE_MULTIPRECISION)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})
+endif()
+
+if (CHECK_VALIDITY)
+  add_compile_definitions(CHECK_VALIDITY)
 endif()
 
 ## Add highfive library
@@ -52,9 +61,7 @@ add_compile_definitions(_USE_MATH_DEFINES)
 # Get external libraries
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 include(conformal_ideal_delaunay)
-include(pybind11)
 include(libigl)
-include(polyscope)
 include(spectra)
 
 # Optionally create visualization library
@@ -70,11 +77,25 @@ if (RENDER_TEXTURE)
   )
 endif() 
 
+
 # Make main cpp library
 add_subdirectory(src/optimization)
 
+if (ENABLE_VISUALIZATION)
+  add_compile_definitions(ENABLE_VISUALIZATION)
+  include(polyscope)
+  target_link_libraries(MetricOptimizationLib PUBLIC
+    plot
+    polyscope
+  )
+endif()
+
+
 # Build pybind optimization functions
+message("FIXME Building pybind libraries")
 if (USE_PYBIND)
+  message("Building pybind libraries")
+  include(pybind11)
   add_library(optimization_py MODULE
     src/optimization/optimization_pybind.cpp
   )
@@ -132,7 +153,3 @@ if (NOT USE_MULTIPRECISION)
     )
   endif()
 endif()
-
-# Needed for simplification method
-include(mesh_simplification)
-

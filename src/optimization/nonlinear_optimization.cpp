@@ -31,7 +31,7 @@ void compute_conjugate_gradient_direction(const VectorX& gradient,
     }
 
     // Compute conjugate direction
-    beta = std::max(numerator / denominator, 0.0);  // avoid negative beta
+    beta = max(numerator / denominator, 0.0);  // avoid negative beta
     descent_direction = -gradient + beta * prev_descent_direction;
 }
 
@@ -81,8 +81,8 @@ void compute_lbfgs_direction(
 	
 	// Initialize descent direction with a forward pass
 	VectorX q = gradient;
-	std::vector<double> rho(m);
-	std::vector<double> alpha(m);
+	std::vector<Scalar> rho(m);
+	std::vector<Scalar> alpha(m);
 	for (int i = 0; i < m; ++i) {
 			rho[i] = 1.0 / delta_variables[i].dot(delta_gradients[i]);
 			alpha[i] = rho[i] * delta_variables[i].dot(q);
@@ -90,11 +90,11 @@ void compute_lbfgs_direction(
 	}
 	
 	// Scale descent direction
-	double gamma = delta_variables[0].dot(delta_gradients[0]) / delta_gradients[0].squaredNorm();
+	Scalar gamma = delta_variables[0].dot(delta_gradients[0]) / delta_gradients[0].squaredNorm();
 	VectorX z = gamma * q;
 	
 	// Finish computation of descent direction with a back pass
-	std::vector<double> beta(m);
+	std::vector<Scalar> beta(m);
 	for (int i = m - 1; i >= 0; --i)
 	{
 		beta[i] = rho[i] * delta_gradients[i].dot(z);

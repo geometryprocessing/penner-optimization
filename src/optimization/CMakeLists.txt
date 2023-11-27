@@ -2,21 +2,25 @@ add_library(MetricOptimizationLib
   area.cpp
   constraint.cpp
   convergence.cpp
+  delaunay.cpp
   embedding.cpp
   energies.cpp
+  energy_functor.cpp
   explicit_optimization.cpp
   implicit_optimization.cpp
   interpolation.cpp
+  layout.cpp
   logging.cpp
   nonlinear_optimization.cpp
   optimization_interface.cpp
-  optimization_layout.cpp
   projection.cpp
+  refinement.cpp
   reparametrization.cpp
   shear.cpp
   targets.cpp
-  transitions.cpp
   translation.cpp
+  triangulation.cpp
+  viewers.cpp
 )
 target_include_directories(MetricOptimizationLib PUBLIC .)
 target_link_libraries(MetricOptimizationLib PUBLIC
@@ -24,8 +28,6 @@ target_link_libraries(MetricOptimizationLib PUBLIC
   igl::core
   igl::predicates
   igl::glfw
-  plot
-  polyscope
   spdlog::spdlog
   igl::embree
   pybind11::module

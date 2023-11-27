@@ -462,17 +462,15 @@ def best_fit_conformal_vf(v, f, uv, fuv):
     C_v, vtx_reindex = opt.fv_to_double(v, f, v, f, Th_hat, [], False)
     print("Building optimized metric")
     C_uv, vtx_reindex = opt.fv_to_double(v, f, uv, fuv, Th_hat, [], False)
-    proj, embed = opt.build_refl_proj(C_v)
-    he2e, e2he = opt.build_edge_maps(C_v)
-    proj = np.array(proj)
-    he2e = np.array(he2e)
+    reduction_maps = opt.ReductionMaps(C_v)
+    #proj = np.array(reduction_maps.proj)
     lambdas_target = targets.lambdas_from_mesh(C_v)
     lambdas = targets.lambdas_from_mesh(C_uv)
     print("Lambdas target length", lambdas_target.shape)
     print("Lambdas length", lambdas.shape)
     C_o = opt.add_overlay(C_v, lambdas_target)
     opt.make_tufted_overlay(C_o, v, f, Th_hat)
-    r_perm = opt.best_fit_conformal(C_o._m, lambdas_target[proj], lambdas[proj])
+    r_perm = opt.best_fit_conformal(C_o._m, lambdas_target[reduction_maps.proj], lambdas[reduction_maps.proj])
     
     # Reindex energy
     r = np.zeros_like(r_perm)
@@ -521,7 +519,7 @@ def get_face_energy(
     uv,
     fuv,
     colormap,
-    use_face_weight=True,
+    use_face_weight=False,
     use_sqrt_scale=False,
     use_log_scale=False,
 ):
@@ -546,14 +544,17 @@ def get_face_energy(
 
     # Optionally use face weighting
     if (use_face_weight):
+        print("Using face weights") # FIXME
         mesh_areas = 0.5 * igl.doublearea(v, f)
         energy = (mesh_areas * energy) / (np.sum(mesh_areas))
 
 
     # Add sqrt or log scale
     if use_sqrt_scale:
+        print("Using sqrt scale") # FIXME
         energy = np.sqrt(np.maximum(energy, 0))
     if use_log_scale:
+        print("Using log scale") # FIXME
         energy = np.log(np.maximum(energy + 1, 0))
 
     return energy

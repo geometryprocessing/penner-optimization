@@ -11,8 +11,10 @@ def interpolate_metric(
     C,
     lambdas_start,
     lambdas_end,
+    output_dir,
     num_steps=5,
-    proj_params=opt.ProjectionParameters()
+    proj_params=opt.ProjectionParameters(),
+    opt_params=opt.OptimizationParameters()
 ):
     """
     Interpolate the metric given by lambdas_start to the metric given by lambdas_end, projecting
@@ -25,15 +27,17 @@ def interpolate_metric(
     @param[in] ProjectionParameters proj_params: projection parameters 
     """
     # Linearly interpolate the penner coordinates and project to the constraint
-    lambdas_interpolate = {}
-    for s in np.linspace(0, 1, num_steps):
+    steps = np.linspace(0, 1, num_steps)
+    for i, s in enumerate(steps):
         lambdas = s * lambdas_end + (1 - s) * lambdas_start
         lambdas, _ = opt.project_to_constraint(C,
                                                lambdas,
-                                               proj_params)
-        lambdas_interpolate[s] = lambdas.copy()
-
-    return lambdas_interpolate
+                                               proj_params,
+                                               opt_params)
+        np.savetxt(
+            os.path.join(output_dir, 'lambdas_' + str(i)),
+            lambdas
+        )
 
 def add_interpolate_arguments(parser):
     # Input and output directories
@@ -45,7 +49,7 @@ def add_interpolate_arguments(parser):
 def interpolate_one(args, fname):
     # Get mesh, lambdas, and parameters
     m, C, _, _, _, _, _ = script_util.generate_mesh(args, fname)
-    proj_params, _ = script_util.generate_parameters(args)
+    proj_params, opt_params = script_util.generate_parameters(args)
     output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -61,17 +65,13 @@ def interpolate_one(args, fname):
     lambdas_start = np.loadtxt(start_lambdas_path, dtype=float)
     lambdas_end = np.loadtxt(end_lambdas_path, dtype=float)
     num_steps = args['num_steps']
-    lambdas_interpolate = interpolate_metric(C,
-                                             lambdas_start,
-                                             lambdas_end,
-                                             num_steps,
-                                             proj_params)
-
-    for i, s in enumerate(lambdas_interpolate):
-        np.savetxt(
-            os.path.join(output_dir, 'lambdas_' + str(i)),
-            lambdas_interpolate[s]
-        )
+    interpolate_metric(C,
+                       lambdas_start,
+                       lambdas_end,
+                       output_dir,
+                       num_steps,
+                       proj_params,
+                       opt_params)
 
 def interpolate_many(args):
     script_util.run_many(interpolate_one, args)

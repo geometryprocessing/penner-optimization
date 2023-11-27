@@ -117,7 +117,7 @@ areas_from_log_lengths(const Mesh<Scalar>& m,
                        const VectorX& log_length_coords,
                        VectorX& he2area)
 {
-  size_t num_halfedges = m.n_halfedges();
+  int num_halfedges = m.n_halfedges();
 
   // Compute squared areas
   VectorX he2areasq;
@@ -126,7 +126,7 @@ areas_from_log_lengths(const Mesh<Scalar>& m,
 
   // Take square roots
   he2area.resize(num_halfedges);
-  for (size_t h = 0; h < num_halfedges; ++h)
+  for (int h = 0; h < num_halfedges; ++h)
   {
     he2area[h] = sqrt(std::max<Scalar>(he2areasq[h], 0.0));
   }

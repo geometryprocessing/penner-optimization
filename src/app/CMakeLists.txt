@@ -25,3 +25,10 @@ plot_shear_energy.cpp
 target_link_libraries(plot_shear_energy PRIVATE
   MetricOptimizationLib
 )
+
+add_executable(angle_convergence_comparison
+angle_convergence_comparison.cpp
+)
+target_link_libraries(angle_convergence_comparison
+  MetricOptimizationLib
+)

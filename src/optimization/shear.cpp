@@ -3,8 +3,7 @@
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "embedding.hh"
 #include "reparametrization.hh"
-#include "transitions.hh"
-#include "energies.hh"
+#include "energy_functor.hh"
 #include "projection.hh"
 #include <Eigen/SparseLU>
 
@@ -37,7 +36,7 @@ validate_spanning_tree(
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   std::vector<bool> vertex_is_covered(num_vertices, false);
   for (int i = 0; i < num_edges; ++i)
@@ -96,7 +95,7 @@ compute_spanning_tree(
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Initialize an array to keep track of vertices (in the embedded mesh)
   int num_vertices = m.n_ind_vertices();
@@ -191,7 +190,7 @@ compute_independent_to_full_edge_shear_matrix(
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Build map from independent edges to edge basis vectors
   int num_edges = e2he.size();
@@ -251,7 +250,7 @@ compute_shear_dual_basis(
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
   
   // Compute the spanning tree of the mesh
   std::vector<int> spanning_tree_edges;
@@ -306,10 +305,15 @@ validate_shear_basis_coordinates(
 	const VectorX& scale_factors,
 	const MatrixX& shear_basis_matrix
 ) {
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
 	// Get conformal scaling matrix
 	MatrixX scaling_matrix = conformal_scaling_matrix(m);
@@ -342,10 +346,15 @@ compute_shear_basis_coordinates(
 	VectorX& shear_coords,
 	VectorX& scale_factors
 ) {
+  // Get edge maps
+  std::vector<int> he2e;
+  std::vector<int> e2he;
+  build_edge_maps(m, he2e, e2he);
+
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Expand reduced metric
   VectorX metric_coords;
@@ -391,7 +400,7 @@ compute_shear_basis_coordinates(
 
 	// Get the corresponding scale factors 
 	VectorX shear_space_metric = shear_basis_matrix * shear_coords;
-	scale_factors = best_fit_conformal(m, shear_space_metric, metric_coords);
+	best_fit_conformal(m, shear_space_metric, metric_coords, scale_factors);
 
 	// Validate the result
 	assert( validate_shear_basis_coordinates(m, reduced_metric_coords, shear_coords, scale_factors, shear_basis_matrix) );

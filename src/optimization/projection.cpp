@@ -5,7 +5,8 @@
 #include "constraint.hh"
 #include "embedding.hh"
 #include "globals.hh"
-#include "transitions.hh"
+#include "delaunay.hh"
+#include <igl/Timer.h>
 
 /// FIXME Do cleaning pass
 
@@ -23,7 +24,7 @@ conformal_scaling_matrix(const Mesh<Scalar>& m)
   // Get reflection projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Create projection matrix
   int num_halfedges = he2e.size();
@@ -42,16 +43,19 @@ conformal_scaling_matrix(const Mesh<Scalar>& m)
   return B;
 }
 
-void
+std::tuple<std::vector<int>, SolveStats<Scalar>>
 project_to_constraint(
   const Mesh<Scalar>& m,
   const VectorX& reduced_metric_coords,
   VectorX& reduced_metric_coords_proj,
   VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   if (proj_params == nullptr)
     proj_params = std::make_shared<ProjectionParameters>();
+  if (opt_params == nullptr)
+    opt_params = std::make_shared<OptimizationParameters>();
 
   // Create parameters for conformal method using restricted set of projection
   // parameters
@@ -64,6 +68,12 @@ project_to_constraint(
   alg_params.use_edge_flips = proj_params->use_edge_flips;
   ls_params.bound_norm_thres = double(proj_params->bound_norm_thres);
   ls_params.do_reduction = proj_params->do_reduction;
+  std::string output_dir = opt_params->output_dir;
+  if (!output_dir.empty()) {
+    stats_params.error_log = true;
+    stats_params.flip_count = true;
+    stats_params.output_dir = output_dir;
+  }
 
   // Get edge maps
   std::vector<int> he2e;
@@ -73,7 +83,7 @@ project_to_constraint(
   // Build refl projection and embedding
   std::vector<int> proj;
   std::vector<int> embed;
-  build_refl_proj(m, proj, embed);
+  build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Convert embedded mesh log edge lengths to a halfedge length array l for m
   int num_halfedges = he2e.size();
@@ -95,6 +105,8 @@ project_to_constraint(
 
   // Update u with conformal output
   u = std::get<0>(conformal_out);
+  std::vector<int> flip_seq = std::get<1>(conformal_out);
+  SolveStats<Scalar> solve_stats = std::get<2>(conformal_out);
 
   // Conformally scale edge lengths and obtain log lengths for the embedded mesh
   reduced_metric_coords_proj.resize(reduced_metric_coords.size());
@@ -105,6 +117,8 @@ project_to_constraint(
     reduced_metric_coords_proj[E] =
       reduced_metric_coords[E] + (u[m.v_rep[m.to[h0]]] + u[m.v_rep[m.to[h1]]]);
   }
+
+  return std::make_tuple(flip_seq, solve_stats);
 }
 
 //bool
@@ -137,9 +151,13 @@ project_descent_direction(const VectorX& descent_direction,
   // Solve for correction vector mu
   MatrixX L = J_constraint * J_constraint.transpose();
   VectorX w = -(J_constraint * descent_direction + constraint);
+  igl::Timer timer;
+  timer.start();
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
   solver.compute(L);
   VectorX mu = solver.solve(w);
+  double time = timer.getElapsedTime();
+  spdlog::info("Direction projection solve took {} s", time);
 
   // Compute lambdas line search direction
   return descent_direction + (J_constraint.transpose() * mu);
@@ -183,10 +201,11 @@ project_to_constraint(
   const Mesh<Scalar>& m,
   const VectorX& lambdas,
   VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   VectorX lambdas_proj;
-  project_to_constraint(m, lambdas, lambdas_proj, u, proj_params);
+  project_to_constraint(m, lambdas, lambdas_proj, u, proj_params, opt_params);
 
   return lambdas_proj;
 }
@@ -333,11 +352,12 @@ std::tuple<VectorX, VectorX>
 project_to_constraint_py(
   const Mesh<Scalar>& m,
   const VectorX& lambdas,
-  std::shared_ptr<ProjectionParameters> proj_params)
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
 {
   VectorX u0;
   u0.setZero(m.n_ind_vertices());
-  VectorX lambdas_proj = project_to_constraint(m, lambdas, u0, proj_params);
+  VectorX lambdas_proj = project_to_constraint(m, lambdas, u0, proj_params, opt_params);
   VectorX u(u0.size());
   for (int i = 0; i < u0.size(); ++i) {
     u[i] = u0[i];

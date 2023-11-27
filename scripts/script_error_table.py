@@ -35,9 +35,10 @@ def error_table(args):
     error_dict['num_faces'] = []
     error_dict['num_overlay_faces'] = []
     error_dict['max_sym_dirichlet'] = []
-    error_dict['max_arap'] = []
+    #error_dict['max_arap'] = []
     error_dict['max_surface_hencky_strain'] = []
     error_dict['is_manifold'] = []
+    error_dict['num_components'] = []
 
     # Create output directory for the mesh
     output_dir = args['output_dir']
@@ -54,11 +55,13 @@ def error_table(args):
         models.append(m)
 
         try:
+            logger.info("Processing mesh {}".format(m))
             # Get input mesh
             m, C, lambdas_init, lambdas_target, v_orig, f_orig, Th_hat = script_util.generate_mesh(args, fname)
-            name = m + '_'+args['suffix']
-            he2e, e2he = opt.build_edge_maps(C)
-            proj, embed = opt.build_refl_proj(C)
+            if (args['suffix'] == ""):
+                name = m
+            else:
+                name = m + '_'+args['suffix']
 
             # Load input mesh information
             try:
@@ -78,29 +81,37 @@ def error_table(args):
             except:
                 logger.error("Could not load uvs for {}".format(name))
 
+            # Get topology information
+            error_dict['num_faces'].append(len(f_orig))
+            error_dict['num_overlay_faces'].append(len(f))
+            error_dict['is_manifold'].append(igl.is_edge_manifold(f))
+            error_dict['num_components'].append(np.max(igl.face_components(fuv)) + 1)
+
             # Get areas
+            logger.info("Computing areas")
             uv_embed = np.zeros((len(uv), 3))
             uv_embed[:,:2] = uv[:,:2]
             mesh_areas = 0.5 * igl.doublearea(v3d, f)
             uv_areas = 0.5 * igl.doublearea(uv_embed, fuv)
-
-            # Get energies
-            sym_dirichlet_energy = energies.sym_dirichlet_vf(v3d, f, uv_embed, fuv) - 4
-            arap_energy = energies.arap_vf(v3d, f, uv_embed, fuv)
-            surface_hencky_strain_energy = energies.surface_hencky_strain_vf(v3d, f, uv_embed, fuv)
-
-            # Record error_dict
             error_dict['uv_length_error'].append(opt.compute_uv_length_error(f, uv, fuv))
             error_dict['min_overlay_area'].append(np.min(mesh_areas))
             error_dict['max_overlay_area'].append(np.max(mesh_areas))
             error_dict['min_uv_area'].append(np.min(uv_areas))
             error_dict['max_uv_area'].append(np.max(uv_areas))
-            error_dict['num_faces'].append(len(f_orig))
-            error_dict['num_overlay_faces'].append(len(f))
-            error_dict['max_sym_dirichlet'].append(np.max(sym_dirichlet_energy))
-            error_dict['max_arap'].append(np.max(arap_energy))
+
+            # Get energies
+            logger.info("Computing surface hencky strain energy")
+            surface_hencky_strain_energy = energies.surface_hencky_strain_vf(v3d, f, uv_embed, fuv)
             error_dict['max_surface_hencky_strain'].append(np.max(surface_hencky_strain_energy))
-            error_dict['is_manifold'].append(igl.is_edge_manifold(f))
+            #arap_energy = energies.arap_vf(v3d, f, uv_embed, fuv)
+            #error_dict['max_arap'].append(np.max(arap_energy))
+
+            logger.info("Computing symmetric dirichlet energy")
+            try:
+                sym_dirichlet_energy = energies.sym_dirichlet_vf(v3d, f, uv_embed, fuv) - 4
+                error_dict['max_sym_dirichlet'].append(np.max(sym_dirichlet_energy))
+            except:
+                error_dict['max_sym_dirichlet'].append(-1)
         except:
             logger.error("Missing output for {}".format(m))
             error_dict['uv_length_error'].append(-1)
@@ -111,12 +122,13 @@ def error_table(args):
             error_dict['num_faces'].append(-1)
             error_dict['num_overlay_faces'].append(-1)
             error_dict['max_sym_dirichlet'].append(-1)
-            error_dict['max_arap'].append(-1)
+            #error_dict['max_arap'].append(-1)
             error_dict['max_surface_hencky_strain'].append(-1)
             error_dict['is_manifold'].append(-1)
+            error_dict['num_components'].append(-1)
 
     energies_df = pd.DataFrame(error_dict, index=models)
-    csv_path = os.path.join(args['output_dir'], 'energies_' + args['suffix'] + '.csv')
+    csv_path = os.path.join(args['output_dir'], 'errors_' + args['suffix'] + '.csv')
     energies_df.to_csv(csv_path)
 
 

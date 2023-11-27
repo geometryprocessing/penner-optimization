@@ -4,7 +4,6 @@
 #include "embedding.hh"
 #include "reparametrization.hh"
 #include "shear.hh"
-#include "transitions.hh"
 #include <Eigen/SparseLU>
 
 /// FIXME Do cleaning pass
@@ -105,18 +104,18 @@ compute_as_symmetric_as_possible_translations(
   VectorX& he_translations
 ) {
   // Compute the change in shear from the target to the new metric
-  spdlog::info("Computing shear change");
+  spdlog::trace("Computing shear change");
   VectorX he_shear_change;
   compute_shear_change(m, he_metric_coords, he_metric_target, he_shear_change);
 
   // Build the lagrangian for the problem
-  spdlog::info("Computing lagrangian system");
+  spdlog::trace("Computing lagrangian system");
   MatrixX lagrangian_matrix;
   VectorX right_hand_side;
   generate_translation_lagrangian_system(m, he_shear_change, lagrangian_matrix, right_hand_side);
 
   // Compute the solution of the lagrangian
-  spdlog::info(
+  spdlog::trace(
     "Computing solution for {}x{} system with length {} rhs",
     lagrangian_matrix.rows(),
     lagrangian_matrix.cols(),
@@ -127,7 +126,7 @@ compute_as_symmetric_as_possible_translations(
   VectorX lagrangian_solution = solver.solve(-right_hand_side);
 
   // The desired translations are at the head of the solution vector
-  spdlog::info("Extracting halfedges");
+  spdlog::trace("Extracting halfedges");
   int num_halfedges = he_shear_change.size();
   he_translations = lagrangian_solution.head(num_halfedges);
 }

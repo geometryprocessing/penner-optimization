@@ -40,19 +40,21 @@
 #include "conformal_ideal_delaunay/Sampling.hh"
 #include "constraint.hh"
 #include "convergence.hh"
+#include "delaunay.hh"
 #include "embedding.hh"
 #include "energies.hh"
+#include "energy_functor.hh"
 #include "interpolation.hh"
 #include "implicit_optimization.hh"
 #include "explicit_optimization.hh"
-#include "optimization_layout.hh"
+#include "layout.hh"
 #include "optimization_interface.hh"
 #include "projection.hh"
 #include "reparametrization.hh"
+#include "refinement.hh"
 #include "shapes.hh"
 #include "shear.hh"
 #include "targets.hh"
-#include "transitions.hh"
 #include "translation.hh"
 #include "visualization.hh"
 #include <highfive/H5Easy.hpp>
@@ -60,6 +62,7 @@
 namespace CurvatureMetric {
 
 #ifdef PYBIND
+#ifndef MULTIPRECISION
 
 std::tuple<Mesh<Scalar>, std::vector<int>>
 FV_to_double_pybind(const Eigen::MatrixXd& V,
@@ -98,6 +101,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("do_reduction", &ProjectionParameters::do_reduction)
     .def_readwrite("use_edge_flips", &ProjectionParameters::use_edge_flips)
     .def_readwrite("initial_ptolemy", &ProjectionParameters::initial_ptolemy);
+
   pybind11::class_<OptimizationParameters,
                    std::shared_ptr<OptimizationParameters>>(
     m, "OptimizationParameters")
@@ -130,7 +134,9 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("use_checkpoints",
                    &OptimizationParameters::use_checkpoints)
     .def_readwrite("use_log", &OptimizationParameters::use_log);
+
   pybind11::class_<Viewer>(m, "Viewer").def(pybind11::init<>());
+
   pybind11::class_<Connectivity>(m, "Connectivity")
     .def(pybind11::init<>())
     .def_readwrite("n", &Connectivity::n)
@@ -140,6 +146,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("h", &Connectivity::h)
     .def_readwrite("out", &Connectivity::out)
     .def_readwrite("opp", &Connectivity::opp);
+
   pybind11::class_<AlgorithmParameters, std::shared_ptr<AlgorithmParameters>>(
     m, "AlgorithmParameters")
     .def(pybind11::init<>())
@@ -149,6 +156,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("min_lambda", &AlgorithmParameters::min_lambda)
     .def_readwrite("newton_decr_thres", &AlgorithmParameters::newton_decr_thres)
     .def_readwrite("max_itr", &AlgorithmParameters::max_itr);
+
   pybind11::class_<StatsParameters, std::shared_ptr<StatsParameters>>(
     m, "StatsParameters")
     .def(pybind11::init<>())
@@ -158,6 +166,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("error_log", &StatsParameters::error_log)
     .def_readwrite("print_summary", &StatsParameters::print_summary)
     .def_readwrite("log_level", &StatsParameters::log_level);
+
   pybind11::class_<LineSearchParameters, std::shared_ptr<LineSearchParameters>>(
     m, "LineSearchParameters")
     .def(pybind11::init<>())
@@ -171,6 +180,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("bound_norm_thres", &LineSearchParameters::bound_norm_thres)
     .def_readwrite("lambda0", &LineSearchParameters::lambda0)
     .def_readwrite("reset_lambda", &LineSearchParameters::reset_lambda);
+
   pybind11::class_<OverlayProblem::Mesh<Scalar>>(m, "Mesh")
     .def(pybind11::init<>())
     .def_readwrite("n", &OverlayProblem::Mesh<Scalar>::n)
@@ -185,6 +195,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("l", &OverlayProblem::Mesh<Scalar>::l)
     .def_readwrite("v_rep", &OverlayProblem::Mesh<Scalar>::v_rep)
     .def_readwrite("fixed_dof", &OverlayProblem::Mesh<Scalar>::fixed_dof);
+
   pybind11::class_<OverlayProblem::OverlayMesh<Scalar>>(m, "OverlayMesh")
     .def_readwrite("n", &OverlayProblem::OverlayMesh<Scalar>::n)
     .def_readwrite("to", &OverlayProblem::OverlayMesh<Scalar>::to)
@@ -212,6 +223,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("e2he", &ReductionMaps::e2he)
     .def_readwrite("proj", &ReductionMaps::proj)
     .def_readwrite("embed", &ReductionMaps::embed);
+
   pybind11::class_<EnergyFunctor>(m, "EnergyFunctor")
     .def(pybind11::init<const Mesh<Scalar> &, // m
                         const VectorX &, // reduced_metric_target
@@ -241,6 +253,27 @@ init_classes_pybind(pybind11::module& m)
                         >())
     .def("get_overlay_mesh",
       &InterpolationMesh::get_overlay_mesh,
+      pybind11::return_value_policy::copy);
+
+  pybind11::class_<RefinementMesh>(m, "RefinementMesh")
+    .def(pybind11::init<const Eigen::MatrixXd &, // V
+                        const Eigen::MatrixXi &, // F
+                        const Eigen::MatrixXd &, // uv
+                        const Eigen::MatrixXi &, // F_uv
+                        const std::vector<int>&, // Fn_to_F,
+                        const std::vector<std::pair<int, int>>& // endpoints
+                        >())
+    .def("get_VF_mesh",
+      static_cast<
+            std::tuple<
+                  Eigen::MatrixXd, // V
+                  Eigen::MatrixXi, // F
+                  Eigen::MatrixXd, // uv
+                  Eigen::MatrixXi, // F_uv
+                  std::vector<int>, // Fn_to_F
+                  std::vector<std::pair<int, int>> // endpoints
+            >(RefinementMesh::*)() const
+      >(&RefinementMesh::get_VF_mesh),
       pybind11::return_value_policy::copy);
 }
 
@@ -278,28 +311,11 @@ init_conformal_pybind(pybind11::module& m)
 void
 init_area_pybind(pybind11::module& m)
 {
-  m.def("areas_squared_from_lambdas",
-        &areas_squared_from_log_lengths_pybind,
-        "Get the triangle areas for the faces adjacent to halfedges",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 void
 init_constraint_pybind(pybind11::module& m)
 {
-  m.def("satisfies_triangle_inequality",
-        &satisfies_triangle_inequality,
-        "Check if a mesh satisfies the triangle inequality",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-
-  m.def("alphas_with_jacobian",
-        &vertex_angles_with_jacobian_pybind,
-        "Compute angles with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-
   m.def("F_with_jacobian",
         &constraint_with_jacobian_pybind,
         "Find angle errors with Jacobian",
@@ -324,46 +340,11 @@ init_constraint_pybind(pybind11::module& m)
 void
 init_embedding_pybind(pybind11::module& m)
 {
-  m.def("build_edge_maps",
-        &build_edge_maps_pybind,
-        "Build maps from edges to halfedges and vise versa",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("build_refl_he_proj",
-        &build_refl_he_proj_pybind,
-        "Build halfedge projection and embedding for reflection",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("build_refl_proj",
-        &build_refl_proj_pybind,
-        "Build projection and embedding for reflection",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("refl_matrix",
-        &build_refl_matrix_pybind,
-        "Build matrix for projection to the embedded mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 void
 init_energies_pybind(pybind11::module& m)
 {
-  m.def("length_jacobian",
-        &length_jacobian_pybind,
-        "Jacobian for the length change of coordinates",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("conformal_scaling_matrix",
-        &conformal_scaling_matrix,
-        "Build matrix for scaling edge lengths conformally",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("best_fit_conformal",
-        &best_fit_conformal,
-        "Get the best fit conformal map for a metric map",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("first_invariant",
         &first_invariant_pybind,
         "First invariant with Jacobian",
@@ -372,14 +353,6 @@ init_energies_pybind(pybind11::module& m)
   m.def("second_invariant_squared",
         &second_invariant_squared_pybind,
         "Metric distortion energy with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("first_invariant_vf",
-        &first_invariant_vf_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("second_invariant_vf",
-        &second_invariant_vf_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
   m.def("metric_distortion_energy",
@@ -397,9 +370,12 @@ init_energies_pybind(pybind11::module& m)
         "Symmetric dirichlet energy with Jacobian",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("surface_hencky_strain_energy",
-        &surface_hencky_strain_energy_pybind,
-        "Surface Hencky strain energy matrix",
+  m.def("first_invariant_vf",
+        &first_invariant_vf_pybind,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
+  m.def("second_invariant_vf",
+        &second_invariant_vf_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
   m.def("surface_hencky_strain_energy_vf",
@@ -407,9 +383,15 @@ init_energies_pybind(pybind11::module& m)
         "Surface Hencky strain per face",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("generate_edge_to_face_he_matrix",
-        &generate_edge_to_face_he_matrix,
-        "Generate matrix to map edges to face he indices",
+}
+
+
+void
+init_energy_functor_pybind(pybind11::module& m)
+{
+  m.def("best_fit_conformal",
+        &best_fit_conformal_pybind,
+        "Get the best fit conformal map for a metric map",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
@@ -417,11 +399,6 @@ init_energies_pybind(pybind11::module& m)
 void
 init_translation_pybind(pybind11::module& m)
 {
-  m.def("generate_translation_lagrangian_system",
-        &generate_translation_lagrangian_system_pybind,
-        "Generate least squares translation Lagrangian system",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("compute_as_symmetric_as_possible_translations",
         &compute_as_symmetric_as_possible_translations_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
@@ -431,43 +408,11 @@ init_translation_pybind(pybind11::module& m)
 void
 init_shear_pybind(pybind11::module& m)
 {
-  m.def("compute_shear_dual_basis",
-        &compute_shear_dual_basis_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_shear_coordinate_basis",
-        &compute_shear_coordinate_basis_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_shear_basis_coordinates",
-        &compute_shear_basis_coordinates_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_shear",
-        &compute_shear,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_shear_change",
-        &compute_shear_change_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 void
 init_interpolation_pybind(pybind11::module& m)
 {
-  m.def("interpolate_penner_coordinates",
-        &interpolate_penner_coordinates_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("interpolate_vertex_positions",
-        &interpolate_vertex_positions_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("find_origin_endpoints",
-        &find_origin_endpoints_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 void
@@ -481,25 +426,24 @@ init_optimization_interface_pybind(pybind11::module& m)
         &correct_cone_angles_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+  m.def("consistent_overlay_mesh_to_VL",
+        &consistent_overlay_mesh_to_VL,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
 }
 
 
 void
 init_projection_pybind(pybind11::module& m)
 {
-  //m.def("line_search_direction",
-  //      &line_search_direction,
-  //      "Get line search direction",
-  //      pybind11::call_guard<pybind11::scoped_ostream_redirect,
-  //                           pybind11::scoped_estream_redirect>());
+  m.def("conformal_scaling_matrix",
+        &conformal_scaling_matrix,
+        "Build matrix for scaling edge lengths conformally",
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
   m.def("project_to_constraint",
         &project_to_constraint_py,
         "Project to constraint manifold",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("project_descent_direction",
-        &project_descent_direction,
-        "Project general descent direction",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
@@ -507,29 +451,6 @@ init_projection_pybind(pybind11::module& m)
 void
 init_shapes_pybind(pybind11::module& m)
 {
-  m.def("generate_tetrahedron",
-        &generate_tetrahedron_pybind,
-        "Generate tetrahedron VF representation",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-
-  m.def("generate_tetrahedron_mesh",
-        &generate_tetrahedron_mesh_pybind,
-        "Generate tetrahedron mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-
-  m.def("generate_double_triangle",
-        &generate_double_triangle_pybind,
-        "Generate double_triangle VF representation",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-
-  m.def("generate_double_triangle_mesh",
-        &generate_double_triangle_mesh_pybind,
-        "Generate double_triangle mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 void
@@ -550,23 +471,8 @@ init_targets_pybind(pybind11::module& m)
 }
 
 void
-init_transitions_pybind(pybind11::module& m)
+init_delaunay_pybind(pybind11::module& m)
 {
-  m.def("make_delaunay_with_jacobian",
-        &make_delaunay_with_jacobian_pybind,
-        "Make mesh Delauany with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("make_delaunay_with_jacobian_overlay",
-        &make_delaunay_with_jacobian_overlay,
-        "Make mesh Delauany with Jacobian with overlay",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
- m.def("flip_edges",
-        &flip_edges_pybind,
-        "Flip edges to generate new mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
 }
 
 
@@ -607,22 +513,6 @@ init_convergence_pybind(pybind11::module& m)
 void
 init_explicit_optimization_pybind(pybind11::module& m)
 {
-  m.def("compute_optimization_domain",
-        &compute_optimization_domain_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_domain_coordinate_metric",
-        &compute_domain_coordinate_metric_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_domain_coordinate_energy",
-        &compute_domain_coordinate_energy,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_domain_coordinate_energy_with_gradient",
-        &compute_domain_coordinate_energy_with_gradient_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("optimize_shear_basis_coordinates",
         &optimize_shear_basis_coordinates_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
@@ -645,19 +535,6 @@ init_layout_pybind(pybind11::module& m)
                              pybind11::scoped_estream_redirect>());
   m.def("compute_uv_length_error",
         &compute_uv_length_error,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("check_uv",
-        &check_uv,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("parametrize_mesh",
-        &parametrize_mesh,
-        "generate parametrization for mesh",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("extract_embedded_mesh",
-        &extract_embedded_mesh_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
@@ -740,7 +617,7 @@ load_simplify_overlay_output(
 PYBIND11_MODULE(optimization_py, m)
 {
   m.doc() = "pybind for optimization module";
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::info);
 
   init_classes_pybind(m);
   init_conformal_pybind(m);
@@ -748,8 +625,10 @@ PYBIND11_MODULE(optimization_py, m)
   init_area_pybind(m);
   init_constraint_pybind(m);
   init_convergence_pybind(m);
+  init_delaunay_pybind(m);
   init_embedding_pybind(m);
   init_energies_pybind(m);
+  init_energy_functor_pybind(m);
   init_explicit_optimization_pybind(m);
   init_implicit_optimization_pybind(m);
   init_interpolation_pybind(m);
@@ -758,7 +637,6 @@ PYBIND11_MODULE(optimization_py, m)
   init_shapes_pybind(m);
   init_shear_pybind(m);
   init_targets_pybind(m);
-  init_transitions_pybind(m);
   init_translation_pybind(m);
   init_optimization_interface_pybind(m);
 
@@ -784,5 +662,6 @@ PYBIND11_MODULE(optimization_py, m)
         pybind11::scoped_estream_redirect>());
 
 }
+#endif
 #endif
 }

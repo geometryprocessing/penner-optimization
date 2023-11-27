@@ -102,6 +102,24 @@ write_obj_with_uv(
   const Eigen::MatrixXi &F_uv
 );
 
+std::tuple<
+        std::vector<std::vector<Scalar>>,       // V_out
+        std::vector<std::vector<int>>,          // F_out
+        std::vector<Scalar>,                    // layout u (per vertex)
+        std::vector<Scalar>,                    // layout v (per vertex)
+        std::vector<std::vector<int>>,          // FT_out
+        std::vector<bool>,                      // is_cut_o
+        std::vector<int>,                       // Fn_to_F
+        std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
+consistent_overlay_mesh_to_VL(
+                   const Eigen::MatrixXi& F,
+                   const std::vector<Scalar>& Theta_hat,
+                   OverlayMesh<Scalar>& mo,
+                   std::vector<Scalar> &u,
+                   std::vector<std::vector<Scalar>>& V_overlay,
+                   std::vector<int>& vtx_reindex,
+                   std::vector<std::pair<int, int>>& endpoints,
+									 const std::vector<bool>& is_cut);
 
 #ifdef PYBIND
 std::vector<Scalar>

@@ -2,7 +2,6 @@
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "embedding.hh"
-#include "transitions.hh"
 
 /// FIXME Do cleaning pass
 
@@ -19,7 +18,7 @@ void
 bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
 {
 	int num_halfedges = m_o.seg_bcs.size();
-	spdlog::info("Reparametrizing {} halfedges", num_halfedges);
+	spdlog::trace("Reparametrizing {} halfedges", num_halfedges);
 
   for (int h = 0; h < num_halfedges; h++) {
     if (m_o.edge_type[m_o.e(h)] == ORIGINAL_EDGE)
@@ -67,7 +66,7 @@ reparametrize_equilateral(std::vector<Pt<Scalar>>& pts,
                           const std::vector<int>& h,
                           const VectorX& tau)
 {
-	spdlog::info("Reparametrizing {} points", pts.size());
+	spdlog::trace("Reparametrizing {} points", pts.size());
 
   for (size_t i = 0; i < pts.size(); i++) {
     int fid = pts[i].f_id;

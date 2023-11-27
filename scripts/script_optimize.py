@@ -34,7 +34,8 @@ def optimize_one(args, fname):
     lambdas_conf, u = opt.project_to_constraint(
         C,
         lambdas_init,
-        proj_params
+        proj_params,
+        opt_params
     )
     output_lambdas_path = os.path.join(output_dir, 'lambdas_conf')
     logger.info("Saving conformal lambdas to file at {}".format(output_lambdas_path))
