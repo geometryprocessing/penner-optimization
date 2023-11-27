@@ -7,3 +7,4 @@
 #include "test_optimize.cpp"
 #include "test_shear.cpp"
 #include "test_refinement.cpp"
+#include "test_regression.cpp"
