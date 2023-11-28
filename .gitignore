@@ -37,5 +37,7 @@ ext
 data*
 output*
 
-# Python temp
+# Caches
 *__pycache__
+*.DS_Store
+
