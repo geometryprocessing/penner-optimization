@@ -225,7 +225,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("embed", &ReductionMaps::embed);
 
   pybind11::class_<EnergyFunctor>(m, "EnergyFunctor")
-    .def(pybind11::init<const Mesh<Scalar> &, // m
+    .def(pybind11::init<const DifferentiableConeMetric &, // m
                         const VectorX &, // reduced_metric_target
                         const OptimizationParameters& // opt_params
                         >())

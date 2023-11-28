@@ -77,8 +77,9 @@ int main(int argc, char *argv[])
 	spdlog::info("Initial coordinates are {}", shear_basis_coords_init);
 
 	// Optimize the metric
+	PennerConeMetric cone_metric(m, reduced_metric_init);
 	VectorX reduced_metric_coords;
-	optimize_shear_basis_coordinates(m,
+	optimize_shear_basis_coordinates(cone_metric,
 									reduced_metric_target,
 						    	shear_basis_coords_init,
 									scale_factors_init,

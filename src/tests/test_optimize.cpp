@@ -27,6 +27,7 @@ TEST_CASE("The optimium edge length for a triangle can be computed", "[optimize]
   metric_coords << 0.0, 0.0, 2.0 * std::log(std::sqrt(2));
   VectorX metric_target(3);
   metric_target << 0.0, 0.0, 0.0;
+	PennerConeMetric cone_metric(m, metric_coords);
 
   SECTION("p-norm")
   {
@@ -36,7 +37,7 @@ TEST_CASE("The optimium edge length for a triangle can be computed", "[optimize]
 
     VectorX optimized_metric_coords;
     optimize_metric(
-        m,
+        cone_metric,
         metric_target,
         metric_coords,
         optimized_metric_coords,
@@ -80,6 +81,7 @@ TEST_CASE("The optimium edge length for a square can be computed", "[optimize]")
   metric_coords << 0.0, 0.0, 0.0, 0.0, 0.0;
   VectorX metric_target(5);
   metric_target << 0.0, 0.0, 0.0, 0.0, 0.0;
+	PennerConeMetric cone_metric(m, metric_coords);
 
   SECTION("p-norm")
   {
@@ -90,7 +92,7 @@ TEST_CASE("The optimium edge length for a square can be computed", "[optimize]")
 
     VectorX optimized_metric_coords;
     optimize_metric(
-        m,
+        cone_metric,
         metric_target,
         metric_coords,
         optimized_metric_coords,

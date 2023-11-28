@@ -10,7 +10,7 @@ namespace CurvatureMetric {
 // Compute descent directions for given metrics
 void
 compute_descent_directions(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -56,7 +56,7 @@ compute_descent_directions(
 
 Scalar
 compute_metric_convergence_ratio(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params
@@ -81,7 +81,7 @@ compute_metric_convergence_ratio(
 
 void
 compute_direction_energy_values(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -147,7 +147,7 @@ compute_direction_energy_values(
 
 void
 compute_projected_descent_direction_energy_values(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -186,7 +186,7 @@ compute_projected_descent_direction_energy_values(
 
 void
 compute_domain_direction_energy_values(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
   const ReductionMaps& reduction_maps,
   const VectorX& reduced_metric_target,
   const VectorX& domain_coords,
@@ -235,7 +235,7 @@ compute_domain_direction_energy_values(
 
 void
 compute_projected_descent_direction_stability_values(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -350,7 +350,7 @@ std::tuple<
   VectorX // projected_energies
 >
 compute_direction_energy_values_pybind(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -379,7 +379,7 @@ std::tuple<
   VectorX // projected_energies
 >
 compute_projected_descent_direction_energy_values_pybind(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,
@@ -403,7 +403,7 @@ compute_projected_descent_direction_energy_values_pybind(
 
 VectorX
 compute_domain_direction_energy_values_pybind(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
   const ReductionMaps& reduction_maps,
   const VectorX& reduced_metric_target,
   const VectorX& domain_coords,
@@ -438,7 +438,7 @@ std::tuple<
   VectorX  // gradient_signs
 >
 compute_projected_descent_direction_stability_values_pybind(
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& m,
 	const VectorX& reduced_metric_coords,
   const VectorX& reduced_metric_target,
 	const OptimizationParameters& opt_params,

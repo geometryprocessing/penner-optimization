@@ -96,7 +96,7 @@ compute_domain_coordinate_energy(
 /// @return true iff the energy computation was successful
 bool
 compute_domain_coordinate_energy_with_gradient(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const ReductionMaps& reduction_maps,
   const EnergyFunctor& opt_energy,
   const VectorX& domain_coords,
@@ -121,7 +121,7 @@ compute_domain_coordinate_energy_with_gradient(
 /// @param[in] opt_params: parameters for the optimization
 void
 optimize_shear_basis_coordinates(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const VectorX& reduced_metric_target,
   const VectorX& shear_basis_coords_init,
   const VectorX& scale_factors_init,
@@ -138,7 +138,7 @@ std::tuple<
   MatrixX // constraint_codomain_matrix
 >
 compute_optimization_domain_pybind(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const VectorX& shear_basis_coords,
   const VectorX& scale_factors,
   const MatrixX& shear_basis_matrix,
@@ -147,7 +147,7 @@ compute_optimization_domain_pybind(
 
 VectorX
 optimize_shear_basis_coordinates_pybind(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const VectorX& reduced_metric_target,
   const VectorX& shear_basis_coords_init,
   const VectorX& scale_factors_init,
@@ -157,7 +157,7 @@ optimize_shear_basis_coordinates_pybind(
 
 std::tuple<Scalar, VectorX>
 compute_domain_coordinate_energy_with_gradient_pybind(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const ReductionMaps& reduction_maps,
   const EnergyFunctor& opt_energy,
   const VectorX& domain_coords,
@@ -169,7 +169,7 @@ compute_domain_coordinate_energy_with_gradient_pybind(
 
 VectorX
 compute_domain_coordinate_metric_pybind(
-  const Mesh<Scalar>& m,
+  const DifferentiableConeMetric& m,
   const ReductionMaps& reduction_maps,
   const VectorX& domain_coords,
   const MatrixX& constraint_domain_matrix,

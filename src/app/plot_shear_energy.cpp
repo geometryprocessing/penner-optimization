@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
 	VectorX reduced_metric_target;
 	generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
 	VectorX reduced_metric_init = reduced_metric_target;
+	PennerConeMetric cone_metric(m, reduced_metric_init);
 
 	// Compute shear dual basis and the coordinates
   VectorX shear_basis_coords_init, scale_factors_init;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[])
   VectorX metric_target;
   expand_reduced_function(
     reduction_maps.proj, reduced_metric_target, metric_target);
-  EnergyFunctor opt_energy(m, metric_target, *opt_params);
+  EnergyFunctor opt_energy(cone_metric, metric_target, *opt_params);
 
   // Build matrix to map scale factors to edge coordinates
   MatrixX scale_factor_basis_matrix = conformal_scaling_matrix(m);
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 
 			// Compute the energy for the shear metric coordinates
 			Scalar energy = compute_domain_coordinate_energy(
-					m,
+					cone_metric,
 					reduction_maps,
 					opt_energy,
 					domain_coords,

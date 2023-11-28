@@ -70,7 +70,8 @@ int main(int argc, char *argv[])
 
 	// Optimize the metric
 	VectorX optimized_reduced_metric_coords;
-	optimize_metric(m,
+	PennerConeMetric cone_metric(m, reduced_metric_init);
+	optimize_metric(cone_metric,
 									reduced_metric_target,
 									reduced_metric_init,
 									optimized_reduced_metric_coords,

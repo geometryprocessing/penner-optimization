@@ -3,6 +3,7 @@
 #include "common.hh"
 #include "embedding.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
+#include "cone_metric.hh"
 
 /// \file energy_functor.hh
 ///
@@ -148,7 +149,7 @@ class EnergyFunctor
 {
 public:
   EnergyFunctor(
-    const Mesh<Scalar> &m,
+    const DifferentiableConeMetric& m,
     const VectorX &metric_target,
     const OptimizationParameters& opt_params
   );
@@ -196,7 +197,7 @@ private:
   MatrixX m_quadratic_energy_matrix;
   MatrixX m_quadratic_energy_matrix_inverse;
 
-  Mesh<Scalar> m_mesh;
+  std::unique_ptr<DifferentiableConeMetric> m_mesh;
   std::string m_energy_choice;
   int m_lp_order;
   Scalar m_surface_hencky_strain_weight;

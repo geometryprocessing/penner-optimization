@@ -363,11 +363,11 @@ compute_boundary_face_weights(
 }
 
 EnergyFunctor::EnergyFunctor(
-  const Mesh<Scalar> &m,
+  const DifferentiableConeMetric &m,
   const VectorX &metric_target,
   const OptimizationParameters& opt_params
 ) {
-  m_mesh = m;
+  m_mesh = m.clone_cone_metric();
   m_opt_params = opt_params;
 
   // Get reduction maps
@@ -410,9 +410,9 @@ EnergyFunctor::EnergyFunctor(
   spdlog::trace("Normalized face area weights: {}", m_face_area_weights.transpose());
 
   // Compute quadratic energy matrix
-  MatrixX R = generate_edge_to_face_he_matrix(m_mesh);
+  MatrixX R = generate_edge_to_face_he_matrix(*m_mesh);
   MatrixX M;
-  surface_hencky_strain_energy(m_mesh, m_log_edge_lengths, M);
+  surface_hencky_strain_energy(*m_mesh, m_log_edge_lengths, M);
 
   // Add cone face weights if nontrivial
   if (!float_equal(m_cone_weight, 1.0))
@@ -437,7 +437,7 @@ EnergyFunctor::EnergyFunctor(
   // Compute quadratic energy matrix_inverse
   // WARNING Only valid for vanilla surface hencky strain
   MatrixX inverse_M;
-  surface_hencky_strain_energy_inverse(m_mesh, m_log_edge_lengths, inverse_M);
+  surface_hencky_strain_energy_inverse(*m_mesh, m_log_edge_lengths, inverse_M);
 
   m_quadratic_energy_matrix = R.transpose() * M * R;
   m_quadratic_energy_matrix_inverse = R.transpose() * inverse_M * R;
@@ -479,7 +479,7 @@ Scalar EnergyFunctor::compute_surface_hencky_strain_energy(const VectorX& metric
 Scalar EnergyFunctor::compute_scale_distortion_energy(const VectorX& metric_coords) const
 {
   VectorX u;
-  best_fit_conformal(m_mesh, m_metric_target, metric_coords, u);
+  best_fit_conformal(*m_mesh, m_metric_target, metric_coords, u);
   return 0.5 * (u.dot(u));
 }
 
@@ -489,7 +489,7 @@ Scalar EnergyFunctor::compute_cone_energy(const VectorX& metric_coords) const
   MatrixX J_constraint;
   std::vector<int> flip_seq;
   bool need_jacobian = false;
-  constraint_with_jacobian(m_mesh,
+  constraint_with_jacobian(*m_mesh,
                            metric_coords,
                            constraint,
                            J_constraint,
@@ -499,8 +499,8 @@ Scalar EnergyFunctor::compute_cone_energy(const VectorX& metric_coords) const
 
   // Add L2 constraint error for fixed dof of the projection
   Scalar energy = 0;
-  for (size_t v = 0; v < m_mesh.fixed_dof.size(); ++v) {
-    if (m_mesh.fixed_dof[v]) {
+  for (size_t v = 0; v < m_mesh->fixed_dof.size(); ++v) {
+    if (m_mesh->fixed_dof[v]) {
       energy += 0.5 * constraint[v] * constraint[v];
     }
   }
@@ -515,7 +515,7 @@ Scalar EnergyFunctor::compute_symmetric_dirichlet_energy(const VectorX& metric_c
   MatrixX J_f2energy;
   bool need_jacobian = false;
   symmetric_dirichlet_energy(
-    m_mesh,
+    *m_mesh,
     m_metric_target,
     metric_coords,
     f2energy,
@@ -584,7 +584,7 @@ VectorX EnergyFunctor::compute_cone_gradient(const VectorX& metric_coords) const
   MatrixX J_constraint;
   std::vector<int> flip_seq;
   bool need_jacobian = true;
-  constraint_with_jacobian(m_mesh,
+  constraint_with_jacobian(*m_mesh,
                            metric_coords,
                            constraint,
                            J_constraint,
@@ -595,8 +595,8 @@ VectorX EnergyFunctor::compute_cone_gradient(const VectorX& metric_coords) const
   // Add L2 constraint error gradient for fixed dof of the projection
   VectorX cone_gradient;
   cone_gradient.setZero(metric_coords.size());
-  for (size_t v = 0; v < m_mesh.fixed_dof.size(); ++v) {
-    if (m_mesh.fixed_dof[v]) {
+  for (size_t v = 0; v < m_mesh->fixed_dof.size(); ++v) {
+    if (m_mesh->fixed_dof[v]) {
       cone_gradient += constraint[v] * J_constraint.row(v);
     }
   }
@@ -646,7 +646,7 @@ VectorX EnergyFunctor::gradient(const VectorX& metric_coords) const
   else if (m_energy_choice == "scale_distortion")
   {
     VectorX direction;
-    scale_distortion_direction(m_mesh, m_metric_target, metric_coords, direction);
+    scale_distortion_direction(*m_mesh, m_metric_target, metric_coords, direction);
     return direction;
   }
   else if (m_energy_choice == "sym_dirichlet")
@@ -656,7 +656,7 @@ VectorX EnergyFunctor::gradient(const VectorX& metric_coords) const
     MatrixX J_f2energy;
     bool need_jacobian = true;
     symmetric_dirichlet_energy(
-      m_mesh,
+      *m_mesh,
       m_metric_target,
       metric_coords,
       f2energy,

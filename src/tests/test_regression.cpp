@@ -27,8 +27,9 @@ namespace
 		opt_params->num_iter = 5;
 
 		// Optimize the metric
+		PennerConeMetric cone_metric(m, reduced_metric_init);
 		VectorX optimized_reduced_metric_coords;
-		optimize_metric(m,
+		optimize_metric(cone_metric,
 										reduced_metric_target,
 										reduced_metric_init,
 										optimized_reduced_metric_coords,
