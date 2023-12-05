@@ -3,6 +3,7 @@
 #include "area.hh"
 #include "shapes.hh"
 #include "common.hh"
+#include "cone_metric.hh"
 
 using namespace CurvatureMetric;
 
@@ -10,7 +11,7 @@ TEST_CASE( "The squared area of a triangle can be computed", "[area]" )
 {
   SECTION ( "Equilateral triangle" )
   {
-	double result = area_squared(1.0, 1.0, 1.0);
+	double result = squared_area(1.0, 1.0, 1.0);
 	double answer = 3.0 / 16.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -18,7 +19,7 @@ TEST_CASE( "The squared area of a triangle can be computed", "[area]" )
 
   SECTION ( "Right triangle" )
   {
-	double result = area_squared(3.0, 4.0, 5.0);
+	double result = squared_area(3.0, 4.0, 5.0);
 	double answer = 36.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -26,7 +27,7 @@ TEST_CASE( "The squared area of a triangle can be computed", "[area]" )
 
   SECTION ( "Line segment" )
   {
-	double result = area_squared(2.0, 1.0, 1.0);
+	double result = squared_area(2.0, 1.0, 1.0);
 	double answer = 0.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -34,7 +35,7 @@ TEST_CASE( "The squared area of a triangle can be computed", "[area]" )
 
   SECTION ( "Point" )
   {
-	double result = area_squared(0.0, 0.0, 0.0);
+	double result = squared_area(0.0, 0.0, 0.0);
 	double answer = 0.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -45,7 +46,7 @@ TEST_CASE( "The derivative of the squared area of a triangle can be computed", "
 {
   SECTION ( "Equilateral triangle" )
   {
-	double result = area_squared_derivative(1.0, 1.0, 1.0);
+	double result = squared_area_length_derivative(1.0, 1.0, 1.0);
 	double answer = 0.25;
 
     REQUIRE( float_equal(result, answer) );
@@ -53,7 +54,7 @@ TEST_CASE( "The derivative of the squared area of a triangle can be computed", "
 
   SECTION ( "Right triangle" )
   {
-	double result = area_squared_derivative(3.0, 4.0, 5.0);
+	double result = squared_area_length_derivative(3.0, 4.0, 5.0);
 	double answer = 24.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -61,7 +62,7 @@ TEST_CASE( "The derivative of the squared area of a triangle can be computed", "
 
   SECTION ( "Line segment" )
   {
-	double result = area_squared_derivative(2.0, 1.0, 1.0);
+	double result = squared_area_length_derivative(2.0, 1.0, 1.0);
 	double answer = -1.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -69,7 +70,7 @@ TEST_CASE( "The derivative of the squared area of a triangle can be computed", "
 
   SECTION ( "Point" )
   {
-	double result = area_squared_derivative(0.0, 0.0, 0.0);
+	double result = squared_area_length_derivative(0.0, 0.0, 0.0);
 	double answer = 0.0;
 
     REQUIRE( float_equal(result, answer) );
@@ -88,8 +89,8 @@ TEST_CASE( "The squared area of mesh faces can be computed", "[area]" ) {
     generate_tetrahedron_mesh(m, vtx_reindex);
 
     // Compute the areas
-    VectorX he2areasq;
-    areas_squared_from_log_lengths(m, log_length_coords, he2areasq);
+    DiscreteMetric cone_metric(m, log_length_coords);
+    VectorX he2areasq = squared_areas(cone_metric);
 
     // Check the areas
     REQUIRE( he2areasq.size() == 12 );
@@ -112,8 +113,8 @@ TEST_CASE( "The squared area derivatives of mesh faces can be computed", "[area]
     generate_tetrahedron_mesh(m, vtx_reindex);
 
     // Compute the area derivatives
-    VectorX he2areasqderiv;
-    area_squared_derivatives_from_log_lengths(m, log_length_coords, he2areasqderiv);
+    DiscreteMetric cone_metric(m, log_length_coords);
+    VectorX he2areasqderiv = squared_area_log_length_derivatives(cone_metric);
 
     // Check the area derivatives
     REQUIRE( he2areasqderiv.size() == 12 );

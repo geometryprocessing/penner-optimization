@@ -358,6 +358,26 @@ id_matrix(int n)
   return id;
 }
 
+/// Create an empty IJV representation of a matrix with allocated space.
+///
+/// @param capacity: space to reserve in the IJV arrays
+/// @return IJV representation of a matrix with reserved space
+inline std::tuple<
+  std::vector<int>,
+  std::vector<int>,
+  std::vector<Scalar>>
+allocate_triplet_matrix(int capacity)
+{
+  std::vector<int> I;
+  std::vector<int> J;
+  std::vector<Scalar> V;
+  I.reserve(capacity);
+  J.reserve(capacity);
+  V.reserve(capacity);
+
+  return std::make_tuple(I, J, V);
+}
+
 /// Compute the condition number of a matrix.
 ///
 /// Note that this is a slow and unstable operation for large matrices

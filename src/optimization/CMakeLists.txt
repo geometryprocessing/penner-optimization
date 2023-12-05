@@ -6,7 +6,7 @@ add_library(MetricOptimizationLib
   embedding.cpp
   energies.cpp
   energy_functor.cpp
-  explicit_optimization.cpp
+#  explicit_optimization.cpp
   implicit_optimization.cpp
   interpolation.cpp
   layout.cpp

@@ -4,6 +4,7 @@
 #include "shapes.hh"
 #include "embedding.hh"
 #include "common.hh"
+#include "cone_metric.hh"
 #include "optimization_interface.hh"
 #include "projection.hh"
 
@@ -12,7 +13,6 @@ using namespace CurvatureMetric;
 TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
 {
   spdlog::set_level(spdlog::level::debug);
-  Mesh<double> m;
 	std::vector<int> vtx_reindex;
   VectorX reduced_metric_target;
   
@@ -31,18 +31,18 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(3, M_PI / 3.0);
 
     // Generate mesh
-    generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis
     MatrixX shear_basis_matrix;
     std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+    compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
 
-    REQUIRE( shear_basis_matrix.rows() == 3 );
+    REQUIRE( shear_basis_matrix.rows() == 6 );
     REQUIRE( shear_basis_matrix.cols() == 0 );
 
 		// Compute corresponding scaling matrix
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
+    MatrixX scaling_matrix = conformal_scaling_matrix(*cone_metric);
     MatrixX inner_product_matrix = scaling_matrix.transpose() * shear_basis_matrix;
     
     // Check that the basis is orthogonal to the scaling
@@ -65,18 +65,18 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(3, 2.0 * M_PI / 3.0);
 
     // Generate mesh
-    generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis
     MatrixX shear_basis_matrix;
     std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+    compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
 
-    REQUIRE( shear_basis_matrix.rows() == 3 );
+    REQUIRE( shear_basis_matrix.rows() == 6 );
     REQUIRE( shear_basis_matrix.cols() == 0 );
 
 		// Compute corresponding scaling matrix
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
+    MatrixX scaling_matrix = conformal_scaling_matrix(*cone_metric);
     MatrixX inner_product_matrix = scaling_matrix.transpose() * shear_basis_matrix;
     
     // Check that the basis is orthogonal to the scaling
@@ -102,19 +102,19 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(4, M_PI);
 
     // Generate mesh
-    generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis and ensure it is the correct size
     MatrixX shear_basis_matrix;
     std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+    compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
     spdlog::info("Shear basis matrix is {}", shear_basis_matrix);
 
-    REQUIRE( shear_basis_matrix.rows() == 6 );
+    REQUIRE( shear_basis_matrix.rows() == 12 );
     REQUIRE( shear_basis_matrix.cols() == 2 );
 
 		// Compute corresponding scaling matrix
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
+    MatrixX scaling_matrix = conformal_scaling_matrix(*cone_metric);
     MatrixX inner_product_matrix = scaling_matrix.transpose() * shear_basis_matrix;
     spdlog::info("Conformal scaling matrix is {}", scaling_matrix);
     
@@ -144,19 +144,19 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(5, (10.0 - 4.0) * M_PI / 5.0);
 
     // Generate mesh
-    generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis and ensure it is the correct size
     MatrixX shear_basis_matrix;
     std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+    compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
     spdlog::info("Shear basis matrix is {}", shear_basis_matrix);
 
-    REQUIRE( shear_basis_matrix.rows() == 9 );
+    REQUIRE( shear_basis_matrix.rows() == 18 );
     REQUIRE( shear_basis_matrix.cols() == 4 );
 
 		// Compute corresponding scaling matrix
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
+    MatrixX scaling_matrix = conformal_scaling_matrix(*cone_metric);
     MatrixX inner_product_matrix = scaling_matrix.transpose() * shear_basis_matrix;
     spdlog::info("Conformal scaling matrix is {}", scaling_matrix);
     
@@ -168,7 +168,6 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
 TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[shear]" )
 {
   spdlog::set_level(spdlog::level::debug);
-  Mesh<double> m;
   std::vector<int> vtx_reindex;
   VectorX reduced_metric_target;
   
@@ -189,38 +188,27 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
   std::vector<double> Th_hat(4, M_PI);
 
   // Generate mesh
-  generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
 
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
+  // Compute shear and conformal basis
+  MatrixX shear_basis_matrix;
+  std::vector<int> independent_edges;
+  compute_shear_dual_basis(*initial_cone_metric, shear_basis_matrix, independent_edges);
+  MatrixX scaling_matrix = conformal_scaling_matrix(*initial_cone_metric);
 
   SECTION ( "Zero" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(4);
     exact_scale_factors << 0, 0, 0, 0;
     VectorX exact_shear_coords(2);
     exact_shear_coords << 0, 0;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );
@@ -228,24 +216,17 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
 
   SECTION ( "Conformal" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(4);
     exact_scale_factors << 1, 2, 0, -1;
     VectorX exact_shear_coords(2);
     exact_shear_coords << 0, 0;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );
@@ -253,24 +234,17 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
 
   SECTION ( "Shear" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(4);
     exact_scale_factors << 0, 0, 0, 0;
     VectorX exact_shear_coords(2);
     exact_shear_coords << 2, -1;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );
@@ -278,24 +252,17 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
 
   SECTION ( "General" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(4);
     exact_scale_factors << 1, 2, 0, -1;
     VectorX exact_shear_coords(2);
     exact_shear_coords << 2, -1;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );
@@ -305,7 +272,6 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
 TEST_CASE( "Shear dual basis coordinates for a pyramid can be computed", "[shear]" )
 {
   spdlog::set_level(spdlog::level::debug);
-  Mesh<double> m;
   std::vector<int> vtx_reindex;
   VectorX reduced_metric_target;
 
@@ -329,38 +295,27 @@ TEST_CASE( "Shear dual basis coordinates for a pyramid can be computed", "[shear
   std::vector<double> Th_hat(5, (10.0 - 4.0) * M_PI / 5.0);
 
   // Generate mesh
-  generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+
+  // Compute shear and conformal basis
+  MatrixX shear_basis_matrix;
+  std::vector<int> independent_edges;
+  compute_shear_dual_basis(*initial_cone_metric, shear_basis_matrix, independent_edges);
+  MatrixX scaling_matrix = conformal_scaling_matrix(*initial_cone_metric);
   
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
-
   SECTION ( "Zero" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(5);
     exact_scale_factors << 0, 0, 0, 0, 0;
     VectorX exact_shear_coords(4);
     exact_shear_coords << 0, 0, 0, 0;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );
@@ -368,24 +323,17 @@ TEST_CASE( "Shear dual basis coordinates for a pyramid can be computed", "[shear
 
   SECTION ( "General" )
   {
-    // Compute shear and conformal basis
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-    MatrixX scaling_matrix = conformal_scaling_matrix(m);
-
     // Compute metric from arbitrary initial coordinates
     VectorX exact_scale_factors(5);
     exact_scale_factors << 1, 2, 0, -1, -2;
     VectorX exact_shear_coords(4);
     exact_shear_coords << 1, 2, 0, -1;
     VectorX metric_coords = shear_basis_matrix * exact_shear_coords + scaling_matrix * exact_scale_factors;
-    VectorX reduced_metric_coords;
-    reduce_symmetric_function(embed, metric_coords, reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric->set_metric_coordinates(metric_coords);
 
     // Compute the shear and scale factors for the metric
     VectorX shear_coords, scale_factors;
-    compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
+    compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_coords, scale_factors);
 
     REQUIRE( vector_equal(shear_coords, exact_shear_coords) );
     REQUIRE( vector_equal(scale_factors, exact_scale_factors) );

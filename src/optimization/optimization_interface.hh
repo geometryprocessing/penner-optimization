@@ -1,6 +1,6 @@
 #pragma once
 #include "common.hh"
-
+#include "cone_metric.hh"
 
 namespace CurvatureMetric {
 
@@ -13,14 +13,13 @@ namespace CurvatureMetric {
 /// @param[out] m: halfedge closed mesh
 /// @param[out] vtx_reindex: map from original to new vertex indices
 /// @param[out] reduced_metric_target: reduced per edge Penner coordinates
-void
+std::unique_ptr<DifferentiableConeMetric>
 generate_initial_mesh(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
 	const std::vector<Scalar>& Th_hat,
-	Mesh<Scalar> &m,
 	std::vector<int>& vtx_reindex,
-	VectorX& reduced_metric_target
+	bool use_discrete_metric = false
 );
 
 /// Generate a delaunay mesh with initial target metric coordinates for optimization
@@ -79,10 +78,9 @@ generate_VF_mesh_from_metric(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
 	const std::vector<Scalar>& Th_hat,
-	const Mesh<Scalar>& m,
-	const std::vector<int>& vtx_reindex,
-	const VectorX& reduced_metric_target,
+	const DifferentiableConeMetric& initial_cone_metric,
 	const VectorX& reduced_metric_coords,
+	const std::vector<int>& vtx_reindex,
 	bool do_best_fit_scaling=false
 );
 

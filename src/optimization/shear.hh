@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hh"
+#include "cone_metric.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
@@ -44,12 +45,10 @@ compute_shear_coordinate_basis(
 /// @param[out] scale_factors: scale factor coordinates
 void
 compute_shear_basis_coordinates(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_coords,
+	const DifferentiableConeMetric& cone_metric,
 	const MatrixX& shear_basis_matrix,
 	VectorX& shear_coords,
-	VectorX& scale_factors
-);
+	VectorX& scale_factors);
 
 /// Compute the per halfedge logarithmic shear values for the mesh m with
 /// logarithmic lengths lambdas_he
@@ -93,15 +92,6 @@ compute_shear_coordinate_basis_pybind(
   const Mesh<Scalar> &m
 );
 
-std::tuple<
-	VectorX, // shear_coords
-	VectorX // scale_factors
->
-compute_shear_basis_coordinates_pybind(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_coords,
-	const MatrixX& shear_basis_matrix
-);
 
 VectorX
 compute_shear_change_pybind(

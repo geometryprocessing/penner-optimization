@@ -224,27 +224,7 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("proj", &ReductionMaps::proj)
     .def_readwrite("embed", &ReductionMaps::embed);
 
-  pybind11::class_<EnergyFunctor>(m, "EnergyFunctor")
-    .def(pybind11::init<const DifferentiableConeMetric &, // m
-                        const VectorX &, // reduced_metric_target
-                        const OptimizationParameters& // opt_params
-                        >())
-    .def("energy",
-        &EnergyFunctor::energy,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>())
-    .def("compute_two_norm_energy",
-        &EnergyFunctor::compute_two_norm_energy,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>())
-    .def("compute_surface_hencky_strain_energy",
-        &EnergyFunctor::compute_surface_hencky_strain_energy,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>())
-    .def("compute_symmetric_dirichlet_energy",
-        &EnergyFunctor::compute_symmetric_dirichlet_energy,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
+  pybind11::class_<EnergyFunctor>(m, "EnergyFunctor");
 
   pybind11::class_<InterpolationMesh>(m, "InterpolationMesh")
     .def(pybind11::init<const Eigen::MatrixXd &, // V
@@ -309,67 +289,8 @@ init_conformal_pybind(pybind11::module& m)
 }
 
 void
-init_area_pybind(pybind11::module& m)
-{
-}
-
-void
-init_constraint_pybind(pybind11::module& m)
-{
-  m.def("F_with_jacobian",
-        &constraint_with_jacobian_pybind,
-        "Find angle errors with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>(),
-        pybind11::arg("C"),
-        pybind11::arg("lambdas"),
-        pybind11::arg("need_jacobian") = true,
-        pybind11::arg("use_edge_lengths") = true);
-
-  m.def("constraint_with_jacobian",
-        &constraint_with_jacobian_pybind,
-        "Find angle errors with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>(),
-        pybind11::arg("C"),
-        pybind11::arg("lambdas"),
-        pybind11::arg("need_jacobian") = true,
-        pybind11::arg("use_edge_lengths") = true);
-}
-
-void
-init_embedding_pybind(pybind11::module& m)
-{
-}
-
-void
 init_energies_pybind(pybind11::module& m)
 {
-  m.def("first_invariant",
-        &first_invariant_pybind,
-        "First invariant with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("second_invariant_squared",
-        &second_invariant_squared_pybind,
-        "Metric distortion energy with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("metric_distortion_energy",
-        &metric_distortion_energy_pybind,
-        "Metric distortion energy with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("area_distortion_energy",
-        &area_distortion_energy_pybind,
-        "Area distortion energy with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("symmetric_dirichlet_energy",
-        &symmetric_dirichlet_energy_pybind,
-        "Symmetric dirichlet energy with Jacobian",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("first_invariant_vf",
         &first_invariant_vf_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
@@ -378,45 +299,15 @@ init_energies_pybind(pybind11::module& m)
         &second_invariant_vf_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("surface_hencky_strain_energy_vf",
-        &surface_hencky_strain_energy_vf,
-        "Surface Hencky strain per face",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-
-void
-init_energy_functor_pybind(pybind11::module& m)
-{
   m.def("best_fit_conformal",
-        &best_fit_conformal_pybind,
+        &best_fit_conformal,
         "Get the best fit conformal map for a metric map",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
 
 void
-init_translation_pybind(pybind11::module& m)
-{
-  m.def("compute_as_symmetric_as_possible_translations",
-        &compute_as_symmetric_as_possible_translations_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-void
-init_shear_pybind(pybind11::module& m)
-{
-}
-
-void
-init_interpolation_pybind(pybind11::module& m)
-{
-}
-
-void
-init_optimization_interface_pybind(pybind11::module& m)
+init_optimization_pybind(pybind11::module& m)
 {
   m.def("generate_VF_mesh_from_metric",
         &generate_VF_mesh_from_metric,
@@ -430,32 +321,6 @@ init_optimization_interface_pybind(pybind11::module& m)
         &consistent_overlay_mesh_to_VL,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-}
-
-
-void
-init_projection_pybind(pybind11::module& m)
-{
-  m.def("conformal_scaling_matrix",
-        &conformal_scaling_matrix,
-        "Build matrix for scaling edge lengths conformally",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("project_to_constraint",
-        &project_to_constraint_py,
-        "Project to constraint manifold",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-void
-init_shapes_pybind(pybind11::module& m)
-{
-}
-
-void
-init_targets_pybind(pybind11::module& m)
-{
   m.def("compute_log_edge_lengths",
         &compute_log_edge_lengths_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
@@ -464,64 +329,14 @@ init_targets_pybind(pybind11::module& m)
         &compute_penner_coordinates_pybind,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("compute_shear_dual_coordinates",
-        &compute_shear_dual_coordinates_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-void
-init_delaunay_pybind(pybind11::module& m)
-{
-}
-
-
-void
-init_implicit_optimization_pybind(pybind11::module& m)
-{
   m.def("optimize_metric",
-        &optimize_metric_pybind,
+        &optimize_metric,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
 
 void
-init_convergence_pybind(pybind11::module& m)
-{
-  m.def("compute_metric_convergence_ratio",
-        &compute_metric_convergence_ratio,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_direction_energy_values",
-        &compute_direction_energy_values_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_projected_descent_direction_energy_values",
-        &compute_projected_descent_direction_energy_values_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_domain_direction_energy_values",
-        &compute_domain_direction_energy_values_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_projected_descent_direction_stability_values",
-        &compute_projected_descent_direction_stability_values_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-void
-init_explicit_optimization_pybind(pybind11::module& m)
-{
-  m.def("optimize_shear_basis_coordinates",
-        &optimize_shear_basis_coordinates_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-}
-
-
-void
-init_layout_pybind(pybind11::module& m)
+init_parameterization_pybind(pybind11::module& m)
 {
   m.def("add_overlay",
         &add_overlay,
@@ -622,23 +437,9 @@ PYBIND11_MODULE(optimization_py, m)
   init_classes_pybind(m);
   init_conformal_pybind(m);
 
-  init_area_pybind(m);
-  init_constraint_pybind(m);
-  init_convergence_pybind(m);
-  init_delaunay_pybind(m);
-  init_embedding_pybind(m);
   init_energies_pybind(m);
-  init_energy_functor_pybind(m);
-  init_explicit_optimization_pybind(m);
-  init_implicit_optimization_pybind(m);
-  init_interpolation_pybind(m);
-  init_layout_pybind(m);
-  init_projection_pybind(m);
-  init_shapes_pybind(m);
-  init_shear_pybind(m);
-  init_targets_pybind(m);
-  init_translation_pybind(m);
-  init_optimization_interface_pybind(m);
+  init_optimization_pybind(m);
+  init_parameterization_pybind(m);
 
   m.def("make_delaunay",
         &make_delaunay_pybind,

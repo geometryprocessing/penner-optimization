@@ -6,73 +6,63 @@
 namespace CurvatureMetric
 {
 
-  /// Check the triangle inequality for every triangle in the mesh with
-  /// log lengths log_length_coords.
+  /// Check the triangle inequality for every triangle in the mesh with respect to the
+  /// halfedge metric coordinates
   ///
-  /// @param[in] m: (possibly symmetric) mesh
-  /// @param[in] log_length_coords: log edge lengths for m
-  /// @return: true iff each triangle in the mesh satisfies the triangle
-  /// inequality
+  /// @param[in] cone_metric: mesh with differentiable metric
+  /// @return: true iff each triangle in the mesh satisfies the triangle inequality
   bool
-  satisfies_triangle_inequality(const Mesh<Scalar> &m,
-                                const VectorX &log_length_coords);
+  satisfies_triangle_inequality(const DifferentiableConeMetric &cone_metric);
 
   /// Compute the triangle angles and cotangent angles of a Delaunay (possibly
-  /// symmetric) mesh m with log edge lengths log_length_coords. Angles are
-  /// indexed by their opposing halfedge.
+  /// symmetric) mesh m with metric. Angles are indexed by their opposing halfedge.
   ///
-  /// @param[in] m: (possibly symmetric) Delaunay mesh
-  /// @param[in] log_length_coords: log edge lengths for m
+  /// @param[in] cone_metric: mesh with differentiable metric
   /// @param[out] he2angle: map from halfedges to opposing angle
   /// @param[out] he2cot: map from halfedges to cotan of opposing angle
   void
-  corner_angles(const Mesh<Scalar> &m,
-                const VectorX &log_length_coords,
+  corner_angles(const DifferentiableConeMetric &cone_metric,
                 VectorX &he2angle,
                 VectorX &he2cot);
 
-  /// Compute the vertex angles of a Delaunay (possibly symmetric) mesh m with log
-  /// edge lengths log_length_coords.
+  /// Compute the vertex angles of a Delaunay (possibly symmetric) mesh with metric
+  /// and the Jacobian with respect to the reduced coordinates if needed.
   ///
-  /// @param[in] m: (possibly symmetric) Delaunay mesh
-  /// @param[in] log_length_coords: log edge lengths for m
+  /// The mesh may be modified to ensure the current halfedge coordinates are log edge lengths.
+  ///
+  /// @param[in] cone_metric: mesh with differentiable metric
   /// @param[out] vertex_angles: vertex angles of m
   /// @param[out] J_vertex_angles: Jacobian of the vertex_angles as a function of
   /// the half edge coordinates
   /// @param[in] need_jacobian: create Jacobian iff true
   void
-  vertex_angles_with_jacobian(const Mesh<Scalar> &m,
-                              const VectorX &log_length_coords,
+  vertex_angles_with_jacobian(const DifferentiableConeMetric &cone_metric,
                               VectorX &vertex_angles,
                               MatrixX &J_vertex_angles,
-                              bool need_jacobian = true);
+                              bool need_jacobian = true,
+                              bool only_free_vertices = true);
 
-  /// Compute the difference of the vertex angles of a mesh m with log edge
-  /// lengths metric_coords from the target angles m.Th_hat. Also compute the
-  /// Jacobian of the constraint if needed.
+  /// Compute the difference of the vertex angles of a mesh with a metric from the target angles
+  /// and the Jacobian with respect to the reduced coordinates if needed.
   ///
-  /// If use_edge_lengths is true, the input edge lengths are used without
-  /// changing connectivity. Otherwise, the input edge lengths are interpreted
-  /// as Penner coordinates and retriangulation is done to make the mesh Delaunay
+  /// The mesh may be modified to ensure the current halfedge coordinates are log edge lengths.
   ///
-  /// @param[in] m: (possibly symmetric) mesh
-  /// @param[in] metric_coords: metric coordinates for m
-  /// @param[out] constraint: difference of the vertex angles from the target
-  /// angles
-  /// @param[out] J_constraint: Jacobian of constraint as a function of log edge
-  /// lengths
-  /// @param[out] flip_seq: sequence of flips used
-  /// @param[in] need_jacobian: create Jacobian iff true
-  /// @param[in] use_edge_lengths: use edge lengths directly iff true
+  /// @param[in, out] cone_metric: mesh with differentiable metric
+  /// @param[out] constraint: difference of the vertex angles from the target angles
+  /// @param[out] J_constraint: Jacobian of constraint as a function of log edge lengths
+  /// @param[in] need_jacobian: (optional) create Jacobian iff true
   /// @return: true iff the mesh and metric coordinates are valid
   bool
   constraint_with_jacobian(const DifferentiableConeMetric &m,
-                           const VectorX &metric_coords,
                            VectorX &constraint,
                            MatrixX &J_constraint,
-                           std::vector<int> &flip_seq,
                            bool need_jacobian = true,
-                           bool use_edge_lengths = true);
+                           bool only_free_vertices = true);
+
+
+  Scalar compute_max_constraint(const DifferentiableConeMetric &cone_metric);
+
+/// TODO Optionally add halfedge coordinate Jacobians
 
 #ifdef PYBIND
   // Pybind definitions

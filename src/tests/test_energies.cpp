@@ -3,6 +3,7 @@
 #include "energies.hh"
 #include "shapes.hh"
 #include "common.hh"
+#include "cone_metric.hh"
 
 using namespace CurvatureMetric;
 
@@ -21,6 +22,7 @@ TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
   metric_coords << 0.0, 0.0, 2.0 * std::log(std::sqrt(2));
   VectorX metric_target(3);
   metric_target << 0.0, 0.0, 0.0;
+  PennerConeMetric cone_metric(m, metric_target);
   
   SECTION ( "First invariant" )
   {
@@ -28,8 +30,7 @@ TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
     MatrixX J_f2J1;
     bool need_jacobian = true;
     first_invariant(
-      m,
-      metric_target,
+      cone_metric,
       metric_coords,
       f2J1,
       J_f2J1,
@@ -54,8 +55,7 @@ TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
     MatrixX J_f2J2;
     bool need_jacobian = true;
     second_invariant_squared(
-      m,
-      metric_target,
+      cone_metric,
       metric_coords,
       f2J2,
       J_f2J2,

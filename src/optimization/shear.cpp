@@ -193,7 +193,7 @@ compute_independent_to_full_edge_shear_matrix(
   build_refl_proj(m, he2e, e2he, proj, embed);
 
   // Build map from independent edges to edge basis vectors
-  int num_edges = e2he.size();
+  int num_halfedges = he2e.size();
   int num_independent_edges = independent_edges.size();
   std::vector<T> tripletList;
   tripletList.reserve(8 * num_independent_edges);
@@ -212,24 +212,24 @@ compute_independent_to_full_edge_shear_matrix(
     int hlj = m.n[hil];
 
     // Add shear vector for the embedded edge
-    tripletList.push_back(T(he2e[hjk], index, 1.0));
-    tripletList.push_back(T(he2e[hki], index, -1.0));
-    tripletList.push_back(T(he2e[hil], index, 1.0));
-    tripletList.push_back(T(he2e[hlj], index, -1.0));
+    tripletList.push_back(T(hjk, index, 1.0));
+    tripletList.push_back(T(hki, index, -1.0));
+    tripletList.push_back(T(hil, index, 1.0));
+    tripletList.push_back(T(hlj, index, -1.0));
 
     // Add shear vector for the reflected embedded edge
     // Note that the signs are inverted due to the inversion of the next relation 
     if (m.R[hij] > 0)
     {
-      tripletList.push_back(T(he2e[m.R[hjk]], index, -1.0));
-      tripletList.push_back(T(he2e[m.R[hki]], index, 1.0));
-      tripletList.push_back(T(he2e[m.R[hil]], index, -1.0));
-      tripletList.push_back(T(he2e[m.R[hlj]], index, 1.0));
+      tripletList.push_back(T(m.R[hjk], index, -1.0));
+      tripletList.push_back(T(m.R[hki], index, 1.0));
+      tripletList.push_back(T(m.R[hil], index, -1.0));
+      tripletList.push_back(T(m.R[hlj], index, 1.0));
     }
   }
 
   // Build the matrix
-  shear_matrix.resize(num_edges, num_independent_edges);
+  shear_matrix.resize(num_halfedges, num_independent_edges);
   shear_matrix.reserve(8 * num_independent_edges);
   shear_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
 }
@@ -299,37 +299,21 @@ compute_shear_coordinate_basis(
 // Method to validate shear coordinates
 bool
 validate_shear_basis_coordinates(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_coords,
+	const DifferentiableConeMetric& cone_metric,
+	const MatrixX& shear_basis_matrix,
 	const VectorX& shear_dual_coords,
-	const VectorX& scale_factors,
-	const MatrixX& shear_basis_matrix
+	const VectorX& scale_factors
 ) {
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
-
 	// Get conformal scaling matrix
-	MatrixX scaling_matrix = conformal_scaling_matrix(m);
+	MatrixX scaling_matrix = conformal_scaling_matrix(cone_metric);
 
 	// Reconstruct the metric from the shear and scale coordinates
 	VectorX shear_metric = shear_basis_matrix * shear_dual_coords;
 	VectorX reconstructed_metric = shear_metric + scaling_matrix * scale_factors;
-  VectorX reduced_shear_metric, reduced_reconstructed_metric;
-  reduce_symmetric_function(embed, shear_metric, reduced_shear_metric);
-  reduce_symmetric_function(embed, reconstructed_metric, reduced_reconstructed_metric);
-  SPDLOG_TRACE("Shear metric is {}", reduced_shear_metric);
-  SPDLOG_TRACE("Reconstructed metric is {}", reduced_reconstructed_metric);
-  SPDLOG_TRACE("Original metric is {}", reduced_metric_coords);
 
 	// Check if the reconstructed metric is the same as the original metirc
-	if (!vector_equal(reduced_reconstructed_metric, reduced_metric_coords))
+  VectorX metric_coords = cone_metric.get_metric_coordinates();
+	if (!vector_equal(reconstructed_metric, metric_coords))
 	{
 		spdlog::error("Reconstructed metric and original metric differ");
 		return false;
@@ -340,49 +324,11 @@ validate_shear_basis_coordinates(
 
 void
 compute_shear_basis_coordinates(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_coords,
+	const DifferentiableConeMetric& cone_metric,
 	const MatrixX& shear_basis_matrix,
 	VectorX& shear_coords,
 	VectorX& scale_factors
 ) {
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
-
-  // Expand reduced metric
-  VectorX metric_coords;
-  expand_reduced_function(proj, reduced_metric_coords, metric_coords);
-	
-	// Expand reduced coordinates to halfedge coordinates
-	//int num_halfedges = he2e.size();
-	//VectorX he_metric_coords(num_halfedges);
-	//for (int h = 0; h < num_halfedges; ++h)
-	//{
-	//	he_metric_coords[h] = metric_coords[he2e[h]];
-	//}
-
-	// Compute the full shear
-  // FIXME
-	//VectorX he_shear = compute_shear(m, he_metric_coords);
-
-	// Compute the reduced set of independent shear coordinates
-	//int num_independent_edges = independent_edges.size();
-	//VectorX shear_coords(num_independent_edges);
-	//for (int i = 0; i < num_independent_edges; ++i)
-	//{
-	//	int E = independent_edges[i];
-	//	int e = embed[E];
-	//	int h = e2he[e];
-	//	shear_coords[i] = he_shear[h];
-  //}
-
   // Get the (invertible) inner product matrix for the shear basis matrix
 	MatrixX inner_product_matrix = shear_basis_matrix.transpose() * shear_basis_matrix;
   spdlog::trace("Shear basis matrix is\n{}", shear_basis_matrix);
@@ -390,6 +336,7 @@ compute_shear_basis_coordinates(
   SPDLOG_TRACE("Condition number is {}", compute_condition_number(inner_product_matrix));
 
   // Solve for the shear coordiantes
+  VectorX metric_coords = cone_metric.get_metric_coordinates();
   VectorX rhs = shear_basis_matrix.transpose() * metric_coords;
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
   solver.compute(inner_product_matrix);
@@ -398,12 +345,13 @@ compute_shear_basis_coordinates(
   assert( vector_equal( shear_coords, solver.solve(inner_product_matrix * shear_coords)) );
   SPDLOG_TRACE("Shear coordinates in range [{}, {}]", shear_coords.minCoeff(), shear_coords.maxCoeff());
 
-	// Get the corresponding scale factors 
+	// Get the corresponding scale factors for shear space to original metric
+  // This is the (additive) inverse of the scale factors from original to shear
 	VectorX shear_space_metric = shear_basis_matrix * shear_coords;
-	best_fit_conformal(m, shear_space_metric, metric_coords, scale_factors);
+	scale_factors = -1.0 * best_fit_conformal(cone_metric, shear_space_metric);
 
 	// Validate the result
-	assert( validate_shear_basis_coordinates(m, reduced_metric_coords, shear_coords, scale_factors, shear_basis_matrix) );
+	assert( validate_shear_basis_coordinates(cone_metric, shear_basis_matrix, shear_coords, scale_factors) );
 }
 
 VectorX
@@ -461,21 +409,6 @@ compute_shear_coordinate_basis_pybind(
   std::vector<int> independent_edges;
 	compute_shear_coordinate_basis(m, shear_basis_matrix, independent_edges);
   return std::make_tuple(shear_basis_matrix, independent_edges);
-}
-
-std::tuple<
-	VectorX, // shear_coords
-	VectorX // scale_factors
->
-compute_shear_basis_coordinates_pybind(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_coords,
-	const MatrixX& shear_basis_matrix
-) {
-	VectorX shear_coords;
-	VectorX scale_factors;
-	compute_shear_basis_coordinates(m, reduced_metric_coords, shear_basis_matrix, shear_coords, scale_factors);
-  return std::make_tuple(shear_coords, scale_factors);
 }
 
 VectorX

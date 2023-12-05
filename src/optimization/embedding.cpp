@@ -163,6 +163,24 @@ build_refl_he_proj(const Mesh<Scalar>& m,
   }
 }
 
+MatrixX
+build_edge_matrix(
+  const std::vector<int>& he2e,
+  const std::vector<int>& e2he
+) {
+  int num_halfedges = he2e.size();
+  int num_edges = e2he.size();
+  std::vector<T> tripletList;
+  tripletList.reserve(num_halfedges);
+  for (int h = 0; h < num_halfedges; ++h) {
+    tripletList.push_back(T(h, he2e[h], 1.0));
+  }
+  MatrixX identification(num_halfedges, num_edges);
+  identification.reserve(tripletList.size());
+  identification.setFromTriplets(tripletList.begin(), tripletList.end());
+  return identification;
+}
+
 void
 build_refl_matrix(
   const std::vector<int>& proj,

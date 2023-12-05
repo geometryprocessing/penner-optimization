@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hh"
+#include "cone_metric.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
@@ -26,13 +27,17 @@ conformal_scaling_matrix(const Mesh<Scalar>& m);
 /// @param[in] opt_params: optimization parameters
 /// @return flip sequence and solve statistics for the conformal projection
 std::tuple<std::vector<int>, SolveStats<Scalar>>
-project_to_constraint(
-  const Mesh<Scalar>& m,
-  const VectorX& reduced_metric_coords,
-  VectorX& reduced_metric_coords_proj,
+compute_constraint_scale_factors(
+  const DifferentiableConeMetric &cone_metric,
   VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-  std::shared_ptr<OptimizationParameters> opt_params = nullptr);
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params);
+  
+VectorX
+compute_constraint_scale_factors(
+  const DifferentiableConeMetric &cone_metric,
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params);
 
 /// Find the Euclidean edge lengths for the mesh m with Penner coordinates
 /// lambdas.
@@ -60,21 +65,6 @@ VectorX
 project_descent_direction(const VectorX& descent_direction,
                           const VectorX& constraint,
                           const MatrixX& J_constraint);
-
-VectorX
-project_to_constraint(
-  const Mesh<Scalar>& m,
-  const VectorX& lambdas,
-  VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-  std::shared_ptr<OptimizationParameters> opt_params = nullptr);
-
-std::tuple<VectorX, VectorX>
-project_to_constraint_py(
-  const Mesh<Scalar>& m,
-  const VectorX& lambdas,
-  std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-  std::shared_ptr<OptimizationParameters> opt_params = nullptr);
 
 /// Given the Jacobian of the constraint, compute the projection matrix to the constraint
 /// tangent space

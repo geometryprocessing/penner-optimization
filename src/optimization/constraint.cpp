@@ -8,31 +8,22 @@ namespace CurvatureMetric
 {
 
   bool
-  satisfies_triangle_inequality(const Mesh<Scalar> &m,
-                                const VectorX &log_length_coords)
+  satisfies_triangle_inequality(const DifferentiableConeMetric &cone_metric)
   {
-    // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
-    build_edge_maps(m, he2e, e2he);
+    int num_halfedges = cone_metric.n_halfedges();
 
     // Check triangle inequality for each halfedge
-    int num_halfedges = m.n.size();
     for (int hi = 0; hi < num_halfedges; ++hi)
     {
-      int hj = m.n[hi];
-      int hk = m.n[hj];
+      int hj = cone_metric.n[hi];
+      int hk = cone_metric.n[hj];
 
-      // Log lengths of the halfedges
-      Scalar lli = log_length_coords[he2e[hi]];
-      Scalar llj = log_length_coords[he2e[hj]];
-      Scalar llk = log_length_coords[he2e[hk]];
-
-      // Halfedge lengths (scaled by the average for stability)
-      Scalar llijk_avg = (lli + llj + llk) / 3.0;
-      Scalar li = exp((lli - llijk_avg) / 2.0);
-      Scalar lj = exp((llj - llijk_avg) / 2.0);
-      Scalar lk = exp((llk - llijk_avg) / 2.0);
+      // Lengths of the halfedges
+      Scalar li = cone_metric.l[hi];
+      Scalar lj = cone_metric.l[hj];
+      Scalar lk = cone_metric.l[hk];
+      // TODO: Replace with function to get triangle scaled lengths
+      // Can subtract Scalar llijk_avg = (lli + llj + llk) / 3.0;
 
       // Check triangle inequality
       if (li > lj + lk)
@@ -43,45 +34,36 @@ namespace CurvatureMetric
   }
 
   void
-  corner_angles(const Mesh<Scalar> &m,
-                const VectorX &log_length_coords,
+  corner_angles(const DifferentiableConeMetric &cone_metric,
                 VectorX &he2angle,
                 VectorX &he2cot)
   {
-    he2angle.setZero(m.n.size());
-    he2cot.setZero(m.n.size());
+    int num_halfedges = cone_metric.n_halfedges();
+    he2angle.setZero(num_halfedges);
+    he2cot.setZero(num_halfedges);
     const Scalar cot_infty = 1e10;
-
-    // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
-    build_edge_maps(m, he2e, e2he);
 
     // Compute maps from halfedges to opposite angles and cotangents of opposite
     // angles
     // #pragma omp parallel for
-    int num_faces = m.h.size();
+    int num_faces = cone_metric.h.size();
     for (int f = 0; f < num_faces; f++)
     {
       // Halfedges of face f
-      int hi = m.h[f];
-      int hj = m.n[hi];
-      int hk = m.n[hj];
+      int hi = cone_metric.h[f];
+      int hj = cone_metric.n[hi];
+      int hk = cone_metric.n[hj];
 
-      // Log lengths of the halfedges
-      Scalar lli = log_length_coords[he2e[hi]];
-      Scalar llj = log_length_coords[he2e[hj]];
-      Scalar llk = log_length_coords[he2e[hk]];
-
-      // Halfedge lengths (scaled by the average for stability)
-      Scalar llijk_avg = (lli + llj + llk) / 3.0;
-      Scalar li = exp((lli - llijk_avg) / 2.0);
-      Scalar lj = exp((llj - llijk_avg) / 2.0);
-      Scalar lk = exp((llk - llijk_avg) / 2.0);
+      // Lengths of the halfedges
+      Scalar li = cone_metric.l[hi];
+      Scalar lj = cone_metric.l[hj];
+      Scalar lk = cone_metric.l[hk];
+      // TODO: Replace with function to get triangle scaled lengths
+      // Can subtract Scalar llijk_avg = (lli + llj + llk) / 3.0;
 
       // Compute the cotangent of the angles
       // (following "A Cotangent Laplacian for Images as Surfaces")
-      Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(area_squared(li, lj, lk), 0.0));
+      Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(squared_area(li, lj, lk), 0.0));
       Scalar Ijk = (-li * li + lj * lj + lk * lk);
       Scalar iJk = (li * li - lj * lj + lk * lk);
       Scalar ijK = (li * li + lj * lj - lk * lk);
@@ -126,156 +108,150 @@ namespace CurvatureMetric
   }
 
   void
-  vertex_angles_with_jacobian(const Mesh<Scalar> &m,
-                              const VectorX &log_length_coords,
+  vertex_angles_with_jacobian_helper(const DifferentiableConeMetric &cone_metric,
                               VectorX &vertex_angles,
                               MatrixX &J_vertex_angles,
-                              bool need_jacobian)
+                              bool need_jacobian,
+                              bool only_free_vertices)
   {
     // Get angles and cotangent of angles of faces opposite halfedges
     VectorX he2angle;
     VectorX he2cot;
-    corner_angles(m, log_length_coords, he2angle, he2cot);
+    corner_angles(cone_metric, he2angle, he2cot);
+
+    // Get matrix arrays
+    const auto &next = cone_metric.n;
+    const auto &to = cone_metric.to;
+
+    // Build v_rep
+    // TODO: Make separate
+    std::vector<int> v_rep;
+    int num_angles = 0;
+    if (only_free_vertices)
+    {
+      // Build map from independent vertices to free vertices
+      int num_ind_vertices = cone_metric.n_ind_vertices();
+      std::vector<int> v_map(num_ind_vertices, -1);
+      for (int v = 0; v < num_ind_vertices; ++v)
+      {
+        if (!cone_metric.fixed_dof[v])
+        {
+          v_map[v] = num_angles;
+          num_angles++;
+        }
+      }
+
+      // Build map from vertices to free vertices
+      int num_vertices = cone_metric.v_rep.size();
+      v_rep.resize(num_vertices);
+      for (int v = 0; v < num_vertices; ++v)
+      {
+        v_rep[v] = v_map[cone_metric.v_rep[v]];
+      }
+    }
+    else
+    {
+      v_rep = cone_metric.v_rep;
+      num_angles = cone_metric.n_ind_vertices();
+    }
 
     // Sum up angles around vertices
-    int num_halfedges = m.n.size();
-    vertex_angles.setZero(m.Th_hat.size());
+    int num_halfedges = cone_metric.n_halfedges();
+    vertex_angles.setZero(num_angles);
     for (int h = 0; h < num_halfedges; ++h)
     {
-      vertex_angles[m.v_rep[m.to[h]]] += he2angle[m.n[m.n[h]]];
+      int v = v_rep[to[h]];
+      if (v < 0) continue;
+      vertex_angles[v] += he2angle[next[next[h]]];
     }
 
     // Build Jacobian if needed
     if (need_jacobian)
     {
-      // Build edge to halfedge maps
-      std::vector<int> he2e;
-      std::vector<int> e2he;
-      build_edge_maps(m, he2e, e2he);
-
       // Create list of triplets of Jacobian indices and values
-      typedef Eigen::Triplet<Scalar> T;
-      std::vector<T> tripletList;
-      tripletList.reserve(3 * (num_halfedges / 2));
+      auto [I, J, V] = allocate_triplet_matrix(3 * (num_halfedges / 2));
       for (int h = 0; h < num_halfedges; ++h)
       {
-        tripletList.push_back(
-            T(m.v_rep[m.to[m.n[h]]], he2e[m.n[m.n[h]]], -0.5 * he2cot[m.n[h]]));
-      }
-      for (int h = 0; h < num_halfedges; ++h)
-      {
-        tripletList.push_back(
-            T(m.v_rep[m.to[m.n[h]]],
-              he2e[h],
-              0.5 * he2cot[m.n[h]] + 0.5 * he2cot[m.n[m.n[h]]]));
-      }
-      for (int h = 0; h < num_halfedges; ++h)
-      {
-        tripletList.push_back(
-            T(m.v_rep[m.to[m.n[h]]], he2e[m.n[h]], -0.5 * he2cot[m.n[m.n[h]]]));
+        int v = v_rep[to[next[h]]];
+        if (v < 0) continue;
+
+        I.push_back(v);
+        J.push_back(next[next[h]]);
+        V.push_back(-0.5 * he2cot[next[h]]);
+
+        I.push_back(v);
+        J.push_back(h);
+        V.push_back(0.5 * he2cot[next[h]] + 0.5 * he2cot[next[next[h]]]);
+
+        I.push_back(v);
+        J.push_back(next[h]);
+        V.push_back(-0.5 * he2cot[next[next[h]]]);
       }
 
-      // Build Jacobian from triplets
-      J_vertex_angles.resize(m.Th_hat.size(), num_halfedges / 2);
-      J_vertex_angles.reserve(3 * (num_halfedges / 2));
-      J_vertex_angles.setFromTriplets(tripletList.begin(), tripletList.end());
+      // Build reduced coordinate Jacobian from IJV halfedge Jacobian
+      J_vertex_angles = cone_metric.change_metric_to_reduced_coordinates(I, J, V, num_angles);
     }
   }
 
+  void
+  vertex_angles_with_jacobian(const DifferentiableConeMetric &cone_metric,
+                              VectorX &vertex_angles,
+                              MatrixX &J_vertex_angles,
+                              bool need_jacobian,
+                              bool only_free_vertices)
+  {
+    // Ensure current cone metric coordinates are log lengths
+    if (cone_metric.is_discrete_metric())
+    {
+      vertex_angles_with_jacobian_helper(cone_metric, vertex_angles, J_vertex_angles, need_jacobian, only_free_vertices);
+    }
+    else
+    {
+      std::unique_ptr<DifferentiableConeMetric> cone_metric_copy = cone_metric.clone_cone_metric();
+      cone_metric_copy->make_discrete_metric();
+      vertex_angles_with_jacobian_helper(*cone_metric_copy, vertex_angles, J_vertex_angles, need_jacobian, only_free_vertices);
+    }
+  }
+
+
   bool
-  constraint_with_jacobian(const DifferentiableConeMetric &m,
-                           const VectorX &metric_coords,
+  constraint_with_jacobian(const DifferentiableConeMetric &cone_metric,
                            VectorX &constraint,
                            MatrixX &J_constraint,
-                           std::vector<int> &flip_seq,
                            bool need_jacobian,
-                           bool use_edge_lengths)
+                           bool only_free_vertices)
   {
     constraint.setZero(0);
     J_constraint.setZero();
-    flip_seq.clear();
 
-    // For Penner coordinates, make mesh Delaunay (and thus satisfying the
-    // triangle inequality)
-    std::unique_ptr<DifferentiableConeMetric> m_tri = m.clone_cone_metric();
-    m_tri->set_metric_coordinates(metric_coords);
-    VectorX metric_coords_tri;
+    // Compute the current vertex angles (Jacobian is the same as the constraint)
     VectorX vertex_angles;
-    MatrixX J_vertex_angles;
-    MatrixX J_del;
-    if (!use_edge_lengths)
-    {
-      m_tri->make_discrete_metric();
-      metric_coords_tri = m_tri->get_edge_metric_coordinates();
-      J_del = m_tri->get_transition_jacobian();
-    }
-    // Check triangle inequality explicitly otherwise
-    else
-    {
-      if (!satisfies_triangle_inequality(m, metric_coords))
-        return false;
-      metric_coords_tri = metric_coords;
-    }
-    vertex_angles_with_jacobian(
-        *m_tri, metric_coords_tri, vertex_angles, J_vertex_angles, need_jacobian);
+    vertex_angles_with_jacobian(cone_metric, vertex_angles, J_constraint, need_jacobian, only_free_vertices);
 
     // Subtract the target angles from the vertex angles to compute constraint
     constraint.resize(vertex_angles.size());
-    for (int v = 0; v < vertex_angles.size(); ++v)
+    int angle_count = 0;
+    int num_vertices = cone_metric.n_ind_vertices();
+    for (int v = 0; v < num_vertices; ++v)
     {
-      constraint[v] = vertex_angles[v] - m.Th_hat[v];
-    }
+      // Skip fixed if only want free vertices
+      if ((only_free_vertices) && (cone_metric.fixed_dof[v])) continue;
 
-    // Compute the Jacobian of the constraint if needed
-    if (need_jacobian)
-    {
-      if (use_edge_lengths)
-      {
-        J_constraint = J_vertex_angles;
-      }
-      else
-      {
-        J_constraint = J_vertex_angles * J_del;
-      }
+      constraint[angle_count] = vertex_angles[angle_count] - cone_metric.Th_hat[v];
+      angle_count++;
     }
 
     return true;
   }
 
-#ifdef PYBIND
-  // Pybind definitions
-  std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-  vertex_angles_with_jacobian_pybind(const Mesh<Scalar> &m,
-                                     const VectorX &metric_coords,
-                                     bool need_jacobian)
-  {
-    VectorX vertex_angles;
-    Eigen::SparseMatrix<Scalar, Eigen::RowMajor> J_vertex_angles;
-    vertex_angles_with_jacobian(
-        m, metric_coords, vertex_angles, J_vertex_angles, need_jacobian);
-
-    return std::make_tuple(vertex_angles, J_vertex_angles);
-  }
-
-  std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, std::vector<int>, bool>
-  constraint_with_jacobian_pybind(const DifferentiableConeMetric &m,
-                                  const VectorX &metric_coords,
-                                  bool need_jacobian,
-                                  bool use_edge_lengths)
+  Scalar compute_max_constraint(const DifferentiableConeMetric &cone_metric)
   {
     VectorX constraint;
-    Eigen::SparseMatrix<Scalar, Eigen::RowMajor> J_constraint;
-    std::vector<int> flip_seq;
-    bool success = constraint_with_jacobian(m,
-                                            metric_coords,
-                                            constraint,
-                                            J_constraint,
-                                            flip_seq,
-                                            need_jacobian,
-                                            use_edge_lengths);
-
-    return std::make_tuple(constraint, J_constraint, flip_seq, success);
+    MatrixX J_constraint;
+    bool need_jacobian = false;
+    bool only_free_vertices = false;
+    constraint_with_jacobian(cone_metric, constraint, J_constraint, need_jacobian, only_free_vertices);
+    return sup_norm(constraint);
   }
-#endif
 
 }

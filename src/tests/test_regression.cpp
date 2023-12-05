@@ -17,9 +17,8 @@ namespace
 	{
 		Mesh<Scalar> m;
 		std::vector<int> vtx_reindex;
-		VectorX reduced_metric_target;
-		generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
-		VectorX reduced_metric_init = reduced_metric_target;
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+		LogLengthEnergy opt_energy(*cone_metric);
 
 		// Make default parameters with 5 iterations
 		auto proj_params = std::make_shared<ProjectionParameters>();
@@ -27,16 +26,14 @@ namespace
 		opt_params->num_iter = 5;
 
 		// Optimize the metric
-		PennerConeMetric cone_metric(m, reduced_metric_init);
-		VectorX optimized_reduced_metric_coords;
-		optimize_metric(cone_metric,
-										reduced_metric_target,
-										reduced_metric_init,
-										optimized_reduced_metric_coords,
-										proj_params,
-										opt_params);
+		VectorX optimized_reduced_metric_coords = optimize_metric(
+			*cone_metric,
+			opt_energy,
+			proj_params,
+			opt_params);
 
 		// Check if the metrics are equal
+		spdlog::info("Error is {}", sup_norm(optimized_reduced_metric_coords - ground_truth_metric_coords));
 		return (vector_equal(optimized_reduced_metric_coords, ground_truth_metric_coords));
 	}
 } // namespace

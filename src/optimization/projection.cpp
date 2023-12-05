@@ -16,27 +16,18 @@ namespace CurvatureMetric {
 MatrixX
 conformal_scaling_matrix(const Mesh<Scalar>& m)
 {
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Get reflection projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
-
   // Create projection matrix
-  int num_halfedges = he2e.size();
+  int num_halfedges = m.n_halfedges();
   std::vector<T> tripletList;
   tripletList.reserve(num_halfedges);
   for (int h = 0; h < num_halfedges; ++h) {
-    int V = m.v_rep[m.to[h]];
-    int e = he2e[h];
-    tripletList.push_back(T(e, V, 1.0));
+    int v0 = m.v_rep[m.to[h]];
+    int v1 = m.v_rep[m.to[m.opp[h]]];
+    tripletList.push_back(T(h, v0, 1.0));
+    tripletList.push_back(T(h, v1, 1.0));
   }
   MatrixX B;
-  B.resize(e2he.size(), m.n_ind_vertices());
+  B.resize(num_halfedges, m.n_ind_vertices());
   B.reserve(tripletList.size());
   B.setFromTriplets(tripletList.begin(), tripletList.end());
 
@@ -44,10 +35,8 @@ conformal_scaling_matrix(const Mesh<Scalar>& m)
 }
 
 std::tuple<std::vector<int>, SolveStats<Scalar>>
-project_to_constraint(
-  const Mesh<Scalar>& m,
-  const VectorX& reduced_metric_coords,
-  VectorX& reduced_metric_coords_proj,
+compute_constraint_scale_factors(
+  const DifferentiableConeMetric &cone_metric,
   VectorX& u,
   std::shared_ptr<ProjectionParameters> proj_params,
   std::shared_ptr<OptimizationParameters> opt_params)
@@ -75,29 +64,8 @@ project_to_constraint(
     stats_params.output_dir = output_dir;
   }
 
-  // Get edge maps
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  build_edge_maps(m, he2e, e2he);
-
-  // Build refl projection and embedding
-  std::vector<int> proj;
-  std::vector<int> embed;
-  build_refl_proj(m, he2e, e2he, proj, embed);
-
-  // Convert embedded mesh log edge lengths to a halfedge length array l for m
-  int num_halfedges = he2e.size();
-  VectorX l(num_halfedges);
-  for (int h = 0; h < num_halfedges; ++h) {
-    l[h] = exp(reduced_metric_coords[proj[he2e[h]]] / 2.0);
-  }
-
-  // Create an overlay mesh for m and set the lengths to l
-  OverlayMesh<Scalar> mo(m);
-  Mesh<Scalar>& mc = mo.cmesh();
-  convert_eigen_to_std_vector(l, mc.l);
-
   // Run conformal method
+  OverlayMesh<Scalar> mo(cone_metric);
   std::vector<int> pt_fids;
   std::vector<Eigen::Matrix<Scalar, 3, 1>> pt_bcs;
   auto conformal_out = ConformalIdealDelaunay<Scalar>::FindConformalMetric(
@@ -108,17 +76,20 @@ project_to_constraint(
   std::vector<int> flip_seq = std::get<1>(conformal_out);
   SolveStats<Scalar> solve_stats = std::get<2>(conformal_out);
 
-  // Conformally scale edge lengths and obtain log lengths for the embedded mesh
-  reduced_metric_coords_proj.resize(reduced_metric_coords.size());
-  for (int E = 0; E < reduced_metric_coords.size(); ++E) {
-    int h = e2he[embed[E]];
-    int h0 = m.h0(h);
-    int h1 = m.h1(h);
-    reduced_metric_coords_proj[E] =
-      reduced_metric_coords[E] + (u[m.v_rep[m.to[h0]]] + u[m.v_rep[m.to[h1]]]);
-  }
-
   return std::make_tuple(flip_seq, solve_stats);
+}
+
+VectorX
+compute_constraint_scale_factors(
+  const DifferentiableConeMetric &cone_metric,
+  std::shared_ptr<ProjectionParameters> proj_params,
+  std::shared_ptr<OptimizationParameters> opt_params)
+{
+  VectorX u;
+  u.setZero(cone_metric.n_ind_vertices());
+  compute_constraint_scale_factors(cone_metric, u, proj_params, opt_params);
+
+  return u;
 }
 
 //bool
@@ -158,6 +129,7 @@ project_descent_direction(const VectorX& descent_direction,
   VectorX mu = solver.solve(w);
   double time = timer.getElapsedTime();
   spdlog::info("Direction projection solve took {} s", time);
+  SPDLOG_INFO("Correction mu has norm {}", mu.norm());
 
   // Compute lambdas line search direction
   return descent_direction + (J_constraint.transpose() * mu);
@@ -194,20 +166,6 @@ compute_descent_direction_projection_matrix(const MatrixX& J_constraint)
 
   // Compute lambdas line search direction projection
   return I + M;
-}
-
-VectorX
-project_to_constraint(
-  const Mesh<Scalar>& m,
-  const VectorX& lambdas,
-  VectorX& u,
-  std::shared_ptr<ProjectionParameters> proj_params,
-  std::shared_ptr<OptimizationParameters> opt_params)
-{
-  VectorX lambdas_proj;
-  project_to_constraint(m, lambdas, lambdas_proj, u, proj_params, opt_params);
-
-  return lambdas_proj;
 }
 
 
@@ -347,23 +305,5 @@ project_to_constraint(
   //  return delta_lambdas;
 //  return lambdas;
 //}
-
-std::tuple<VectorX, VectorX>
-project_to_constraint_py(
-  const Mesh<Scalar>& m,
-  const VectorX& lambdas,
-  std::shared_ptr<ProjectionParameters> proj_params,
-  std::shared_ptr<OptimizationParameters> opt_params)
-{
-  VectorX u0;
-  u0.setZero(m.n_ind_vertices());
-  VectorX lambdas_proj = project_to_constraint(m, lambdas, u0, proj_params, opt_params);
-  VectorX u(u0.size());
-  for (int i = 0; i < u0.size(); ++i) {
-    u[i] = u0[i];
-  }
-
-  return std::make_tuple(lambdas_proj, u);
-}
 
 }

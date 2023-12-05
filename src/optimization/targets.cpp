@@ -81,43 +81,17 @@ normalize_penner_coordinates(
 
 void
 compute_shear_dual_coordinates(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-  const std::vector<Scalar>& Theta_hat,
+	const DifferentiableConeMetric& cone_metric,
 	VectorX& shear_dual_coords,
 	VectorX& scale_factors,
 	MatrixX& shear_basis_matrix,
-  std::vector<int>& independent_edges,
-	std::vector<int>& flip_sequence
+  std::vector<int>& independent_edges
 ) {
-	// Compute penner coordinates and flip sequence
-	VectorX reduced_penner_coords;
-	compute_penner_coordinates(V, F, Theta_hat, reduced_penner_coords, flip_sequence);
-
-	// Compute mesh
-	std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-	std::vector<int> free_cones(0);
-	bool fix_boundary = false;
-	Mesh<Scalar> m = FV_to_double<Scalar>(
-		V,
-		F,
-		V,
-		F,
-		Theta_hat,
-		vtx_reindex,
-		indep_vtx,
-		dep_vtx,
-		v_rep,
-		bnd_loops,
-		free_cones,
-		fix_boundary
-	);
-
 	// Compute shear dual basis and the corresponding inner product matrix
-	compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+	compute_shear_dual_basis(cone_metric, shear_basis_matrix, independent_edges);
 
 	// Compute the shear dual coordinates for this basis
-	compute_shear_basis_coordinates(m, reduced_penner_coords, shear_basis_matrix, shear_dual_coords, scale_factors);
+	compute_shear_basis_coordinates(cone_metric, shear_basis_matrix, shear_dual_coords, scale_factors);
 }
 
 #ifdef PYBIND
@@ -148,41 +122,6 @@ compute_penner_coordinates_pybind(
 	return std::make_tuple(reduced_penner_coords, flip_sequence);
 }
 
-std::tuple<
-	VectorX, // shear_dual_coords
-	VectorX, // scale_factors
-	MatrixX, // shear_basis_matrix
-  std::vector<int>, // independent_edges
-	std::vector<int> // flip_sequence
->
-compute_shear_dual_coordinates_pybind(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-  const std::vector<Scalar>& Theta_hat
-) {
-	VectorX shear_dual_coords;
-	VectorX scale_factors;
-	MatrixX shear_basis_matrix;
-  std::vector<int> independent_edges;
-	std::vector<int> flip_sequence;
-	compute_shear_dual_coordinates(
-		V,
-		F,
-		Theta_hat,
-		shear_dual_coords,
-		scale_factors,
-		shear_basis_matrix,
-		independent_edges,
-		flip_sequence
-	);
-	return std::make_tuple(
-		shear_dual_coords,
-		scale_factors,
-		shear_basis_matrix,
-		independent_edges,
-		flip_sequence
-	);
-}
 
 #endif
 

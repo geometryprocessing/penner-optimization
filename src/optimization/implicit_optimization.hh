@@ -40,170 +40,88 @@ namespace CurvatureMetric
       const VectorX &unconstrained_descent_direction,
       const VectorX &constrained_descent_direction);
 
-  /// Initialize data log file for implicit optimization
-  ///
-  /// @param[in] data_log_path: filepath for data log output
-  void
-  initialize_data_log(
-      const std::filesystem::path &data_log_path);
-
-  /// Update the implicit data log for the given iteration.
-  ///
-  /// @param[in, out] log: log to update
-  /// @param[in] m: surface
-  /// @param[in] reduction_maps: maps between metric variables
-  /// @param[in] opt_energy: optimization energy
-  /// @param[in] updated_reduced_metric_coords: coordinates of the metric at the end of the iteration
-  /// @param[in] reduced_metric_coords: coordinates of the metric at the start of the iteration
-  /// @param[in] reduced_metric_target: target coordinates for the metric
-  /// @param[in] unconstrained_descent_direction: descent direction before projection
-  /// @param[in] constrained_descent_direction: descent direction after projection
-  /// @param[in] convergence_ratio: gradient convergence ratio
-  /// @param[in] opt_params: optimization parameters
-  void
-  update_data_log(
-      OptimizationLog &log,
-      const DifferentiableConeMetric &m,
-      const ReductionMaps &reduction_maps,
-      const EnergyFunctor &opt_energy,
-      const VectorX &updated_reduced_metric_coords,
-      const VectorX &reduced_metric_coords,
-      const VectorX &reduced_metric_target,
-      const VectorX &unconstrained_descent_direction,
-      const VectorX &constrained_descent_direction,
-      Scalar convergence_ratio,
-      std::shared_ptr<OptimizationParameters> opt_params);
-
-  /// Write iteration data log for implicit optimization to file
-  ///
-  /// @param[in] log: log entry to write
-  /// @param[in] data_log_path: filepath for data log output
-  void
-  write_data_log_entry(
-      const OptimizationLog &log,
-      const std::filesystem::path &data_log_path);
-
   /// Given a metric with reduction maps and constraints and an energy gradient
   /// functor, compute a gradient and descent direction for the energy.
   ///
-  /// @param[in] reduced_metric_coords: current coordinates of the metric
-  /// @param[in] reduced_metric_target: target coordinates for the metric
+  /// @param[in] cone_metric: mesh with metric
+  /// @param[in] opt_energy: optimization energy
   /// @param[in] prev_gradient: previous gradient of the energy
   /// @param[in] prev_descent_direction: previous descent direction
-  /// @param[in] reduction_maps: maps between metric variables and per halfedge
-  /// values
-  /// @param[in] opt_energy: optimization energy
   /// @param[out] gradient: current gradient of the energy
   /// @param[out] descent_direction: descent direction
-  /// @param[in] direction_choice: type of descent direction to use
+  /// @param[in] direction_choice: (optional) type of descent direction to use
   void
-  compute_descent_direction(const VectorX &reduced_metric_coords,
-                            const VectorX &reduced_metric_target,
+  compute_descent_direction(const DifferentiableConeMetric &cone_metric,
+                            const EnergyFunctor &opt_energy,
                             const VectorX &prev_gradient,
                             const VectorX &prev_descent_direction,
-                            const ReductionMaps &reduction_maps,
-                            const EnergyFunctor &opt_energy,
                             VectorX &gradient,
                             VectorX &descent_direction,
-                            std::string direction_choice = "gradient");
+                            std::string direction_choice);
 
   /// Project a descent direction to the tangent plane of the angle constraint
   /// manifold for the given surface with orthogonal projection.
   ///
   /// @param[in] m: surface
-  /// @param[in] reduced_metric_coords: current coordinates of the metric
   /// @param[in] descent_direction: current descent direction
-  /// @param[in] reduction_maps: maps between metric variables and per halfedge
-  /// values
-  /// @param[in] opt_params: optimization parameters
-  /// @param[out] projected_descent_direction: descent direction after projection
-  /// to the constraint
-  void
-  constrain_descent_direction(const DifferentiableConeMetric &m,
-                              const VectorX &reduced_metric_coords,
-                              const VectorX &descent_direction,
-                              const ReductionMaps &reduction_maps,
-                              const OptimizationParameters &opt_params,
-                              VectorX &projected_descent_direction);
+  /// @return descent direction after projection to the constraint
+  VectorX project_descent_direction(const DifferentiableConeMetric &cone_metric, const VectorX &descent_direction);
 
   /// Given a metric with reduction maps and constraints and an energy gradient
   /// functor, compute a constrained descent direction for the energy that is optimal
   /// in the tangent space to the constraint manifold.
   ///
   /// @param[in] m: surface
-  /// @param[in] reduced_metric_coords: current coordinates of the metric
-  /// @param[in] gradient: current gradient of the energy
-  /// @param[in] descent_direction: global optimal descent direction
-  /// @param[in] reduction_maps: maps between metric variables and per halfedge
-  /// values
-  /// @param[in] opt_params: optimization parameters
   /// @param[in] opt_energy: optimization energy
-  /// @param[out] projected_descent_direction: optimal descent direction in the tangent space
-  void
+  /// @param[in] gradient: current gradient of the energy
+  /// @return optimal descent direction in the tangent space
+  VectorX
   compute_optimal_tangent_space_descent_direction(
       const DifferentiableConeMetric &m,
-      const VectorX &reduced_metric_coords,
-      const VectorX &gradient,
-      const VectorX &descent_direction,
-      const ReductionMaps &reduction_maps,
-      const OptimizationParameters &opt_params,
       const EnergyFunctor &opt_energy,
-      VectorX &projected_descent_direction);
+      const VectorX &gradient);
 
   /// Perform a line search with projection to the constraint after the step.
   ///
-  /// @param[in] m: surface
-  /// @param[in] initial_reduced_metric_coords: initial coordinates of the metric
+  /// @param[in] cone_metric: surface
+  /// @param[in] opt_energy: optimization energy
   /// @param[in] descent_direction: descent direction for the line search
-  /// @param[in] reduction_maps: maps between metric variables and per halfedge
-  /// values
   /// @param[in] proj_params: projection parameters
   /// @param[in] opt_params: optimization parameters
-  /// @param[in] opt_energy: optimization energy
   /// @param[in, out] beta: adaptive line step size
   /// @param[in, out] convergence_ratio: gradient convergence ratio
-  /// @param[out] reduced_line_step_metric_coords: coordinates of the metric before the conformal projection
-  /// @param[out] u: scale factors for the conformal projection
-  /// @param[out] reduced_metric_coords: final coordinates of the metric
-  void
-  line_search_with_projection(const DifferentiableConeMetric &m,
-                              const VectorX &initial_reduced_metric_coords,
+  /// @param[in, out] num_linear_solves: number of linear solves
+  VectorX
+  line_search_with_projection(const DifferentiableConeMetric &cone_metric,
+                              const EnergyFunctor &opt_energy,
                               const VectorX &descent_direction,
-                              const ReductionMaps &reduction_maps,
                               std::shared_ptr<ProjectionParameters> proj_params,
                               std::shared_ptr<OptimizationParameters> opt_params,
-                              const EnergyFunctor &opt_energy,
                               Scalar &beta,
                               Scalar &convergence_ratio,
-                              VectorX &reduced_line_step_metric_coords,
-                              VectorX &u,
-                              VectorX &reduced_metric_coords);
+                              int &num_linear_solves);
 
   /// Check if the implicit optimization has converged.
   ///
   /// @param[in] opt_params: optimization parameters
   /// @param[in] beta: adaptive line step size
   /// @param[in] convergence_ratio: gradient convergence ratio
-  bool
-  check_if_converged(const OptimizationParameters &opt_params,
-                     Scalar convergence_ratio,
-                     Scalar beta);
+  bool check_if_converged(const OptimizationParameters &opt_params,
+                          Scalar convergence_ratio,
+                          Scalar beta);
 
   /// Optimize a metric on a mesh with respect to a target metric with a log of
   /// current iteration data.
   ///
   /// @param[in] m: surface mesh
-  /// @param[in] reduced_metric_target: target coordinates of the metric
-  /// @param[in] reduced_metric_init: initial coordinates of the metric
-  /// @param[out] optimized_reduced_metric_coords: optimized coordinates of the metric
+  /// @param[in] opt_energy: energy to optimize
   /// @param[out] log: final iteration log
   /// @param[in] proj_params: projection parameters
   /// @param[in] opt_params: optimization parameters
-  void
+  /// @return optimized coordinates of the metric
+  VectorX
   optimize_metric_log(const DifferentiableConeMetric &m,
-                      const VectorX &reduced_metric_target,
-                      const VectorX &reduced_metric_init,
-                      VectorX &optimized_reduced_metric_coords,
+                      const EnergyFunctor &opt_energy,
                       OptimizationLog &log,
                       std::shared_ptr<ProjectionParameters> proj_params,
                       std::shared_ptr<OptimizationParameters> opt_params);
@@ -211,27 +129,14 @@ namespace CurvatureMetric
   /// Optimize a metric on a mesh with respect to a target metric.
   ///
   /// @param[in] m: surface mesh
-  /// @param[in] reduced_metric_target: target coordinates of the metric
-  /// @param[in] reduced_metric_init: initial coordinates of the metric
-  /// @param[out] optimized_reduced_metric_coords: optimized coordinates of the metric
+  /// @param[in] opt_energy: energy to optimize
   /// @param[in] proj_params: projection parameters
   /// @param[in] opt_params: optimization parameters
-  void
+  /// @return optimized coordinates of the metric
+  VectorX
   optimize_metric(const DifferentiableConeMetric &m,
-                  const VectorX &reduced_metric_target,
-                  const VectorX &reduced_metric_init,
-                  VectorX &optimized_reduced_metric_coords,
+                  const EnergyFunctor &opt_energy,
                   std::shared_ptr<ProjectionParameters> proj_params = nullptr,
                   std::shared_ptr<OptimizationParameters> opt_params = nullptr);
-
-#ifdef PYBIND
-  VectorX
-  optimize_metric_pybind(const DifferentiableConeMetric &m,
-                         const VectorX &reduced_metric_target,
-                         const VectorX &reduced_metric_init,
-                         std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-                         std::shared_ptr<OptimizationParameters> opt_params = nullptr);
-
-#endif
 
 }

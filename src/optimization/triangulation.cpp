@@ -31,7 +31,7 @@ compute_face_area(
 	Scalar lk = (vertices[0] - vertices[2]).norm();
 
 	// Compute area from lengths
-	return sqrt(area_squared(li, lj, lk));
+	return sqrt(max(squared_area(li, lj, lk), 0));
 }
 
 bool

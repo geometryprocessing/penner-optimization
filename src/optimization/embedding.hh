@@ -111,6 +111,12 @@ build_refl_he_proj(const Mesh<Scalar>& m,
                    std::vector<int>& he_proj,
                    std::vector<int>& he_embed);
 
+MatrixX
+build_edge_matrix(
+  const std::vector<int>& he2e,
+  const std::vector<int>& e2he
+);
+
 /// Create matrix representing the projection of the double mesh onto the
 /// embedding.
 ///

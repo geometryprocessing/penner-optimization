@@ -3,6 +3,7 @@
 #include "common.hh"
 #include "embedding.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
+#include "cone_metric.hh"
 
 /// \file energies.hh
 ///
@@ -27,9 +28,8 @@ namespace CurvatureMetric {
 /// metric tensor invariant
 /// @param[in] need_jacobian: create Jacobian iff true
 void
-first_invariant(const Mesh<Scalar>& m,
-                const VectorX& target_log_length_coords,
-                const VectorX& log_length_coords,
+first_invariant(const DifferentiableConeMetric &target_cone_metric,
+                const VectorX &metric_coords,
                 VectorX& f2J1,
                 MatrixX& J_f2J1,
                 bool need_jacobian = false);
@@ -48,9 +48,8 @@ first_invariant(const Mesh<Scalar>& m,
 /// invariant
 /// @param[in] need_jacobian: create Jacobian iff true
 void
-second_invariant_squared(const Mesh<Scalar>& m,
-                         const VectorX& target_log_length_coords,
-                         const VectorX& log_length_coords,
+second_invariant_squared(const DifferentiableConeMetric &target_cone_metric,
+                          const VectorX &metric_coords,
                          VectorX& f2J2sq,
                          MatrixX& J_f2J2sq,
                          bool need_jacobian = false);
@@ -70,9 +69,8 @@ second_invariant_squared(const Mesh<Scalar>& m,
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
 void
-metric_distortion_energy(const Mesh<Scalar>& m,
-                         const VectorX& target_log_length_coords,
-                         const VectorX& log_length_coords,
+metric_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
+                          const VectorX &metric_coords,
                          VectorX& f2energy,
                          MatrixX& J_f2energy,
                          bool need_jacobian = false);
@@ -91,9 +89,8 @@ metric_distortion_energy(const Mesh<Scalar>& m,
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
 void
-area_distortion_energy(const Mesh<Scalar>& m,
-                       const VectorX& target_log_length_coords,
-                       const VectorX& log_length_coords,
+area_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
+                       const VectorX &metric_coords,
                        VectorX& f2energy,
                        MatrixX& J_f2energy,
                        bool need_jacobian = false);
@@ -113,9 +110,8 @@ area_distortion_energy(const Mesh<Scalar>& m,
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
 void
-symmetric_dirichlet_energy(const Mesh<Scalar>& m,
-                           const VectorX& target_log_length_coords,
-                           const VectorX& log_length_coords,
+symmetric_dirichlet_energy(const DifferentiableConeMetric &target_cone_metric,
+                           const VectorX &metric_coords,
                            VectorX& f2energy,
                            MatrixX& J_f2energy,
                            bool need_jacobian = false);
@@ -130,10 +126,7 @@ symmetric_dirichlet_energy(const Mesh<Scalar>& m,
 /// @param[in] m: (possibly symmetric) mesh
 /// @param[in] log_length_coords: log lengths for the original mesh in m
 /// @param[out] M: 3|F|x3|F| energy matrix
-void
-surface_hencky_strain_energy(const Mesh<Scalar>& m,
-                             const VectorX& log_length_coords,
-                             MatrixX& M);
+MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric &target_cone_metric);
 
 /// Compute the inverse of the symmetric block energy matrix for the surface Hencky strain
 /// energy in terms of faces. The following correspondences for matrix indices
@@ -145,10 +138,7 @@ surface_hencky_strain_energy(const Mesh<Scalar>& m,
 /// @param[in] m: (possibly symmetric) mesh
 /// @param[in] log_length_coords: log lengths for the original mesh in m
 /// @param[out] inverse_M: 3|F|x3|F| energy inverse matrix
-void
-surface_hencky_strain_energy_inverse(const Mesh<Scalar>& m,
-                             const VectorX& log_length_coords,
-                             MatrixX& inverse_M);
+MatrixX surface_hencky_strain_energy_inverse(const DifferentiableConeMetric &target_cone_metric);
 
 // ************
 // VF Functions
@@ -239,20 +229,7 @@ surface_hencky_strain_energy(const VectorX& area,
                                 const MatrixX& l,
                                 const MatrixX& delta_ll);
 
-// FIXME Rename these variables
-// FIXME Ensure all pybind functions for the entire interface are in place
 #ifdef PYBIND
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-first_invariant_pybind(const Mesh<Scalar>& C,
-                       const VectorX& lambdas_target_full,
-                       const VectorX& lambdas_full,
-                       bool need_jacobian);
-
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-second_invariant_squared_pybind(const Mesh<Scalar>& C,
-                                const VectorX& lambdas_target_full,
-                                const VectorX& lambdas_full,
-                                bool need_jacobian);
 
 VectorX
 first_invariant_vf_pybind(
@@ -270,32 +247,6 @@ second_invariant_vf_pybind(
   const Eigen::MatrixXi &F_uv
 );
 
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-metric_distortion_energy_pybind(const Mesh<Scalar>& C,
-                                const VectorX& lambdas_target_full,
-                                const VectorX& lambdas_full,
-                                bool need_jacobian);
-
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-area_distortion_energy_pybind(const Mesh<Scalar>& C,
-                              const VectorX& lambdas_target_full,
-                              const VectorX& lambdas_full,
-                              bool need_jacobian);
-
-std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-symmetric_dirichlet_energy_pybind(const Mesh<Scalar>& C,
-                                  const VectorX& lambdas_target_full,
-                                  const VectorX& lambdas_full,
-                                  bool need_jacobian);
-
-MatrixX
-surface_hencky_strain_energy_pybind(const Mesh<Scalar>& m,
-                                    const VectorX& lambdas_full);
-VectorX
-surface_hencky_strain_energy_vf(const VectorX& area,
-                                const MatrixX& cot_alpha,
-                                const MatrixX& l,
-                                const MatrixX& delta_ll);
 #endif
 
 }

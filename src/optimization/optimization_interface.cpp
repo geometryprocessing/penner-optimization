@@ -12,20 +12,19 @@
 
 namespace CurvatureMetric {
 
-void
+std::unique_ptr<DifferentiableConeMetric>
 generate_initial_mesh(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
 	const std::vector<Scalar>& Th_hat,
-	Mesh<Scalar> &m,
 	std::vector<int>& vtx_reindex,
-	VectorX& reduced_metric_target
+	bool use_discrete_metric
 ) {
 	// Convert VF mesh to halfedge
 	std::vector<int> indep_vtx, dep_vtx, v_rep, bnd_loops;
 	std::vector<int> free_cones(0);
 	bool fix_boundary = false;
-	m = FV_to_double<Scalar>(
+	Mesh<Scalar> m = FV_to_double<Scalar>(
 		V,
 		F,
 		V,
@@ -41,8 +40,18 @@ generate_initial_mesh(
 	);
 
 	// Build initial metric and target metric from edge lengths
-	std::vector<int> flip_sequence;
-	compute_penner_coordinates(V, F, Th_hat, reduced_metric_target, flip_sequence);
+	VectorX reduced_metric_coords;
+	if (use_discrete_metric)
+	{
+		compute_log_edge_lengths(V, F, Th_hat, reduced_metric_coords);
+		return std::make_unique<DiscreteMetric>(m, reduced_metric_coords);
+	}
+	else
+	{
+		std::vector<int> flip_sequence;
+		compute_penner_coordinates(V, F, Th_hat, reduced_metric_coords, flip_sequence);
+		return std::make_unique<PennerConeMetric>(m, reduced_metric_coords);
+	}
 }
 
 void
@@ -123,57 +132,44 @@ generate_VF_mesh_from_metric(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
 	const std::vector<Scalar>& Th_hat,
-	const Mesh<Scalar>& m,
+	const DifferentiableConeMetric& initial_cone_metric,
+	const VectorX& metric_coords,
 	const std::vector<int>& vtx_reindex,
-	const VectorX& reduced_metric_target,
-	const VectorX& reduced_metric_coords,
 	bool do_best_fit_scaling
 ) {
-	ReductionMaps reduction_maps(m);
-
-	// Expand metric coordinates to per edge values
-	int num_edges = reduction_maps.num_edges;
-	VectorX metric_target(num_edges);
-	VectorX metric_coords(num_edges);
-	for (int e = 0; e < num_edges; ++e)
-	{
-		int E = reduction_maps.proj[e];
-		metric_target[e] = reduced_metric_target[E];
-		metric_coords[e] = reduced_metric_coords[E];
-	}
-	SPDLOG_INFO("Target metric coordinates in range [{}, {}]", reduced_metric_target.minCoeff(), reduced_metric_target.maxCoeff());
-	SPDLOG_INFO("Optimized metric coordinates in range [{}, {}]", metric_coords.minCoeff(), metric_coords.maxCoeff());
+	VectorX metric_target = initial_cone_metric.get_metric_coordinates();
+	VectorX metric_coords_scaled = metric_coords;
 
 	// Fit conformal scale factors
 	VectorX scale_factors;
-	scale_factors.setZero(m.n_ind_vertices());
+	scale_factors.setZero(initial_cone_metric.n_ind_vertices());
 	if (do_best_fit_scaling)
 	{
-		best_fit_conformal(m, metric_target, metric_coords, scale_factors);
-		MatrixX B = conformal_scaling_matrix(m);
-		metric_coords = metric_coords - B * scale_factors;
+		scale_factors = best_fit_conformal(initial_cone_metric, metric_coords);
+		MatrixX B = conformal_scaling_matrix(initial_cone_metric);
+		metric_coords_scaled = metric_coords - B * scale_factors;
 	}
-	VectorX metric_diff = metric_coords - metric_target;
+	VectorX metric_diff = metric_coords_scaled - metric_target;
 	SPDLOG_INFO("Scale factors in range [{}, {}]", scale_factors.minCoeff(), scale_factors.maxCoeff());
-	SPDLOG_INFO("Scaled metric coordinates in range [{}, {}]", metric_coords.minCoeff(), metric_coords.maxCoeff());
+	SPDLOG_INFO("Scaled metric coordinates in range [{}, {}]", metric_coords_scaled.minCoeff(), metric_coords_scaled.maxCoeff());
 	SPDLOG_INFO("Differences from target to optimized metric in range [{}, {}]", metric_diff.minCoeff(), metric_diff.maxCoeff());
 
 	// Expand metric coordinates to per halfedge values
-	int num_halfedges = reduction_maps.num_halfedges;
+	int num_halfedges = initial_cone_metric.n_halfedges();
 	VectorX he_metric_target(num_halfedges);
 	VectorX he_metric_coords(num_halfedges);
 	for (int h = 0; h < num_halfedges; ++h)
 	{
-		int e = reduction_maps.he2e[h];
+		int e = initial_cone_metric.he2e[h];
 		he_metric_target[h] = metric_target[e];
-		he_metric_coords[h] = metric_coords[e];
+		he_metric_coords[h] = metric_coords_scaled[e];
 	}
 
 	// Compute interpolation overlay mesh
 	Eigen::MatrixXd V_overlay;
 	InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
 	spdlog::trace("Interpolating penner coordinates");
-	interpolate_penner_coordinates(m, he_metric_coords, scale_factors, interpolation_mesh, reverse_interpolation_mesh);
+	interpolate_penner_coordinates(initial_cone_metric, he_metric_coords, scale_factors, interpolation_mesh, reverse_interpolation_mesh);
 	spdlog::trace("Interpolating vertex positions");
 	interpolate_vertex_positions(V, vtx_reindex, interpolation_mesh, reverse_interpolation_mesh, V_overlay);
 	OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
@@ -196,7 +192,7 @@ generate_VF_mesh_from_metric(
 
 	// Get layout topology from original mesh
 	std::vector<bool> is_cut_place_holder(0);
-	std::vector<bool> is_cut = compute_layout_topology(m, is_cut_place_holder);
+	std::vector<bool> is_cut = compute_layout_topology(initial_cone_metric, is_cut_place_holder);
 
 	// Convert overlay mesh to VL format
 	spdlog::trace("Getting layout");

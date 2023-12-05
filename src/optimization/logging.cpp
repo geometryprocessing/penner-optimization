@@ -31,15 +31,15 @@ log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name)
 {
   ReductionMaps reduction_maps(m);
   std::vector<int> cone_vertices;
-  compute_cone_vertices(m, reduction_maps, cone_vertices);
+  //compute_cone_vertices(m, reduction_maps, cone_vertices);
   spdlog::get(log_name)->trace(
     "Fixed vertices are {}",
     formatted_vector(reduction_maps.fixed_v)
   );
-  spdlog::get(log_name)->trace(
-    "Cone vertices are {}",
-    formatted_vector(cone_vertices)
-  );
+  //spdlog::get(log_name)->trace(
+  //  "Cone vertices are {}",
+  //  formatted_vector(cone_vertices)
+  //);
   spdlog::get(log_name)->trace(
     "Mesh next map: {}",
     formatted_vector(m.n)

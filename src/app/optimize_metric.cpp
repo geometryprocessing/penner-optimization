@@ -1,6 +1,8 @@
 #include "common.hh"
 #include "implicit_optimization.hh"
 #include "optimization_interface.hh"
+#include "cone_metric.hh"
+#include "energy_functor.hh"
 #include "logging.hh"
 #include "optimization_interface.hh"
 #include "targets.hh"
@@ -38,10 +40,11 @@ int main(int argc, char *argv[])
 	correct_cone_angles(Th_hat_init, Th_hat);
 
 	// Get initial mesh for optimization
-	Mesh<Scalar> m;
 	std::vector<int> vtx_reindex;
-	VectorX reduced_metric_target;
-	generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+
+	// Get energy
+	LogLengthEnergy opt_energy(*cone_metric);
 	
 	// Get initial metric from file or target
 	VectorX reduced_metric_init;
@@ -51,8 +54,7 @@ int main(int argc, char *argv[])
 		std::vector<Scalar> reduced_metric_init_vec;
 		read_vector_from_file(metric_filename, reduced_metric_init_vec);
 		convert_std_to_eigen_vector(reduced_metric_init_vec, reduced_metric_init);
-	} else {
-		reduced_metric_init = reduced_metric_target;
+		cone_metric->set_metric_coordinates(reduced_metric_init);
 	}
 
 	// Set all cones as dof
@@ -69,14 +71,11 @@ int main(int argc, char *argv[])
 	opt_params->num_iter = 5;
 
 	// Optimize the metric
-	VectorX optimized_reduced_metric_coords;
-	PennerConeMetric cone_metric(m, reduced_metric_init);
-	optimize_metric(cone_metric,
-									reduced_metric_target,
-									reduced_metric_init,
-									optimized_reduced_metric_coords,
-									proj_params,
-									opt_params);
+	VectorX optimized_reduced_metric_coords = optimize_metric(
+		*cone_metric,
+		opt_energy,
+		proj_params,
+		opt_params);
 
 	// Write the output
 	std::string output_filename = join_path(output_dir, "reduced_optimized_metric_coords");
@@ -88,10 +87,9 @@ int main(int argc, char *argv[])
 		V,
 		F,
 		Th_hat,
-		m,
-		vtx_reindex,
-		reduced_metric_target,
+		*cone_metric,
 		optimized_reduced_metric_coords,
+		vtx_reindex,
 		do_best_fit_scaling
 	);
   OverlayMesh<Scalar> m_o = std::get<0>(vf_res);

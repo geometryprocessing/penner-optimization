@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hh"
+#include "cone_metric.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 /// @file targets.hh
@@ -83,14 +84,11 @@ normalize_penner_coordinates(
 /// @param[out] flip_sequence: sequence of flips
 void
 compute_shear_dual_coordinates(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-  const std::vector<Scalar>& Theta_hat,
+	const DifferentiableConeMetric& cone_metric,
 	VectorX& shear_dual_coords,
 	VectorX& scale_factors,
 	MatrixX& shear_basis_matrix,
-  std::vector<int>& independent_edges,
-	std::vector<int>& flip_sequence
+  std::vector<int>& independent_edges
 );
 
 #ifdef PYBIND
@@ -106,19 +104,6 @@ std::tuple<
 	std::vector<int> // flip_sequence
 >
 compute_penner_coordinates_pybind(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-  const std::vector<Scalar>& Theta_hat
-);
-
-std::tuple<
-	VectorX, // shear_dual_coords
-	VectorX, // scale_factors
-	MatrixX, // shear_basis_matrix
-  std::vector<int>, // independent_edges
-	std::vector<int> // flip_sequence
->
-compute_shear_dual_coordinates_pybind(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
   const std::vector<Scalar>& Theta_hat
