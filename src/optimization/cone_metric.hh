@@ -12,7 +12,7 @@ namespace CurvatureMetric
 	{
 	public:
 		DifferentiableConeMetric(const Mesh<Scalar> &m)
-				: Mesh<Scalar>(m), m_is_discrete_metric(false), m_num_flips(0)
+				: Mesh<Scalar>(m), m_is_discrete_metric(false), m_flip_seq(0)
 		{
 			// Build edge maps
 			build_edge_maps(m, he2e, e2he);
@@ -23,7 +23,8 @@ namespace CurvatureMetric
 		std::vector<int> e2he; // map from edge to halfedge
 
 		bool is_discrete_metric() const { return m_is_discrete_metric; };
-		int num_flips() { return m_num_flips; };
+		int num_flips() { return m_flip_seq.size(); };
+		const std::vector<int>& get_flip_sequence() const { return m_flip_seq; }
 
 		virtual VectorX get_metric_coordinates() const
 		{
@@ -79,7 +80,7 @@ namespace CurvatureMetric
 
 		virtual bool flip_ccw(int _h, bool Ptolemy = true)
 		{
-			m_num_flips++;
+			m_flip_seq.push_back(_h);
 			return Mesh<Scalar>::flip_ccw(_h, Ptolemy);
 		}
 
@@ -95,7 +96,7 @@ namespace CurvatureMetric
 
 	protected:
 		bool m_is_discrete_metric;
-		int m_num_flips;
+		std::vector<int> m_flip_seq;
 		MatrixX m_identification;
 	};
 
@@ -187,8 +188,6 @@ namespace CurvatureMetric
 			bool use_ptolemy = true;
 			ConformalIdealDelaunay<Scalar>::MakeDelaunay(*this, u, del_stats, solve_stats, use_ptolemy);
 			m_flip_seq = del_stats.flip_seq; //TODO Append
-			int num_flips = m_flip_seq.size();
-			assert(num_flips == m_num_flips);
 			m_is_discrete_metric = true;
 			return;
 		}
@@ -257,7 +256,6 @@ namespace CurvatureMetric
 		std::vector<int> m_proj;
 		MatrixX m_projection;
 		std::vector<std::map<int, Scalar>> m_transition_jacobian_lol;
-		std::vector<int> m_flip_seq;
 
 		void expand_metric_coordinates(const VectorX &metric_coords)
 		{
