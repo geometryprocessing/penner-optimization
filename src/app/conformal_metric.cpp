@@ -3,7 +3,6 @@
 #include "optimization_interface.hh"
 #include "layout.hh"
 #include "logging.hh"
-#include "targets.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 using namespace CurvatureMetric;

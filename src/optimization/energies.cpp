@@ -4,7 +4,6 @@
 #include "cone_metric.hh"
 #include "constraint.hh"
 #include "projection.hh"
-#include "targets.hh"
 #include <igl/doublearea.h>
 #include <igl/cotmatrix_entries.h>
 #include <igl/edge_lengths.h>
@@ -13,6 +12,24 @@
 
 namespace CurvatureMetric
 {
+
+  VectorX
+  scale_distortion_direction(const DifferentiableConeMetric &target_cone_metric, const VectorX &metric_coords)
+  {
+    // Compute the psuedoinverse for the conformal scaling matrix
+    MatrixX B = conformal_scaling_matrix(target_cone_metric);
+    MatrixX A = B.transpose() * B;
+
+    // Solve for the gradient of the L2 norm of the best fit conformal scale
+    // factor
+    VectorX metric_target = target_cone_metric.get_metric_coordinates();
+    MatrixX L = A.transpose() * A;
+    VectorX w = B.transpose() * (metric_coords - metric_target);
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
+    solver.compute(L);
+    VectorX g = solver.solve(w);
+    return B * g;
+  }
 
   // TODO Use helper functions that take in two cone metrics but only expose one in interface
   // for all functions

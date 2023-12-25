@@ -10,13 +10,12 @@ module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
 import optimization_py as opt
-import optimize_impl.optimization as optimization
 import pickle
 import script_util
 
 def optimize_one(args, fname):
     # Get mesh, lambdas, and parameters
-    m, C, lambdas_init, lambdas_target, v3d, f, Th_hat = script_util.generate_mesh(args, fname)
+    m, _, _, _, _, C, opt_energy = script_util.generate_mesh(args, fname)
     proj_params, opt_params = script_util.generate_parameters(args)
     opt_params.output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
 
@@ -31,75 +30,24 @@ def optimize_one(args, fname):
 
     # Save initial conformal lambdas to file
     logger.info("Running conformal method")
-    lambdas_conf, u = opt.project_to_constraint(
+    C_conf = opt.project_metric_to_constraint(
         C,
-        lambdas_init,
         proj_params,
         opt_params
     )
+    lambdas_conf = C_conf.get_metric_coordinates()
     output_lambdas_path = os.path.join(output_dir, 'lambdas_conf')
     logger.info("Saving conformal lambdas to file at {}".format(output_lambdas_path))
     np.savetxt(output_lambdas_path, lambdas_conf)
 
-    # Run method of choice
-    if args['optimization_method'] == 'conformal':
-        logger.info("Running conformal method")
-        lambdas, u = opt.project_to_constraint(
-            C,
-            lambdas_init,
-            proj_params
-        )
-        log = {}
-    elif args['optimization_method'] == 'metric':
-        logger.info("Running implicit metric optimization method")
-        lambdas = opt.optimize_metric(
-            C,
-            lambdas_target,
-            lambdas_init,
-            proj_params,
-            opt_params
-        )
-    elif args['optimization_method'] == 'shear_dual':
-        logger.info("Running explicit shear dual optimization method")
-        lambdas = opt.optimize_shear_dual_coordinates(
-            C,
-            lambdas_target,
-            proj_params,
-            opt_params
-        )
-    elif args['optimization_method'] == 'incremental':
-        logger.info("Running incremental method")
-        lambdas = optimization.incremental_projection(
-            C,
-            lambdas_init,
-            lambdas_target,
-            proj_params=proj_params,
-            opt_params=opt_params
-        )
-
-        # Save record (including log) to file
-        output_path = os.path.join(output_dir, m+'_record.p')
-        logger.info("Saving record pickle to file at {}".format(output_path))
-        with open(output_path, 'wb') as output_file:
-            record = script_util.make_record(v3d, f, Th_hat, lambdas_init, lambdas, log)
-            pickle.dump(record, output_file)
-    elif args['optimization_method'] == 'implicit_experimental':
-        logger.info("Running experimental implicit optimization method")
-        log, lambdas = optimization.optimize_lambdas(
-            C,
-            lambdas_init,
-            lambdas_target,
-            checkpoint_dir=output_dir,
-            proj_params=proj_params,
-            opt_params=opt_params
-        )
-
-        # Save record (including log) to file
-        output_path = os.path.join(output_dir, m+'_record.p')
-        logger.info("Saving record pickle to file at {}".format(output_path))
-        with open(output_path, 'wb') as output_file:
-            record = script_util.make_record(v3d, f, Th_hat, lambdas_init, lambdas, log)
-            pickle.dump(record, output_file)
+    logger.info("Running implicit metric optimization method")
+    C_opt = opt.optimize_metric(
+        C,
+        opt_energy,
+        proj_params,
+        opt_params
+    )
+    lambdas = C_opt.get_metric_coordinates()
 
     # Save final lambdas to file
     output_lambdas_path = os.path.join(output_dir, 'lambdas_opt')

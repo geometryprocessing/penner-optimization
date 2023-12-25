@@ -17,7 +17,7 @@ namespace
 	{
 		Mesh<Scalar> m;
 		std::vector<int> vtx_reindex;
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 		LogLengthEnergy opt_energy(*cone_metric);
 
 		// Make default parameters with 5 iterations
@@ -26,11 +26,12 @@ namespace
 		opt_params->num_iter = 5;
 
 		// Optimize the metric
-		VectorX optimized_reduced_metric_coords = optimize_metric(
-			*cone_metric,
-			opt_energy,
-			proj_params,
-			opt_params);
+    std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric = optimize_metric(
+        *cone_metric,
+        opt_energy,
+        proj_params,
+        opt_params);
+    VectorX optimized_reduced_metric_coords = optimized_cone_metric->get_reduced_metric_coordinates();
 
 		// Check if the metrics are equal
 		spdlog::info("Error is {}", sup_norm(optimized_reduced_metric_coords - ground_truth_metric_coords));

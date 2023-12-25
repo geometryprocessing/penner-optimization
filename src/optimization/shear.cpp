@@ -11,6 +11,36 @@
 
 namespace CurvatureMetric {
 
+VectorX
+compute_shear(const Mesh<Scalar>& m, const VectorX& he_metric_coords)
+{
+  VectorX he_shear_coords(he_metric_coords.size());
+  int num_halfedges = he_metric_coords.size();
+  for (int h = 0; h < num_halfedges; ++h) {
+    int ho = m.opp[h];
+    Scalar lljk = he_metric_coords[m.n[h]];
+    Scalar llki = he_metric_coords[m.n[m.n[h]]];
+    Scalar llil = he_metric_coords[m.n[ho]];
+    Scalar lllj = he_metric_coords[m.n[m.n[ho]]];
+    he_shear_coords[h] = (lljk + llil - llki - lllj) / 2.0;
+  }
+
+  return he_shear_coords;
+}
+
+void
+compute_shear_change(
+  const Mesh<Scalar>& m,
+  const VectorX& he_metric_coords,
+  const VectorX& he_metric_target,
+  VectorX& he_shear_change
+) {
+  VectorX he_shear_coords = compute_shear(m, he_metric_coords);
+  VectorX he_shear_target = compute_shear(m, he_metric_target);
+  he_shear_change = he_shear_coords - he_shear_target;
+}
+
+// Validate a spanning tree for a given mesh
 bool
 validate_spanning_tree(
   const Mesh<Scalar> &m,
@@ -353,76 +383,5 @@ compute_shear_basis_coordinates(
 	// Validate the result
 	assert( validate_shear_basis_coordinates(cone_metric, shear_basis_matrix, shear_coords, scale_factors) );
 }
-
-VectorX
-compute_shear(const Mesh<Scalar>& m, const VectorX& he_metric_coords)
-{
-  VectorX he_shear_coords(he_metric_coords.size());
-  int num_halfedges = he_metric_coords.size();
-  for (int h = 0; h < num_halfedges; ++h) {
-    int ho = m.opp[h];
-    Scalar lljk = he_metric_coords[m.n[h]];
-    Scalar llki = he_metric_coords[m.n[m.n[h]]];
-    Scalar llil = he_metric_coords[m.n[ho]];
-    Scalar lllj = he_metric_coords[m.n[m.n[ho]]];
-    he_shear_coords[h] = (lljk + llil - llki - lllj) / 2.0;
-  }
-
-  return he_shear_coords;
-}
-
-void
-compute_shear_change(
-  const Mesh<Scalar>& m,
-  const VectorX& he_metric_coords,
-  const VectorX& he_metric_target,
-  VectorX& he_shear_change
-) {
-  VectorX he_shear_coords = compute_shear(m, he_metric_coords);
-  VectorX he_shear_target = compute_shear(m, he_metric_target);
-  he_shear_change = he_shear_coords - he_shear_target;
-}
-
-#ifdef PYBIND
-
-std::tuple<
-  MatrixX, // shear_basis_matrix
-  std::vector<int> // independent_edges
->
-compute_shear_dual_basis_pybind(
-  const Mesh<Scalar> &m
-) {
-  MatrixX shear_basis_matrix;
-  std::vector<int> independent_edges;
-	compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-  return std::make_tuple(shear_basis_matrix, independent_edges);
-}
-
-std::tuple<
-  MatrixX, // shear_basis_matrix
-  std::vector<int> // independent_edges
->
-compute_shear_coordinate_basis_pybind(
-  const Mesh<Scalar> &m
-) {
-  MatrixX shear_basis_matrix;
-  std::vector<int> independent_edges;
-	compute_shear_coordinate_basis(m, shear_basis_matrix, independent_edges);
-  return std::make_tuple(shear_basis_matrix, independent_edges);
-}
-
-VectorX
-compute_shear_change_pybind(
-  const Mesh<Scalar>& m,
-  const VectorX& he_metric_coords,
-  const VectorX& he_metric_target
-) {
-  VectorX he_shear_change;
-  compute_shear_change(m, he_metric_coords, he_metric_target, he_shear_change);
-  return he_shear_change;
-}
-
-#endif
-
 
 }

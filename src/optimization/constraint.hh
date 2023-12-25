@@ -64,18 +64,4 @@ namespace CurvatureMetric
 
 /// TODO Optionally add halfedge coordinate Jacobians
 
-#ifdef PYBIND
-  // Pybind definitions
-  std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>>
-  vertex_angles_with_jacobian_pybind(const Mesh<Scalar> &m,
-                                     const VectorX &metric_coords,
-                                     bool need_jacobian = true);
-
-  std::tuple<VectorX, Eigen::SparseMatrix<Scalar, Eigen::RowMajor>, std::vector<int>, bool>
-  constraint_with_jacobian_pybind(const Mesh<Scalar> &m,
-                                  const VectorX &metric_coords,
-                                  bool need_jacobian = true,
-                                  bool use_edge_lengths = true);
-#endif
-
 }

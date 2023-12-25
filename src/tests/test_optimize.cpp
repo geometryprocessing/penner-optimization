@@ -38,16 +38,17 @@ TEST_CASE("The optimium edge length for a triangle can be computed", "[optimize]
     metric_coords << 0.0, 0.0, 2.0 * std::log(std::sqrt(2));
     cone_metric.set_metric_coordinates(metric_coords);
 
-    VectorX optimized_metric_coords = optimize_metric(
+    std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric = optimize_metric(
         cone_metric,
         opt_energy,
         proj_params,
         opt_params);
+    VectorX optimized_reduced_metric_coords = optimized_cone_metric->get_reduced_metric_coordinates();
 
-    REQUIRE(optimized_metric_coords.size() == 3);
-    CHECK(float_equal(optimized_metric_coords[0], 1.0, 1e-6));
-    CHECK(float_equal(optimized_metric_coords[1], 1.0, 1e-6));
-    CHECK(float_equal(optimized_metric_coords[2], 1.0, 1e-6));
+    REQUIRE(optimized_reduced_metric_coords.size() == 3);
+    CHECK(float_equal(optimized_reduced_metric_coords[0], 1.0, 1e-6));
+    CHECK(float_equal(optimized_reduced_metric_coords[1], 1.0, 1e-6));
+    CHECK(float_equal(optimized_reduced_metric_coords[2], 1.0, 1e-6));
   }
 }
 
@@ -91,12 +92,13 @@ TEST_CASE("The optimium edge length for a square can be computed", "[optimize]")
     metric_coords << 0.0, 0.0, 0.0, 0.0, 0.0;
     cone_metric.set_metric_coordinates(metric_coords);
 
-    VectorX optimized_metric_coords = optimize_metric(
+    std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric = optimize_metric(
         cone_metric,
         opt_energy,
         proj_params,
         opt_params);
+    VectorX optimized_reduced_metric_coords = optimized_cone_metric->get_reduced_metric_coordinates();
 
-    REQUIRE(optimized_metric_coords.size() == 5);
+    REQUIRE(optimized_reduced_metric_coords.size() == 5);
   }
 }

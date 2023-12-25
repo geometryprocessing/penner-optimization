@@ -31,7 +31,7 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(3, M_PI / 3.0);
 
     // Generate mesh
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis
     MatrixX shear_basis_matrix;
@@ -65,7 +65,7 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(3, 2.0 * M_PI / 3.0);
 
     // Generate mesh
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis
     MatrixX shear_basis_matrix;
@@ -102,7 +102,7 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(4, M_PI);
 
     // Generate mesh
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis and ensure it is the correct size
     MatrixX shear_basis_matrix;
@@ -144,7 +144,7 @@ TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
     std::vector<double> Th_hat(5, (10.0 - 4.0) * M_PI / 5.0);
 
     // Generate mesh
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
     // Compute shear basis and ensure it is the correct size
     MatrixX shear_basis_matrix;
@@ -188,7 +188,7 @@ TEST_CASE( "Shear dual basis coordinates for a tetrahedron can be computed", "[s
   std::vector<double> Th_hat(4, M_PI);
 
   // Generate mesh
-  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
   // Compute shear and conformal basis
   MatrixX shear_basis_matrix;
@@ -295,7 +295,7 @@ TEST_CASE( "Shear dual basis coordinates for a pyramid can be computed", "[shear
   std::vector<double> Th_hat(5, (10.0 - 4.0) * M_PI / 5.0);
 
   // Generate mesh
-  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+  std::unique_ptr<DifferentiableConeMetric> initial_cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
 
   // Compute shear and conformal basis
   MatrixX shear_basis_matrix;

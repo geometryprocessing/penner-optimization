@@ -52,10 +52,6 @@ def simplify_vf_one(args, fname):
     vt_s[ft_s] = v_s[f_s]
     vn_to_v = vn_to_v[:, 0]
     vnt_to_v = np.zeros(len(uvt_s), dtype=int)
-    #print("vn_to_v shape", vn_to_v.shape)
-    #print("vnt_to_v shape", vnt_to_v.shape)
-    #print("f_s shape", f_s.shape)
-    #print("ft_s shape", ft_s.shape)
     vnt_to_v[ft_s] = vn_to_v[f_s]
 
     # Write combined overlay with uv

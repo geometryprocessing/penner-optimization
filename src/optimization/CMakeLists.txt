@@ -1,12 +1,13 @@
 add_library(MetricOptimizationLib
   area.cpp
   constraint.cpp
+  cone_metric.cpp
   convergence.cpp
-  delaunay.cpp
   embedding.cpp
   energies.cpp
   energy_functor.cpp
-#  explicit_optimization.cpp
+  energy_weights.cpp
+  explicit_optimization.cpp
   implicit_optimization.cpp
   interpolation.cpp
   layout.cpp
@@ -17,7 +18,6 @@ add_library(MetricOptimizationLib
   refinement.cpp
   reparametrization.cpp
   shear.cpp
-  targets.cpp
   translation.cpp
   triangulation.cpp
   viewers.cpp

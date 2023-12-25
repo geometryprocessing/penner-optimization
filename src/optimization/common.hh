@@ -81,44 +81,6 @@ vector_equal(VectorX v, VectorX w, Scalar eps = 1e-10)
   return true;
 }
 
-// Compute the sup norm of a vector.
-//
-/// @param[in] v: vector
-/// @return sup norm of v
-inline Scalar
-sup_norm(const VectorX& v)
-{
-  Scalar norm_value = 0.0;
-  for (Eigen::Index i = 0; i < v.size(); ++i)
-  {
-    norm_value = max(norm_value, abs(v[i]));
-  }
-
-  return norm_value;
-}
-
-// Compute the sup norm of a matrix.
-//
-/// @param[in] matrix: matrix
-/// @return sup norm of the matrix
-inline Scalar
-matrix_sup_norm(
-  const MatrixX& matrix
-) {
-  // Check for trivial matrices
-  if (matrix.size() == 0) return 0;
-
-  // Iterate to determine maximum abs value
-  Scalar max_value = 0.0;
-  for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
-    for (MatrixX::InnerIterator it(matrix, k); it; ++it) {
-      max_value = std::max(max_value, abs(it.value()));
-    }
-  }
-
-  return max_value;
-}
-
 /// Check if a matrix contains a nan
 ///
 /// @param[in] mat: matrix to check
@@ -309,6 +271,45 @@ write_sparse_matrix(
 /// **************
 /// Linear Algebra
 /// **************
+
+// Compute the sup norm of a vector.
+//
+/// @param[in] v: vector
+/// @return sup norm of v
+inline Scalar
+sup_norm(const VectorX& v)
+{
+  Scalar norm_value = 0.0;
+  for (Eigen::Index i = 0; i < v.size(); ++i)
+  {
+    norm_value = max(norm_value, abs(v[i]));
+  }
+
+  return norm_value;
+}
+
+// Compute the sup norm of a matrix.
+//
+/// @param[in] matrix: matrix
+/// @return sup norm of the matrix
+inline Scalar
+matrix_sup_norm(
+  const MatrixX& matrix
+) {
+  // Check for trivial matrices
+  if (matrix.size() == 0) return 0;
+
+  // Iterate to determine maximum abs value
+  Scalar max_value = 0.0;
+  for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
+    for (MatrixX::InnerIterator it(matrix, k); it; ++it) {
+      max_value = std::max(max_value, abs(it.value()));
+    }
+  }
+
+  return max_value;
+}
+
 
 /// Compute the Kronecker product of two vectors.
 ///

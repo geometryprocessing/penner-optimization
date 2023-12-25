@@ -15,7 +15,6 @@ import optimization_py as opt
 import pickle, math
 import script_util
 import optimize_impl.render as render
-import optimize_impl.interpolation as interpolation
 import optimize_impl.targets as targets
 
 # TODO Generate version of this script for direct minimal refinement method; save original mesh cut and fn_to_f
@@ -51,7 +50,7 @@ def overlay_one(args, fname):
     # Get mesh and lambdas
     logger.info("Loading mesh")
     try:
-        m, C, lambdas, lambdas_target, v3d, f, Th_hat = script_util.generate_mesh(args, fname)
+        m, v3d, f, Th_hat, C_embed, _, _ = script_util.generate_mesh(args, fname)
     except:
         logger.error("Could not load mesh")
         return
@@ -79,7 +78,7 @@ def overlay_one(args, fname):
     if args['use_edge_lengths']:
         logger.info("Using edge lengths")
         u = np.zeros(len(v3d))
-        C_o = opt.add_overlay(C, lambdas)
+        C_o = opt.add_overlay(C_embed, lambdas)
         opt.make_tufted_overlay(C_o, v3d, f, Th_hat)
         v_overlay = v3d[vtx_reindex].T
         endpoints = np.full((len(C.out), 2), -1)
@@ -102,7 +101,6 @@ def overlay_one(args, fname):
         f_o = np.array(f_o)
         ft_o = np.array(ft_o)
         uvt_o = np.array([u_param_o, v_param_o]).T
-        C = C_o._m
     else:
         logger.info("Using Penner coordinates")
 
@@ -111,9 +109,7 @@ def overlay_one(args, fname):
             v3d,
             f,
             Th_hat,
-            C,
-            vtx_reindex,
-            lambdas_target,
+            C_embed,
             lambdas,
             True
         )
@@ -132,7 +128,7 @@ def overlay_one(args, fname):
 
     # Save cut to singularity information
     # TODO Generate this from file data instead of pickle
-    cut_to_sin_list = render.add_cut_to_sin(C.n, C.opp, C.to, cones, C.type, is_cut_h, vtx_reindex, build_double)
+    cut_to_sin_list = render.add_cut_to_sin(C_embed.n, C_embed.opp, C_embed.to, cones, C_embed.type, is_cut_h, vtx_reindex, build_double)
     simp_path = os.path.join(output_dir, name + '_cut_to_sin_list.pickle')
     logger.info("Saving cut to singularity information at {}".format(simp_path))
     with open(simp_path, 'wb') as file:
@@ -171,8 +167,6 @@ def overlay_one(args, fname):
     simp_path = os.path.join(output_dir, name+'_o.h5')
     logger.info("Saving simplification information at {}".format(simp_path))
     opt.save_simplify_overlay_input(simp_path, endpoints, v_o, f_o, uvt_o, ft_o, is_cut_o)
-
-
 
 def overlay_many(args):
     script_util.run_many(overlay_one, args)

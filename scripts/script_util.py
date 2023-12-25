@@ -13,17 +13,6 @@ import multiprocessing
 import logging
 import math
 
-def make_record(v, f, Th_hat, lambdas_target, lambdas, log):
-    record = {}
-    record['v'] = v
-    record['f'] = f
-    record['Th_hat'] = Th_hat
-    record['lambdas_target'] = lambdas_target
-    record['lambdas'] = lambdas
-    record['log'] = log
-    
-    return record
-
 def get_mesh_output_directory(output_dir_base, m):
     """
     Make an output directory in a base output directory for a given mesh
@@ -35,8 +24,6 @@ def add_mesh_arguments(parser):
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")
-    parser.add_argument("--nonsymmetric",        help="remove symmetry structure from mesh",
-                                                     action="store_true")
     parser.add_argument("--lambdas_dir",         help="directory for initial lambdas")
     parser.add_argument("--free_bd_angles",      help="let boundary angles be free",
                                                      action="store_true")
@@ -46,15 +33,12 @@ def add_mesh_arguments(parser):
                                                      type=float, default=0)
     parser.add_argument("--map_to_disk",         help="set target angles to map to a uniform disk",
                                                      action="store_true")
-    parser.add_argument("--use_uniform_lengths", help="set target lambdas all to 0",
-                                                     action="store_true")
     parser.add_argument("--use_lengths_from_file", help="set target lambdas at the lambdas dir",
                                                      action="store_true")
     parser.add_argument("--initial_uv_lengths",      help="use edge lengths from uv coordinates",
                                                      action="store_true")
     parser.add_argument("--initial_tutte_lengths",      help="use lengths from tutte uv coordinates",
                                                      type=bool, default=False)
-    parser.add_argument("--initial_layout_path", help="path to layout for initial lengths")
 
 def add_parameter_arguments(parser):
     # Conformal parameters
@@ -82,8 +66,6 @@ def add_parameter_arguments(parser):
                                                      type=bool, default=opt_params.require_gradient_proj_negative)
     parser.add_argument("--max_angle_incr",      help="maximum angle increase for each iteration",
                                                      type=float, default=opt_params.max_angle_incr)
-    parser.add_argument("--max_ratio_incr",      help="maximum ratio increase for each iteration",
-                                                     type=float, default=opt_params.max_ratio_incr)
     parser.add_argument("--max_angle",           help="maximum angle error before attempting projection",
                                                      type=float, default=opt_params.max_angle)
     parser.add_argument("-p", "--power",         help="power for p norm energy",
@@ -225,68 +207,63 @@ def generate_mesh(args, fname=None):
         fname = args['fname']
     v3d, f = igl.read_triangle_mesh(os.path.join(args['input_dir'], fname))
     dot_index = fname.rfind(".")
-    m = fname[:dot_index]
+    name = fname[:dot_index]
     
     # Get Th_hat values
     if (args['map_to_disk']):
         Th_hat = targets.map_to_disk(v3d, f)
     else:
-        Th_hat = np.loadtxt(os.path.join(args['input_dir'], m + "_Th_hat"), dtype=float)
-        print(Th_hat[0])
+        Th_hat = np.loadtxt(os.path.join(args['input_dir'], name + "_Th_hat"), dtype=float)
         Th_hat = np.array(opt.correct_cone_angles(Th_hat))
-        print(Th_hat[0])
 
-    # Get cones
-    cones = np.where(np.abs(Th_hat - 2 * np.pi) > 0)[0]
+    # Get free cones
+    free_cones = []
+    if (args['free_cones']):
+        free_cones = np.where(np.abs(Th_hat - 2 * np.pi) > 0)[0]
+
+    # Get initial metric embedding mesh
+    uv = v3d
+    fuv = f
+    if (args['initial_uv_lengths']):
+        _, uv, _, _, fuv, _ = igl.read_obj(os.path.join(args['input_dir'], fname))
+    if (args['initial_tutte_lengths']):
+        uv = targets.generate_tutte_param(v3d, f)
     
     # Create halfedge mesh and lambdas
-    if (args['free_cones']):
-        C, vtx_reindex = opt.fv_to_double(v3d, f, v3d, f, Th_hat, cones, args['free_bd_angles'])
-    else:
-        C, vtx_reindex = opt.fv_to_double(v3d, f, v3d, f, Th_hat, [], args['free_bd_angles'])
+    C_embed = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
+    C = opt.generate_initial_mesh(v3d, f, uv, fuv, Th_hat, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
 
-    if (args['use_uniform_lengths']):
-        lambdas_target = np.zeros_like(lambdas_target)
-    elif (args['use_edge_lengths']):
-        lambdas_target = opt.compute_log_edge_lengths(v3d, f, Th_hat)
+    # Build energies (default to 2-norm)
+    energy_choice = args['energy_choice']
+    if (energy_choice == "p_norm"):
+        opt_energy = opt.LogLengthEnergy(C_embed, args['power'])
+    elif (energy_choice == "scale_distortion"):
+        opt_energy = opt.LogScaleEnergy(C_embed)
+    elif (energy_choice == "surface_hencky_strain"):
+        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], True)
+        opt_energy = opt.QuadraticSymmetricDirichletEnergy(C_embed, C_eucl)
+    elif (energy_choice == "sym_dirichlet"):
+        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], True)
+        opt_energy = opt.SymmetricDirichletEnergy(C_embed, C_eucl)
     else:
-        lambdas_target, _ = opt.compute_penner_coordinates(v3d, f, Th_hat)
-
-    # Remove symmetry structure if nonsymmetric
-    if (args['nonsymmetric']):
-        proj, embed = opt.build_refl_proj(C)
-        remove_symmetry(C)
-        lambdas_target = lambdas_target[proj]
+        opt_energy = opt.LogLengthEnergy(C_embed, 2)
         
+    # Optionally overwrite with lengths from files
     if args['use_lengths_from_file']:
-        lambdas_init = np.loadtxt(os.path.join(args['lambdas_dir'], m+'_output', 'lambdas_opt'), dtype=float)
-        print("Using lambdas from file")
-    elif (args['initial_uv_lengths']):
-        _, uv, _, _, fuv, _ = igl.read_obj(os.path.join(args['input_dir'], fname))
-        uv_embed = np.zeros((len(uv), 3))
-        uv_embed[:,:2] = uv[:,:2]
-        C_uv, _ = opt.fv_to_double(uv_embed, fuv, uv_embed, fuv, Th_hat, [], args['free_bd_angles'])
-        lambdas_init = targets.lambdas_from_mesh(C_uv)
-    elif (args['initial_tutte_lengths']):
-        uv = targets.generate_tutte_param(v3d, f)
-        C_uv, _ = opt.fv_to_double(v3d, f, uv, f, Th_hat, [], args['free_bd_angles'])
-        lambdas_init = targets.lambdas_from_mesh(C_uv)
-        ## FIXME This is all a bit dangerous with different lengths for Penner and edge
-    elif (args['initial_layout_path']):
-        v3d_layout, f_layout = igl.read_triangle_mesh(args['initial_layout_path'])
-        C_layout, _ = opt.fv_to_double(v3d_layout, f_layout, v3d_layout, f_layout, np.zeros(len(v3d_layout)), [], args['free_bd_angles'])
-        lambdas_init = targets.lambdas_from_mesh(C_layout)
-    else:
-        scale = args['initial_pert_sd']
-        print("Using scale {}".format(scale))
-        lambdas_pert = np.random.normal(loc=0,
+        metric_coords = np.loadtxt(os.path.join(args['lambdas_dir'], name+'_output', 'lambdas_opt'), dtype=float)
+        C = C.set_metric_coordinates(metric_coords)
+
+    # Optionally perturb lengths
+    scale = args['initial_pert_sd']
+    if (scale != 0):
+        metric_coords = C.get_reduced_metric_coordinates()
+        metric_pert = np.random.normal(loc=0,
                                         scale=scale,
-                                        size=len(lambdas_target))
-        lambdas_init = lambdas_target + lambdas_pert
+                                        size=len(metric_coords))
+        metric_coords = metric_coords + metric_pert
+        C = C.set_metric_coordinates(metric_coords)
 
-    return m, C, lambdas_init, lambdas_target, v3d, f, Th_hat
-
-
+    return name, v3d, f, Th_hat, C_embed, C, opt_energy
 
 def generate_parameters(args):
     # Set projection parameters
@@ -309,7 +286,6 @@ def generate_parameters(args):
     opt_params.require_energy_decr = args['require_energy_bound']
     opt_params.require_gradient_proj_negative = args['require_gradient_proj_negative']
     opt_params.max_angle_incr = args['max_angle_incr']
-    opt_params.max_ratio_incr = args['max_ratio_incr']
     opt_params.max_angle = args['max_angle']
     opt_params.p = args['power']
     opt_params.fix_bd_lengths = args['fix_bd_lengths']

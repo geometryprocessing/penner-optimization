@@ -1,5 +1,4 @@
 #include "optimization_interface.hh"
-#include "targets.hh"
 #include "embedding.hh"
 #include "energy_functor.hh"
 #include "translation.hh"
@@ -16,19 +15,20 @@ std::unique_ptr<DifferentiableConeMetric>
 generate_initial_mesh(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv,
 	const std::vector<Scalar>& Th_hat,
-	std::vector<int>& vtx_reindex,
+	std::vector<int> free_cones,
+	bool fix_boundary,
 	bool use_discrete_metric
 ) {
 	// Convert VF mesh to halfedge
-	std::vector<int> indep_vtx, dep_vtx, v_rep, bnd_loops;
-	std::vector<int> free_cones(0);
-	bool fix_boundary = false;
+	std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
 	Mesh<Scalar> m = FV_to_double<Scalar>(
 		V,
 		F,
-		V,
-		F,
+		uv,
+		F_uv,
 		Th_hat,
 		vtx_reindex,
 		indep_vtx,
@@ -40,64 +40,28 @@ generate_initial_mesh(
 	);
 
 	// Build initial metric and target metric from edge lengths
+	VectorX scale_factors;
+	scale_factors.setZero(m.n_ind_vertices());
+	bool is_hyperbolic = false;
+	InterpolationMesh interpolation_mesh(m, scale_factors, is_hyperbolic);
 	VectorX reduced_metric_coords;
 	if (use_discrete_metric)
 	{
-		compute_log_edge_lengths(V, F, Th_hat, reduced_metric_coords);
+		reduced_metric_coords = interpolation_mesh.get_reduced_metric_coordinates();
 		return std::make_unique<DiscreteMetric>(m, reduced_metric_coords);
 	}
 	else
 	{
-		std::vector<int> flip_sequence;
-		compute_penner_coordinates(V, F, Th_hat, reduced_metric_coords, flip_sequence);
+		std::vector<int> flip_sequence, hyperbolic_flip_sequence;
+		interpolation_mesh.convert_to_hyperbolic_surface(flip_sequence, hyperbolic_flip_sequence);
+		reduced_metric_coords = interpolation_mesh.get_reduced_metric_coordinates();
 		return std::make_unique<PennerConeMetric>(m, reduced_metric_coords);
 	}
 }
 
-void
-generate_initial_delaunay_mesh(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-	const std::vector<Scalar>& Th_hat,
-	Mesh<Scalar> &m,
-	std::vector<int>& vtx_reindex,
-	VectorX& reduced_metric_target
-) {
-	// Convert VF mesh to halfedge
-	std::vector<int> indep_vtx, dep_vtx, v_rep, bnd_loops;
-	std::vector<int> free_cones(0);
-	bool fix_boundary = false;
-	m = FV_to_double<Scalar>(
-		V,
-		F,
-		V,
-		F,
-		Th_hat,
-		vtx_reindex,
-		indep_vtx,
-		dep_vtx,
-		v_rep,
-		bnd_loops,
-		free_cones,
-		fix_boundary
-	);
-
-	// Make mesh delaunay
-  VectorX u;
-  u.setZero(m.n_ind_vertices());
-  DelaunayStats del_stats;
-  SolveStats<Scalar> solve_stats;
-  bool use_ptolemy = true;
-  ConformalIdealDelaunay<Scalar>::MakeDelaunay(m, u, del_stats, solve_stats, use_ptolemy);
-
-	// Build target metric from edge lengths
-	compute_log_edge_lengths(V, F, Th_hat, reduced_metric_target);
-}
-
-void
+std::vector<Scalar>
 correct_cone_angles(
-	const std::vector<Scalar>& initial_cone_angles,
-	std::vector<Scalar>& corrected_cone_angles
+	const std::vector<Scalar>& initial_cone_angles
 ) {
 	// Get precise value of pi
 	Scalar pi;
@@ -108,147 +72,15 @@ correct_cone_angles(
 
 	// Correct angles
 	int num_vertices = initial_cone_angles.size();
-	corrected_cone_angles.resize(num_vertices);
+	std::vector<Scalar> corrected_cone_angles(num_vertices);
 	for (int i = 0; i < num_vertices; ++i)
 	{
 		Scalar angle = initial_cone_angles[i];
 		int rounded_angle = lround(Scalar(60.0) * angle / pi);
 		corrected_cone_angles[i] = (rounded_angle * pi) / Scalar(60.0);
 	}
-}
 
-std::tuple<
-	OverlayMesh<Scalar>, // m_o
-  Eigen::MatrixXd, // V_o
-  Eigen::MatrixXi, // F_o
-  Eigen::MatrixXd, // uv_o
-  Eigen::MatrixXi, // FT_o
-	std::vector<bool>, // is_cut_h
-	std::vector<bool>, // is_cut_o
-	std::vector<int>, // Fn_to_F
-	std::vector<std::pair<int,int>> // endpoints_o
->
-generate_VF_mesh_from_metric(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-	const std::vector<Scalar>& Th_hat,
-	const DifferentiableConeMetric& initial_cone_metric,
-	const VectorX& metric_coords,
-	const std::vector<int>& vtx_reindex,
-	bool do_best_fit_scaling
-) {
-	VectorX metric_target = initial_cone_metric.get_metric_coordinates();
-	VectorX metric_coords_scaled = metric_coords;
-
-	// Fit conformal scale factors
-	VectorX scale_factors;
-	scale_factors.setZero(initial_cone_metric.n_ind_vertices());
-	if (do_best_fit_scaling)
-	{
-		scale_factors = best_fit_conformal(initial_cone_metric, metric_coords);
-		MatrixX B = conformal_scaling_matrix(initial_cone_metric);
-		metric_coords_scaled = metric_coords - B * scale_factors;
-	}
-	VectorX metric_diff = metric_coords_scaled - metric_target;
-	SPDLOG_INFO("Scale factors in range [{}, {}]", scale_factors.minCoeff(), scale_factors.maxCoeff());
-	SPDLOG_INFO("Scaled metric coordinates in range [{}, {}]", metric_coords_scaled.minCoeff(), metric_coords_scaled.maxCoeff());
-	SPDLOG_INFO("Differences from target to optimized metric in range [{}, {}]", metric_diff.minCoeff(), metric_diff.maxCoeff());
-
-	// Expand metric coordinates to per halfedge values
-	int num_halfedges = initial_cone_metric.n_halfedges();
-	VectorX he_metric_target(num_halfedges);
-	VectorX he_metric_coords(num_halfedges);
-	for (int h = 0; h < num_halfedges; ++h)
-	{
-		int e = initial_cone_metric.he2e[h];
-		he_metric_target[h] = metric_target[e];
-		he_metric_coords[h] = metric_coords_scaled[e];
-	}
-
-	// Compute interpolation overlay mesh
-	Eigen::MatrixXd V_overlay;
-	InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
-	spdlog::trace("Interpolating penner coordinates");
-	interpolate_penner_coordinates(initial_cone_metric, he_metric_coords, scale_factors, interpolation_mesh, reverse_interpolation_mesh);
-	spdlog::trace("Interpolating vertex positions");
-	interpolate_vertex_positions(V, vtx_reindex, interpolation_mesh, reverse_interpolation_mesh, V_overlay);
-	OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
-	make_tufted_overlay(m_o, V, F, Th_hat);
-
-	// Get endpoints
-	std::vector<std::pair<int, int>> endpoints;
-	find_origin_endpoints(m_o, endpoints);
-
-	// Convert overlay mesh to transposed vector format
-	std::vector<std::vector<Scalar>> V_overlay_vec(3);
-	for (int i = 0; i < 3; ++i)
-	{
-		V_overlay_vec[i].resize(V_overlay.rows());
-		for (int j = 0; j < V_overlay.rows(); ++j)
-		{
-			V_overlay_vec[i][j] = V_overlay(j, i);
-		}
-	}
-
-	// Get layout topology from original mesh
-	std::vector<bool> is_cut_place_holder(0);
-	std::vector<bool> is_cut = compute_layout_topology(initial_cone_metric, is_cut_place_holder);
-
-	// Convert overlay mesh to VL format
-	spdlog::trace("Getting layout");
-	std::vector<int> vtx_reindex_mutable = vtx_reindex;
-  std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
-	convert_eigen_to_std_vector(scale_factors, u);
-	// auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec, vtx_reindex_mutable, endpoints, -1); FIXME
-	auto parametrize_res = consistent_overlay_mesh_to_VL(
-		F,
-		Th_hat,
-		m_o,
-		u,
-		V_overlay_vec,
-		vtx_reindex_mutable,
-		endpoints,
-		is_cut
-	);
-	std::vector<std::vector<Scalar>> V_o_vec = std::get<0>(parametrize_res);
-	std::vector<std::vector<int>> F_o_vec = std::get<1>(parametrize_res);
-	std::vector<Scalar> u_o_vec = std::get<2>(parametrize_res);
-	std::vector<Scalar> v_o_vec = std::get<3>(parametrize_res);
-	std::vector<std::vector<int>> FT_o_vec = std::get<4>(parametrize_res);
-	std::vector<bool> is_cut_o = std::get<5>(parametrize_res);
-	std::vector<int> Fn_to_F = std::get<6>(parametrize_res);
-	std::vector<std::pair<int,int>> endpoints_o = std::get<7>(parametrize_res);
-
-	// Convert vector formats to matrices
-	Eigen::MatrixXd V_o, uv_o;
-	Eigen::VectorXd u_o, v_o;
-	Eigen::MatrixXi F_o, FT_o;
-	convert_std_to_eigen_matrix(V_o_vec, V_o);
-	convert_std_to_eigen_matrix(F_o_vec, F_o);
-	convert_std_to_eigen_matrix(FT_o_vec, FT_o);
-	convert_std_to_eigen_vector(u_o_vec, u_o);
-	convert_std_to_eigen_vector(v_o_vec, v_o);
-	uv_o.resize(u_o.size(), 2);
-	uv_o.col(0) = u_o;
-	uv_o.col(1) = v_o;
-
-	// Check for validity
-	if (!check_uv(V_o, F_o, uv_o, FT_o))
-	{
-		spdlog::error("Inconsistent uvs");
-	}
-
-	return std::make_tuple(
-		m_o,
-		V_o,
-		F_o,
-		uv_o,
-		FT_o,
-		is_cut,
-		is_cut_o,
-		Fn_to_F,
-		endpoints_o
-	);
+	return corrected_cone_angles;
 }
 
 void
@@ -393,19 +225,132 @@ consistent_overlay_mesh_to_VL(const Eigen::MatrixXi& F,
     return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut_o, Fn_to_F, endpoints_out);
 }
 
-
-#ifdef PYBIND
-
-std::vector<Scalar>
-correct_cone_angles_pybind(
-	const std::vector<Scalar>& initial_cone_angles
+std::tuple<
+	OverlayMesh<Scalar>, // m_o
+  Eigen::MatrixXd, // V_o
+  Eigen::MatrixXi, // F_o
+  Eigen::MatrixXd, // uv_o
+  Eigen::MatrixXi, // FT_o
+	std::vector<bool>, // is_cut_h
+	std::vector<bool>, // is_cut_o
+	std::vector<int>, // Fn_to_F
+	std::vector<std::pair<int,int>> // endpoints_o
+>
+generate_VF_mesh_from_metric(
+  const Eigen::MatrixXd& V,
+  const Eigen::MatrixXi& F,
+	const std::vector<Scalar>& Th_hat,
+	const DifferentiableConeMetric& initial_cone_metric,
+	const VectorX& metric_coords,
+	bool do_best_fit_scaling
 ) {
-	std::vector<Scalar> corrected_cone_angles;
-	correct_cone_angles(initial_cone_angles, corrected_cone_angles);
-	return corrected_cone_angles;
-}
+	// Get mesh with vertex reindexing
+	std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
+	Mesh<Scalar> m = FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
-#endif
+	// Get metric target
+	VectorX metric_target = initial_cone_metric.get_metric_coordinates();
+
+	// Fit conformal scale factors
+	VectorX metric_coords_scaled = metric_coords;
+	VectorX scale_factors;
+	scale_factors.setZero(initial_cone_metric.n_ind_vertices());
+	if (do_best_fit_scaling)
+	{
+		scale_factors = best_fit_conformal(initial_cone_metric, metric_coords);
+		MatrixX B = conformal_scaling_matrix(initial_cone_metric);
+		metric_coords_scaled = metric_coords - B * scale_factors;
+	}
+	VectorX metric_diff = metric_coords_scaled - metric_target;
+	SPDLOG_INFO("Scale factors in range [{}, {}]", scale_factors.minCoeff(), scale_factors.maxCoeff());
+	SPDLOG_INFO("Scaled metric coordinates in range [{}, {}]", metric_coords_scaled.minCoeff(), metric_coords_scaled.maxCoeff());
+	SPDLOG_INFO("Differences from target to optimized metric in range [{}, {}]", metric_diff.minCoeff(), metric_diff.maxCoeff());
+
+	// Compute interpolation overlay mesh
+	Eigen::MatrixXd V_overlay;
+	InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
+	spdlog::trace("Interpolating penner coordinates");
+	interpolate_penner_coordinates(m, metric_coords_scaled, scale_factors, interpolation_mesh, reverse_interpolation_mesh);
+	spdlog::trace("Interpolating vertex positions");
+	interpolate_vertex_positions(V, vtx_reindex, interpolation_mesh, reverse_interpolation_mesh, V_overlay);
+	OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
+	make_tufted_overlay(m_o, V, F, Th_hat);
+
+	// Get endpoints
+	std::vector<std::pair<int, int>> endpoints;
+	find_origin_endpoints(m_o, endpoints);
+
+	// Convert overlay mesh to transposed vector format
+	std::vector<std::vector<Scalar>> V_overlay_vec(3);
+	for (int i = 0; i < 3; ++i)
+	{
+		V_overlay_vec[i].resize(V_overlay.rows());
+		for (int j = 0; j < V_overlay.rows(); ++j)
+		{
+			V_overlay_vec[i][j] = V_overlay(j, i);
+		}
+	}
+
+	// Get layout topology from original mesh
+	std::vector<bool> is_cut_place_holder(0);
+	std::vector<bool> is_cut = compute_layout_topology(m, is_cut_place_holder);
+
+	// Convert overlay mesh to VL format
+	spdlog::trace("Getting layout");
+	std::vector<int> vtx_reindex_mutable = vtx_reindex;
+  std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
+	convert_eigen_to_std_vector(scale_factors, u);
+	// auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec, vtx_reindex_mutable, endpoints, -1); FIXME
+	auto parametrize_res = consistent_overlay_mesh_to_VL(
+		F,
+		Th_hat,
+		m_o,
+		u,
+		V_overlay_vec,
+		vtx_reindex_mutable,
+		endpoints,
+		is_cut
+	);
+	std::vector<std::vector<Scalar>> V_o_vec = std::get<0>(parametrize_res);
+	std::vector<std::vector<int>> F_o_vec = std::get<1>(parametrize_res);
+	std::vector<Scalar> u_o_vec = std::get<2>(parametrize_res);
+	std::vector<Scalar> v_o_vec = std::get<3>(parametrize_res);
+	std::vector<std::vector<int>> FT_o_vec = std::get<4>(parametrize_res);
+	std::vector<bool> is_cut_o = std::get<5>(parametrize_res);
+	std::vector<int> Fn_to_F = std::get<6>(parametrize_res);
+	std::vector<std::pair<int,int>> endpoints_o = std::get<7>(parametrize_res);
+
+	// Convert vector formats to matrices
+	Eigen::MatrixXd V_o, uv_o;
+	Eigen::VectorXd u_o, v_o;
+	Eigen::MatrixXi F_o, FT_o;
+	convert_std_to_eigen_matrix(V_o_vec, V_o);
+	convert_std_to_eigen_matrix(F_o_vec, F_o);
+	convert_std_to_eigen_matrix(FT_o_vec, FT_o);
+	convert_std_to_eigen_vector(u_o_vec, u_o);
+	convert_std_to_eigen_vector(v_o_vec, v_o);
+	uv_o.resize(u_o.size(), 2);
+	uv_o.col(0) = u_o;
+	uv_o.col(1) = v_o;
+
+	// Check for validity
+	if (!check_uv(V_o, F_o, uv_o, FT_o))
+	{
+		spdlog::error("Inconsistent uvs");
+	}
+
+	return std::make_tuple(
+		m_o,
+		V_o,
+		F_o,
+		uv_o,
+		FT_o,
+		is_cut,
+		is_cut_o,
+		Fn_to_F,
+		endpoints_o
+	);
+}
 
 }
 

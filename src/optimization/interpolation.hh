@@ -20,14 +20,19 @@ public:
   /// Construct a trivial invalid interpolation mesh.
   InterpolationMesh();
 
-  /// Construct a Euclidean interpolation mesh from a VF mesh.
+  /// Construct a Euclidean interpolation mesh from a VF mesh with possibly distinct
+  /// metric mesh determining edge lengths.
   ///
   /// @param[in] V: input mesh vertices
   /// @param[in] F: input mesh faces
+  /// @param[in] uv: input metric mesh vertices
+  /// @param[in] F_uv: input metric mesh faces
   /// @param[in] Theta_hat: input mesh target angles
   InterpolationMesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
     const std::vector<Scalar>& Theta_hat);
 
   /// Construct a hyperbolic interpolation mesh from a base mesh.
@@ -283,32 +288,5 @@ bool
 overlay_has_all_original_halfedges(
   OverlayMesh<Scalar>& mo
 );
-
-#ifdef PYBIND
-
-std::tuple<
-  InterpolationMesh, // interpolation_mesh,
-  InterpolationMesh // reverse_interpolation_mesh
->
-interpolate_penner_coordinates_pybind(
-	const Mesh<Scalar> &mesh,
-	const VectorX &halfedge_metric_coords,
-	const VectorX &scale_factors
-);
-
-
-Eigen::MatrixXd // V_overlay
-interpolate_vertex_positions_pybind(
-  const Eigen::MatrixXd& V,
-	const std::vector<int> vtx_reindex,
-  const InterpolationMesh &interpolation_mesh,
-  const InterpolationMesh &reverse_interpolation_mesh
-);
-
-std::vector<std::pair<int, int>> // endpoints
-find_origin_endpoints_pybind(
-  OverlayMesh<Scalar> &overlay_mesh
-);
-#endif
 
 }

@@ -32,19 +32,20 @@ namespace CurvatureMetric
       VectorX reduced_line_step_metric_coords = reduced_metric_coords + step_size * direction;
 
       // Compute the unprojected energy
-      unprojected_energies[i] = opt_energy.energy(reduced_line_step_metric_coords);
+      std::unique_ptr<DifferentiableConeMetric> cone_metric = m.clone_cone_metric();
+      unprojected_energies[i] = opt_energy.energy(*cone_metric);
 
       // Project to the constraint
-      std::unique_ptr<DifferentiableConeMetric> cone_metric = m.clone_cone_metric();
       VectorX u = compute_constraint_scale_factors(*cone_metric, proj_params, opt_params);
-      cone_metric->scale_conformally(u);
+      std::unique_ptr<DifferentiableConeMetric> constrained_cone_metric = cone_metric->scale_conformally(u);
 
       // Compute the projected energy
-      projected_energies[i] = opt_energy.energy(*cone_metric);
+      projected_energies[i] = opt_energy.energy(*constrained_cone_metric);
     }
   }
 
   /*
+  TODO: Refactor this energy landscape code and expose to python
     void
     compute_domain_direction_energy_values(
         const DifferentiableConeMetric &m,
@@ -201,129 +202,5 @@ namespace CurvatureMetric
       }
     }
     */
-
-#ifdef PYBIND
-  /*
-    std::tuple<
-        VectorX, // unprojected_energies
-        VectorX  // projected_energies
-        >
-    compute_direction_energy_values_pybind(
-        const DifferentiableConeMetric &m,
-        const VectorX &reduced_metric_coords,
-        const VectorX &reduced_metric_target,
-        const OptimizationParameters &opt_params,
-        const std::shared_ptr<ProjectionParameters> proj_params,
-        const VectorX &direction,
-        const VectorX &step_sizes)
-    {
-      VectorX unprojected_energies;
-      VectorX projected_energies;
-      compute_direction_energy_values(
-          m,
-          reduced_metric_coords,
-          reduced_metric_target,
-          opt_params,
-          proj_params,
-          direction,
-          step_sizes,
-          unprojected_energies,
-          projected_energies);
-      return std::make_tuple(unprojected_energies, projected_energies);
-    }
-
-    std::tuple<
-        VectorX, // unprojected_energies
-        VectorX  // projected_energies
-        >
-    compute_projected_descent_direction_energy_values_pybind(
-        const DifferentiableConeMetric &m,
-        const VectorX &reduced_metric_coords,
-        const VectorX &reduced_metric_target,
-        const OptimizationParameters &opt_params,
-        const std::shared_ptr<ProjectionParameters> proj_params,
-        const VectorX &step_sizes)
-    {
-      VectorX unprojected_energies;
-      VectorX projected_energies;
-      compute_projected_descent_direction_energy_values(
-          m,
-          reduced_metric_coords,
-          reduced_metric_target,
-          opt_params,
-          proj_params,
-          step_sizes,
-          unprojected_energies,
-          projected_energies);
-      return std::make_tuple(unprojected_energies, projected_energies);
-    }
-
-    VectorX
-    compute_domain_direction_energy_values_pybind(
-        const DifferentiableConeMetric &m,
-        const ReductionMaps &reduction_maps,
-        const VectorX &reduced_metric_target,
-        const VectorX &domain_coords,
-        const MatrixX &constraint_domain_matrix,
-        const MatrixX &constraint_codomain_matrix,
-        const std::shared_ptr<OptimizationParameters> opt_params,
-        const std::shared_ptr<ProjectionParameters> proj_params,
-        const VectorX &direction,
-        const VectorX &step_sizes)
-    {
-      VectorX energies;
-      compute_domain_direction_energy_values(
-          m,
-          reduction_maps,
-          reduced_metric_target,
-          domain_coords,
-          constraint_domain_matrix,
-          constraint_codomain_matrix,
-          opt_params,
-          proj_params,
-          direction,
-          step_sizes,
-          energies);
-      return energies;
-    }
-
-    std::tuple<
-        VectorX, // max_errors,
-        VectorX, // norm_changes_in_metric_coords,
-        VectorX, // convergence_ratios,
-        VectorX  // gradient_signs
-        >
-    compute_projected_descent_direction_stability_values_pybind(
-        const DifferentiableConeMetric &m,
-        const VectorX &reduced_metric_coords,
-        const VectorX &reduced_metric_target,
-        const OptimizationParameters &opt_params,
-        const std::shared_ptr<ProjectionParameters> proj_params,
-        const VectorX &step_sizes)
-    {
-      VectorX max_errors;
-      VectorX norm_changes_in_metric_coords;
-      VectorX convergence_ratios;
-      VectorX gradient_signs;
-      compute_projected_descent_direction_stability_values(
-          m,
-          reduced_metric_coords,
-          reduced_metric_target,
-          opt_params,
-          proj_params,
-          step_sizes,
-          max_errors,
-          norm_changes_in_metric_coords,
-          convergence_ratios,
-          gradient_signs);
-      return std::make_tuple(
-          max_errors,
-          norm_changes_in_metric_coords,
-          convergence_ratios,
-          gradient_signs);
-    }
-    */
-
-#endif
 
 }

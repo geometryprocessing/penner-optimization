@@ -4,7 +4,6 @@
 #include "embedding.hh"
 #include "reparametrization.hh"
 #include "projection.hh"
-#include "delaunay.hh"
 #include "translation.hh"
 
 /// FIXME Do cleaning pass
@@ -193,11 +192,13 @@ OverlayMesh<Scalar>
 build_overlay_mesh(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv,
   const std::vector<Scalar>& Theta_hat)
 {
   std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
   Mesh<Scalar> m = FV_to_double(
-    V, F, V, F, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+    V, F, uv, F_uv, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 	return OverlayMesh<Scalar>(m);
 }
 
@@ -212,8 +213,10 @@ InterpolationMesh::InterpolationMesh()
 InterpolationMesh::InterpolationMesh(
   const Eigen::MatrixXd& V,
   const Eigen::MatrixXi& F,
+  const Eigen::MatrixXd& uv,
+  const Eigen::MatrixXi& F_uv,
   const std::vector<Scalar>& Theta_hat)
-	: m_overlay_mesh(build_overlay_mesh(V, F, Theta_hat))
+	: m_overlay_mesh(build_overlay_mesh(V, F, uv, F_uv, Theta_hat))
 {
 	// Build the (trivial) conformal scale factors and scaling matrix
 	Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
@@ -954,77 +957,5 @@ overlay_has_all_original_halfedges(
 
   return (num_missing_original_halfedges == 0);
 }
-
-
-
-#ifdef PYBIND
-std::tuple<
-  InterpolationMesh, // interpolation_mesh,
-  InterpolationMesh // reverse_interpolation_mesh
->
-interpolate_penner_coordinates_pybind(
-	const Mesh<Scalar> &mesh,
-	const VectorX &halfedge_metric_coords,
-	const VectorX &scale_factors
-) { 
-  InterpolationMesh interpolation_mesh;
-  InterpolationMesh reverse_interpolation_mesh;
-	interpolate_penner_coordinates(mesh, halfedge_metric_coords, scale_factors,
-	  interpolation_mesh, reverse_interpolation_mesh);
-	return std::make_tuple(interpolation_mesh, reverse_interpolation_mesh);
-}
-
-Eigen::MatrixXd
-interpolate_vertex_positions_pybind(
-  const Eigen::MatrixXd& V,
-	const std::vector<int> vtx_reindex,
-  const InterpolationMesh &interpolation_mesh,
-  const InterpolationMesh &reverse_interpolation_mesh
-) {
-	Eigen::MatrixXd V_overlay;
-	interpolate_vertex_positions(V, vtx_reindex, interpolation_mesh, reverse_interpolation_mesh,
-		V_overlay);
-	return V_overlay;
-}
-
-std::vector<std::pair<int, int>>
-find_origin_endpoints_pybind(
-  OverlayMesh<Scalar> &overlay_mesh
-) {
-	std::vector<std::pair<int, int>> endpoints;
-	find_origin_endpoints<Scalar>(overlay_mesh, endpoints);
-	return endpoints;
-}
-#endif
-
-
-/*
-Eigen::MatrixXd get_per_corner_uv(const std::vector<std::vector<int>> &F,
-                                  const std::vector<std::vector<int>> &Fuv,
-                                  const Eigen::MatrixXd &uv)
-
-{
-    std::vector<int> next_he;
-    std::vector<int> opp;
-    std::vector<int> bnd_loops;
-    std::vector<int> vtx_reindex;
-    Connectivity C;
-    FV_to_NOB(F, next_he, opp, bnd_loops, vtx_reindex);
-    NOB_to_connectivity(next_he, opp, bnd_loops, C);
-
-        std::vector<int> u(next_he.size(), 0);
-        std::vector<int> v(next_he.size(), 0);
-        for (int i = 0; i < Fuv.size(); ++i)
-    {
-                int hh = C.f2he[i];
-                u[hh] = uv[Fuv[i,1],0];
-                v[hh] = uv[Fuv[i,1],1];
-                u[n[hh]] = uv[Fuv[i,2],0];
-                v[n[hh]] = uv[Fuv[i,2],1];
-                u[n[next_he[hh]]] = uv[Fuv[i,0],0];
-    }
-
-    return std::make_tuple()
-*/
 
 }

@@ -2,7 +2,6 @@
 
 #include "area.hh"
 #include "embedding.hh"
-#include "delaunay.hh"
 
 namespace CurvatureMetric
 {

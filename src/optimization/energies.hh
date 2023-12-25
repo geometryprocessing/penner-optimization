@@ -16,13 +16,41 @@ namespace CurvatureMetric {
 // Halfedge Functions
 // ******************
 
+/// Find the gradient of the best fit conformal energy.
+///
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: coordinates for the current metric
+/// @return Jacobian of scale distortion energy per face with respect to the coordinates
+VectorX
+scale_distortion_direction(const DifferentiableConeMetric &target_cone_metric, const VectorX &metric_coords);
+
+/// Compute the symmetric block energy matrix for the surface Hencky strain
+/// energy in terms of faces. The following correspondences for matrix indices
+/// are used:
+///     3f + 0: m.h[f]
+///     3f + 1: m.n[m.h[f]]
+///     3f + 2: m.n[m.n[m.h[f]]]
+///
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @return 3|F|x3|F| energy matrix
+MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric &target_cone_metric);
+
+/// Compute the inverse of the symmetric block energy matrix for the surface Hencky strain
+/// energy in terms of faces. The following correspondences for matrix indices
+/// are used:
+///     3f + 0: m.h[f]
+///     3f + 1: m.n[m.h[f]]
+///     3f + 2: m.n[m.n[m.h[f]]]
+///
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @return 3|F|x3|F| energy matrix inverse
+MatrixX surface_hencky_strain_energy_inverse(const DifferentiableConeMetric &target_cone_metric);
+
 /// Compute the first metric tensor invariant for the mesh m with log edge
 /// lengths_full lambdas and target log edge lengths target_log_length_coords.
 ///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] target_log_length_coords: target log lengths for the original
-/// mesh in m
-/// @param[in] log_length_coords: log lengths for the original mesh in m
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: metric coordinates for the mesh 
 /// @param[out] f2J1: per face array for the first metric tensor invariant
 /// @param[out] J_f2J1: Jacobian with respect to log_length_coords for the first
 /// metric tensor invariant
@@ -38,10 +66,8 @@ first_invariant(const DifferentiableConeMetric &target_cone_metric,
 /// log edge lengths log_length_coords and target log edge lengths
 /// target_log_length_coords.
 ///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] target_log_length_coords: target log lengths for the original
-/// mesh in m
-/// @param[in] log_length_coords: log lengths for the original mesh in m
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: metric coordinates for the mesh 
 /// @param[out] f2J2sq: per face array for the squared second metric tensor
 /// invariant
 /// @param[out] J_f2J2sq: Jacobian for the squared second metric tensor
@@ -60,10 +86,8 @@ second_invariant_squared(const DifferentiableConeMetric &target_cone_metric,
 /// where sigma_i are the singular values of the face deformation
 /// transformation.
 ///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] target_log_length_coords: target log lengths for the original
-/// mesh in m
-/// @param[in] log_length_coords: log lengths for the  original mesh in m
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: metric coordinates for the mesh 
 /// @param[out] f2energy: metric distortion energy per face
 /// @param[out] J_f2energy: Jacobian of metric distortion energy per face with
 /// respect to log_length_coords
@@ -80,10 +104,8 @@ metric_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
 /// the per face metric distortion measure (sigma_1 * sigma_2 - 1)^2, where
 /// sigma_i are the singular values of the face deformation transformation.
 ///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] target_log_length_coords: target log lengths for the original
-/// mesh in m
-/// @param[in] log_length_coords: log lengths for the  original mesh in m
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: metric coordinates for the mesh 
 /// @param[out] f2energy: area distortion energy per face
 /// @param[out] J_f2energy: Jacobian of area distortion energy per face with
 /// respect to log_length_coords
@@ -101,10 +123,8 @@ area_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
 /// where sigma_i
 ///  are the singular values of the face deformation transformation.
 ///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] target_log_length_coords: target log lengths for the original
-/// mesh in m
-/// @param[in] log_length_coords: log lengths for the  original mesh in m
+/// @param[in] target_cone_metric: target mesh with differentiable metric
+/// @param[in] metric_coords: metric coordinates for the mesh 
 /// @param[out] f2energy: symmetric dirichlet energy per face
 /// @param[out] J_f2energy: Jacobian of symmetric dirichlet energy per face with
 /// respect to log_length_coords
@@ -116,33 +136,38 @@ symmetric_dirichlet_energy(const DifferentiableConeMetric &target_cone_metric,
                            MatrixX& J_f2energy,
                            bool need_jacobian = false);
 
-/// Compute the symmetric block energy matrix for the surface Hencky strain
-/// energy in terms of faces. The following correspondences for matrix indices
-/// are used:
-///     3f + 0: m.h[f]
-///     3f + 1: m.n[m.h[f]]
-///     3f + 2: m.n[m.n[m.h[f]]]
-///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] log_length_coords: log lengths for the original mesh in m
-/// @param[out] M: 3|F|x3|F| energy matrix
-MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric &target_cone_metric);
-
-/// Compute the inverse of the symmetric block energy matrix for the surface Hencky strain
-/// energy in terms of faces. The following correspondences for matrix indices
-/// are used:
-///     3f + 0: m.h[f]
-///     3f + 1: m.n[m.h[f]]
-///     3f + 2: m.n[m.n[m.h[f]]]
-///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] log_length_coords: log lengths for the original mesh in m
-/// @param[out] inverse_M: 3|F|x3|F| energy inverse matrix
-MatrixX surface_hencky_strain_energy_inverse(const DifferentiableConeMetric &target_cone_metric);
-
 // ************
 // VF Functions
 // ************
+
+/// Compute the 3x3 energy matrix for the surface Hencky strain for a single face.
+/// Length indices correspond to the opposite angle.
+void
+triangle_surface_hencky_strain_energy(
+  const std::array<Scalar, 3> &lengths,
+  const std::array<Scalar, 3> &cotangents,
+  Scalar face_area,
+  Eigen::Matrix<Scalar, 3, 3> &face_energy_matrix
+);
+
+// Compute the symmetric block energy matrix for the surface Hencky strain
+// energy in terms of faces. The following correspondences for matrix indices
+// are used:
+//     3f + 0: m.h[f]
+//     3f + 1: m.n[m.h[f]]
+//     3f + 2: m.n[m.n[m.h[f]]]
+//
+// param[in] m: (possibly symmetric) mesh
+// param[in] lambdas_full: log lengths for the original mesh in m
+// param[out] M: energy matrix
+// FIXME Determine what this does and where it is used
+// TODO Make this actually take in VF and compute area, cotalpha, and l as in python
+// TODO MAKE void with reference
+VectorX
+surface_hencky_strain_energy(const VectorX& area,
+                                const MatrixX& cot_alpha,
+                                const MatrixX& l,
+                                const MatrixX& delta_ll);
 
 /// Compute the per face first metric tensor invariant for a VF mesh with uv embedding
 /// given by the trace of the determinant.
@@ -199,35 +224,6 @@ symmetric_dirichlet_energy(
   const Eigen::MatrixXi &F_uv,
   VectorX& f2energy
 );
-
-/// Compute the 3x3 energy matrix for the surface Hencky strain for a single face.
-/// Length indices correspond to the opposite angle.
-void
-triangle_surface_hencky_strain_energy(
-  const std::array<Scalar, 3> &lengths,
-  const std::array<Scalar, 3> &cotangents,
-  Scalar face_area,
-  Eigen::Matrix<Scalar, 3, 3> &face_energy_matrix
-);
-
-// Compute the symmetric block energy matrix for the surface Hencky strain
-// energy in terms of faces. The following correspondences for matrix indices
-// are used:
-//     3f + 0: m.h[f]
-//     3f + 1: m.n[m.h[f]]
-//     3f + 2: m.n[m.n[m.h[f]]]
-//
-// param[in] m: (possibly symmetric) mesh
-// param[in] lambdas_full: log lengths for the original mesh in m
-// param[out] M: energy matrix
-// FIXME Determine what this does and where it is used
-// TODO Make this actually take in VF and compute area, cotalpha, and l as in python
-// TODO MAKE void with reference
-VectorX
-surface_hencky_strain_energy(const VectorX& area,
-                                const MatrixX& cot_alpha,
-                                const MatrixX& l,
-                                const MatrixX& delta_ll);
 
 #ifdef PYBIND
 

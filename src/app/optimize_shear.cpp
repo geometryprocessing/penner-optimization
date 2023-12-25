@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	Mesh<Scalar> m;
 	std::vector<int> vtx_reindex;
 	VectorX reduced_metric_target;
-	generate_initial_mesh(V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+	generate_initial_mesh(V, F, V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
 
 	// Get initial metric from file or target
 	VectorX reduced_metric_init;

@@ -28,10 +28,12 @@ struct ReductionMaps
   MatrixX projection;
 
   // List of fixed and free vertices for the constraint
+  // TODO: This should be part of the mesh, not the reduction maps
   std::vector<int> fixed_v;
   std::vector<int> free_v;
 
   // List of fixed and free edge variables
+  // TODO: This should be part of the mesh, not the reduction maps
   std::vector<int> fixed_e;
   std::vector<int> free_e;
 

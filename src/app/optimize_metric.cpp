@@ -5,7 +5,6 @@
 #include "energy_functor.hh"
 #include "logging.hh"
 #include "optimization_interface.hh"
-#include "targets.hh"
 #include "refinement.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
@@ -34,17 +33,20 @@ int main(int argc, char *argv[])
   igl::readOBJ(input_filename, V, uv, N, F, FT, FN);
 	
 	// Get input angles
-	std::vector<Scalar> Th_hat_init, Th_hat;
+	std::vector<Scalar> Th_hat_init;
 	spdlog::info("Using cone angles at {}", Th_hat_filename);
 	read_vector_from_file(Th_hat_filename, Th_hat_init);
-	correct_cone_angles(Th_hat_init, Th_hat);
+	std::vector<Scalar> Th_hat = correct_cone_angles(Th_hat_init);
 
 	// Get initial mesh for optimization
-	std::vector<int> vtx_reindex;
-	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, Th_hat, vtx_reindex);
+	std::vector<int> free_cones = {};
+	bool fix_boundary = false;
+	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, free_cones, fix_boundary, false);
+	std::unique_ptr<DifferentiableConeMetric> eucl_cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, free_cones, fix_boundary, true);
+	DiscreteMetric discrete_metric(*eucl_cone_metric, eucl_cone_metric->get_metric_coordinates());
 
 	// Get energy
-	LogLengthEnergy opt_energy(*cone_metric);
+	QuadraticSymmetricDirichletEnergy opt_energy(*cone_metric, discrete_metric);
 	
 	// Get initial metric from file or target
 	VectorX reduced_metric_init;
@@ -68,18 +70,20 @@ int main(int argc, char *argv[])
 	auto proj_params = std::make_shared<ProjectionParameters>();
 	auto opt_params = std::make_shared<OptimizationParameters>();
 	opt_params->output_dir = output_dir;
-	opt_params->num_iter = 5;
+	opt_params->num_iter = 100;
+	opt_params->use_optimal_projection = true;
 
 	// Optimize the metric
-	VectorX optimized_reduced_metric_coords = optimize_metric(
+	std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric = optimize_metric(
 		*cone_metric,
 		opt_energy,
 		proj_params,
 		opt_params);
+	VectorX optimized_metric_coords = optimized_cone_metric->get_metric_coordinates();
 
 	// Write the output
-	std::string output_filename = join_path(output_dir, "reduced_optimized_metric_coords");
-	write_vector(optimized_reduced_metric_coords, output_filename, 17);
+	std::string output_filename = join_path(output_dir, "optimized_metric_coords");
+	write_vector(optimized_metric_coords, output_filename, 17);
 
 	// Generate overlay VF mesh with parametrization
 	bool do_best_fit_scaling = false;
@@ -88,8 +92,7 @@ int main(int argc, char *argv[])
 		F,
 		Th_hat,
 		*cone_metric,
-		optimized_reduced_metric_coords,
-		vtx_reindex,
+		optimized_metric_coords,
 		do_best_fit_scaling
 	);
   OverlayMesh<Scalar> m_o = std::get<0>(vf_res);

@@ -60,7 +60,6 @@ struct OptimizationParameters
   bool require_gradient_proj_negative = true;
   Scalar max_angle_incr = INF;
   Scalar max_energy_incr = 1e-8;
-  Scalar max_ratio_incr = INF;
 
   // Optimization method choices
   std::string direction_choice = "gradient";

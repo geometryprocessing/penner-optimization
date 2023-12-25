@@ -40,7 +40,6 @@
 #include "conformal_ideal_delaunay/Sampling.hh"
 #include "constraint.hh"
 #include "convergence.hh"
-#include "delaunay.hh"
 #include "embedding.hh"
 #include "energies.hh"
 #include "energy_functor.hh"
@@ -54,7 +53,6 @@
 #include "refinement.hh"
 #include "shapes.hh"
 #include "shear.hh"
-#include "targets.hh"
 #include "translation.hh"
 #include "visualization.hh"
 #include <highfive/H5Easy.hpp>
@@ -123,7 +121,6 @@ init_classes_pybind(pybind11::module& m)
     .def_readwrite("cone_weight", &OptimizationParameters::cone_weight)
     .def_readwrite("max_grad_range", &OptimizationParameters::max_grad_range)
     .def_readwrite("max_energy_incr", &OptimizationParameters::max_energy_incr)
-    .def_readwrite("max_ratio_incr", &OptimizationParameters::max_ratio_incr)
     .def_readwrite("max_beta", &OptimizationParameters::max_beta)
     .def_readwrite("direction_choice",
                    &OptimizationParameters::direction_choice)
@@ -226,14 +223,40 @@ init_classes_pybind(pybind11::module& m)
 
   pybind11::class_<EnergyFunctor>(m, "EnergyFunctor");
 
+  pybind11::class_<LogLengthEnergy, EnergyFunctor>(m, "LogLengthEnergy")
+    .def(pybind11::init<const DifferentiableConeMetric &, int>());
+
+  pybind11::class_<QuadraticSymmetricDirichletEnergy, EnergyFunctor>(m, "QuadraticSymmetricDirichletEnergy")
+    .def(pybind11::init<const DifferentiableConeMetric &, const DiscreteMetric&>());
+
+  pybind11::class_<SymmetricDirichletEnergy, EnergyFunctor>(m, "SymmetricDirichletEnergy")
+    .def(pybind11::init<const DifferentiableConeMetric &, const DiscreteMetric&>());
+
+  pybind11::class_<LogScaleEnergy, EnergyFunctor>(m, "LogScaleEnergy")
+    .def(pybind11::init<const DifferentiableConeMetric &>());
+
   pybind11::class_<InterpolationMesh>(m, "InterpolationMesh")
     .def(pybind11::init<const Eigen::MatrixXd &, // V
                         const Eigen::MatrixXi &, // F
+                        const Eigen::MatrixXd &, // uv
+                        const Eigen::MatrixXi &, // F_uv
                         const std::vector<Scalar>&  // Theta_hat
                         >())
     .def("get_overlay_mesh",
       &InterpolationMesh::get_overlay_mesh,
       pybind11::return_value_policy::copy);
+
+  pybind11::class_<DifferentiableConeMetric, std::unique_ptr<DifferentiableConeMetric>, Mesh<Scalar>>(
+    m, "DifferentiableConeMetric")
+    .def("get_metric_coordinates",
+      &DifferentiableConeMetric::get_metric_coordinates)
+    .def("get_reduced_metric_coordinates",
+      &DifferentiableConeMetric::get_reduced_metric_coordinates)
+    .def("set_metric_coordinates",
+      &DifferentiableConeMetric::set_metric_coordinates);
+
+  pybind11::class_<DiscreteMetric, DifferentiableConeMetric>(m, "DiscreteMetric")
+    .def(pybind11::init<const Mesh<Scalar> &, const VectorX &>());
 
   pybind11::class_<RefinementMesh>(m, "RefinementMesh")
     .def(pybind11::init<const Eigen::MatrixXd &, // V
@@ -309,28 +332,28 @@ init_energies_pybind(pybind11::module& m)
 void
 init_optimization_pybind(pybind11::module& m)
 {
-  m.def("generate_VF_mesh_from_metric",
-        &generate_VF_mesh_from_metric,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("correct_cone_angles",
-        &correct_cone_angles_pybind,
+        &correct_cone_angles,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("consistent_overlay_mesh_to_VL",
-        &consistent_overlay_mesh_to_VL,
+  m.def("generate_initial_mesh",
+        &generate_initial_mesh,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("compute_log_edge_lengths",
-        &compute_log_edge_lengths_pybind,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
-  m.def("compute_penner_coordinates",
-        &compute_penner_coordinates_pybind,
+  m.def("project_metric_to_constraint",
+        &project_metric_to_constraint,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
   m.def("optimize_metric",
         &optimize_metric,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
+  m.def("optimize_shear_basis_coordinates",
+        &optimize_shear_basis_coordinates,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
+  m.def("generate_VF_mesh_from_metric",
+        &generate_VF_mesh_from_metric,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
@@ -353,20 +376,6 @@ init_parameterization_pybind(pybind11::module& m)
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 }
-
-// FIXME Move
-std::vector<int>
-make_delaunay_pybind(Mesh<Scalar>& C, bool ptolemy = true)
-{
-  DelaunayStats delaunay_stats;
-  SolveStats<Scalar> solve_stats;
-  VectorX u;
-  u.setZero(C.n_ind_vertices());
-  ConformalIdealDelaunay<Scalar>::MakeDelaunay(
-    C, u, delaunay_stats, solve_stats, ptolemy);
-  return delaunay_stats.flip_seq;
-}
-
 
 void save_simplify_overlay_input(std::string fname,
                                  std::vector<std::pair<int,int>> endpoints,
@@ -441,11 +450,6 @@ PYBIND11_MODULE(optimization_py, m)
   init_optimization_pybind(m);
   init_parameterization_pybind(m);
 
-  m.def("make_delaunay",
-        &make_delaunay_pybind,
-        "Make mesh Delauany with optional Euclidean flips",
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
   m.def("save_simplify_overlay_input", 
         &save_simplify_overlay_input,
         "Save simplify overlay mesh input to file",
