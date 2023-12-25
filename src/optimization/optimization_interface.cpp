@@ -242,6 +242,7 @@ namespace CurvatureMetric
 			const std::vector<Scalar> &Th_hat,
 			const DifferentiableConeMetric &initial_cone_metric,
 			const VectorX &metric_coords,
+      std::vector<bool> cut_h,
 			bool do_best_fit_scaling)
 	{
 		// Get mesh with vertex reindexing
@@ -292,8 +293,7 @@ namespace CurvatureMetric
 		}
 
 		// Get layout topology from original mesh
-		std::vector<bool> is_cut_place_holder(0);
-		std::vector<bool> is_cut = compute_layout_topology(m, is_cut_place_holder);
+		std::vector<bool> is_cut = compute_layout_topology(m, cut_h);
 
 		// Convert overlay mesh to VL format
 		spdlog::trace("Getting layout");

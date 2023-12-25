@@ -82,6 +82,7 @@ namespace CurvatureMetric
       const std::vector<Scalar> &Th_hat,
       const DifferentiableConeMetric &initial_cone_metric,
       const VectorX &reduced_metric_coords,
+      std::vector<bool> = {},
       bool do_best_fit_scaling = false);
 
 }

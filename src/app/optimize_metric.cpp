@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	write_vector(optimized_metric_coords, output_filename, 17);
 
 	// Generate overlay VF mesh with parametrization
+	std::vector<bool> is_cut = {};
 	bool do_best_fit_scaling = false;
 	auto vf_res = generate_VF_mesh_from_metric(
 		V,
@@ -94,6 +95,7 @@ int main(int argc, char *argv[])
 		Th_hat,
 		*cone_metric,
 		optimized_metric_coords,
+		is_cut,
 		do_best_fit_scaling
 	);
   OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
