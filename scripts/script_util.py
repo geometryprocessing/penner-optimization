@@ -230,8 +230,9 @@ def generate_mesh(args, fname=None):
         uv = targets.generate_tutte_param(v3d, f)
     
     # Create halfedge mesh and lambdas
-    C_embed = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
-    C = opt.generate_initial_mesh(v3d, f, uv, fuv, Th_hat, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
+    vtx_reindex = []
+    C_embed = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
+    C = opt.generate_initial_mesh(v3d, f, uv, fuv, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
 
     # Build energies (default to 2-norm)
     energy_choice = args['energy_choice']
@@ -240,10 +241,10 @@ def generate_mesh(args, fname=None):
     elif (energy_choice == "scale_distortion"):
         opt_energy = opt.LogScaleEnergy(C_embed)
     elif (energy_choice == "surface_hencky_strain"):
-        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], True)
+        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], True)
         opt_energy = opt.QuadraticSymmetricDirichletEnergy(C_embed, C_eucl)
     elif (energy_choice == "sym_dirichlet"):
-        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, free_cones, args['free_bd_angles'], True)
+        C_eucl = opt.generate_initial_mesh(v3d, f, v3d, f, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], True)
         opt_energy = opt.SymmetricDirichletEnergy(C_embed, C_eucl)
     else:
         opt_energy = opt.LogLengthEnergy(C_embed, 2)

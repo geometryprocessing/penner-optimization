@@ -39,10 +39,11 @@ int main(int argc, char *argv[])
 	std::vector<Scalar> Th_hat = correct_cone_angles(Th_hat_init);
 
 	// Get initial mesh for optimization
+	std::vector<int> vtx_reindex;
 	std::vector<int> free_cones = {};
 	bool fix_boundary = false;
-	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, free_cones, fix_boundary, false);
-	std::unique_ptr<DifferentiableConeMetric> eucl_cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, free_cones, fix_boundary, true);
+	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, false);
+	std::unique_ptr<DifferentiableConeMetric> eucl_cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, true);
 	DiscreteMetric discrete_metric(*eucl_cone_metric, eucl_cone_metric->get_metric_coordinates());
 
 	// Get energy

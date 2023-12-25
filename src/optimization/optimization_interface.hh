@@ -12,6 +12,7 @@ namespace CurvatureMetric
   /// @param[in] uv: initial metric vertices
   /// @param[in] F_uv: initial metric faces
   /// @param[in] Th_hat: target angles
+  /// @param[out] vtx_reindex: vertices reindexing for new halfedge mesh
   /// @param[in] free_cones: (optional) vertex cones to leave unconstrained
   /// @param[in] fix_boundary: (optional) if true, fix boundary edge lengths
   /// @param[in] use_discrete_metric: (optional) if true, use log edge lengths instead of penner coordinates
@@ -23,9 +24,11 @@ namespace CurvatureMetric
       const Eigen::MatrixXd& uv,
       const Eigen::MatrixXi& F_uv,
       const std::vector<Scalar> &Th_hat,
-      std::vector<int> free_cones = {},
-      bool fix_boundary = false,
-      bool use_discrete_metric = false);
+      std::vector<int>& vtx_reindex,
+      std::vector<int> free_cones={},
+      bool fix_boundary=false,
+      bool use_discrete_metric=false);
+
 
   /// Correct cone angles that are multiples of pi/60 to machine precision.
   ///
