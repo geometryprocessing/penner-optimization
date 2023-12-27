@@ -123,6 +123,7 @@ namespace CurvatureMetric
 																std::vector<std::vector<Scalar>> &V_overlay,
 																std::vector<int> &vtx_reindex,
 																std::vector<std::pair<int, int>> &endpoints,
+																const std::vector<bool> &is_cut_orig,
 																const std::vector<bool> &is_cut)
 	{
 		// get cones and bd
@@ -166,7 +167,7 @@ namespace CurvatureMetric
 		spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
 		// get layout
-		auto layout_res = get_consistent_layout(mo, u, cones, is_cut);
+		auto layout_res = get_consistent_layout(mo, u, cones, is_cut_orig, is_cut);
 		auto u_o = std::get<0>(layout_res);
 		auto v_o = std::get<1>(layout_res);
 		auto is_cut_h = std::get<2>(layout_res);
@@ -341,6 +342,7 @@ namespace CurvatureMetric
 				V_overlay_vec,
 				vtx_reindex_mutable,
 				endpoints,
-				is_cut);
+				is_cut,
+				{});
 	}
 }

@@ -66,6 +66,7 @@ consistent_overlay_mesh_to_VL(
     std::vector<std::vector<Scalar>>& V_overlay,
     std::vector<int>& vtx_reindex,
     std::vector<std::pair<int, int>>& endpoints,
+    const std::vector<bool> &is_cut_orig,
     const std::vector<bool>& is_cut);
 
 /// Given a mesh with initial target and final optimized metric coordinates, generate a corresponding
@@ -98,7 +99,7 @@ std::
         const std::vector<Scalar>& Th_hat,
         const DifferentiableConeMetric& initial_cone_metric,
         const VectorX& reduced_metric_coords,
-        std::vector<bool> = {},
+        std::vector<bool> is_cut = {},
         bool do_best_fit_scaling = false);
 
 } // namespace CurvatureMetric

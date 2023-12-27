@@ -126,6 +126,7 @@ get_consistent_layout(
              OverlayMesh<Scalar> &m_o,
              const std::vector<Scalar> &u_vec,
              std::vector<int> singularities,
+             const std::vector<bool>& is_cut_orig,
              const std::vector<bool>& is_cut);
 
 #ifdef PYBIND

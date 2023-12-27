@@ -731,6 +731,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vec
              OverlayMesh<Scalar> &m_o,
              const std::vector<Scalar> &u_vec,
              std::vector<int> singularities,
+             const std::vector<bool>& is_cut_orig,
              const std::vector<bool>& is_cut)
 {
   // Get original overlay face labels 
@@ -751,10 +752,10 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vec
   }
 
   mc.type = std::vector<char>(mc.n_halfedges(), 0);
-  std::vector<bool> _is_cut_place_holder; // TODO Remove
-  auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
-  //std::vector<bool> _is_cut_place_holder = is_cut;
-  //auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder);
+  //std::vector<bool> _is_cut_place_holder; // TODO Remove
+  //auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
+  std::vector<bool> _is_cut_place_holder = is_cut;
+  auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder);
   auto _u_c = std::get<0>(layout_res);
   auto _v_c = std::get<1>(layout_res);
   auto is_cut_c = std::get<2>(layout_res);
@@ -807,7 +808,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vec
 
   // Pullback cut on the original mesh to the overlay
   std::vector<bool> is_cut_poly;
-  pullback_cut_to_overlay(m_o, is_cut, is_cut_poly);
+  pullback_cut_to_overlay(m_o, is_cut_orig, is_cut_poly);
   Eigen::MatrixXi F_poly, F_uv_poly;
   compute_layout_faces(mc.n_vertices(), m_o, is_cut_poly, F_poly, F_uv_poly);
 	int num_poly_components = count_components(F_uv_poly);
