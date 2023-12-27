@@ -46,4 +46,32 @@ view_flipped_triangles(
 #endif // ENABLE_VISUALIZATION
 }
 
+void
+view_halfedge_mesh_layout(
+  const Mesh<Scalar>& m,
+  const std::vector<Scalar>& u_vec,
+  const std::vector<Scalar>& v_vec
+) {
+    Eigen::VectorXd u, v;
+    CurvatureMetric::convert_std_to_eigen_vector(u_vec, u);
+    CurvatureMetric::convert_std_to_eigen_vector(v_vec, v);
+    Eigen::MatrixXd uv(u.size(), 3);
+    uv.col(0) = u;
+    uv.col(1) = v;
+    Eigen::MatrixXi F(m.n_faces(), 3);
+    for (int f = 0; f < m.n_faces(); ++f) {
+        int hij = m.h[f];
+        int hjk = m.n[hij];
+        int hki = m.n[hjk];
+        F(f, 0) = hij;
+        F(f, 1) = hjk;
+        F(f, 2) = hki;
+    }
+#if ENABLE_VISUALIZATION
+    polyscope::init();
+    polyscope::registerSurfaceMesh2D("layout", uv, F);
+    polyscope::show();
+#endif
+}
+
 }

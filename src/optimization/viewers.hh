@@ -20,4 +20,16 @@ view_flipped_triangles(
   const Eigen::MatrixXi& F_uv
 );
 
+/// View a layout for a mesh with uv coordinates assigned per halfedge.
+///
+/// @param[in] m: mesh
+/// @param[in] u_vec: per-halfedge u coordinates
+/// @param[in] v_vec: per-halfedge v coordinates
+void
+view_halfedge_mesh_layout(
+  const Mesh<Scalar>& m,
+  const std::vector<Scalar>& u_vec,
+  const std::vector<Scalar>& v_vec
+);
+
 }

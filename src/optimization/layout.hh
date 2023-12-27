@@ -99,18 +99,18 @@ extract_embedded_mesh(
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar> &m, const std::vector<bool>& is_cut_h, int start_h = -1);
 
-/// Given a cut defined on the original mesh, pull it back to a cut defined on
+/// Given a cut defined on the original or current mesh, pull it back to a cut defined on
 /// an overlay mesh for the given mesh (possibly after flips)
 /// 
 /// @param[in] m_o: overlay mesh data structure
-/// @param[in] is_cut_h: cuts on the original mesh
-/// @param[out] is_cut_o: cuts on the overlay mesh
-void
+/// @param[in] is_cut_h: cuts on the original or current mesh
+/// @param[in] is_original_cut: if true, use cut mask on the original mesh
+/// @return cuts on the overlay mesh
+std::vector<bool>
 pullback_cut_to_overlay(
   OverlayMesh<Scalar> &m_o,
   const std::vector<bool>& is_cut_h,
-  std::vector<bool>& is_cut_o
-);
+  bool is_original_cut=true);
 
 /**
  * @brief Given overlay mesh with associated flat metric compute the layout
