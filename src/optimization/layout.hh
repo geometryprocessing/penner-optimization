@@ -121,7 +121,7 @@ pullback_cut_to_overlay(
  * @param singularities, list of singularity vertex ids
  * @return u_o, v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
  */
-std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>>
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
 get_consistent_layout(
              OverlayMesh<Scalar> &m_o,
              const std::vector<Scalar> &u_vec,

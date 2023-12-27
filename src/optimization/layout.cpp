@@ -727,7 +727,7 @@ check_if_flipped(
   }
 }
 
-std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_consistent_layout(
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>> get_consistent_layout(
              OverlayMesh<Scalar> &m_o,
              const std::vector<Scalar> &u_vec,
              std::vector<int> singularities,
@@ -737,22 +737,24 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_cons
   auto f_labels = get_overlay_face_labels(m_o);
   
   // Compute layout of the underlying flipped mesh
-  std::vector<bool> _is_cut_place_holder;
   auto mc = m_o.cmesh();
   m_o.garbage_collection();
   if (!m_o.check(&mc))
   {
     spdlog::error("Invalid overlay mesh for layout");
-    return std::make_tuple(std::vector<Scalar>(), std::vector<Scalar>(), std::vector<bool>());
+    return std::make_tuple(std::vector<Scalar>(), std::vector<Scalar>(), std::vector<bool>(), std::vector<bool>());
   }
   if (!overlay_has_all_original_halfedges(m_o))
   {
     spdlog::error("Overlay mesh is missing an original edge");
-    return std::make_tuple(std::vector<Scalar>(), std::vector<Scalar>(), std::vector<bool>());
+    return std::make_tuple(std::vector<Scalar>(), std::vector<Scalar>(), std::vector<bool>(), std::vector<bool>());
   }
 
   mc.type = std::vector<char>(mc.n_halfedges(), 0);
+  std::vector<bool> _is_cut_place_holder; // TODO Remove
   auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
+  //std::vector<bool> _is_cut_place_holder = is_cut;
+  //auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder);
   auto _u_c = std::get<0>(layout_res);
   auto _v_c = std::get<1>(layout_res);
   auto is_cut_c = std::get<2>(layout_res);
@@ -845,7 +847,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_cons
   // Trim unnecessary branches of the cut graph
   trim_open_branch(m_o, f_labels, singularities, is_cut_o);
 
-  return std::make_tuple(_u_o, _v_o, is_cut_o);
+  return std::make_tuple(_u_o, _v_o, is_cut_c, is_cut_o);
   
 }
 

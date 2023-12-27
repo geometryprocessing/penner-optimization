@@ -104,15 +104,18 @@ namespace CurvatureMetric
 				F_uv);
 	}
 
+
 	std::tuple<
-			std::vector<std::vector<Scalar>>, // V_out
-			std::vector<std::vector<int>>,		// F_out
-			std::vector<Scalar>,							// layout u (per vertex)
-			std::vector<Scalar>,							// layout v (per vertex)
-			std::vector<std::vector<int>>,		// FT_out
-			std::vector<bool>,								// is_cut_o
-			std::vector<int>,									// Fn_to_F
-			std::vector<std::pair<int, int>>> // map from new vertices to original endpoints
+			OverlayMesh<Scalar>,						 // m_o
+			Eigen::MatrixXd,								 // V_o
+			Eigen::MatrixXi,								 // F_o
+			Eigen::MatrixXd,								 // uv_o
+			Eigen::MatrixXi,								 // FT_o
+			std::vector<bool>,							 // is_cut_h
+			std::vector<bool>,							 // is_cut_o
+			std::vector<int>,								 // Fn_to_F
+			std::vector<std::pair<int, int>> // endpoints_o
+			>
 	consistent_overlay_mesh_to_VL(const Eigen::MatrixXi &F,
 																const std::vector<Scalar> &Theta_hat,
 																OverlayMesh<Scalar> &mo,
@@ -166,7 +169,8 @@ namespace CurvatureMetric
 		auto layout_res = get_consistent_layout(mo, u, cones, is_cut);
 		auto u_o = std::get<0>(layout_res);
 		auto v_o = std::get<1>(layout_res);
-		auto is_cut_o = std::get<2>(layout_res);
+		auto is_cut_h = std::get<2>(layout_res);
+		auto is_cut_o = std::get<3>(layout_res);
 
 		// get output VF and metric
 		auto FVFT_res = get_FV_FTVT(mo, endpoints, is_cut_o, V_overlay, u_o, v_o);
@@ -222,7 +226,35 @@ namespace CurvatureMetric
 			endpoints_out[i] = std::make_pair(a, b);
 		}
 
-		return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut_o, Fn_to_F, endpoints_out);
+		// Convert vector formats to matrices
+		Eigen::MatrixXd V_o, uv_o;
+		Eigen::VectorXd u_o_col, v_o_col;
+		Eigen::MatrixXi F_o, FT_o;
+		convert_std_to_eigen_matrix(v3d_out, V_o);
+		convert_std_to_eigen_matrix(F_out, F_o);
+		convert_std_to_eigen_matrix(FT_out, FT_o);
+		convert_std_to_eigen_vector(u_o_out, u_o_col);
+		convert_std_to_eigen_vector(v_o_out, v_o_col);
+		uv_o.resize(u_o_col.size(), 2);
+		uv_o.col(0) = u_o_col;
+		uv_o.col(1) = v_o_col;
+
+		// Check for validity
+		if (!check_uv(V_o, F_o, uv_o, FT_o))
+		{
+			spdlog::error("Inconsistent uvs");
+		}
+
+		return std::make_tuple(
+				mo,
+				V_o,
+				F_o,
+				uv_o,
+				FT_o,
+				is_cut_h,
+				is_cut_o,
+				Fn_to_F,
+				endpoints_out);
 	}
 
 	std::tuple<
@@ -301,7 +333,7 @@ namespace CurvatureMetric
 		std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
 		convert_eigen_to_std_vector(scale_factors, u);
 		// auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec, vtx_reindex_mutable, endpoints, -1); FIXME
-		auto parametrize_res = consistent_overlay_mesh_to_VL(
+		return consistent_overlay_mesh_to_VL(
 				F,
 				Th_hat,
 				m_o,
@@ -310,44 +342,5 @@ namespace CurvatureMetric
 				vtx_reindex_mutable,
 				endpoints,
 				is_cut);
-		std::vector<std::vector<Scalar>> V_o_vec = std::get<0>(parametrize_res);
-		std::vector<std::vector<int>> F_o_vec = std::get<1>(parametrize_res);
-		std::vector<Scalar> u_o_vec = std::get<2>(parametrize_res);
-		std::vector<Scalar> v_o_vec = std::get<3>(parametrize_res);
-		std::vector<std::vector<int>> FT_o_vec = std::get<4>(parametrize_res);
-		std::vector<bool> is_cut_o = std::get<5>(parametrize_res);
-		std::vector<int> Fn_to_F = std::get<6>(parametrize_res);
-		std::vector<std::pair<int, int>> endpoints_o = std::get<7>(parametrize_res);
-
-		// Convert vector formats to matrices
-		Eigen::MatrixXd V_o, uv_o;
-		Eigen::VectorXd u_o, v_o;
-		Eigen::MatrixXi F_o, FT_o;
-		convert_std_to_eigen_matrix(V_o_vec, V_o);
-		convert_std_to_eigen_matrix(F_o_vec, F_o);
-		convert_std_to_eigen_matrix(FT_o_vec, FT_o);
-		convert_std_to_eigen_vector(u_o_vec, u_o);
-		convert_std_to_eigen_vector(v_o_vec, v_o);
-		uv_o.resize(u_o.size(), 2);
-		uv_o.col(0) = u_o;
-		uv_o.col(1) = v_o;
-
-		// Check for validity
-		if (!check_uv(V_o, F_o, uv_o, FT_o))
-		{
-			spdlog::error("Inconsistent uvs");
-		}
-
-		return std::make_tuple(
-				m_o,
-				V_o,
-				F_o,
-				uv_o,
-				FT_o,
-				is_cut,
-				is_cut_o,
-				Fn_to_F,
-				endpoints_o);
 	}
-
 }

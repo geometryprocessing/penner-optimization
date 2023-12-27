@@ -221,7 +221,6 @@ InterpolationMesh::InterpolationMesh(
 	// Build the (trivial) conformal scale factors and scaling matrix
 	Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
 	m_scale_factors.setZero(mc.n_ind_vertices());
-	m_scaling_matrix = conformal_scaling_matrix(mc);
 
 	// Mark the mesh as a valid Euclidean mesh
 	m_is_hyperbolic = false;
@@ -231,10 +230,6 @@ InterpolationMesh::InterpolationMesh(
 InterpolationMesh::InterpolationMesh(const Mesh<Scalar> &mesh, const VectorX& scale_factors, bool is_hyperbolic)
   : m_overlay_mesh(mesh), m_scale_factors(scale_factors)
 {
-	// Build the conformal scaling matrix
-	Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
-	m_scaling_matrix = conformal_scaling_matrix(mc);
-
 	// Mark the mesh as a valid Hyperbolic mesh
 	m_is_hyperbolic = is_hyperbolic;
 	m_is_valid = true;
@@ -819,7 +814,12 @@ InterpolationMesh::check_bc_values()
 bool InterpolationMesh::is_valid_interpolation_mesh()
 {
 	spdlog::trace("Checking validity");
+	// TODO Add separate variable for halfedge and edge coordinates
+	return true;
+
 	Mesh<Scalar> mesh = m_overlay_mesh.cmesh();
+
+	// TODO The below only make sense for edge coordinates (not halfedge coordinates)
 
 	// Check opposite halfedges are consistent
 	if (!check_length_consistency(mesh))
@@ -884,17 +884,7 @@ bool InterpolationMesh::are_valid_halfedge_lengths(const VectorX &halfedge_lengt
 	// Check that edge pairing and symmetry structures are respected
 	for (int h = 0; h < num_mesh_halfedges(); ++h)
 	{
-		int ho = cmesh.opp[h];
 		Scalar l = halfedge_lengths[h];
-		Scalar lo = halfedge_lengths[ho];
-		if (!float_equal(l, lo))
-		{
-			spdlog::error(
-				"Inconsistent edge pair halfedges {} and {} with lengths {} and {}",
-				h, ho, l, lo
-			);
-			return false;
-		}
 
 		// Check symmetry structure
 		if ((cmesh.type[h] == 1) || (cmesh.type[h] == 2))
