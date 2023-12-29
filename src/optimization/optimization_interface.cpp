@@ -10,6 +10,7 @@
 
 /// FIXME Do cleaning pass
 
+
 namespace CurvatureMetric
 {
 
@@ -173,11 +174,6 @@ namespace CurvatureMetric
 		auto v_o = std::get<1>(layout_res);
 		auto is_cut_h = std::get<2>(layout_res);
 		auto is_cut_o = std::get<3>(layout_res);
-	  bool view_layouts = true;
-		if (view_layouts)
-		{
-			view_halfedge_mesh_layout(mo, u_o, v_o);
-		}
 
 		// get output VF and metric
 		auto FVFT_res = get_FV_FTVT(mo, endpoints, is_cut_o, V_overlay, u_o, v_o);

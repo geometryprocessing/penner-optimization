@@ -79,11 +79,14 @@ if(RENDER_TEXTURE)
   )
 endif()
 
+if(ENABLE_VISUALIZATION)
+  add_compile_definitions(ENABLE_VISUALIZATION)
+endif()
+
 # Make main cpp library
 add_subdirectory(src/optimization)
 
 if(ENABLE_VISUALIZATION)
-  add_compile_definitions(ENABLE_VISUALIZATION)
   include(polyscope)
   target_link_libraries(MetricOptimizationLib PUBLIC
     plot

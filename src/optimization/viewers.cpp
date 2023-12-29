@@ -68,6 +68,7 @@ view_halfedge_mesh_layout(
         F(f, 2) = hki;
     }
 #if ENABLE_VISUALIZATION
+    spdlog::info("Viewing layout");
     polyscope::init();
     polyscope::registerSurfaceMesh2D("layout", uv, F);
     polyscope::show();

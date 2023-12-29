@@ -11,6 +11,7 @@
 #include "projection.hh"
 #include "refinement.hh"
 #include "translation.hh"
+#include "viewers.hh"
 
 namespace CurvatureMetric {
 
@@ -464,7 +465,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     assert(m.f[h] != -1);
 
     phi[h] = xi[h];
-    _u[h] = m.l[m.e(h)] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
+    _u[h] = m.l[h] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
     _v[h] = 0.0;
     auto done = std::vector<bool>(m.n_faces(), false);
 
@@ -512,10 +513,10 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         Eigen::Matrix<Scalar, 1, 2> p2;
         p2[0] = _u[h];
         p2[1] = _v[h];
-        assert(m.l[m.e(h)] != 0.0);
+        assert(m.l[h] != 0.0);
         Scalar l0 = Scalar(1.0);
-        Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[m.e(hn)] / m.l[m.e(h)]);
-        Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[m.e(hp)] / m.l[m.e(h)]);
+        Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[hn] / m.l[h]);
+        Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[hp] / m.l[h]);
         Eigen::Matrix<Scalar, 1, 2> pn = p1 +
                                          (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 +
                                          perp(p2 - p1) * 2 * area_from_len(1.0, l1 / l0, l2 / l0);
@@ -576,7 +577,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
                     assert(m.f[h] != -1);
 
                     phi[h] = xi[h];
-                    _u[h] = m.l[m.e(h)] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
+                    _u[h] = m.l[h] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
                     _v[h] = 0.0;
 
                     Q.push(h);
@@ -760,6 +761,11 @@ get_consistent_layout(
     for (int i = m_o.n_halfedges(); i < m_o_tri.n_halfedges(); i++) {
         m_o_tri.edge_type[i] = CURRENT_EDGE; // make sure do not use the new diagonal
     }
+    bool view_layouts = true;
+    if (view_layouts) {
+        spdlog::info("Viewing layouts");
+        view_halfedge_mesh_layout(m, u_o, v_o);
+    }
 
     // Pullback cut on the original mesh to the overlay
     bool is_original_cut = false;
@@ -769,6 +775,8 @@ get_consistent_layout(
     } else {
         is_cut_poly = pullback_cut_to_overlay(m_o, is_cut, false);
     }
+
+    // Check validity (not needed)
     Eigen::MatrixXi F_poly, F_uv_poly;
     compute_layout_faces(mc.n_vertices(), m_o, is_cut_poly, F_poly, F_uv_poly);
     int num_poly_components = count_components(F_uv_poly);
@@ -782,6 +790,8 @@ get_consistent_layout(
     for (int h = 0; h < m_o.n_halfedges(); ++h) {
         is_cut_o[h] = is_cut_poly[h];
     }
+
+    // Check validity (not needed)
     Eigen::MatrixXi F_tri, F_uv_tri;
     compute_layout_faces(mc.n_vertices(), m, is_cut_o, F_tri, F_uv_tri);
     int num_tri_components = count_components(F_uv_tri);
@@ -795,6 +805,10 @@ get_consistent_layout(
     std::vector<Scalar> _u_o = std::get<0>(overlay_layout_res);
     std::vector<Scalar> _v_o = std::get<1>(overlay_layout_res);
     is_cut_o = std::get<2>(overlay_layout_res);
+    if (view_layouts) {
+        spdlog::info("Viewing layouts");
+        view_halfedge_mesh_layout(m, _u_o, _v_o);
+    }
 
     // Restrict back to original overlay
     // WARNING: Assumes triangulation halfedges added to the end
@@ -804,9 +818,8 @@ get_consistent_layout(
 
     // Trim unnecessary branches of the cut graph
     bool do_trim = false;
-    if (do_trim)
-    {
-      trim_open_branch(m_o, f_labels, singularities, is_cut_o);
+    if (do_trim) {
+        trim_open_branch(m_o, f_labels, singularities, is_cut_o);
     }
 
     return std::make_tuple(_u_o, _v_o, is_cut_c, is_cut_o);
