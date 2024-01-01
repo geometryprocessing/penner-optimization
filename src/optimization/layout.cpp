@@ -761,7 +761,7 @@ get_consistent_layout(
     for (int i = m_o.n_halfedges(); i < m_o_tri.n_halfedges(); i++) {
         m_o_tri.edge_type[i] = CURRENT_EDGE; // make sure do not use the new diagonal
     }
-    bool view_layouts = true;
+    bool view_layouts = false;
     if (view_layouts) {
         spdlog::info("Viewing layouts");
         view_halfedge_mesh_layout(m, u_o, v_o);
