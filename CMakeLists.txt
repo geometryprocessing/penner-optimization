@@ -6,27 +6,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
-option(USE_PYBIND "Generate pybindings" ON)
-option(USE_MULTIPRECISION "Use high precision floating point" OFF)
-option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
-option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
+
+if (PROJECT_IS_TOP_LEVEL)
+	message("Curvature Metric is top level project")
+  
+  # Options for the project
+  option(USE_PYBIND "Generate pybindings" ON)
+  option(USE_MULTIPRECISION "Use high precision floating point" OFF)
+  option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
+  option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
+  option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
+
+  # Set libigl options
+  option(LIBIGL_PREDICATES "Use Predicates" ON)
+  option(RENDER_TEXTURE "Render results" ON)
+  option(LIBIGL_OPENGL "Use OpenGL" ON)
+  option(LIBIGL_GLFW "Use GLFW" ON)
+  option(LIBIGL_PNG "Use PNG" ON)
+  option(LIBIGL_EMBREE "Use EMBREE" ON)
+endif()
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# Options for the project
-# option(USE_PYBIND "Generate pybindings" ON)
-# option(USE_MULTIPRECISION "Use high precision floating point" OFF)
-option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
-
-# Set libigl options
-option(LIBIGL_PREDICATES "Use Predicates" ON)
-option(RENDER_TEXTURE "Render results" ON)
-option(LIBIGL_OPENGL "Use OpenGL" ON)
-option(LIBIGL_GLFW "Use GLFW" ON)
-option(LIBIGL_PNG "Use PNG" ON)
-option(LIBIGL_EMBREE "Use EMBREE" ON)
 
 if(USE_MULTIPRECISION)
   # Turning this on activates mpfr in the conformal code

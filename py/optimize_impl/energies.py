@@ -227,9 +227,9 @@ def surface_hencky_strain_vf(v, f, uv, fuv):
 def best_fit_conformal_vf(v, f, uv, fuv):
     Th_hat = np.zeros(len(v))
 
-    C, vtx_reindex = opt.fv_to_double(v, f, v, f, Th_hat, [], False)
-    C_v = opt.generate_initial_mesh(v, f, v, f, Th_hat, [], False, True)
-    C_uv = opt.generate_initial_mesh(v, f, uv, fuv, Th_hat, [], False, True)
+    C_v = opt.generate_initial_mesh(v, f, v, f, Th_hat, [], [], False, True)
+    C_uv = opt.generate_initial_mesh(v, f, uv, fuv, Th_hat, [], [], False, True)
+    _, vtx_reindex = opt.fv_to_double(v, f, v, f, Th_hat, [], False)
     metric_coords = C_uv.get_metric_coordinates()
     r_perm = opt.best_fit_conformal(C_v, metric_coords)
     
