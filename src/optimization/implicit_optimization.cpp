@@ -75,12 +75,8 @@ void update_data_log(
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    constraint_with_jacobian(
-        *cone_metric,
-        constraint,
-        J_constraint,
-        need_jacobian,
-        only_free_vertices);
+    cone_metric
+        ->constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
 
     // Compute change in metric coords from target and previous iteration
     VectorX change_in_metric_coords = reduced_metric_coords - prev_reduced_metric_coords;
@@ -131,7 +127,7 @@ void update_data_log(
 //    MatrixX J_constraint;
 //    std::vector<int> flip_seq;
 //    bool need_jacobian = true;
-//    constraint_with_jacobian(cone_metric,
+//    constraint(cone_metric,
 //                             metric_coords,
 //                             constraint,
 //                             J_constraint,
@@ -314,7 +310,7 @@ void compute_projected_newton_descent_direction(
     VectorX constraint;
     MatrixX J_constraint;
     bool need_jacobian = true;
-    bool success = constraint_with_jacobian(cone_metric, constraint, J_constraint, need_jacobian);
+    bool success = cone_metric.constraint(constraint, J_constraint, need_jacobian);
     if (!success) {
         spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
     }
@@ -352,8 +348,7 @@ bool check_line_step_success(
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    bool success = constraint_with_jacobian(
-        cone_metric,
+    bool success = cone_metric.constraint(
         constraint,
         J_constraint,
         need_jacobian,
@@ -396,8 +391,7 @@ bool check_projection_success(
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    bool success = constraint_with_jacobian(
-        cone_metric,
+    bool success = cone_metric.constraint(
         constraint,
         J_constraint,
         need_jacobian,

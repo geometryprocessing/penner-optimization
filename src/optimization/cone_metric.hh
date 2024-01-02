@@ -46,6 +46,11 @@ public:
         std::shared_ptr<ProjectionParameters> proj_params = nullptr) const = 0;
     std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
         std::shared_ptr<ProjectionParameters> proj_params = nullptr) const;
+    virtual bool constraint(
+        VectorX& constraint,
+        MatrixX& J_constraint,
+        bool need_jacobian = true,
+        bool only_free_vertices = true) const;
 
     virtual MatrixX get_transition_jacobian() const = 0;
 
@@ -86,7 +91,6 @@ private:
 
     VectorX reduce_metric_coordinates(const VectorX& metric_coords) const;
     void expand_metric_coordinates(const VectorX& metric_coords);
-
 };
 
 class DiscreteMetric : public DifferentiableConeMetric

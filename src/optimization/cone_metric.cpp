@@ -81,6 +81,15 @@ bool DifferentiableConeMetric::flip_ccw(int _h, bool Ptolemy)
     return Mesh<Scalar>::flip_ccw(_h, Ptolemy);
 }
 
+bool DifferentiableConeMetric::constraint(
+    VectorX& constraint,
+    MatrixX& J_constraint,
+    bool need_jacobian,
+    bool only_free_vertices) const
+{
+    return constraint_with_jacobian(*this, constraint, J_constraint, need_jacobian, only_free_vertices);
+}
+
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
     : DifferentiableConeMetric(m)
 {
