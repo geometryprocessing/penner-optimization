@@ -36,7 +36,7 @@ namespace CurvatureMetric
       unprojected_energies[i] = opt_energy.energy(*cone_metric);
 
       // Project to the constraint
-      VectorX u = compute_constraint_scale_factors(*cone_metric, proj_params, opt_params);
+      VectorX u = compute_constraint_scale_factors(*cone_metric, proj_params, opt_params->output_dir);
       std::unique_ptr<DifferentiableConeMetric> constrained_cone_metric = cone_metric->scale_conformally(u);
 
       // Compute the projected energy

@@ -1,45 +1,39 @@
 #include "implicit_optimization.hh"
 
+#include <igl/Timer.h>
 #include "area.hh"
 #include "constraint.hh"
 #include "embedding.hh"
 #include "energies.hh"
-#include "logging.hh"
 #include "globals.hh"
 #include "logging.hh"
-#include "projection.hh"
 #include "nonlinear_optimization.hh"
-#include <igl/Timer.h>
+#include "projection.hh"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric
+namespace CurvatureMetric {
+Scalar compute_convergence_ratio(
+    const VectorX& unconstrained_descent_direction,
+    const VectorX& constrained_descent_direction)
 {
-  Scalar compute_convergence_ratio(
-      const VectorX &unconstrained_descent_direction,
-      const VectorX &constrained_descent_direction)
-  {
     Scalar unconstrained_descent_norm = unconstrained_descent_direction.norm();
     Scalar constrained_descent_norm = constrained_descent_direction.norm();
 
-    // Compute the convergence ratio, returning just the constrained norm if the unconstrained norm is 0.0
+    // Compute the convergence ratio, returning just the constrained norm if the unconstrained norm
+    // is 0.0
     Scalar convergence_ratio;
-    if (unconstrained_descent_norm > 0)
-    {
-      convergence_ratio = constrained_descent_norm / unconstrained_descent_norm;
-    }
-    else
-    {
-      convergence_ratio = constrained_descent_norm;
+    if (unconstrained_descent_norm > 0) {
+        convergence_ratio = constrained_descent_norm / unconstrained_descent_norm;
+    } else {
+        convergence_ratio = constrained_descent_norm;
     }
 
     return convergence_ratio;
-  }
+}
 
-  void
-  initialize_data_log(
-      const std::filesystem::path &data_log_path)
-  {
+void initialize_data_log(const std::filesystem::path& data_log_path)
+{
     // Open file
     spdlog::trace("Writing data to {}", data_log_path);
     std::ofstream output_file(data_log_path, std::ios::out | std::ios::trunc);
@@ -59,21 +53,21 @@ namespace CurvatureMetric
 
     // Close file
     output_file.close();
-  }
+}
 
-  void
-  update_data_log(
-      OptimizationLog &log,
-      DifferentiableConeMetric &initial_cone_metric,
-      const EnergyFunctor &opt_energy,
-      const VectorX &reduced_metric_coords,
-      const VectorX &prev_reduced_metric_coords,
-      const VectorX &gradient,
-      const VectorX &descent_direction,
-      Scalar convergence_ratio)
-  {
+void update_data_log(
+    OptimizationLog& log,
+    DifferentiableConeMetric& initial_cone_metric,
+    const EnergyFunctor& opt_energy,
+    const VectorX& reduced_metric_coords,
+    const VectorX& prev_reduced_metric_coords,
+    const VectorX& gradient,
+    const VectorX& descent_direction,
+    Scalar convergence_ratio)
+{
     // Copy metric and make discrete
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric =
+        initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
     cone_metric->make_discrete_metric(); // Need to flip here to get number of flips
 
     // Compute constraint values
@@ -81,7 +75,12 @@ namespace CurvatureMetric
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    constraint_with_jacobian(*cone_metric, constraint, J_constraint, need_jacobian, only_free_vertices);
+    constraint_with_jacobian(
+        *cone_metric,
+        constraint,
+        J_constraint,
+        need_jacobian,
+        only_free_vertices);
 
     // Compute change in metric coords from target and previous iteration
     VectorX change_in_metric_coords = reduced_metric_coords - prev_reduced_metric_coords;
@@ -94,7 +93,7 @@ namespace CurvatureMetric
     log.max_change_in_metric_coords = sup_norm(change_in_metric_coords);
     log.actual_to_unconstrained_direction_ratio = change_in_metric_coords.norm() / gradient.norm();
     log.max_constrained_descent_direction = sup_norm(descent_direction);
-  }
+}
 
 //  void write_checkpoint(
 //      const std::string &output_dir,
@@ -118,11 +117,11 @@ namespace CurvatureMetric
 //    checkpoint_filename = join_path(output_dir, "initial_lambdas_" + std::to_string(iter));
 //    write_vector(reduced_metric_coords, checkpoint_filename, 80);
 //
-//    checkpoint_filename = join_path(output_dir, "unconstrained_descent_direction_" + std::to_string(iter));
-//    write_vector(unconstrained_descent_direction, checkpoint_filename, 80);
+//    checkpoint_filename = join_path(output_dir, "unconstrained_descent_direction_" +
+//    std::to_string(iter)); write_vector(unconstrained_descent_direction, checkpoint_filename, 80);
 //
-//    checkpoint_filename = join_path(output_dir, "constrained_descent_direction_" + std::to_string(iter));
-//    write_vector(constrained_descent_direction, checkpoint_filename, 80);
+//    checkpoint_filename = join_path(output_dir, "constrained_descent_direction_" +
+//    std::to_string(iter)); write_vector(constrained_descent_direction, checkpoint_filename, 80);
 //
 //    // Compute the constraint function and its Jacobian
 //    VectorX metric_coords;
@@ -168,11 +167,8 @@ namespace CurvatureMetric
 //    write_vector(updated_reduced_metric_coords, checkpoint_filename, 80);
 //  }
 
-  void
-  write_data_log_entry(
-      const OptimizationLog &log,
-      const std::filesystem::path &data_log_path)
-  {
+void write_data_log_entry(const OptimizationLog& log, const std::filesystem::path& data_log_path)
+{
     // Open file in append mode
     spdlog::trace("Writing data iteration to {}", data_log_path);
     std::ofstream output_file(data_log_path, std::ios::out | std::ios::app);
@@ -185,83 +181,79 @@ namespace CurvatureMetric
     output_file << std::fixed << std::setprecision(17) << log.error << ",";
     output_file << std::fixed << std::setprecision(17) << log.convergence_ratio << ",";
     output_file << std::fixed << std::setprecision(17) << log.max_change_in_metric_coords << ",";
-    output_file << std::fixed << std::setprecision(17) << log.max_total_change_in_metric_coords << ",";
-    output_file << std::fixed << std::setprecision(17) << log.actual_to_unconstrained_direction_ratio << ",";
-    output_file << std::fixed << std::setprecision(17) << log.max_constrained_descent_direction << ",";
+    output_file << std::fixed << std::setprecision(17) << log.max_total_change_in_metric_coords
+                << ",";
+    output_file << std::fixed << std::setprecision(17)
+                << log.actual_to_unconstrained_direction_ratio << ",";
+    output_file << std::fixed << std::setprecision(17) << log.max_constrained_descent_direction
+                << ",";
     output_file << log.num_linear_solves << ",";
     output_file << std::endl;
 
     // Close file
     output_file.close();
-  }
+}
 
-  /// Given a metric with reduction maps and constraints and an energy gradient
-  /// functor, compute a gradient and descent direction for the energy.
-  ///
-  /// @param[in] cone_metric: mesh with metric
-  /// @param[in] opt_energy: optimization energy
-  /// @param[in] prev_gradient: previous gradient of the energy
-  /// @param[in] prev_descent_direction: previous descent direction
-  /// @param[out] gradient: current gradient of the energy
-  /// @param[out] descent_direction: descent direction
-  /// @param[in] direction_choice: (optional) type of descent direction to use
-  void
-  compute_descent_direction(const DifferentiableConeMetric &cone_metric,
-                            const EnergyFunctor &opt_energy,
-                            const VectorX &prev_gradient,
-                            const VectorX &prev_descent_direction,
-                            VectorX &gradient,
-                            VectorX &descent_direction,
-                            std::string direction_choice)
-  {
+/// Given a metric with reduction maps and constraints and an energy gradient
+/// functor, compute a gradient and descent direction for the energy.
+///
+/// @param[in] cone_metric: mesh with metric
+/// @param[in] opt_energy: optimization energy
+/// @param[in] prev_gradient: previous gradient of the energy
+/// @param[in] prev_descent_direction: previous descent direction
+/// @param[out] gradient: current gradient of the energy
+/// @param[out] descent_direction: descent direction
+/// @param[in] direction_choice: (optional) type of descent direction to use
+void compute_descent_direction(
+    const DifferentiableConeMetric& cone_metric,
+    const EnergyFunctor& opt_energy,
+    const VectorX& prev_gradient,
+    const VectorX& prev_descent_direction,
+    VectorX& gradient,
+    VectorX& descent_direction,
+    std::string direction_choice)
+{
     // Compute gradient from the functor
     gradient = opt_energy.gradient(cone_metric);
 
     // Compute the gradient descent direction
-    if (direction_choice == "gradient")
-    {
-      descent_direction = -gradient;
+    if (direction_choice == "gradient") {
+        descent_direction = -gradient;
     }
     // Compute the conjugate gradient descent direction
     // WARNING: The theory on this choice is dubious with projection
-    else if (direction_choice == "conjugate_gradient")
-    {
-      // Check if the previous gradient and descent direction are trivial
-      if ((prev_gradient.size() == 0) ||
-          (prev_descent_direction.size() == 0))
-      {
-        descent_direction = -gradient;
-      }
-      // Compute the conjugate gradient direction from the previous data and the
-      // new gradient
-      else
-      {
-        std::string coefficient = "polak_ribiere"; // Popular choice; could be made a parameter
-        compute_conjugate_gradient_direction(
-            gradient,
-            prev_gradient,
-            prev_descent_direction,
-            descent_direction,
-            coefficient);
-      }
+    else if (direction_choice == "conjugate_gradient") {
+        // Check if the previous gradient and descent direction are trivial
+        if ((prev_gradient.size() == 0) || (prev_descent_direction.size() == 0)) {
+            descent_direction = -gradient;
+        }
+        // Compute the conjugate gradient direction from the previous data and the
+        // new gradient
+        else {
+            std::string coefficient = "polak_ribiere"; // Popular choice; could be made a parameter
+            compute_conjugate_gradient_direction(
+                gradient,
+                prev_gradient,
+                prev_descent_direction,
+                descent_direction,
+                coefficient);
+        }
     }
     // By default, use the zero vector
-    else
-    {
-      descent_direction = VectorX::Constant(gradient.size(), 0.0);
+    else {
+        descent_direction = VectorX::Constant(gradient.size(), 0.0);
     }
-  }
+}
 
-  // Generate the lagrangian for optimizing a quadratic energy in a constrained space orthogonal to
-  // the column space of J_constraint
-  void
-  generate_hessian_lagrangian_system(
-      const MatrixX &hessian,
-      const MatrixX &J_constraint,
-      const VectorX &gradient,
-      MatrixX &hessian_lagrangian,
-      VectorX &rhs)
-  {
+// Generate the lagrangian for optimizing a quadratic energy in a constrained space orthogonal to
+// the column space of J_constraint
+void generate_hessian_lagrangian_system(
+    const MatrixX& hessian,
+    const MatrixX& J_constraint,
+    const VectorX& gradient,
+    MatrixX& hessian_lagrangian,
+    VectorX& rhs)
+{
     // Get sizes
     int n = hessian.rows();
     int m = J_constraint.rows();
@@ -273,28 +265,24 @@ namespace CurvatureMetric
     tripletList.reserve(hessian.nonZeros() + 2 * J_constraint.nonZeros());
 
     // Add hessian as upper block
-    for (int k = 0; k < hessian.outerSize(); ++k)
-    {
-      for (MatrixX::InnerIterator it(hessian, k); it; ++it)
-      {
-        int row = it.row();
-        int col = it.col();
-        Scalar value = it.value();
-        tripletList.push_back(T(row, col, value));
-      }
+    for (int k = 0; k < hessian.outerSize(); ++k) {
+        for (MatrixX::InnerIterator it(hessian, k); it; ++it) {
+            int row = it.row();
+            int col = it.col();
+            Scalar value = it.value();
+            tripletList.push_back(T(row, col, value));
+        }
     }
 
     // Add constraint Jacobian and transpose
-    for (int k = 0; k < J_constraint.outerSize(); ++k)
-    {
-      for (MatrixX::InnerIterator it(J_constraint, k); it; ++it)
-      {
-        int row = it.row();
-        int col = it.col();
-        Scalar value = it.value();
-        tripletList.push_back(T(n + row, col, value));
-        tripletList.push_back(T(col, n + row, value));
-      }
+    for (int k = 0; k < J_constraint.outerSize(); ++k) {
+        for (MatrixX::InnerIterator it(J_constraint, k); it; ++it) {
+            int row = it.row();
+            int col = it.col();
+            Scalar value = it.value();
+            tripletList.push_back(T(n + row, col, value));
+            tripletList.push_back(T(col, n + row, value));
+        }
     }
 
     // Build lagrangian matrix
@@ -306,31 +294,29 @@ namespace CurvatureMetric
     rhs.setZero(n + m);
     rhs.head(n) = -gradient;
     // TODO Add constraint to tail
-  }
+}
 
-  /// Given a metric with reduction maps and constraints and an energy gradient
-  /// functor, compute a constrained descent direction for the energy that is optimal
-  /// in the tangent space to the constraint manifold.
-  ///
-  /// @param[in] m: surface
-  /// @param[in] opt_energy: optimization energy
-  /// @param[out] gradient: current gradient of the energy
-  /// @param[out] descent_direction: quadratically optimal descent direction in the tangent space
-	void
-  compute_projected_newton_descent_direction(
-      const DifferentiableConeMetric &cone_metric,
-      const EnergyFunctor &opt_energy,
-      VectorX &gradient,
-      VectorX &descent_direction)
-  {
+/// Given a metric with reduction maps and constraints and an energy gradient
+/// functor, compute a constrained descent direction for the energy that is optimal
+/// in the tangent space to the constraint manifold.
+///
+/// @param[in] m: surface
+/// @param[in] opt_energy: optimization energy
+/// @param[out] gradient: current gradient of the energy
+/// @param[out] descent_direction: quadratically optimal descent direction in the tangent space
+void compute_projected_newton_descent_direction(
+    const DifferentiableConeMetric& cone_metric,
+    const EnergyFunctor& opt_energy,
+    VectorX& gradient,
+    VectorX& descent_direction)
+{
     // Compute the constraint function and its Jacobian
     VectorX constraint;
     MatrixX J_constraint;
     bool need_jacobian = true;
     bool success = constraint_with_jacobian(cone_metric, constraint, J_constraint, need_jacobian);
-    if (!success)
-    {
-      spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
+    if (!success) {
+        spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
     }
 
     // Get the reduced energy gradient and hessian
@@ -340,12 +326,7 @@ namespace CurvatureMetric
     // Generate lagrangian and right hand side for this quadratic programming problem
     MatrixX hessian_lagrangian;
     VectorX rhs;
-    generate_hessian_lagrangian_system(
-        hessian,
-        J_constraint,
-        gradient,
-        hessian_lagrangian,
-        rhs);
+    generate_hessian_lagrangian_system(hessian, J_constraint, gradient, hessian_lagrangian, rhs);
 
     // Solve for the optimal descent direction
     igl::Timer timer;
@@ -359,236 +340,256 @@ namespace CurvatureMetric
     // Get projected descent direction from lagrangian solution
     int num_variables = gradient.size();
     descent_direction = solution.head(num_variables);
-  }
+}
 
-  // Check if the line step is valid and stable
-  bool
-  check_line_step_success(
-      const DifferentiableConeMetric &cone_metric,
-      std::shared_ptr<OptimizationParameters> opt_params)
-  {
+// Check if the line step is valid and stable
+bool check_line_step_success(
+    const DifferentiableConeMetric& cone_metric,
+    std::shared_ptr<OptimizationParameters> opt_params)
+{
     // Compute the contraint values after the line step
     VectorX constraint;
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    bool success = constraint_with_jacobian(cone_metric, constraint, J_constraint, need_jacobian, only_free_vertices);
+    bool success = constraint_with_jacobian(
+        cone_metric,
+        constraint,
+        J_constraint,
+        need_jacobian,
+        only_free_vertices);
 
-    // Shrink step size if the constraint is not computed correctly due to a triangle inequality violation
-    if (!success)
-    {
-      spdlog::get("optimize_metric")->info("Reducing step size due to triangle inequality violation while computing the constraint function");
-      return false;
+    // Shrink step size if the constraint is not computed correctly due to a triangle inequality
+    // violation
+    if (!success) {
+        spdlog::get("optimize_metric")
+            ->info("Reducing step size due to triangle inequality violation while computing the "
+                   "constraint function");
+        return false;
     }
 
     // Check if the maximum constraint error is too large
     Scalar max_line_search_constraint = sup_norm(constraint);
-    spdlog::get("optimize_metric")->info("Maximum constraint error after line step is {}", max_line_search_constraint);
-    if (max_line_search_constraint > opt_params->max_angle)
-    {
-      spdlog::get("optimize_metric")->info("Max angle error {} larger than bound {}", max_line_search_constraint, opt_params->max_angle);
-      return false;
+    spdlog::get("optimize_metric")
+        ->info("Maximum constraint error after line step is {}", max_line_search_constraint);
+    if (max_line_search_constraint > opt_params->max_angle) {
+        spdlog::get("optimize_metric")
+            ->info(
+                "Max angle error {} larger than bound {}",
+                max_line_search_constraint,
+                opt_params->max_angle);
+        return false;
     }
 
     // Success otherwise
     return true;
-  }
+}
 
-  // Check if the projection to the constraint manifold is valid and stable
-  bool
-  check_projection_success(
-      const DifferentiableConeMetric &cone_metric,
-      std::shared_ptr<OptimizationParameters> opt_params,
-      const Scalar &max_initial_constraint)
-  {
+// Check if the projection to the constraint manifold is valid and stable
+bool check_projection_success(
+    const DifferentiableConeMetric& cone_metric,
+    std::shared_ptr<OptimizationParameters> opt_params,
+    const Scalar& max_initial_constraint)
+{
     // Compute the constraint values after the projection
     VectorX constraint;
     MatrixX J_constraint;
     bool need_jacobian = false;
     bool only_free_vertices = false;
-    bool success = constraint_with_jacobian(cone_metric, constraint, J_constraint, need_jacobian, only_free_vertices);
+    bool success = constraint_with_jacobian(
+        cone_metric,
+        constraint,
+        J_constraint,
+        need_jacobian,
+        only_free_vertices);
 
-    // Shrink step size if the constraint is not computed correctly due to a triangle inequality violation
-    if (!success)
-    {
-      spdlog::get("optimize_metric")->info("Reducing step size due to triangle inequality violation while computing the constraint function");
-      return false;
+    // Shrink step size if the constraint is not computed correctly due to a triangle inequality
+    // violation
+    if (!success) {
+        spdlog::get("optimize_metric")
+            ->info("Reducing step size due to triangle inequality violation while computing the "
+                   "constraint function");
+        return false;
     }
 
     // Check the angle decrease condition
     Scalar max_constraint = constraint.maxCoeff();
-    spdlog::get("optimize_metric")->info("Maximum constraint error after projection is {}", max_constraint);
+    spdlog::get("optimize_metric")
+        ->info("Maximum constraint error after projection is {}", max_constraint);
     Scalar constraint_threshold = max_initial_constraint + opt_params->max_angle_incr;
-    if (max_constraint > constraint_threshold)
-    {
-      spdlog::get("optimize_metric")->info("Reducing step size as the angle error {} > {} did not decrease from {} with tolerance {}", max_constraint, constraint_threshold, max_initial_constraint, opt_params->max_angle_incr);
-      return false;
+    if (max_constraint > constraint_threshold) {
+        spdlog::get("optimize_metric")
+            ->info(
+                "Reducing step size as the angle error {} > {} did not decrease from {} with "
+                "tolerance {}",
+                max_constraint,
+                constraint_threshold,
+                max_initial_constraint,
+                opt_params->max_angle_incr);
+        return false;
     }
 
     // Success otherwise
     return true;
-  }
+}
 
-  // Check if the full step is sufficiently small for convergence
-  bool
-  check_convergence_progress(
-      const DifferentiableConeMetric &cone_metric,
-      const EnergyFunctor &opt_energy,
-      std::shared_ptr<OptimizationParameters> opt_params,
-      const VectorX &descent_direction,
-      const VectorX &constrained_gradient,
-      Scalar opt_energy_init)
-  {
+// Check if the full step is sufficiently small for convergence
+bool check_convergence_progress(
+    const DifferentiableConeMetric& cone_metric,
+    const EnergyFunctor& opt_energy,
+    std::shared_ptr<OptimizationParameters> opt_params,
+    const VectorX& descent_direction,
+    const VectorX& constrained_gradient,
+    Scalar opt_energy_init)
+{
     // Check the energy decreases enough
     Scalar opt_energy_proj = opt_energy.energy(cone_metric);
     spdlog::get("optimize_metric")->info("Energy after projection is {}", opt_energy_proj);
     if ((opt_params->require_energy_decr) &&
-        (opt_energy_proj > opt_energy_init * (1.0 + opt_params->max_energy_incr)))
-    {
-      spdlog::get("optimize_metric")->info("Reducing step size as the energy did not decrease");
-      return false;
+        (opt_energy_proj > opt_energy_init * (1.0 + opt_params->max_energy_incr))) {
+        spdlog::get("optimize_metric")->info("Reducing step size as the energy did not decrease");
+        return false;
     }
 
     // Check the gradient projection on the descent direction is negative
-    if ((opt_params->require_gradient_proj_negative) && (descent_direction.dot(constrained_gradient) > 0))
-    {
-      spdlog::get("optimize_metric")->info("Reducing step size as the gradient projection is positive");
-      return false;
+    if ((opt_params->require_gradient_proj_negative) &&
+        (descent_direction.dot(constrained_gradient) > 0)) {
+        spdlog::get("optimize_metric")
+            ->info("Reducing step size as the gradient projection is positive");
+        return false;
     }
 
     return true;
-  }
+}
 
-  /// Perform a line search with projection to the constraint after the step.
-  ///
-  /// @param[in] cone_metric: surface
-  /// @param[in] opt_energy: optimization energy
-  /// @param[in] descent_direction: descent direction for the line search
-  /// @param[in] proj_params: projection parameters
-  /// @param[in] opt_params: optimization parameters
-  /// @param[in, out] beta: adaptive line step size
-  /// @param[in, out] num_linear_solves: number of linear solves
-  VectorX
-  line_search_with_projection(const DifferentiableConeMetric &initial_cone_metric,
-                              const EnergyFunctor &opt_energy,
-                              const VectorX &descent_direction,
-                              std::shared_ptr<ProjectionParameters> proj_params,
-                              std::shared_ptr<OptimizationParameters> opt_params,
-                              Scalar &beta,
-                              int &num_linear_solves)
-  {
+/// Perform a line search with projection to the constraint after the step.
+///
+/// @param[in] cone_metric: surface
+/// @param[in] opt_energy: optimization energy
+/// @param[in] descent_direction: descent direction for the line search
+/// @param[in] proj_params: projection parameters
+/// @param[in] opt_params: optimization parameters
+/// @param[in, out] beta: adaptive line step size
+/// @param[in, out] num_linear_solves: number of linear solves
+VectorX line_search_with_projection(
+    const DifferentiableConeMetric& initial_cone_metric,
+    const EnergyFunctor& opt_energy,
+    const VectorX& descent_direction,
+    std::shared_ptr<ProjectionParameters> proj_params,
+    std::shared_ptr<OptimizationParameters> opt_params,
+    Scalar& beta,
+    int& num_linear_solves)
+{
     // Expand the initial metric coordinates to the doubled surface
     VectorX initial_reduced_metric_coords = initial_cone_metric.get_reduced_metric_coordinates();
     VectorX reduced_metric_coords = initial_reduced_metric_coords;
 
     // Get the initial optimization energy
     Scalar opt_energy_init = opt_energy.energy(initial_cone_metric);
-    spdlog::get("optimize_metric")->info("Attempting line search with step size {} from initial energy {}", beta, opt_energy_init);
+    spdlog::get("optimize_metric")
+        ->info(
+            "Attempting line search with step size {} from initial energy {}",
+            beta,
+            opt_energy_init);
 
     // Compute the initial constraint value and convergence ratio
     Scalar max_initial_constraint = compute_max_constraint(initial_cone_metric);
 
-    while (true)
-    {
-      // Break if the step size is too small
-      if (beta < 1e-16)
-      {
-        spdlog::get("optimize_metric")->info("Beta {} too small to continue", beta);
+    while (true) {
+        // Break if the step size is too small
+        if (beta < 1e-16) {
+            spdlog::get("optimize_metric")->info("Beta {} too small to continue", beta);
+            break;
+        }
+
+        // Make a line step in log space
+        VectorX reduced_line_step_metric_coords =
+            initial_reduced_metric_coords + beta * descent_direction;
+        std::unique_ptr<DifferentiableConeMetric> cone_metric =
+            initial_cone_metric.set_metric_coordinates(reduced_line_step_metric_coords);
+
+        // Check if the line step is valid and reduce beta if not
+        if (!check_line_step_success(*cone_metric, opt_params)) {
+            beta /= 2.0;
+            continue;
+        }
+
+        // Project to the constraint
+        SolveStats<Scalar> solve_stats;
+        std::unique_ptr<DifferentiableConeMetric> constrained_cone_metric =
+            cone_metric->project_to_constraint(solve_stats, proj_params);
+        num_linear_solves += solve_stats.n_solves;
+        reduced_metric_coords = constrained_cone_metric->get_reduced_metric_coordinates();
+
+        // Check if the projection was successful and reduce beta if not
+        if (!check_projection_success(
+                *constrained_cone_metric,
+                opt_params,
+                max_initial_constraint)) {
+            beta /= 2.0;
+            continue;
+        }
+
+        // Compute the gradient and its orthogonal projection
+        VectorX gradient = opt_energy.gradient(*constrained_cone_metric);
+        VectorX constrained_gradient =
+            project_descent_direction(*constrained_cone_metric, gradient);
+        num_linear_solves++;
+        spdlog::trace("Projected gradient is {}", descent_direction.dot(constrained_gradient));
+
+        // Check if the convergence conditions were satisfied and reduce beta if not
+        bool convergence_success = check_convergence_progress(
+            *constrained_cone_metric,
+            opt_energy,
+            opt_params,
+            descent_direction,
+            constrained_gradient,
+            opt_energy_init);
+        if (!convergence_success) {
+            beta /= 2.0;
+            continue;
+        }
+
+        // Break the loop if no flag to reduce beta was hit
         break;
-      }
-
-      // Make a line step in log space
-      VectorX reduced_line_step_metric_coords = initial_reduced_metric_coords + beta * descent_direction;
-      std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric.set_metric_coordinates(reduced_line_step_metric_coords);
-
-      // Check if the line step is valid and reduce beta if not
-      if (!check_line_step_success(*cone_metric, opt_params))
-      {
-        beta /= 2.0;
-        continue;
-      }
-
-      // Project to the constraint
-      VectorX u;
-      u.setZero(cone_metric->n_ind_vertices());
-      auto projection_out = compute_constraint_scale_factors(*cone_metric, u, proj_params, opt_params);
-      SolveStats<Scalar> solve_stats = std::get<1>(projection_out);
-      num_linear_solves += solve_stats.n_solves;
-      std::unique_ptr<DifferentiableConeMetric> constrained_cone_metric = cone_metric->scale_conformally(u);
-      reduced_metric_coords = constrained_cone_metric->get_reduced_metric_coordinates();
-
-      // Check if the projection was successful and reduce beta if not
-      if (!check_projection_success(*constrained_cone_metric, opt_params, max_initial_constraint))
-      {
-        beta /= 2.0;
-        continue;
-      }
-
-      // Compute the gradient and its orthogonal projection
-      VectorX gradient = opt_energy.gradient(*constrained_cone_metric);
-      VectorX constrained_gradient = project_descent_direction(*constrained_cone_metric, gradient);
-      num_linear_solves++;
-      spdlog::trace("Projected gradient is {}", descent_direction.dot(constrained_gradient));
-
-      // Check if the convergence conditions were satisfied and reduce beta if not
-      bool convergence_success = check_convergence_progress(
-          *constrained_cone_metric,
-          opt_energy,
-          opt_params,
-          descent_direction,
-          constrained_gradient,
-          opt_energy_init);
-      if (!convergence_success)
-      {
-        beta /= 2.0;
-        continue;
-      }
-
-      // Break the loop if no flag to reduce beta was hit
-      break;
     }
 
     return reduced_metric_coords;
-  }
+}
 
-  bool
-  check_if_converged(const OptimizationParameters &opt_params,
-                     Scalar convergence_ratio,
-                     Scalar beta)
-  {
+bool check_if_converged(
+    const OptimizationParameters& opt_params,
+    Scalar convergence_ratio,
+    Scalar beta)
+{
     // Check if the convergence ratio is suitably small
-    if (convergence_ratio < opt_params.min_ratio)
-    {
-      spdlog::get("optimize_metric")
-          ->info("Convergence ratio below termination threshold of {}",
-                 opt_params.min_ratio);
-      return true;
+    if (convergence_ratio < opt_params.min_ratio) {
+        spdlog::get("optimize_metric")
+            ->info("Convergence ratio below termination threshold of {}", opt_params.min_ratio);
+        return true;
     }
 
     // Check if beta is too small to continue
-    if (beta < 1e-16)
-    {
-      spdlog::get("optimize_metric")
-          ->info("Beta {} is below termination threshold of {}", beta, 1e-16);
-      return true;
+    if (beta < 1e-16) {
+        spdlog::get("optimize_metric")
+            ->info("Beta {} is below termination threshold of {}", beta, 1e-16);
+        return true;
     }
 
     // Not converged otherwise
     return false;
-  }
+}
 
-  std::unique_ptr<DifferentiableConeMetric>
-  optimize_metric_log(const DifferentiableConeMetric &initial_cone_metric,
-                      const EnergyFunctor &opt_energy,
-                      OptimizationLog &log,
-                      std::shared_ptr<ProjectionParameters> proj_params,
-                      std::shared_ptr<OptimizationParameters> opt_params)
-  {
+std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
+    const DifferentiableConeMetric& initial_cone_metric,
+    const EnergyFunctor& opt_energy,
+    OptimizationLog& log,
+    std::shared_ptr<ProjectionParameters> proj_params,
+    std::shared_ptr<OptimizationParameters> opt_params)
+{
     // Build default parameters if none given
-    if (proj_params == nullptr)
-      proj_params = std::make_shared<ProjectionParameters>();
-    if (opt_params == nullptr)
-      opt_params = std::make_shared<OptimizationParameters>();
+    if (proj_params == nullptr) proj_params = std::make_shared<ProjectionParameters>();
+    if (opt_params == nullptr) opt_params = std::make_shared<OptimizationParameters>();
 
     // Extract relevant parameters for main optimization method
     int num_iter = opt_params->num_iter;
@@ -611,26 +612,25 @@ namespace CurvatureMetric
 
     // Create per iteration data log if an output directory is specified
     std::filesystem::path data_log_path;
-    if (!output_dir.empty())
-    {
-      data_log_path = join_path(output_dir, "iteration_data_log.csv");
-      initialize_data_log(data_log_path);
+    if (!output_dir.empty()) {
+        data_log_path = join_path(output_dir, "iteration_data_log.csv");
+        initialize_data_log(data_log_path);
 
-      // Clear other data logs
-      std::ofstream error_output_file(
-          join_path(output_dir, "conformal_iteration_error.csv"),
-          std::ios::out | std::ios::trunc);
-      error_output_file.close();
-      std::ofstream time_output_file(
-          join_path(output_dir, "conformal_iteration_times.csv"),
-          std::ios::out | std::ios::trunc);
-      time_output_file.close();
+        // Clear other data logs
+        std::ofstream error_output_file(
+            join_path(output_dir, "conformal_iteration_error.csv"),
+            std::ios::out | std::ios::trunc);
+        error_output_file.close();
+        std::ofstream time_output_file(
+            join_path(output_dir, "conformal_iteration_times.csv"),
+            std::ios::out | std::ios::trunc);
+        time_output_file.close();
     }
 
     // Perform initial conformal projection to get initial metric coordinates
     spdlog::get("optimize_metric")->info("Performing initial projection to the constraint");
-    VectorX u = compute_constraint_scale_factors(initial_cone_metric, proj_params, opt_params);
-    std::unique_ptr<DifferentiableConeMetric> initial_constrained_cone_metric = initial_cone_metric.scale_conformally(u);
+    std::unique_ptr<DifferentiableConeMetric> initial_constrained_cone_metric =
+        initial_cone_metric.project_to_constraint(proj_params);
     assert(float_equal(compute_max_constraint(*initial_constrained_cone_metric), 0.0, 1e-6));
 
     // Log the initial energy
@@ -640,7 +640,8 @@ namespace CurvatureMetric
     // Main optimization loop
     Scalar beta = beta_0;
     Scalar convergence_ratio = 1.0;
-    VectorX reduced_metric_coords = initial_constrained_cone_metric->get_reduced_metric_coordinates();
+    VectorX reduced_metric_coords =
+        initial_constrained_cone_metric->get_reduced_metric_coordinates();
     VectorX prev_reduced_metric_coords = reduced_metric_coords;
     VectorX gradient, unconstrained_descent_direction, descent_direction;
     VectorX prev_gradient(0);
@@ -648,80 +649,93 @@ namespace CurvatureMetric
     igl::Timer timer;
     timer.start();
     int num_linear_solves = 0;
-    for (int iter = 0; iter < num_iter; ++iter)
-    {
-      spdlog::get("optimize_metric")->info("\nStarting Iteration {}", iter);
+    for (int iter = 0; iter < num_iter; ++iter) {
+        spdlog::get("optimize_metric")->info("\nStarting Iteration {}", iter);
 
-      // Initialize clean copy of the cone metric with the original connectivity and current coordinates
-      std::unique_ptr<DifferentiableConeMetric> cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
+        // Initialize clean copy of the cone metric with the original connectivity and current
+        // coordinates
+        std::unique_ptr<DifferentiableConeMetric> cone_metric =
+            initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
 
-      // Get descent direction
-      if (use_optimal_projection)
-      {
-        compute_projected_newton_descent_direction(*cone_metric, opt_energy, gradient, descent_direction);
-        num_linear_solves++; // TODO Would be better to have near solver code
-      }
-      else
-      {
-        // Get the initial descent direction
-        compute_descent_direction(*cone_metric,
-                                  opt_energy,
-                                  prev_gradient,
-                                  prev_descent_direction,
-                                  gradient,
-                                  unconstrained_descent_direction,
-                                  direction_choice);
-        spdlog::get("optimize_metric")->info("Unconstrained descent direction found with norm {}", unconstrained_descent_direction.norm());
+        // Get descent direction
+        if (use_optimal_projection) {
+            compute_projected_newton_descent_direction(
+                *cone_metric,
+                opt_energy,
+                gradient,
+                descent_direction);
+            num_linear_solves++; // TODO Would be better to have near solver code
+        } else {
+            // Get the initial descent direction
+            compute_descent_direction(
+                *cone_metric,
+                opt_energy,
+                prev_gradient,
+                prev_descent_direction,
+                gradient,
+                unconstrained_descent_direction,
+                direction_choice);
+            spdlog::get("optimize_metric")
+                ->info(
+                    "Unconstrained descent direction found with norm {}",
+                    unconstrained_descent_direction.norm());
 
-        // Project descent direction to constraint
-        descent_direction = project_descent_direction(*cone_metric, unconstrained_descent_direction);
-        num_linear_solves++; // TODO Would be better to have near solver code
-      }
-      convergence_ratio = compute_convergence_ratio(gradient, descent_direction);
-      spdlog::get("optimize_metric")->info("Descent direction found with norm {}", descent_direction.norm());
+            // Project descent direction to constraint
+            descent_direction =
+                project_descent_direction(*cone_metric, unconstrained_descent_direction);
+            num_linear_solves++; // TODO Would be better to have near solver code
+        }
+        convergence_ratio = compute_convergence_ratio(gradient, descent_direction);
+        spdlog::get("optimize_metric")
+            ->info("Descent direction found with norm {}", descent_direction.norm());
 
-      // Optionally reduce the descent direction to a given range
-      Scalar grad_range = beta * (descent_direction.maxCoeff() - descent_direction.minCoeff());
-      if ((max_grad_range > 0) && (grad_range >= max_grad_range))
-      {
-        beta *= (max_grad_range / grad_range);
-        spdlog::get("optimize_metric")->info("Reducing beta to {} for stability", beta);
-      }
+        // Optionally reduce the descent direction to a given range
+        Scalar grad_range = beta * (descent_direction.maxCoeff() - descent_direction.minCoeff());
+        if ((max_grad_range > 0) && (grad_range >= max_grad_range)) {
+            beta *= (max_grad_range / grad_range);
+            spdlog::get("optimize_metric")->info("Reducing beta to {} for stability", beta);
+        }
 
-      // Perform the line search with projection to the constraint
-      prev_reduced_metric_coords = reduced_metric_coords;
-      reduced_metric_coords = line_search_with_projection(*cone_metric, opt_energy, descent_direction, proj_params, opt_params, beta, num_linear_solves);
+        // Perform the line search with projection to the constraint
+        prev_reduced_metric_coords = reduced_metric_coords;
+        reduced_metric_coords = line_search_with_projection(
+            *cone_metric,
+            opt_energy,
+            descent_direction,
+            proj_params,
+            opt_params,
+            beta,
+            num_linear_solves);
 
-      // Write iteration data if output directory specified
-      log.num_iterations = iter;
-      log.beta = beta;
-      log.time = timer.getElapsedTime();
-      log.num_linear_solves = num_linear_solves;
-      update_data_log(log,
-                      *cone_metric,
-                      opt_energy,
-                      reduced_metric_coords,
-                      prev_reduced_metric_coords,
-                      gradient,
-                      descent_direction,
-                      convergence_ratio);
-      if (!output_dir.empty())
-      {
-        write_data_log_entry(log, data_log_path);
-      }
+        // Write iteration data if output directory specified
+        log.num_iterations = iter;
+        log.beta = beta;
+        log.time = timer.getElapsedTime();
+        log.num_linear_solves = num_linear_solves;
+        update_data_log(
+            log,
+            *cone_metric,
+            opt_energy,
+            reduced_metric_coords,
+            prev_reduced_metric_coords,
+            gradient,
+            descent_direction,
+            convergence_ratio);
+        if (!output_dir.empty()) {
+            write_data_log_entry(log, data_log_path);
+        }
 
-      // Optionally write data per iteration
-      // TODO
+        // Optionally write data per iteration
+        // TODO
 
-      // Check for convergence
-      bool converged = check_if_converged(*opt_params, convergence_ratio, beta);
-      if (converged)
-        break;
+        // Check for convergence
+        bool converged = check_if_converged(*opt_params, convergence_ratio, beta);
+        if (converged) break;
 
-      // Update beta 
-      beta = std::min<Scalar>(2.0 * beta, opt_params->max_beta);
-      prev_gradient = gradient;
-      prev_descent_direction = descent_direction; // Could also use unconstrained
+        // Update beta
+        beta = std::min<Scalar>(2.0 * beta, opt_params->max_beta);
+        prev_gradient = gradient;
+        prev_descent_direction = descent_direction; // Could also use unconstrained
     }
 
     // Deregister loggers
@@ -729,17 +743,17 @@ namespace CurvatureMetric
     spdlog::drop("optimize_metric");
 
     // Update final optimized metric coordinates
-   return initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
-  }
+    return initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
+}
 
-  std::unique_ptr<DifferentiableConeMetric>
-  optimize_metric(const DifferentiableConeMetric &initial_cone_metric,
-                  const EnergyFunctor &opt_energy,
-                  std::shared_ptr<ProjectionParameters> proj_params,
-                  std::shared_ptr<OptimizationParameters> opt_params)
-  {
+std::unique_ptr<DifferentiableConeMetric> optimize_metric(
+    const DifferentiableConeMetric& initial_cone_metric,
+    const EnergyFunctor& opt_energy,
+    std::shared_ptr<ProjectionParameters> proj_params,
+    std::shared_ptr<OptimizationParameters> opt_params)
+{
     OptimizationLog log;
     return optimize_metric_log(initial_cone_metric, opt_energy, log, proj_params, opt_params);
-  }
-
 }
+
+} // namespace CurvatureMetric

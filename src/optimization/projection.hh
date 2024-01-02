@@ -35,31 +35,31 @@ namespace CurvatureMetric
   /// @param[in, out] u: initial conformal scale factors and final scale factors
   /// @param[in] proj_params: projection parameters to pass to the conformal
   /// method
-  /// @param[in] opt_params: optimization parameters
+  /// @param[in] output_dir: directory for output logs
   /// @return flip sequence and solve statistics for the conformal projection
   std::tuple<std::vector<int>, SolveStats<Scalar>>
   compute_constraint_scale_factors(
       const DifferentiableConeMetric &cone_metric,
       VectorX &u,
       std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-      std::shared_ptr<OptimizationParameters> opt_params = nullptr);
+      std::string output_dir="");
   VectorX
   compute_constraint_scale_factors(
       const DifferentiableConeMetric &cone_metric,
       std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-      std::shared_ptr<OptimizationParameters> opt_params = nullptr);
+      std::string output_dir="");
 
   /// Find a conformally equivalent metric for the cone metric that satisfy the target angle constraints.
   ///
   /// @param[in] cone_metric: mesh with differentiable metric
   /// @param[in] proj_params: projection parameters to pass to the conformal method
-  /// @param[in] opt_params: optimization parameters
+  /// @param[in] output_dir: directory for output logs
   /// @return conformally equivalent constrained metric
   std::unique_ptr<DifferentiableConeMetric>
   project_metric_to_constraint(
       const DifferentiableConeMetric &cone_metric,
       std::shared_ptr<ProjectionParameters> proj_params = nullptr,
-      std::shared_ptr<OptimizationParameters> opt_params = nullptr);
+      std::string output_dir="");
 
   /// Given the Jacobian of the constraint, compute the projection matrix to the constraint
   /// tangent space

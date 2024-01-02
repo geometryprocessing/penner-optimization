@@ -116,7 +116,7 @@ namespace CurvatureMetric
     // Get angles and cotangent of angles of faces opposite halfedges
     VectorX he2angle;
     VectorX he2cot;
-    corner_angles(cone_metric, he2angle, he2cot);
+    cone_metric.get_corner_angles(he2angle, he2cot);
 
     // Get matrix arrays
     const auto &next = cone_metric.n;
