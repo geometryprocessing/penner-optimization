@@ -163,12 +163,8 @@ VectorX project_descent_direction(
     MatrixX J_constraint;
     bool need_jacobian = true;
     bool only_free_vertices = true;
-    bool success = constraint_with_jacobian(
-        cone_metric,
-        constraint,
-        J_constraint,
-        need_jacobian,
-        only_free_vertices);
+    bool success =
+        cone_metric.constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
     if (!success) {
         spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
     }

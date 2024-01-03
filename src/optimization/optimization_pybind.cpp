@@ -288,6 +288,7 @@ init_conformal_pybind(pybind11::module& m)
         "Create double mesh from FV",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+  m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
   m.def("overlay_mesh_to_VL",
         &overlay_mesh_to_VL<Scalar>,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
