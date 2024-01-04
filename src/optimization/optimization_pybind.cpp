@@ -37,7 +37,6 @@
 
 #include "area.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "conformal_ideal_delaunay/Sampling.hh"
 #include "constraint.hh"
 #include "convergence.hh"
 #include "embedding.hh"
@@ -56,6 +55,10 @@
 #include "translation.hh"
 #include "visualization.hh"
 #include <highfive/H5Easy.hpp>
+
+#ifdef ENABLE_VISUALIZATION
+  #include "conformal_ideal_delaunay/Sampling.hh"
+#endif
 
 namespace CurvatureMetric {
 
@@ -293,6 +296,7 @@ init_conformal_pybind(pybind11::module& m)
         &overlay_mesh_to_VL<Scalar>,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+#ifdef ENABLE_VISUALIZATION
   m.def("get_pt_mat", &get_pt_mat, "get pt_mat");
   m.def("get_edges", &get_edges, "get edges mesh");
   m.def("generate_mesh_viewer",
@@ -310,6 +314,7 @@ init_conformal_pybind(pybind11::module& m)
         "save viewer image to png",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+#endif
 }
 
 void
