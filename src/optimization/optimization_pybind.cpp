@@ -53,11 +53,11 @@
 #include "shapes.hh"
 #include "shear.hh"
 #include "translation.hh"
-#include "visualization.hh"
 #include <highfive/H5Easy.hpp>
 
 #ifdef ENABLE_VISUALIZATION
   #include "conformal_ideal_delaunay/Sampling.hh"
+  #include "visualization.hh"
 #endif
 
 namespace CurvatureMetric {
