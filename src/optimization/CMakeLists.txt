@@ -27,11 +27,8 @@ target_link_libraries(MetricOptimizationLib PUBLIC
   conformal_cpp
   igl::core
   igl::predicates
-  igl::glfw
   spdlog::spdlog
-  igl::embree
   pybind11::module
-  Spectra
   ${Boost_FILESYSTEM_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
   ${MPFR_LIBRARIES}
