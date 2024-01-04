@@ -136,51 +136,51 @@ namespace CurvatureMetric
   }
 
   // Compute the cone adjacent faces of a closed mesh
-  [[deprecated]]
-  void compute_cone_faces(
-      const Mesh<Scalar> &m,
-      const ReductionMaps &reduction_maps,
-      std::vector<int> &cone_faces)
-  {
-    // Compute the cone vertices
-    std::vector<int> cone_vertices;
-    compute_cone_vertices(m, reduction_maps, cone_vertices);
+  //[[deprecated]]
+  //void compute_cone_faces(
+  //    const Mesh<Scalar> &m,
+  //    const ReductionMaps &reduction_maps,
+  //    std::vector<int> &cone_faces)
+  //{
+  //  // Compute the cone vertices
+  //  std::vector<int> cone_vertices;
+  //  compute_cone_vertices(m, reduction_maps, cone_vertices);
 
-    // Get boolean mask for the cone vertices
-    std::vector<bool> is_cone_vertex;
-    int num_vertices = m.n_ind_vertices();
-    convert_index_vector_to_boolean_array(cone_vertices, num_vertices, is_cone_vertex);
+  //  // Get boolean mask for the cone vertices
+  //  std::vector<bool> is_cone_vertex;
+  //  int num_vertices = m.n_ind_vertices();
+  //  convert_index_vector_to_boolean_array(cone_vertices, num_vertices, is_cone_vertex);
 
-    // Compute the cone faces by iterating over the halfedges
-    cone_faces.clear();
-    int num_halfedges = m.n_halfedges();
-    for (int h = 0; h < num_halfedges; ++h)
-    {
-      int v = m.v_rep[m.to[h]];
-      if (is_cone_vertex[v])
-      {
-        int f = m.f[h];
-        cone_faces.push_back(f);
-      }
-    }
-  }
+  //  // Compute the cone faces by iterating over the halfedges
+  //  cone_faces.clear();
+  //  int num_halfedges = m.n_halfedges();
+  //  for (int h = 0; h < num_halfedges; ++h)
+  //  {
+  //    int v = m.v_rep[m.to[h]];
+  //    if (is_cone_vertex[v])
+  //    {
+  //      int f = m.f[h];
+  //      cone_faces.push_back(f);
+  //    }
+  //  }
+  //}
 
-  [[deprecated]] void
-  compute_cone_face_weights(
-      const Mesh<Scalar> &m,
-      const ReductionMaps &reduction_maps,
-      Scalar cone_weight,
-      std::vector<Scalar> &face_weights)
-  {
-    std::vector<int> cone_faces;
-    compute_cone_faces(m, reduction_maps, cone_faces);
-    spdlog::trace("Weighting {} faces with {}", cone_faces.size(), cone_weight);
-    face_weights = std::vector<Scalar>(m.h.size(), 1.0);
-    for (size_t i = 0; i < cone_faces.size(); ++i)
-    {
-      face_weights[cone_faces[i]] = cone_weight;
-    }
-  }
+  //[[deprecated]] void
+  //compute_cone_face_weights(
+  //    const Mesh<Scalar> &m,
+  //    const ReductionMaps &reduction_maps,
+  //    Scalar cone_weight,
+  //    std::vector<Scalar> &face_weights)
+  //{
+  //  std::vector<int> cone_faces;
+  //  compute_cone_faces(m, reduction_maps, cone_faces);
+  //  spdlog::trace("Weighting {} faces with {}", cone_faces.size(), cone_weight);
+  //  face_weights = std::vector<Scalar>(m.h.size(), 1.0);
+  //  for (size_t i = 0; i < cone_faces.size(); ++i)
+  //  {
+  //    face_weights[cone_faces[i]] = cone_weight;
+  //  }
+  //}
 
   void
   compute_boundary_face_weights(
