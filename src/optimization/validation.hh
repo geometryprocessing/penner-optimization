@@ -2,9 +2,9 @@
 #include <random>
 #include <vector>
 #include "common.hh"
-#include "energies.hh"
-#include "embedding.hh"
+#include "energy_functor.hh"
 #include "constraint.hh"
+#include "cone_metric.hh"
 
 namespace CurvatureMetric {
 
@@ -92,39 +92,28 @@ generate_perturbation_vector(
 
 inline void
 validate_energy_functor(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_target,
-  const std::string& energy_choice,
-  int p=2,
+	const DifferentiableConeMetric& cone_metric,
+  const EnergyFunctor& opt_energy,
   int num_tests = 10
 ) {
-  // Expand the target metric coordinates to the doubled surface
-  ReductionMaps reduction_maps(m);
-  VectorX metric_target;
-  expand_reduced_function(
-    reduction_maps.proj, reduced_metric_target, metric_target);
-
-  // Build perturbed metric coordinates
-  VectorX deformation;
-  generate_perturbation_vector(metric_target.size(), 1, deformation);
-  VectorX metric_coords = metric_target + deformation;
-
-  // Build energy functions for given energy
-  OptimizationParameters opt_params;
-  opt_params.energy_choice = energy_choice;
-  opt_params.p = p;
-  EnergyFunctor opt_energy(m, metric_target, opt_params);
+  // Get initial metric coordinates
+  VectorX metric_coords = cone_metric.get_reduced_metric_coordinates();
 
   // Validate energy
-  VectorX gradient = opt_energy.gradient(metric_coords);
+  VectorX gradient = opt_energy.gradient(cone_metric);
   for (int i = 0; i < num_tests; ++i)
   {
     VectorX h;
     generate_perturbation_vector(metric_coords.size(), 1e-8, h);
-    Scalar energy_plus = opt_energy.energy(metric_coords + h);
-    Scalar energy_minus = opt_energy.energy(metric_coords - h);
+
+    std::unique_ptr<DifferentiableConeMetric> cone_metric_plus = cone_metric.set_metric_coordinates(metric_coords + h);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric_minus = cone_metric.set_metric_coordinates(metric_coords - h);
+    Scalar energy_plus = opt_energy.energy(*cone_metric_plus);
+    Scalar energy_minus = opt_energy.energy(*cone_metric_minus);
+
     Scalar directional_derivative = gradient.dot(h) / h.norm();
     Scalar finite_difference_derivative = (energy_plus - energy_minus) / (2.0 * h.norm());
+
     Scalar error = abs(directional_derivative - finite_difference_derivative);
     spdlog::error("Energy error for norm {} vector is {}", h.norm(), error);
   }
@@ -132,34 +121,18 @@ validate_energy_functor(
   
 inline void
 validate_constraint(
-	const Mesh<Scalar>& m,
-	const VectorX& reduced_metric_target,
+	const DifferentiableConeMetric& cone_metric,
   int num_tests = 10
 ) {
-  // Expand the target metric coordinates to the doubled surface
-  ReductionMaps reduction_maps(m);
-  VectorX metric_target;
-  expand_reduced_function(
-    reduction_maps.proj, reduced_metric_target, metric_target);
-
-  // Build perturbed metric coordinates
-  VectorX deformation;
-  generate_perturbation_vector(metric_target.size(), 1, deformation);
-  VectorX metric_coords = metric_target + deformation;
+  // Get initial metric coordinates
+  VectorX metric_coords = cone_metric.get_reduced_metric_coordinates();
 
   // Validate energy
   VectorX constraint;
   MatrixX J_constraint;
-  std::vector<int> flip_seq;
   bool need_jacobian = true;
-  bool use_edge_lengths = false;
-  constraint_with_jacobian(m,
-                            metric_coords,
-                            constraint,
-                            J_constraint,
-                            flip_seq,
-                            need_jacobian,
-                            use_edge_lengths);
+  bool only_free_vertices = true;
+  cone_metric.constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
   for (int i = 0; i < num_tests; ++i)
   {
     VectorX h;
@@ -168,20 +141,10 @@ validate_constraint(
     need_jacobian = false;
     MatrixX J_constraint_temp;
     VectorX constraint_plus, constraint_minus;
-    constraint_with_jacobian(m,
-                              metric_coords + h,
-                              constraint_plus,
-                              J_constraint_temp,
-                              flip_seq,
-                              need_jacobian,
-                              use_edge_lengths);
-    constraint_with_jacobian(m,
-                              metric_coords - h,
-                              constraint_minus,
-                              J_constraint_temp,
-                              flip_seq,
-                              need_jacobian,
-                              use_edge_lengths);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric_plus = cone_metric.set_metric_coordinates(metric_coords + h);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric_minus = cone_metric.set_metric_coordinates(metric_coords - h);
+    cone_metric_plus->constraint(constraint_plus, J_constraint_temp, need_jacobian, only_free_vertices);
+    cone_metric_minus->constraint(constraint_minus, J_constraint_temp, need_jacobian, only_free_vertices);
 
     VectorX directional_derivative = (J_constraint * h) / h.norm();
     VectorX finite_difference_derivative = (constraint_plus - constraint_minus) / (2.0 * h.norm());

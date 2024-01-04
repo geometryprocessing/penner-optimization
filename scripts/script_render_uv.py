@@ -116,7 +116,8 @@ def render_uv_one(args, fname):
         blue_size = 0
 
     # Get cut to singularity edges (or build for double meshes)
-    if (build_double):
+    use_boundary_edges = True
+    if (use_boundary_edges):
         v_cut_to_sin, f_cut_to_sin = script_util.get_boundary_edges(v3d, uv, f, fuv, bd_thick)
     else:
         try:
