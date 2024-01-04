@@ -26,7 +26,7 @@ if (PROJECT_IS_TOP_LEVEL)
   option(LIBIGL_EMBREE "Use EMBREE" ON)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS system filesystem)
+find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
