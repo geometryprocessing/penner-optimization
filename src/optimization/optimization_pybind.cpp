@@ -135,7 +135,9 @@ init_classes_pybind(pybind11::module& m)
                    &OptimizationParameters::use_checkpoints)
     .def_readwrite("use_log", &OptimizationParameters::use_log);
 
+#ifdef ENABLE_VISUALIZATION
   pybind11::class_<Viewer>(m, "Viewer").def(pybind11::init<>());
+#endif
 
   pybind11::class_<Connectivity>(m, "Connectivity")
     .def(pybind11::init<>())
@@ -291,12 +293,12 @@ init_conformal_pybind(pybind11::module& m)
         "Create double mesh from FV",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
   m.def("overlay_mesh_to_VL",
         &overlay_mesh_to_VL<Scalar>,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
 #ifdef ENABLE_VISUALIZATION
+  m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
   m.def("get_pt_mat", &get_pt_mat, "get pt_mat");
   m.def("get_edges", &get_edges, "get edges mesh");
   m.def("generate_mesh_viewer",
