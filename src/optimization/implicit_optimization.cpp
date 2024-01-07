@@ -440,7 +440,7 @@ bool check_convergence_progress(
     Scalar opt_energy_proj = opt_energy.energy(cone_metric);
     spdlog::get("optimize_metric")->info("Energy after projection is {}", opt_energy_proj);
     if ((opt_params->require_energy_decr) &&
-        (opt_energy_proj > opt_energy_init * (1.0 + opt_params->max_energy_incr))) {
+        (opt_energy_proj >= opt_energy_init * (1.0 + opt_params->max_energy_incr))) {
         spdlog::get("optimize_metric")->info("Reducing step size as the energy did not decrease");
         return false;
     }

@@ -77,6 +77,7 @@ if(RENDER_TEXTURE)
     igl::core
     igl::glfw
     igl::png
+    igl::embree
     plot
   )
 endif()

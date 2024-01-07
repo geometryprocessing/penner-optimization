@@ -92,6 +92,15 @@ compute_domain_coordinate_energy_with_gradient(
   VectorX& gradient
 );
 
+VectorX optimize_domain_coordinates(
+    const DifferentiableConeMetric& m,
+    const EnergyFunctor& opt_energy,
+    const MatrixX& constraint_domain_matrix,
+    const MatrixX& constraint_codomain_matrix,
+    const VectorX& init_domain_coords,
+    std::shared_ptr<ProjectionParameters> proj_params,
+    std::shared_ptr<OptimizationParameters> opt_params);
+
 /// @brief Optimize a metric satisfying constraints in terms of a basis of the shear
 /// space orthogonal to the space of conformal scalings.
 ///

@@ -19,9 +19,35 @@ public:
     int num_flips() { return m_flip_seq.size(); };
     const std::vector<int>& get_flip_sequence() const { return m_flip_seq; }
 
+    // Metric access methods: need to access metric coordinates and corner angles
     virtual VectorX get_metric_coordinates() const;
     virtual VectorX get_reduced_metric_coordinates() const = 0;
     virtual void get_corner_angles(VectorX& he2angle, VectorX& he2cot) const;
+
+    // Flip method: need to be able to flip metric
+    virtual bool flip_ccw(int _h, bool Ptolemy = true);
+
+    // Metric change methods: need to be able to clone metric and change metric coordinates
+    virtual std::unique_ptr<DifferentiableConeMetric> clone_cone_metric() const = 0;
+    virtual std::unique_ptr<DifferentiableConeMetric> set_metric_coordinates(
+        const VectorX& metric_coords) const = 0;
+    virtual std::unique_ptr<DifferentiableConeMetric> scale_conformally(const VectorX& u) const = 0;
+
+    // Constraint methods: need to have a differentiable constraint and method to project to it
+    virtual bool constraint(
+        VectorX& constraint,
+        MatrixX& J_constraint,
+        bool need_jacobian = true,
+        bool only_free_vertices = true) const;
+    virtual std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
+        SolveStats<Scalar>& solve_stats,
+        std::shared_ptr<ProjectionParameters> proj_params = nullptr) const = 0;
+    std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
+        std::shared_ptr<ProjectionParameters> proj_params = nullptr) const;
+
+    // Discrete metric methods: need differentiable method to flip to a discrete metric
+    virtual void make_discrete_metric() = 0;
+    virtual MatrixX get_transition_jacobian() const = 0;
 
     MatrixX change_metric_to_reduced_coordinates(
         const std::vector<int>& I,
@@ -32,27 +58,6 @@ public:
     MatrixX change_metric_to_reduced_coordinates(const MatrixX& halfedge_jacobian) const;
 
     virtual ~DifferentiableConeMetric() = default;
-
-    virtual bool flip_ccw(int _h, bool Ptolemy = true);
-
-    virtual std::unique_ptr<DifferentiableConeMetric> clone_cone_metric() const = 0;
-    virtual std::unique_ptr<DifferentiableConeMetric> set_metric_coordinates(
-        const VectorX& metric_coords) const = 0;
-    virtual std::unique_ptr<DifferentiableConeMetric> scale_conformally(const VectorX& u) const = 0;
-
-    virtual void make_discrete_metric() = 0;
-    virtual std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
-        SolveStats<Scalar>& solve_stats,
-        std::shared_ptr<ProjectionParameters> proj_params = nullptr) const = 0;
-    std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
-        std::shared_ptr<ProjectionParameters> proj_params = nullptr) const;
-    virtual bool constraint(
-        VectorX& constraint,
-        MatrixX& J_constraint,
-        bool need_jacobian = true,
-        bool only_free_vertices = true) const;
-
-    virtual MatrixX get_transition_jacobian() const = 0;
 
 protected:
     bool m_is_discrete_metric;
