@@ -240,21 +240,31 @@ compute_independent_to_full_edge_shear_matrix(
     int hki = m.n[hjk];
     int hil = m.n[hji];
     int hlj = m.n[hil];
+    std::vector<int> positive_halfedges = {hjk, hil, m.opp[hjk], m.opp[hil]};
+    std::vector<int> negative_halfedges = {hki, hlj, m.opp[hki], m.opp[hlj]};
 
     // Add shear vector for the embedded edge
-    tripletList.push_back(T(hjk, index, 1.0));
-    tripletList.push_back(T(hki, index, -1.0));
-    tripletList.push_back(T(hil, index, 1.0));
-    tripletList.push_back(T(hlj, index, -1.0));
+    for (int h : positive_halfedges)
+    {
+      tripletList.push_back(T(h, index, 1.0));
+    }
+    for (int h : negative_halfedges)
+    {
+      tripletList.push_back(T(h, index, -1.0));
+    }
 
     // Add shear vector for the reflected embedded edge
     // Note that the signs are inverted due to the inversion of the next relation 
     if (m.R[hij] > 0)
     {
-      tripletList.push_back(T(m.R[hjk], index, -1.0));
-      tripletList.push_back(T(m.R[hki], index, 1.0));
-      tripletList.push_back(T(m.R[hil], index, -1.0));
-      tripletList.push_back(T(m.R[hlj], index, 1.0));
+      for (int h : positive_halfedges)
+      {
+        tripletList.push_back(T(m.R[h], index, 1.0));
+      }
+      for (int h : negative_halfedges)
+      {
+        tripletList.push_back(T(m.R[h], index, -1.0));
+      }
     }
   }
 

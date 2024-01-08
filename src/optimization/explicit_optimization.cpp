@@ -147,6 +147,7 @@ void compute_optimization_domain(
     constraint_domain_matrix.setFromTriplets(
         domain_triplet_list.begin(),
         domain_triplet_list.end());
+    constraint_domain_matrix = m.change_metric_to_reduced_coordinates(constraint_domain_matrix.transpose()).transpose();
     SPDLOG_TRACE("Domain matrix is {}", constraint_domain_matrix);
 
     // Build the codomain matrix
@@ -155,6 +156,7 @@ void compute_optimization_domain(
     constraint_codomain_matrix.setFromTriplets(
         codomain_triplet_list.begin(),
         codomain_triplet_list.end());
+    constraint_codomain_matrix = m.change_metric_to_reduced_coordinates(constraint_codomain_matrix.transpose()).transpose();
     SPDLOG_TRACE("Codomain matrix is {}", constraint_codomain_matrix);
 }
 

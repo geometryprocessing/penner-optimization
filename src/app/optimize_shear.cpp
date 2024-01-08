@@ -1,7 +1,6 @@
 #include "common.hh"
 #include "explicit_optimization.hh"
 #include "optimization_interface.hh"
-#include "targets.hh"
 #include "optimization_interface.hh"
 #include "shear.hh"
 #include "logging.hh"
@@ -32,34 +31,25 @@ int main(int argc, char *argv[])
   igl::readOBJ(input_filename, V, uv, N, F, FT, FN);
 	
 	// Get input angles
-	std::vector<Scalar> Th_hat_init, Th_hat;
+	std::vector<Scalar> Th_hat_init;
 	spdlog::info("Using cone angles at {}", Th_hat_filename);
 	read_vector_from_file(Th_hat_filename, Th_hat_init);
-	correct_cone_angles(Th_hat_init, Th_hat);
+	std::vector<Scalar> Th_hat = correct_cone_angles(Th_hat_init);
 
 	// Get initial mesh for optimization
-	Mesh<Scalar> m;
 	std::vector<int> vtx_reindex;
-	VectorX reduced_metric_target;
-	generate_initial_mesh(V, F, V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
+	std::vector<int> free_cones = {};
+	bool fix_boundary = false;
+	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, false);
 
-	// Get initial metric from file or target
-	VectorX reduced_metric_init;
-	if (argc > 4)
-	{
-		std::string metric_filename = argv[4];
-		std::vector<Scalar> reduced_metric_init_vec;
-		read_vector_from_file(metric_filename, reduced_metric_init_vec);
-		convert_std_to_eigen_vector(reduced_metric_init_vec, reduced_metric_init);
-	} else {
-		reduced_metric_init = reduced_metric_target;
-	}
+	// Get energy
+	LogLengthEnergy opt_energy(*cone_metric);
 
 	// Make default parameters
 	auto proj_params = std::make_shared<ProjectionParameters>();
 	auto opt_params = std::make_shared<OptimizationParameters>();
-	opt_params->output_dir = output_dir;
-	opt_params->num_iter = 500;
+	//opt_params->output_dir = output_dir;
+	opt_params->num_iter = 100;
 	opt_params->min_ratio = 0;
 	opt_params->max_grad_range = 10;
 	opt_params->direction_choice = "lbfgs";
@@ -67,26 +57,23 @@ int main(int argc, char *argv[])
 	// Compute shear dual basis and the corresponding inner product matrix
 	MatrixX shear_basis_matrix;
   std::vector<int> independent_edges;
-	compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
+	compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
 	//compute_shear_coordinate_basis(m, shear_basis_matrix, independent_edges);
 
 	// Compute the shear dual coordinates for this basis
   VectorX shear_basis_coords_init;
 	VectorX scale_factors_init;
-	compute_shear_basis_coordinates(m, reduced_metric_init, shear_basis_matrix, shear_basis_coords_init, scale_factors_init);
+	compute_shear_basis_coordinates(*cone_metric, shear_basis_matrix, shear_basis_coords_init, scale_factors_init);
 	spdlog::info("Initial coordinates are {}", shear_basis_coords_init);
 
 	// Optimize the metric
-	PennerConeMetric cone_metric(m, reduced_metric_init);
 	VectorX reduced_metric_coords;
-	optimize_shear_basis_coordinates(cone_metric,
-									reduced_metric_target,
-						    	shear_basis_coords_init,
-									scale_factors_init,
-									shear_basis_matrix,
-									reduced_metric_coords,
-									proj_params,
-									opt_params);
+	optimize_shear_basis_coordinates(
+		*cone_metric,
+		opt_energy,
+		shear_basis_matrix,
+		proj_params,
+		opt_params);
 
 	// Write the output
 	std::string output_filename = join_path(output_dir, "reduced_metric_coords");
