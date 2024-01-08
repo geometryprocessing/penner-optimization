@@ -31,8 +31,10 @@ void write_explicit_data_log_entry(
     const DifferentiableConeMetric& m,
     const EnergyFunctor& opt_energy,
     const MatrixX& constraint_domain_matrix,
+    const MatrixX& constraint_codomain_matrix,
     const VectorX& optimized_domain_coords,
     const VectorX& domain_coords,
+    const VectorX& init_codomain_coords,
     const VectorX& gradient,
     std::shared_ptr<ProjectionParameters> proj_params,
     Scalar beta)
@@ -45,7 +47,9 @@ void write_explicit_data_log_entry(
     std::unique_ptr<DifferentiableConeMetric> cone_metric = compute_domain_coordinate_metric(
         m,
         constraint_domain_matrix,
+        constraint_codomain_matrix,
         optimized_domain_coords,
+        init_codomain_coords,
         proj_params);
 
     // Get the full per vertex constraint Jacobian with respect to Penner coordinates
@@ -53,11 +57,8 @@ void write_explicit_data_log_entry(
     MatrixX constraint_penner_jacobian;
     bool need_jacobian = true;
     bool only_free_vertices = false;
-    cone_metric->constraint(
-        constraint,
-        constraint_penner_jacobian,
-        need_jacobian,
-        only_free_vertices);
+    cone_metric
+        ->constraint(constraint, constraint_penner_jacobian, need_jacobian, only_free_vertices);
 
     // Compute change in domain coords
     VectorX change_in_domain_coords = optimized_domain_coords - domain_coords;
@@ -84,7 +85,8 @@ void compute_optimization_domain(
     const MatrixX& shear_basis_matrix,
     MatrixX& constraint_domain_matrix,
     MatrixX& constraint_codomain_matrix,
-    VectorX& domain_coords)
+    VectorX& domain_coords,
+    VectorX& codomain_coords)
 {
     // Build matrix to map scale factors to edge coordinates
     MatrixX scale_factor_basis_matrix = conformal_scaling_matrix(m);
@@ -136,9 +138,13 @@ void compute_optimization_domain(
     compute_shear_basis_coordinates(m, shear_basis_matrix, shear_basis_coords, scale_factors);
     int num_shear_basis_coords = shear_basis_coords.size();
     domain_coords.resize(num_shear_basis_coords + fixed_dof.size());
+    codomain_coords.resize(variable_dof.size());
     domain_coords.head(num_shear_basis_coords) = shear_basis_coords;
     for (size_t i = 0; i < fixed_dof.size(); ++i) {
         domain_coords[num_shear_basis_coords + i] = scale_factors[fixed_dof[i]];
+    }
+    for (size_t i = 0; i < variable_dof.size(); ++i) {
+        codomain_coords[i] = scale_factors[variable_dof[i]];
     }
 
     // Build the domain matrix
@@ -147,7 +153,8 @@ void compute_optimization_domain(
     constraint_domain_matrix.setFromTriplets(
         domain_triplet_list.begin(),
         domain_triplet_list.end());
-    constraint_domain_matrix = m.change_metric_to_reduced_coordinates(constraint_domain_matrix.transpose()).transpose();
+    constraint_domain_matrix =
+        m.change_metric_to_reduced_coordinates(constraint_domain_matrix.transpose()).transpose();
     SPDLOG_TRACE("Domain matrix is {}", constraint_domain_matrix);
 
     // Build the codomain matrix
@@ -156,30 +163,42 @@ void compute_optimization_domain(
     constraint_codomain_matrix.setFromTriplets(
         codomain_triplet_list.begin(),
         codomain_triplet_list.end());
-    constraint_codomain_matrix = m.change_metric_to_reduced_coordinates(constraint_codomain_matrix.transpose()).transpose();
+    constraint_codomain_matrix =
+        m.change_metric_to_reduced_coordinates(constraint_codomain_matrix.transpose()).transpose();
     SPDLOG_TRACE("Codomain matrix is {}", constraint_codomain_matrix);
 }
 
 std::unique_ptr<DifferentiableConeMetric> compute_domain_coordinate_metric(
     const DifferentiableConeMetric& m,
     const MatrixX& constraint_domain_matrix,
+    const MatrixX& constraint_codomain_matrix,
     const VectorX& domain_coords,
+    const VectorX& init_codomain_coords,
     std::shared_ptr<ProjectionParameters> proj_params)
 {
     spdlog::trace("Making domain coordinate metric");
-    SPDLOG_TRACE(
+    SPDLOG_INFO(
         "Domain coordinates in range [{}, {}]",
-        domain_coords.maxCoeff(),
-        domain_coords.minCoeff());
+        domain_coords.minCoeff(),
+        domain_coords.maxCoeff());
+    SPDLOG_INFO(
+        "Codomain coordinates in range [{}, {}]",
+        init_codomain_coords.minCoeff(),
+        init_codomain_coords.maxCoeff());
 
     // Get domain coordinate metric defined by the current coordinates
     VectorX domain_metric_coords = constraint_domain_matrix * domain_coords;
+    VectorX codomain_metric_coords = constraint_codomain_matrix * init_codomain_coords;
     std::unique_ptr<DifferentiableConeMetric> cone_metric =
-        m.set_metric_coordinates(domain_metric_coords);
+        m.set_metric_coordinates(domain_metric_coords + codomain_metric_coords);
     SPDLOG_TRACE(
         "Domain metric in range [{}, {}]",
         domain_metric_coords.minCoeff(),
         domain_metric_coords.maxCoeff());
+    SPDLOG_TRACE(
+        "Codomain metric in range [{}, {}]",
+        codomain_metric_coords.minCoeff(),
+        codomain_metric_coords.maxCoeff());
 
     // Project the domain metric to the constraint
     SolveStats<Scalar> solve_stats;
@@ -190,12 +209,19 @@ Scalar compute_domain_coordinate_energy(
     const DifferentiableConeMetric& m,
     const EnergyFunctor& opt_energy,
     const MatrixX& constraint_domain_matrix,
+    const MatrixX& constraint_codomain_matrix,
     const VectorX& domain_coords,
+    const VectorX& init_codomain_coords,
     std::shared_ptr<ProjectionParameters> proj_params)
 {
     // Compute penner coordinates from the domain coordinates
-    std::unique_ptr<DifferentiableConeMetric> cone_metric =
-        compute_domain_coordinate_metric(m, constraint_domain_matrix, domain_coords, proj_params);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = compute_domain_coordinate_metric(
+        m,
+        constraint_domain_matrix,
+        constraint_codomain_matrix,
+        domain_coords,
+        init_codomain_coords,
+        proj_params);
 
     // Get the initial energy
     return opt_energy.energy(*cone_metric);
@@ -207,13 +233,19 @@ bool compute_domain_coordinate_energy_with_gradient(
     const MatrixX& constraint_domain_matrix,
     const MatrixX& constraint_codomain_matrix,
     const VectorX& domain_coords,
+    const VectorX& init_codomain_coords,
     std::shared_ptr<ProjectionParameters> proj_params,
     Scalar& energy,
     VectorX& gradient)
 {
     // Compute penner coordinates from the domain coordinates
-    std::unique_ptr<DifferentiableConeMetric> cone_metric =
-        compute_domain_coordinate_metric(m, constraint_domain_matrix, domain_coords, proj_params);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = compute_domain_coordinate_metric(
+        m,
+        constraint_domain_matrix,
+        constraint_codomain_matrix,
+        domain_coords,
+        init_codomain_coords,
+        proj_params);
 
     // Get the initial energy
     energy = opt_energy.energy(*cone_metric);
@@ -256,6 +288,19 @@ bool compute_domain_coordinate_energy_with_gradient(
     gradient = energy_domain_gradient + energy_implicit_gradient;
 
     return true;
+}
+
+VectorX compute_codomain_coordinates(
+    const DifferentiableConeMetric& m,
+    const MatrixX& constraint_codomain_matrix)
+{
+    MatrixX inner_product_matrix =
+        constraint_codomain_matrix.transpose() * constraint_codomain_matrix;
+    VectorX metric_coords = m.get_reduced_metric_coordinates();
+    VectorX rhs = constraint_codomain_matrix.transpose() * metric_coords;
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
+    solver.compute(inner_product_matrix);
+    return solver.solve(rhs);
 }
 
 void compute_descent_direction(
@@ -304,6 +349,7 @@ void backtracking_domain_line_search(
     const MatrixX& constraint_domain_matrix,
     const MatrixX& constraint_codomain_matrix,
     const VectorX& domain_coords,
+    const VectorX& init_codomain_coords,
     const VectorX& gradient,
     const VectorX& descent_direction,
     VectorX& optimized_domain_coords,
@@ -320,7 +366,9 @@ void backtracking_domain_line_search(
         m,
         opt_energy,
         constraint_domain_matrix,
+        constraint_codomain_matrix,
         domain_coords,
+        init_codomain_coords,
         proj_params);
     spdlog::get("optimize_metric")->info("Initial energy is {}", initial_energy);
 
@@ -348,6 +396,7 @@ void backtracking_domain_line_search(
         constraint_domain_matrix,
         constraint_codomain_matrix,
         optimized_domain_coords,
+        init_codomain_coords,
         proj_params,
         energy,
         step_gradient);
@@ -379,6 +428,7 @@ void backtracking_domain_line_search(
             constraint_domain_matrix,
             constraint_codomain_matrix,
             optimized_domain_coords,
+            init_codomain_coords,
             proj_params,
             energy,
             step_gradient);
@@ -395,6 +445,7 @@ VectorX optimize_domain_coordinates(
     const MatrixX& constraint_domain_matrix,
     const MatrixX& constraint_codomain_matrix,
     const VectorX& init_domain_coords,
+    const VectorX& init_codomain_coords,
     std::shared_ptr<ProjectionParameters> proj_params,
     std::shared_ptr<OptimizationParameters> opt_params)
 {
@@ -402,6 +453,7 @@ VectorX optimize_domain_coordinates(
     if (proj_params == nullptr) proj_params = std::make_shared<ProjectionParameters>();
     if (opt_params == nullptr) opt_params = std::make_shared<OptimizationParameters>();
     VectorX domain_coords = init_domain_coords;
+    VectorX codomain_coords = init_codomain_coords;
 
     // Extract relevant parameters for main optimization method
     int num_iter = opt_params->num_iter;
@@ -457,6 +509,7 @@ VectorX optimize_domain_coordinates(
             constraint_domain_matrix,
             constraint_codomain_matrix,
             domain_coords,
+            codomain_coords,
             proj_params,
             energy,
             gradient);
@@ -514,6 +567,7 @@ VectorX optimize_domain_coordinates(
             constraint_domain_matrix,
             constraint_codomain_matrix,
             domain_coords,
+            codomain_coords,
             gradient,
             descent_direction,
             optimized_domain_coords,
@@ -527,8 +581,10 @@ VectorX optimize_domain_coordinates(
                 m,
                 opt_energy,
                 constraint_domain_matrix,
+                constraint_codomain_matrix,
                 optimized_domain_coords,
                 domain_coords,
+                codomain_coords,
                 gradient,
                 proj_params,
                 beta);
@@ -537,12 +593,19 @@ VectorX optimize_domain_coordinates(
         // Update for next iteration
         prev_domain_coords = domain_coords;
         domain_coords = optimized_domain_coords;
+        codomain_coords = compute_codomain_coordinates(m, constraint_codomain_matrix);
         beta = std::min(2.0 * beta, max_beta);
     }
 
     // Compute final projection
     std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric =
-        compute_domain_coordinate_metric(m, constraint_domain_matrix, domain_coords, proj_params);
+        compute_domain_coordinate_metric(
+            m,
+            constraint_domain_matrix,
+            constraint_codomain_matrix,
+            domain_coords,
+            codomain_coords,
+            proj_params);
 
     // Get final energy
     Scalar energy = opt_energy.energy(*optimized_cone_metric);
@@ -566,13 +629,14 @@ VectorX optimize_shear_basis_coordinates(
     // Build independent and dependent basis vectors by adding a global scaling term
     // to the shear basis and removing and arbitrary basis vector from the scale factors
     MatrixX constraint_domain_matrix, constraint_codomain_matrix;
-    VectorX domain_coords;
+    VectorX domain_coords, codomain_coords;
     compute_optimization_domain(
         m,
         shear_basis_matrix,
         constraint_domain_matrix,
         constraint_codomain_matrix,
-        domain_coords);
+        domain_coords,
+        codomain_coords);
 
     // Perform optimization in domain coordinates
     return optimize_domain_coordinates(
@@ -581,6 +645,7 @@ VectorX optimize_shear_basis_coordinates(
         constraint_domain_matrix,
         constraint_codomain_matrix,
         domain_coords,
+        codomain_coords,
         proj_params,
         opt_params);
 }
