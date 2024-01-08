@@ -292,15 +292,22 @@ bool compute_domain_coordinate_energy_with_gradient(
 
 VectorX compute_codomain_coordinates(
     const DifferentiableConeMetric& m,
-    const MatrixX& constraint_codomain_matrix)
+    const MatrixX& constraint_domain_matrix,
+    const MatrixX& constraint_codomain_matrix,
+    const VectorX& domain_coords)
 {
     MatrixX inner_product_matrix =
         constraint_codomain_matrix.transpose() * constraint_codomain_matrix;
     VectorX metric_coords = m.get_reduced_metric_coordinates();
-    VectorX rhs = constraint_codomain_matrix.transpose() * metric_coords;
+    VectorX metric_residual = metric_coords - (constraint_domain_matrix * domain_coords);
+    VectorX rhs = constraint_codomain_matrix.transpose() * metric_residual;
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
     solver.compute(inner_product_matrix);
-    return solver.solve(rhs);
+    VectorX codomain_coords = solver.solve(rhs);
+    spdlog::info(vector_equal(
+        constraint_domain_matrix * domain_coords + constraint_codomain_matrix * codomain_coords,
+        metric_coords));
+    return codomain_coords;
 }
 
 void compute_descent_direction(
@@ -343,7 +350,7 @@ void compute_descent_direction(
     }
 }
 
-void backtracking_domain_line_search(
+std::unique_ptr<DifferentiableConeMetric> backtracking_domain_line_search(
     const DifferentiableConeMetric& m,
     const EnergyFunctor& opt_energy,
     const MatrixX& constraint_domain_matrix,
@@ -411,7 +418,7 @@ void backtracking_domain_line_search(
            (step_gradient.dot(descent_direction) > 0)) {
         if (beta < 1e-16) {
             spdlog::get("optimize_metric")->warn("Terminating line step as beta too small");
-            return;
+            return m.clone_cone_metric();
         }
 
         // Reduce beta
@@ -437,6 +444,14 @@ void backtracking_domain_line_search(
             spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
         }
     }
+
+    return compute_domain_coordinate_metric(
+        m,
+        constraint_domain_matrix,
+        constraint_codomain_matrix,
+        optimized_domain_coords,
+        init_codomain_coords,
+        proj_params);
 }
 
 VectorX optimize_domain_coordinates(
@@ -561,18 +576,19 @@ VectorX optimize_domain_coordinates(
 
         // Perform backtracking gradient descent
         VectorX optimized_domain_coords;
-        backtracking_domain_line_search(
-            m,
-            opt_energy,
-            constraint_domain_matrix,
-            constraint_codomain_matrix,
-            domain_coords,
-            codomain_coords,
-            gradient,
-            descent_direction,
-            optimized_domain_coords,
-            beta,
-            proj_params);
+        std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric =
+            backtracking_domain_line_search(
+                m,
+                opt_energy,
+                constraint_domain_matrix,
+                constraint_codomain_matrix,
+                domain_coords,
+                codomain_coords,
+                gradient,
+                descent_direction,
+                optimized_domain_coords,
+                beta,
+                proj_params);
 
         // Write iteration data if output directory specified
         if (!output_dir.empty()) {
@@ -593,7 +609,11 @@ VectorX optimize_domain_coordinates(
         // Update for next iteration
         prev_domain_coords = domain_coords;
         domain_coords = optimized_domain_coords;
-        codomain_coords = compute_codomain_coordinates(m, constraint_codomain_matrix);
+        codomain_coords = compute_codomain_coordinates(
+            *optimized_cone_metric,
+            constraint_domain_matrix,
+            constraint_codomain_matrix,
+            domain_coords);
         beta = std::min(2.0 * beta, max_beta);
     }
 
