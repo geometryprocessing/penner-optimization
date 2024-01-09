@@ -418,7 +418,13 @@ std::unique_ptr<DifferentiableConeMetric> backtracking_domain_line_search(
            (step_gradient.dot(descent_direction) > 0)) {
         if (beta < 1e-16) {
             spdlog::get("optimize_metric")->warn("Terminating line step as beta too small");
-            return m.clone_cone_metric();
+            return compute_domain_coordinate_metric(
+                m,
+                constraint_domain_matrix,
+                constraint_codomain_matrix,
+                domain_coords,
+                init_codomain_coords,
+                proj_params);
         }
 
         // Reduce beta
@@ -605,6 +611,11 @@ VectorX optimize_domain_coordinates(
                 gradient,
                 proj_params,
                 beta);
+        }
+
+        if (beta < 1e-16) {
+            spdlog::get("optimize_metric")->warn("Terminating optimization as beta too small");
+            break;
         }
 
         // Update for next iteration
