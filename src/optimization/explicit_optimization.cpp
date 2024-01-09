@@ -191,11 +191,11 @@ std::unique_ptr<DifferentiableConeMetric> compute_domain_coordinate_metric(
     VectorX codomain_metric_coords = constraint_codomain_matrix * init_codomain_coords;
     std::unique_ptr<DifferentiableConeMetric> cone_metric =
         m.set_metric_coordinates(domain_metric_coords + codomain_metric_coords);
-    SPDLOG_TRACE(
+    SPDLOG_INFO(
         "Domain metric in range [{}, {}]",
         domain_metric_coords.minCoeff(),
         domain_metric_coords.maxCoeff());
-    SPDLOG_TRACE(
+    SPDLOG_INFO(
         "Codomain metric in range [{}, {}]",
         codomain_metric_coords.minCoeff(),
         codomain_metric_coords.maxCoeff());
@@ -568,7 +568,8 @@ VectorX optimize_domain_coordinates(
             descent_direction);
 
         // Ensure the descent direction range is stable
-        Scalar grad_range = beta * (descent_direction.maxCoeff() - descent_direction.minCoeff());
+        VectorX metric_descent_direction = constraint_domain_matrix * descent_direction;
+        Scalar grad_range = beta * (metric_descent_direction.maxCoeff() - metric_descent_direction.minCoeff());
         if ((max_grad_range > 0) && (grad_range >= max_grad_range)) {
             beta *= (max_grad_range / grad_range);
             spdlog::get("optimize_metric")->info("Reducing beta to {} for stability", beta);

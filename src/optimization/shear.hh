@@ -45,6 +45,7 @@ compute_shear_dual_basis(
   MatrixX &shear_basis_matrix,
   std::vector<int>& independent_edges
 );
+std::tuple<MatrixX, std::vector<int>> compute_shear_dual_basis_pybind(const Mesh<Scalar>& m);
 
 /// Compute a basis for the space of shear coordinates for a given mesh of shear vectors with log
 /// shear as coordinates.

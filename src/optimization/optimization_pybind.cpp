@@ -356,6 +356,14 @@ init_optimization_pybind(pybind11::module& m)
         &optimize_metric,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
+  m.def("compute_shear_dual_basis",
+        &compute_shear_dual_basis_pybind,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
+  m.def("optimize_domain_coordinates",
+        &optimize_domain_coordinates,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
   m.def("optimize_shear_basis_coordinates",
         &optimize_shear_basis_coordinates,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
