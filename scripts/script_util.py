@@ -348,17 +348,11 @@ def count_running_processes(p_list):
     return count
 
 def run_many(method, args):
-    p_list = [
-        multiprocessing.Process(target=method, args=(args,fname))
-        for fname in args['fname']
-    ]
-    for p in p_list:
-        p.start()
-        print("Running processes:", count_running_processes(p_list))
-        while (count_running_processes(p_list) >= args['num_processes']):
-            time.sleep(0.01)
-    for p in p_list:
-        p.join()
+    args_list = [(args, fname) for fname in args['fname']]
+    with multiprocessing.Pool(processes=args['num_processes']) as pool:
+        pool.starmap(method, args_list)
+
+    return
 
 def cut_mesh(v, f, uv, fuv):
     """
