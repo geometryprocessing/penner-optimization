@@ -350,7 +350,7 @@ def count_running_processes(p_list):
 def run_many(method, args):
     args_list = [(args, fname) for fname in args['fname']]
     with multiprocessing.Pool(processes=args['num_processes']) as pool:
-        pool.starmap(method, args_list)
+        pool.starmap(method, args_list, chunksize=1)
 
     return
 

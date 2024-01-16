@@ -40,27 +40,28 @@ def generate_histogram(
     log=False
 ):
     # Set width and height of figure
-	matplotlib.rcParams['figure.figsize'] = (width, height)
+    matplotlib.rcParams['figure.figsize'] = (width, height)
 
     # Set percentage or absolute scale for y axis
-	if use_percentage:
-		hist = seaborn.histplot(X, bins = 21, stat='percent', binrange=binrange)
-		hist.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
-		plt.ylim(0, ylim)
-	else:
-		hist = seaborn.histplot(X, bins = 21, binrange=binrange)
+    fig, ax = plt.subplots(1)
+    if use_percentage:
+        hist = seaborn.histplot(X, bins = 21, stat='percent', binrange=binrange, ax=ax)
+        hist.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
+        ax.set_ylim(0, ylim)
+    else:
+        hist = seaborn.histplot(X, bins = 21, binrange=binrange)
 
     # Set axes labels
-	hist.set_xlabel(label, fontsize=50)
-	hist.set_ylabel("")
-	hist.tick_params(labelsize=30)
+    hist.set_xlabel(label, fontsize=50)
+    hist.set_ylabel("")
+    hist.tick_params(labelsize=30)
     
     # Optionally use log scale
-	if log:
-		hist.set_xscale('log')
+    if log:
+        hist.set_xscale('log')
 
     # Save figure to file
-	plt.savefig(output_path, bbox_inches='tight')
+    fig.savefig(output_path, bbox_inches='tight')
 
 def generate_comparison_histogram(
     X,

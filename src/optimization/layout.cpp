@@ -768,7 +768,7 @@ get_consistent_layout(
     }
 
     // Pullback cut on the original mesh to the overlay
-    bool is_original_cut = false;
+    bool is_original_cut = !(is_cut_orig.empty());
     std::vector<bool> is_cut_poly;
     if (is_original_cut) {
         is_cut_poly = pullback_cut_to_overlay(m_o, is_cut_orig, true);
