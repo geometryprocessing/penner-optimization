@@ -97,7 +97,6 @@ add_subdirectory(src/optimization)
 if(ENABLE_VISUALIZATION)
   include(polyscope)
   target_link_libraries(MetricOptimizationLib PUBLIC
-    plot
     polyscope
   )
 endif()
