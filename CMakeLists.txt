@@ -13,17 +13,18 @@ if (PROJECT_IS_TOP_LEVEL)
   # Options for the project
   option(USE_PYBIND "Generate pybindings" ON)
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
-  option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
+  option(ENABLE_VISUALIZATION "Generate viewers for visualization" OFF)
   option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
+  option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
 
   # Set libigl options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
-  option(RENDER_TEXTURE "Render results" ON)
-  option(LIBIGL_OPENGL "Use OpenGL" ON)
-  option(LIBIGL_GLFW "Use GLFW" ON)
-  option(LIBIGL_PNG "Use PNG" ON)
-  option(LIBIGL_EMBREE "Use EMBREE" ON)
+  option(RENDER_TEXTURE "Render results" OFF)
+  option(LIBIGL_OPENGL "Use OpenGL" OFF)
+  option(LIBIGL_GLFW "Use GLFW" OFF)
+  option(LIBIGL_PNG "Use PNG" OFF)
+  option(LIBIGL_EMBREE "Use EMBREE" OFF)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
@@ -57,6 +58,10 @@ endif()
 
 if(USE_MULTIPRECISION)
   add_compile_definitions(MULTIPRECISION)
+endif()
+
+if(USE_SUITESPARSE)
+  add_compile_definitions(USE_SUITESPARSE)
 endif()
 
 add_compile_definitions(USE_EMBREE)
@@ -94,6 +99,13 @@ if(ENABLE_VISUALIZATION)
   target_link_libraries(MetricOptimizationLib PUBLIC
     plot
     polyscope
+  )
+endif()
+
+if(USE_SUITESPARSE)
+  include(suitesparse)
+  target_link_libraries(MetricOptimizationLib PUBLIC
+    SuiteSparse::CHOLMOD
   )
 endif()
 

@@ -16,6 +16,10 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
 
+#ifdef USE_SUITESPARSE
+#include <Eigen/CholmodSupport>
+#endif
+
 namespace CurvatureMetric {
 
 /// *************************
@@ -401,6 +405,17 @@ compute_condition_number(
   return sigma_1 / sigma_n;
 }
 
+inline VectorX solve_psd_system(const MatrixX& A, const VectorX&b)
+{
+#ifdef USE_SUITESPARSE
+    Eigen::CholmodSupernodalLLT<MatrixX> solver;
+#else
+    Eigen::SimplicialLDLT<MatrixX> solver;
+#endif
+
+    solver.compute(A);
+    return solver.solve(b);
+}
 
 /// ********************
 /// Data Type Conversion

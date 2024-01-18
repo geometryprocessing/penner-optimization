@@ -18,6 +18,7 @@ def optimize_one(args, fname):
     m, _, _, _, _, C, opt_energy = script_util.generate_mesh(args, fname)
     proj_params, opt_params = script_util.generate_parameters(args)
     opt_params.output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
+    proj_params.output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
 
     # Create output directory for the mesh
     output_dir = os.path.join(args['output_dir'], m + "_output")
@@ -33,7 +34,7 @@ def optimize_one(args, fname):
     C_conf = opt.project_metric_to_constraint(
         C,
         proj_params,
-        opt_params
+        opt_params.output_dir
     )
     lambdas_conf = C_conf.get_metric_coordinates()
     output_lambdas_path = os.path.join(output_dir, 'lambdas_conf')

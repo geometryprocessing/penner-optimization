@@ -43,6 +43,7 @@ struct ProjectionParameters
   bool do_reduction = true;
   bool initial_ptolemy = true;
   bool use_edge_flips = true;
+  std::string output_dir = "";
 };
 
 struct OptimizationParameters

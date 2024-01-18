@@ -177,8 +177,6 @@ void write_data_log_entry(const OptimizationLog& log, const std::filesystem::pat
     output_file << std::fixed << std::setprecision(17) << log.error << ",";
     output_file << std::fixed << std::setprecision(17) << log.convergence_ratio << ",";
     output_file << std::fixed << std::setprecision(17) << log.max_change_in_metric_coords << ",";
-    output_file << std::fixed << std::setprecision(17) << log.max_total_change_in_metric_coords
-                << ",";
     output_file << std::fixed << std::setprecision(17)
                 << log.actual_to_unconstrained_direction_ratio << ",";
     output_file << std::fixed << std::setprecision(17) << log.max_constrained_descent_direction

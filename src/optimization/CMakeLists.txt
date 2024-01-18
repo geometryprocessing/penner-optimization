@@ -18,6 +18,7 @@ add_library(MetricOptimizationLib
   refinement.cpp
   reparametrization.cpp
   shear.cpp
+  shapes.cpp
   translation.cpp
   triangulation.cpp
   viewers.cpp

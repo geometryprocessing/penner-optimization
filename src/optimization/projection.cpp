@@ -39,13 +39,11 @@ VectorX best_fit_conformal(
     // Construct psuedoinverse for the conformal scaling matrix
     MatrixX B = conformal_scaling_matrix(target_cone_metric);
     MatrixX A = B.transpose() * B;
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
-    solver.compute(A);
 
     // Solve for the best fit conformal scale factor
     VectorX metric_target = target_cone_metric.get_metric_coordinates();
     VectorX w = B.transpose() * (metric_coords - metric_target);
-    return solver.solve(w);
+    return solve_psd_system(A, w);
 }
 
 std::tuple<std::vector<int>, SolveStats<Scalar>> compute_constraint_scale_factors(
@@ -58,6 +56,7 @@ std::tuple<std::vector<int>, SolveStats<Scalar>> compute_constraint_scale_factor
 
     // Create parameters for conformal method using restricted set of projection
     // parameters
+    output_dir = proj_params->output_dir;
     AlgorithmParameters alg_params;
     LineSearchParameters ls_params;
     StatsParameters stats_params;
@@ -143,9 +142,7 @@ VectorX project_descent_direction(
     VectorX w = -(J_constraint * descent_direction + constraint);
     igl::Timer timer;
     timer.start();
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
-    solver.compute(L);
-    VectorX mu = solver.solve(w);
+    VectorX mu = solve_psd_system(L, w);
     double time = timer.getElapsedTime();
     spdlog::info("Direction projection solve took {} s", time);
     SPDLOG_INFO("Correction mu has norm {}", mu.norm());
