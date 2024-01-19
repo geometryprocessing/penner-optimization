@@ -23,6 +23,8 @@ def add_mesh_arguments(parser):
     # Input and output directories
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
+    parser.add_argument("--skip_fname",         help="filenames of the obj files to skip", 
+                                                     nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")
     parser.add_argument("--lambdas_dir",         help="directory for initial lambdas")
     parser.add_argument("--free_bd_angles",      help="let boundary angles be free",
@@ -348,7 +350,7 @@ def count_running_processes(p_list):
     return count
 
 def run_many(method, args):
-    args_list = [(args, fname) for fname in args['fname']]
+    args_list = [(args, fname) for fname in args['fname'] if fname not in args['skip_fname']]
     with multiprocessing.Pool(processes=args['num_processes']) as pool:
         pool.starmap(method, args_list, chunksize=1)
 

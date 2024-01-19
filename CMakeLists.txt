@@ -152,25 +152,22 @@ if(NOT USE_MULTIPRECISION)
     include(Catch2)
 
     # Build testing libraries
-    add_library(CurvatureMetricTestsLib
-      src/tests/test_area.cpp
-      src/tests/test_energies.cpp
-      src/tests/test_optimize.cpp
-    )
-    target_link_libraries(CurvatureMetricTestsLib PUBLIC
-      MetricOptimizationLib
-      Catch2::Catch2WithMain
-    )
-    set(TEST_DATA_ROOT "${PROJECT_SOURCE_DIR}/src/tests/regression/")
-    target_compile_definitions(CurvatureMetricTestsLib PUBLIC TEST_DATA_DIR=\"${TEST_DATA_ROOT}\")
+    #add_library(CurvatureMetricTestsLib
+    #)
+    #target_link_libraries(CurvatureMetricTestsLib PUBLIC
+    #  MetricOptimizationLib
+    #  Catch2::Catch2WithMain
+    #)
 
     # Build testing executable
     add_executable(CurvatureMetricTests
       src/tests/tests.cpp
     )
     target_link_libraries(CurvatureMetricTests PRIVATE
-      CurvatureMetricTestsLib
+      MetricOptimizationLib
       Catch2::Catch2WithMain
     )
+    set(TEST_DATA_ROOT "${PROJECT_SOURCE_DIR}/src/tests/regression/")
+    target_compile_definitions(CurvatureMetricTests PUBLIC TEST_DATA_DIR=\"${TEST_DATA_ROOT}\")
   endif()
 endif()

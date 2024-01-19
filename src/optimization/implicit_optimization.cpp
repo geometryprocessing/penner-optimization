@@ -44,6 +44,9 @@ void initialize_data_log(const std::filesystem::path& data_log_path)
     output_file << "step_size,";
     output_file << "energy,";
     output_file << "max_error,";
+    output_file << "rmse,";
+    output_file << "rrmse,";
+    output_file << "rmsre,";
     output_file << "convergence_ratio,";
     output_file << "max_change_in_metric_coords,";
     output_file << "actual_to_unconstrained_direction_ratio,";
@@ -65,6 +68,19 @@ void update_data_log(
     const VectorX& descent_direction,
     Scalar convergence_ratio)
 {
+    // Get initial metric coordinates
+    VectorX metric_init = initial_cone_metric.get_reduced_metric_coordinates();
+
+    // Get edge lengths
+    int num_reduced_edges = metric_init.size();
+    VectorX l_init(num_reduced_edges);
+    VectorX l(num_reduced_edges);
+    for (int E = 0; E < num_reduced_edges; ++E)
+    {
+        l_init[E] = exp(metric_init[E] / 2.0);
+        l[E] = exp(reduced_metric_coords[E] / 2.0);
+    }
+
     // Copy metric and make discrete
     std::unique_ptr<DifferentiableConeMetric> cone_metric =
         initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
@@ -84,6 +100,9 @@ void update_data_log(
     // Compute numerics
     log.energy = opt_energy.energy(initial_cone_metric);
     log.error = sup_norm(constraint);
+    log.rmse = root_mean_square_error(l, l_init);
+    log.rrmse = relative_root_mean_square_error(l, l_init);
+    log.rmsre = root_mean_square_relative_error(l, l_init);
     log.num_flips = cone_metric->num_flips();
     log.convergence_ratio = convergence_ratio;
     log.max_change_in_metric_coords = sup_norm(change_in_metric_coords);
@@ -175,6 +194,9 @@ void write_data_log_entry(const OptimizationLog& log, const std::filesystem::pat
     output_file << std::fixed << std::setprecision(17) << log.beta << ",";
     output_file << std::fixed << std::setprecision(17) << log.energy << ",";
     output_file << std::fixed << std::setprecision(17) << log.error << ",";
+    output_file << std::fixed << std::setprecision(17) << log.rmse << ",";
+    output_file << std::fixed << std::setprecision(17) << log.rrmse << ",";
+    output_file << std::fixed << std::setprecision(17) << log.rmsre << ",";
     output_file << std::fixed << std::setprecision(17) << log.convergence_ratio << ",";
     output_file << std::fixed << std::setprecision(17) << log.max_change_in_metric_coords << ",";
     output_file << std::fixed << std::setprecision(17)

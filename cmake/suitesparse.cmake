@@ -1,3 +1,7 @@
+if(TARGET SuiteSparse::SuiteSparseConfig)
+  return()
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
     suitesparse

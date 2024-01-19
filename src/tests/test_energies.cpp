@@ -74,3 +74,22 @@ TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
     REQUIRE( float_equal(J_f2J2.coeff(0, 2), 0.0) );
   }
 }
+
+TEST_CASE( "The errors of a triangle can be computed", "[energies]" ) {
+  SECTION ( "Errors" )
+  {
+    VectorX x(3);
+    VectorX x0(3);
+    x << 1.0, 2.0, 0.5;
+    x0 << 2.0, 2.0, 1.0;
+    // err is 1.0, 0.0, 0.5
+    // Sq err is 1.0, 0.0, 0.25
+    // Rel err is 0.5, 0.0, 0.5
+    // Rel sq err is 0.25, 0.0, 0.25
+    // total Sq err is 1.25
+    // rel factor is 9
+    CHECK( float_equal(root_mean_square_error(x, x0), std::sqrt(1.25 / 3.0)) );
+    CHECK( float_equal(relative_root_mean_square_error(x, x0), std::sqrt(1.25 / (3.0 * 9.0))) );
+    CHECK( float_equal(root_mean_square_relative_error(x, x0), std::sqrt(0.5 / 3.0)) );
+  }
+}

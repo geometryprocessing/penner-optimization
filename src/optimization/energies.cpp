@@ -563,6 +563,60 @@ namespace CurvatureMetric
     return energy;
   }
 
+Scalar
+root_mean_square_error(const VectorX &x, const VectorX &x0)
+{
+    assert(x.size() == x0.size());
+    int num_var = x.size();
+    if (num_var == 0) return 0.0;
+
+    Scalar error = 0.0;
+    for (int i = 0; i < num_var; ++i)
+    {
+        Scalar diff = x[i] - x0[i];
+        error += diff * diff; 
+    }
+    
+    return std::sqrt(error / num_var);
+}
+
+Scalar
+relative_root_mean_square_error(const VectorX &x, const VectorX &x0)
+{
+    assert(x.size() == x0.size());
+    int num_var = x.size();
+    if (num_var == 0) return 0.0;
+
+    Scalar error = 0.0;
+    Scalar denom = 0.0;
+    for (int i = 0; i < num_var; ++i)
+    {
+        Scalar diff = x[i] - x0[i];
+        error += (diff * diff);
+        denom += (x0[i] * x0[i]);
+    }
+    
+    return std::sqrt(error / (num_var * denom));
+}
+
+Scalar
+root_mean_square_relative_error(const VectorX &x, const VectorX &x0)
+{
+    assert(x.size() == x0.size());
+    int num_var = x.size();
+    if (num_var == 0) return 0.0;
+
+    Scalar error = 0.0;
+    for (int i = 0; i < num_var; ++i)
+    {
+        Scalar rel_err = (!float_equal(x0[i], 0.0)) ? (x[i] - x0[i]) / x0[i] : 1e10;
+        error += (rel_err * rel_err);
+    }
+    
+    return std::sqrt(error / num_var);
+    
+}
+
 // FIXME Rename these variables
 // FIXME Ensure all pybind functions for the entire interface are in place
 #ifdef PYBIND

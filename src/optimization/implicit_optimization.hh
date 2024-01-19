@@ -20,6 +20,9 @@ namespace CurvatureMetric
     Scalar beta;                                    // Step size
     Scalar energy;                                  // Energy
     Scalar error;                                   // Max angle constraint error
+    Scalar rmse;                                    // Root mean squared edge lengths
+    Scalar rrmse;                                   // Relative root mean squared edge lengths
+    Scalar rmsre;                                   // Root mean squared relative edge lengths
     int num_flips;                                  // Number of flips for MakeDelaunay
     Scalar convergence_ratio;                       // Convergence ratio
     Scalar max_change_in_metric_coords;             // Maximum change per edge in the metric coordinates

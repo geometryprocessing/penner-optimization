@@ -225,6 +225,15 @@ symmetric_dirichlet_energy(
   VectorX& f2energy
 );
 
+Scalar
+root_mean_square_error(const VectorX &x, const VectorX &x0);
+
+Scalar
+relative_root_mean_square_error(const VectorX &x, const VectorX &x0);
+
+Scalar
+root_mean_square_relative_error(const VectorX &x, const VectorX &x0);
+
 #ifdef PYBIND
 
 VectorX
