@@ -25,6 +25,7 @@ if (PROJECT_IS_TOP_LEVEL)
   option(LIBIGL_GLFW "Use GLFW" OFF)
   option(LIBIGL_PNG "Use PNG" OFF)
   option(LIBIGL_EMBREE "Use EMBREE" OFF)
+  set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
 endif()
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
@@ -96,17 +97,11 @@ add_subdirectory(src/optimization)
 
 if(ENABLE_VISUALIZATION)
   include(polyscope)
-  target_link_libraries(MetricOptimizationLib PUBLIC
+  target_link_libraries(MetricOptimizationLib PRIVATE
     polyscope
   )
 endif()
 
-if(USE_SUITESPARSE)
-  include(suitesparse)
-  target_link_libraries(MetricOptimizationLib PUBLIC
-    SuiteSparse::CHOLMOD
-  )
-endif()
 
 # Build pybind optimization functions
 message("FIXME Building pybind libraries")
@@ -131,6 +126,18 @@ if(USE_PYBIND)
     MetricOptimizationLib
     HighFiveLib
   )
+
+if(USE_SUITESPARSE)
+  include(suitesparse)
+  target_link_libraries(MetricOptimizationLib PRIVATE
+    SuiteSparse::SuiteSparseConfig
+    SuiteSparse::CHOLMOD
+  )
+  target_link_libraries(optimization_py PRIVATE
+    SuiteSparse::SuiteSparseConfig
+    SuiteSparse::CHOLMOD
+  )
+endif()
 
   # Set pybinding settings
   set_target_properties(optimization_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -167,6 +174,12 @@ if(NOT USE_MULTIPRECISION)
       MetricOptimizationLib
       Catch2::Catch2WithMain
     )
+    if(USE_SUITESPARSE)
+      target_link_libraries(CurvatureMetricTests PRIVATE
+        SuiteSparse::SuiteSparseConfig
+        SuiteSparse::CHOLMOD
+      )
+    endif()
     set(TEST_DATA_ROOT "${PROJECT_SOURCE_DIR}/src/tests/regression/")
     target_compile_definitions(CurvatureMetricTests PUBLIC TEST_DATA_DIR=\"${TEST_DATA_ROOT}\")
   endif()
