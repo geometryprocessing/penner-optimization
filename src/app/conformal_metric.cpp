@@ -2,6 +2,7 @@
 #include "implicit_optimization.hh"
 #include "optimization_interface.hh"
 #include "layout.hh"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "logging.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>

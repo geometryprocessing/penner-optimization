@@ -133,10 +133,6 @@ if(USE_SUITESPARSE)
     SuiteSparse::SuiteSparseConfig
     SuiteSparse::CHOLMOD
   )
-  target_link_libraries(optimization_py PRIVATE
-    SuiteSparse::SuiteSparseConfig
-    SuiteSparse::CHOLMOD
-  )
 endif()
 
   # Set pybinding settings
@@ -174,12 +170,6 @@ if(NOT USE_MULTIPRECISION)
       MetricOptimizationLib
       Catch2::Catch2WithMain
     )
-    if(USE_SUITESPARSE)
-      target_link_libraries(CurvatureMetricTests PRIVATE
-        SuiteSparse::SuiteSparseConfig
-        SuiteSparse::CHOLMOD
-      )
-    endif()
     set(TEST_DATA_ROOT "${PROJECT_SOURCE_DIR}/src/tests/regression/")
     target_compile_definitions(CurvatureMetricTests PUBLIC TEST_DATA_DIR=\"${TEST_DATA_ROOT}\")
   endif()

@@ -2,8 +2,6 @@
 
 #include "common.hh"
 #include "cone_metric.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace CurvatureMetric {
 

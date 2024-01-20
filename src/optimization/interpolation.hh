@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace CurvatureMetric {

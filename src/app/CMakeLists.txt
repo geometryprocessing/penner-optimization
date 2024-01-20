@@ -4,6 +4,12 @@ add_executable(conformal_metric
 target_link_libraries(conformal_metric PRIVATE
   MetricOptimizationLib
 )
+if(USE_SUITESPARSE)
+target_link_libraries(conformal_metric PRIVATE
+  SuiteSparse::SuiteSparseConfig
+  SuiteSparse::CHOLMOD
+)
+endif()
 
 add_executable(optimize_metric
   optimize_metric.cpp

@@ -1,6 +1,4 @@
 #include <catch2/catch_test_macros.hpp>
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
-
 
 #include "energies.hh"
 #include "shapes.hh"

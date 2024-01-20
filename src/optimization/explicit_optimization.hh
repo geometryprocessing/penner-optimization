@@ -2,8 +2,6 @@
 
 #include <filesystem>
 #include "common.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
 #include "embedding.hh"
 #include "energy_functor.hh"
 

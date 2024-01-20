@@ -1,6 +1,7 @@
 #include "cone_metric.hh"
 #include "constraint.hh"
 #include "projection.hh"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 namespace CurvatureMetric {
 

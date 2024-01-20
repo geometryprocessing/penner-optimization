@@ -5,7 +5,6 @@
 #include "energy_functor.hh"
 #include "cone_metric.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include <filesystem>
 
 namespace CurvatureMetric

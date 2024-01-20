@@ -1,6 +1,7 @@
 #include "interpolation.hh"
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "embedding.hh"
 #include "reparametrization.hh"
 #include "projection.hh"

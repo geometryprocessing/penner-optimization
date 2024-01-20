@@ -6,6 +6,7 @@
 #include "constraint.hh"
 #include "embedding.hh"
 #include "globals.hh"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 /// FIXME Do cleaning pass
 

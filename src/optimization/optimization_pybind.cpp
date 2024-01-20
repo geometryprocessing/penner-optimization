@@ -36,7 +36,6 @@
 #include "common.hh"
 
 #include "area.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "constraint.hh"
 #include "convergence.hh"
 #include "embedding.hh"
@@ -294,10 +293,11 @@ init_conformal_pybind(pybind11::module& m)
         "Create double mesh from FV",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-  m.def("overlay_mesh_to_VL",
-        &overlay_mesh_to_VL<Scalar>,
-        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-                             pybind11::scoped_estream_redirect>());
+// TODO Replace with internal method
+//  m.def("overlay_mesh_to_VL",
+//        &overlay_mesh_to_VL<Scalar>,
+//        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+//                             pybind11::scoped_estream_redirect>());
 #ifdef ENABLE_VISUALIZATION
   m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
   m.def("get_pt_mat", &get_pt_mat, "get pt_mat");

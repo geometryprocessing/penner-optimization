@@ -3,6 +3,7 @@
 #include <igl/doublearea.h>
 #include <igl/flipped_triangles.h>
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/Layout.hh"
 #include "embedding.hh"
 #include "energies.hh"
