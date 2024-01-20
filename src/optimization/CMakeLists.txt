@@ -1,6 +1,7 @@
 add_library(MetricOptimizationLib
   area.cpp
   constraint.cpp
+  common.cpp
   cone_metric.cpp
   convergence.cpp
   embedding.cpp
