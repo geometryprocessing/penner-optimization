@@ -3,6 +3,7 @@
 #include "globals.hh"
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <array>
 #include <Eigen/Core>

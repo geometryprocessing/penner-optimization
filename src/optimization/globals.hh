@@ -1,7 +1,7 @@
 #pragma once
 
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
+#include "conformal_ideal_delaunay/globals.hh"
 #include <Eigen/Sparse>
 #include <string>
 #include "mpreal.h"

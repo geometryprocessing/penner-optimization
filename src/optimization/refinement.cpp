@@ -7,9 +7,11 @@
 #include <igl/facet_components.h>
 #include <igl/flipped_triangles.h>
 #include <igl/boundary_facets.h>
+#include <igl/boundary_loop.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/doublearea.h>
+#include "conformal_ideal_delaunay/Halfedge.hh"
 #include <stack>
 #include <set>
 
