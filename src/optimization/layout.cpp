@@ -65,8 +65,8 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     igl::doublearea(V, F, areas);
     Scalar min_area = areas.minCoeff() / 2.0;
     Scalar max_area = areas.maxCoeff() / 2.0;
-    spdlog::info("Minimum face area: {}", min_area);
-    spdlog::info("Maximum face area: {}", max_area);
+    spdlog::debug("Minimum face area: {}", min_area);
+    spdlog::debug("Maximum face area: {}", max_area);
 
     return (!float_equal(min_area, 0.0));
 }
@@ -666,11 +666,11 @@ void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::
 
     Eigen::VectorXi flipped_f;
     igl::flipped_triangles(uv, F_uv, flipped_f);
-    spdlog::info("{} flipped elements in mesh", flipped_f.size());
+    spdlog::debug("{} flipped elements in mesh", flipped_f.size());
     for (int i = 0; i < flipped_f.size(); ++i) {
         int fi = flipped_f[i];
-        spdlog::info("Face {} is flipped", F_uv.row(fi));
-        spdlog::info(
+        spdlog::debug("Face {} is flipped", F_uv.row(fi));
+        spdlog::debug(
             "Vertices {}, {}, {}",
             uv.row(F_uv(fi, 0)),
             uv.row(F_uv(fi, 1)),
@@ -764,7 +764,6 @@ get_consistent_layout(
     }
     bool view_layouts = false;
     if (view_layouts) {
-        spdlog::info("Viewing layouts");
         view_halfedge_mesh_layout(m, u_o, v_o);
     }
 
@@ -807,7 +806,6 @@ get_consistent_layout(
     std::vector<Scalar> _v_o = std::get<1>(overlay_layout_res);
     is_cut_o = std::get<2>(overlay_layout_res);
     if (view_layouts) {
-        spdlog::info("Viewing layouts");
         view_halfedge_mesh_layout(m, _u_o, _v_o);
     }
 

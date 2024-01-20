@@ -177,11 +177,11 @@ std::unique_ptr<DifferentiableConeMetric> compute_domain_coordinate_metric(
     std::shared_ptr<ProjectionParameters> proj_params)
 {
     spdlog::trace("Making domain coordinate metric");
-    SPDLOG_INFO(
+    SPDLOG_TRACE(
         "Domain coordinates in range [{}, {}]",
         domain_coords.minCoeff(),
         domain_coords.maxCoeff());
-    SPDLOG_INFO(
+    SPDLOG_TRACE(
         "Codomain coordinates in range [{}, {}]",
         init_codomain_coords.minCoeff(),
         init_codomain_coords.maxCoeff());
@@ -191,11 +191,11 @@ std::unique_ptr<DifferentiableConeMetric> compute_domain_coordinate_metric(
     VectorX codomain_metric_coords = constraint_codomain_matrix * init_codomain_coords;
     std::unique_ptr<DifferentiableConeMetric> cone_metric =
         m.set_metric_coordinates(domain_metric_coords + codomain_metric_coords);
-    SPDLOG_INFO(
+    SPDLOG_TRACE(
         "Domain metric in range [{}, {}]",
         domain_metric_coords.minCoeff(),
         domain_metric_coords.maxCoeff());
-    SPDLOG_INFO(
+    SPDLOG_TRACE(
         "Codomain metric in range [{}, {}]",
         codomain_metric_coords.minCoeff(),
         codomain_metric_coords.maxCoeff());
@@ -304,7 +304,7 @@ VectorX compute_codomain_coordinates(
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
     solver.compute(inner_product_matrix);
     VectorX codomain_coords = solver.solve(rhs);
-    spdlog::info(vector_equal(
+    SPDLOG_DEBUG(vector_equal(
         constraint_domain_matrix * domain_coords + constraint_codomain_matrix * codomain_coords,
         metric_coords));
     return codomain_coords;
@@ -491,7 +491,7 @@ VectorX optimize_domain_coordinates(
 
     // Creat log for diagnostics if an output directory is specified
     create_log(output_dir, "optimize_metric");
-    spdlog::get("optimize_metric")->set_level(spdlog::level::debug);
+    spdlog::get("optimize_metric")->set_level(spdlog::level::off);
     spdlog::get("optimize_metric")->info("Beginning explicit optimization");
 
     // Create per iteration data log if an output directory is specified

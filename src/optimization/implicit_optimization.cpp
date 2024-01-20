@@ -351,7 +351,7 @@ void compute_projected_newton_descent_direction(
     solver.compute(hessian_lagrangian);
     VectorX solution = solver.solve(rhs);
     double time = timer.getElapsedTime();
-    spdlog::info("Lagrangian descent direction solve took {} s", time);
+    spdlog::trace("Lagrangian descent direction solve took {} s", time);
 
     // Get projected descent direction from lagrangian solution
     int num_variables = gradient.size();
@@ -549,7 +549,7 @@ VectorX line_search_with_projection(
         VectorX constrained_gradient =
             project_descent_direction(*constrained_cone_metric, gradient);
         num_linear_solves++;
-        spdlog::trace("Projected gradient is {}", descent_direction.dot(constrained_gradient));
+        SPDLOG_TRACE("Projected gradient is {}", descent_direction.dot(constrained_gradient));
 
         // Check if the convergence conditions were satisfied and reduce beta if not
         bool convergence_success = check_convergence_progress(
@@ -614,14 +614,14 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
     bool use_optimal_projection = opt_params->use_optimal_projection;
     Scalar max_grad_range = opt_params->max_grad_range;
 
-    // Log mesh data
-    create_log(output_dir, "mesh_data");
-    spdlog::get("mesh_data")->set_level(spdlog::level::trace);
-    log_mesh_information(initial_cone_metric, "mesh_data");
+    // Log mesh data TODO
+    //create_log(output_dir, "mesh_data");
+    //spdlog::get("mesh_data")->set_level(spdlog::level::trace);
+    //log_mesh_information(initial_cone_metric, "mesh_data");
 
     // Creat log for diagnostics if an output directory is specified
     create_log(output_dir, "optimize_metric");
-    spdlog::get("optimize_metric")->set_level(spdlog::level::debug);
+    spdlog::get("optimize_metric")->set_level(spdlog::level::off);
     spdlog::get("optimize_metric")->info("Beginning implicit optimization");
 
     // Create per iteration data log if an output directory is specified
@@ -646,6 +646,7 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
     std::unique_ptr<DifferentiableConeMetric> initial_constrained_cone_metric =
         initial_cone_metric.project_to_constraint(proj_params);
     assert(float_equal(compute_max_constraint(*initial_constrained_cone_metric), 0.0, 1e-6));
+    spdlog::get("optimize_metric")->info("Performing initial projection to the constraint");
 
     // Log the initial energy
     Scalar initial_energy = opt_energy.energy(*initial_constrained_cone_metric);

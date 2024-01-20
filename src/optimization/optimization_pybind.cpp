@@ -458,7 +458,6 @@ load_simplify_overlay_output(
 PYBIND11_MODULE(optimization_py, m)
 {
   m.doc() = "pybind for optimization module";
-  spdlog::set_level(spdlog::level::info);
 
   init_classes_pybind(m);
   init_conformal_pybind(m);

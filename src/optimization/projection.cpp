@@ -67,6 +67,7 @@ std::tuple<std::vector<int>, SolveStats<Scalar>> compute_constraint_scale_factor
     alg_params.use_edge_flips = proj_params->use_edge_flips;
     ls_params.bound_norm_thres = double(proj_params->bound_norm_thres);
     ls_params.do_reduction = proj_params->do_reduction;
+    stats_params.log_level = 6; // 6 for off
     if (!output_dir.empty()) {
         stats_params.error_log = true;
         stats_params.flip_count = true;
@@ -145,8 +146,8 @@ VectorX project_descent_direction(
     timer.start();
     VectorX mu = solve_psd_system(L, w);
     double time = timer.getElapsedTime();
-    spdlog::info("Direction projection solve took {} s", time);
-    SPDLOG_INFO("Correction mu has norm {}", mu.norm());
+    spdlog::trace("Direction projection solve took {} s", time);
+    SPDLOG_TRACE("Correction mu has norm {}", mu.norm());
 
     // Compute lambdas line search direction
     return descent_direction + (J_constraint.transpose() * mu);
@@ -166,7 +167,7 @@ VectorX project_descent_direction(
     if (!success) {
         spdlog::get("optimize_metric")->warn("Conformal projection did not converge");
     }
-    SPDLOG_INFO("Constraint has norm {}", constraint.norm());
+    SPDLOG_TRACE("Constraint has norm {}", constraint.norm());
 
     // Project the descent direction to the constraint tangent plane
     return project_descent_direction(descent_direction, constraint, J_constraint);
