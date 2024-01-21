@@ -12,7 +12,7 @@ VectorX solve_psd_system(const MatrixX& A, const VectorX&b)
 #ifdef USE_SUITESPARSE
     Eigen::CholmodSupernodalLLT<MatrixX> solver;
 #else
-    Eigen::SimplicialLDLT<MatrixX> solver;
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
 #endif
 
     solver.compute(A);
