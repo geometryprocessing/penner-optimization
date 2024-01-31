@@ -8,17 +8,17 @@ namespace CurvatureMetric {
 /// Check the triangle inequality for every triangle in the mesh with respect to the
 /// halfedge metric coordinates
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] cone_metric: mesh with metric
 /// @return: true iff each triangle in the mesh satisfies the triangle inequality
-bool satisfies_triangle_inequality(const DifferentiableConeMetric& cone_metric);
+bool satisfies_triangle_inequality(const Mesh<Scalar>& cone_metric);
 
 /// Compute the triangle angles and cotangent angles of a Delaunay (possibly
 /// symmetric) mesh m with metric. Angles are indexed by their opposing halfedge.
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] cone_metric: mesh with metric
 /// @param[out] he2angle: map from halfedges to opposing angle
 /// @param[out] he2cot: map from halfedges to cotan of opposing angle
-void corner_angles(const DifferentiableConeMetric& cone_metric, VectorX& he2angle, VectorX& he2cot);
+void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& he2cot);
 
 /// Compute the vertex angles of a Delaunay (possibly symmetric) mesh with metric
 /// and the Jacobian with respect to the reduced coordinates if needed.

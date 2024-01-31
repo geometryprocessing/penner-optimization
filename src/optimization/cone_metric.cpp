@@ -190,7 +190,6 @@ void PennerConeMetric::make_discrete_metric()
     SolveStats<Scalar> solve_stats;
     bool use_ptolemy = true;
     ConformalIdealDelaunay<Scalar>::MakeDelaunay(*this, u, del_stats, solve_stats, use_ptolemy);
-    m_flip_seq = del_stats.flip_seq; // TODO Append
     m_is_discrete_metric = true;
     return;
 }

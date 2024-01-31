@@ -5,7 +5,7 @@
 
 namespace CurvatureMetric {
 
-bool satisfies_triangle_inequality(const DifferentiableConeMetric& cone_metric)
+bool satisfies_triangle_inequality(const Mesh<Scalar>& cone_metric)
 {
     int num_halfedges = cone_metric.n_halfedges();
 
@@ -28,7 +28,7 @@ bool satisfies_triangle_inequality(const DifferentiableConeMetric& cone_metric)
     return true;
 }
 
-void corner_angles(const DifferentiableConeMetric& cone_metric, VectorX& he2angle, VectorX& he2cot)
+void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& he2cot)
 {
     int num_halfedges = cone_metric.n_halfedges();
     he2angle.setZero(num_halfedges);
