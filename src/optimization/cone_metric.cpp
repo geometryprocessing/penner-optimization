@@ -82,6 +82,19 @@ bool DifferentiableConeMetric::flip_ccw(int _h, bool Ptolemy)
     return Mesh<Scalar>::flip_ccw(_h, Ptolemy);
 }
 
+void DifferentiableConeMetric::undo_flips()
+{
+    std::vector<int> flip_seq = m_flip_seq;
+    for (auto h_iter = flip_seq.rbegin(); h_iter != flip_seq.rend(); ++h_iter) {
+        int h = *h_iter;
+        flip_ccw(h);
+        flip_ccw(h);
+        flip_ccw(h);
+    }
+    m_flip_seq = {};
+}
+
+
 bool DifferentiableConeMetric::constraint(
     VectorX& constraint,
     MatrixX& J_constraint,

@@ -140,8 +140,9 @@ bool check_uv(
     }
 
     // Check length consistency
-    if (!float_equal(compute_uv_length_error(F, uv, F_uv), 0.0)) {
-        spdlog::warn("Inconsistent uv lengths across edges");
+    double uv_length_error = compute_uv_length_error(F, uv, F_uv);
+    if (!float_equal(uv_length_error, 0.0)) {
+        spdlog::warn("Inconsistent uv length error {} across edges", uv_length_error);
     }
 
     // Check mesh face areas

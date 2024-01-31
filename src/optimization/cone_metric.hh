@@ -26,6 +26,7 @@ public:
 
     // Flip method: need to be able to flip metric
     virtual bool flip_ccw(int _h, bool Ptolemy = true);
+    void undo_flips();
 
     // Metric change methods: need to be able to clone metric and change metric coordinates
     virtual std::unique_ptr<DifferentiableConeMetric> clone_cone_metric() const = 0;
@@ -88,7 +89,40 @@ public:
 
     bool flip_ccw(int _h, bool Ptolemy = true) override;
 
-private:
+    MatrixX get_flip_jacobian() const
+    {
+        typedef Eigen::Triplet<Scalar> T;
+        std::vector<T> tripletList;
+        int num_edges = e2he.size();
+        tripletList.reserve(5 * num_edges);
+        for (int i = 0; i < num_edges; ++i) {
+            for (auto it : m_transition_jacobian_lol[i]) {
+                tripletList.push_back(T(i, it.first, it.second));
+            }
+        }
+
+        // Create the matrix from the triplets
+        MatrixX transition_jacobian;
+        transition_jacobian.resize(num_edges, num_edges);
+        transition_jacobian.reserve(tripletList.size());
+        transition_jacobian.setFromTriplets(tripletList.begin(), tripletList.end());
+
+        return transition_jacobian;
+    }
+
+    // Reset Jacobian
+    void reset()
+    {
+        // Initialize jacobian to the identity
+        int num_edges = e2he.size();
+        m_transition_jacobian_lol =
+            std::vector<std::map<int, Scalar>>(num_edges, std::map<int, Scalar>());
+        for (int e = 0; e < num_edges; ++e) {
+            m_transition_jacobian_lol[e][e] = 1.0;
+        }
+    }
+
+protected:
     std::vector<int> m_embed;
     std::vector<int> m_proj;
     MatrixX m_projection;
@@ -122,7 +156,7 @@ public:
 
     bool flip_ccw(int _h, bool Ptolemy = true) override;
 
-private:
+protected:
     std::vector<int> m_embed;
     std::vector<int> m_proj;
     MatrixX m_projection;
