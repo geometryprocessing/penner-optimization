@@ -28,7 +28,7 @@ if (PROJECT_IS_TOP_LEVEL)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
 endif()
 
-find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
+#find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
