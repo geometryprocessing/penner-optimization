@@ -172,7 +172,7 @@ public:
 	///
 	/// @param[in] vertex_index: index of the vertex in the mesh
 	/// @return vertex position
-	VectorX
+	Eigen::VectorXd
 	get_vertex(
 		Index vertex_index
 	) const;
@@ -181,7 +181,7 @@ public:
 	///
 	/// @param[in] vertex_index: index of the vertex in the mesh
 	/// @return parametric domain coordinates of the vertex
-	VectorX
+	Eigen::VectorXd
 	get_uv_vertex(
 		Index vertex_index
 	) const;
@@ -193,7 +193,7 @@ public:
 	void
 	get_face_vertices(
 		Index face_index,
-		std::vector<VectorX>& vertices
+		std::vector<Eigen::VectorXd>& vertices
 	) const;
 
 	/// Get the parametric domain coordinates of the vertices of a face
@@ -203,7 +203,7 @@ public:
 	void
 	get_face_uv_vertices(
 		Index face_index,
-		std::vector<VectorX>& uv_vertices
+		std::vector<Eigen::VectorXd>& uv_vertices
 	) const;
 
 	/// Clear the data of the mesh

@@ -23,7 +23,7 @@ namespace CurvatureMetric {
 
 Scalar
 compute_face_area(
-	const std::array<VectorX, 3>& vertices
+	const std::array<Eigen::VectorXd, 3>& vertices
 ) {
 	// Get edge lengths for triangle
 	Scalar li = (vertices[1] - vertices[0]).norm();
@@ -36,7 +36,7 @@ compute_face_area(
 
 bool
 is_inverted_triangle(
-	const std::array<VectorX, 3>& vertices
+	const std::array<Eigen::VectorXd, 3>& vertices
 ) {
 	// Build matrix of triangle homogenous coordinates
 	Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
@@ -45,15 +45,15 @@ is_inverted_triangle(
 	tri_homogenous_coords.col(2) << vertices[2][0], vertices[2][1], 1.0;
 
 	// Triangle is flipped iff the determinant is negative
-	double det = tri_homogenous_coords.determinant();
+	Scalar det = tri_homogenous_coords.determinant();
 	return (det < 0.0);
 }
 
 
 bool
 is_self_overlapping_polygon(
-	const std::vector<VectorX>& uv_vertices,
-	const std::vector<VectorX>& vertices,
+	const std::vector<Eigen::VectorXd>& uv_vertices,
+	const std::vector<Eigen::VectorXd>& vertices,
 	std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
 	std::vector<std::vector<int>>& splitting_vertices,
 	std::vector<std::vector<Scalar>>& min_face_areas 
@@ -108,8 +108,8 @@ is_self_overlapping_polygon(
 			for (int k = (i + 1) % face_size; k != j; k = (k + 1) % face_size)
 			{
 				// Check if triangle T_ikj is positively oriented
-				std::array<VectorX, 3> uv_triangle = { uv_vertices[i], uv_vertices[k], uv_vertices[j] };
-				std::array<VectorX, 3> triangle = { vertices[i], vertices[k], vertices[j] };
+				std::array<Eigen::VectorXd, 3> uv_triangle = { uv_vertices[i], uv_vertices[k], uv_vertices[j] };
+				std::array<Eigen::VectorXd, 3> triangle = { vertices[i], vertices[k], vertices[j] };
 				if (is_inverted_triangle(uv_triangle)) continue;
 
 				// Check if the two subpolygons (i, k) and (k, j) are self overlapping
@@ -266,8 +266,8 @@ triangulate_self_overlapping_polygon(
 // Helper function to view the triangulated face
 void
 view_triangulation(
-	const std::vector<VectorX>& uv_vertices,
-	const std::vector<VectorX>& vertices,
+	const std::vector<Eigen::VectorXd>& uv_vertices,
+	const std::vector<Eigen::VectorXd>& vertices,
 	const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
 	const std::vector<std::vector<int>>& splitting_vertices,
 	const std::vector<std::vector<Scalar>>& min_face_areas,

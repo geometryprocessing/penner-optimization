@@ -5,6 +5,7 @@
 #include "reparametrization.hh"
 #include "shear.hh"
 #include <Eigen/SparseLU>
+#include <Eigen/SparseQR>
 
 /// FIXME Do cleaning pass
 
@@ -132,7 +133,8 @@ compute_as_symmetric_as_possible_translations(
     lagrangian_matrix.cols(),
     right_hand_side.size()
   );
-  Eigen::SparseLU<Eigen::SparseMatrix<Scalar>> solver;
+  //Eigen::SparseLU<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
+  Eigen::SparseQR<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
   solver.compute(lagrangian_matrix);
   VectorX lagrangian_solution = solver.solve(-right_hand_side);
 

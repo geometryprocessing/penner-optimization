@@ -140,7 +140,7 @@ bool check_uv(
     }
 
     // Check length consistency
-    double uv_length_error = compute_uv_length_error(F, uv, F_uv);
+    Scalar uv_length_error = compute_uv_length_error(F, uv, F_uv);
     if (!float_equal(uv_length_error, 0.0)) {
         spdlog::warn("Inconsistent uv length error {} across edges", uv_length_error);
     }

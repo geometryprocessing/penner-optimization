@@ -191,24 +191,24 @@ RefinementMesh::get_face_iterator(Index face_index) const
   return FaceIterator(*this, face_index);
 }
 
-VectorX
+Eigen::VectorXd
 RefinementMesh::get_vertex(
 	RefinementMesh::Index vertex_index
 ) const {
-	return m_V.row(vertex_index);
+	return m_V.row(vertex_index).transpose();
 }
 
-VectorX
+Eigen::VectorXd
 RefinementMesh::get_uv_vertex(
 	RefinementMesh::Index vertex_index
 ) const {
-	return m_uv.row(vertex_index);
+	return m_uv.row(vertex_index).transpose();
 }
 
 void
 RefinementMesh::get_face_vertices(
 	RefinementMesh::Index face_index,
-	std::vector<VectorX>& vertices
+	std::vector<Eigen::VectorXd>& vertices
 ) const {
 	vertices.clear();
 	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
@@ -222,7 +222,7 @@ RefinementMesh::get_face_vertices(
 void
 RefinementMesh::get_face_uv_vertices(
 	RefinementMesh::Index face_index,
-	std::vector<VectorX>& uv_vertices
+	std::vector<Eigen::VectorXd>& uv_vertices
 ) const {
 	uv_vertices.clear();
 	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
@@ -744,7 +744,7 @@ RefinementMesh::refine_mesh()
 		// Skip boundary loops
 		if (is_bnd_loop[fijk]) continue;
 
-		std::array<VectorX, 3> triangle;
+		std::array<Eigen::VectorXd, 3> triangle;
 		Index hij = h[fijk];
 		for (int l = 0; l < 3; ++l)
 		{
@@ -1115,7 +1115,7 @@ RefinementMesh::is_self_overlapping_face(
 	if (is_bnd_loop[face_index]) return true;
 
 	// Get vertices of the face
-	std::vector<VectorX> uv_vertices, vertices;
+	std::vector<Eigen::VectorXd> uv_vertices, vertices;
 	get_face_uv_vertices(face_index, uv_vertices);
 	get_face_vertices(face_index, vertices);
 
@@ -1151,8 +1151,8 @@ RefinementMesh::triangulate_face(
 	// Get uv vertices of the face
 	std::vector<int> vertex_indices;
 	std::vector<int> uv_vertex_indices;
-	std::vector<VectorX> vertices;
-	std::vector<VectorX> uv_vertices;
+	std::vector<Eigen::VectorXd> vertices;
+	std::vector<Eigen::VectorXd> uv_vertices;
 	for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter)
 	{
 		Index hij = *iter;

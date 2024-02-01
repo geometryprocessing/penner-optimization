@@ -577,7 +577,7 @@ root_mean_square_error(const VectorX &x, const VectorX &x0)
         error += diff * diff; 
     }
     
-    return std::sqrt(error / num_var);
+    return sqrt(error / num_var);
 }
 
 Scalar
@@ -596,7 +596,7 @@ relative_root_mean_square_error(const VectorX &x, const VectorX &x0)
         denom += (x0[i] * x0[i]);
     }
     
-    return std::sqrt(error / (num_var * denom));
+    return sqrt(error / (num_var * denom));
 }
 
 Scalar
@@ -613,7 +613,7 @@ root_mean_square_relative_error(const VectorX &x, const VectorX &x0)
         error += (rel_err * rel_err);
     }
     
-    return std::sqrt(error / num_var);
+    return sqrt(error / num_var);
     
 }
 

@@ -9,6 +9,7 @@
 #include "logging.hh"
 #include "nonlinear_optimization.hh"
 #include "projection.hh"
+#include <Eigen/SparseQR>
 
 /// FIXME Do cleaning pass
 
@@ -347,7 +348,9 @@ void compute_projected_newton_descent_direction(
     // Solve for the optimal descent direction
     igl::Timer timer;
     timer.start();
-    Eigen::SparseLU<Eigen::SparseMatrix<Scalar>> solver;
+    // TODO Make solver a global variable or function so easy to replace
+    //Eigen::SparseLU<Eigen::SparseMatrix<Scalar>> solver;
+    Eigen::SparseQR<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
     solver.compute(hessian_lagrangian);
     VectorX solution = solver.solve(rhs);
     double time = timer.getElapsedTime();

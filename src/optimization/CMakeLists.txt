@@ -31,8 +31,7 @@ target_link_libraries(MetricOptimizationLib PUBLIC
   igl::predicates
   spdlog::spdlog
   pybind11::module
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
+  ${MPFR_LIBRARIES}
 )
 target_compile_definitions(MetricOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

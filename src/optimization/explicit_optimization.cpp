@@ -8,6 +8,8 @@
 #include "nonlinear_optimization.hh"
 #include "projection.hh"
 #include "shear.hh"
+#include <Eigen/SparseLU>
+#include <Eigen/SparseQR>
 
 /// FIXME Do cleaning pass
 
@@ -279,7 +281,9 @@ bool compute_domain_coordinate_energy_with_gradient(
         constraint_codomain_matrix.transpose() * constraint_penner_jacobian.transpose();
 
     // Solve for the component of the gradient corresponding to the implicit metric coordinates
-    Eigen::SparseLU<Eigen::SparseMatrix<Scalar>> solver;
+    //Eigen::SparseLU<MatrixX> solver;
+    //Eigen::SparseLU<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
+    Eigen::SparseQR<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
     solver.compute(constraint_codomain_jacobian);
     VectorX energy_implicit_gradient =
         -constraint_domain_jacobian * solver.solve(energy_codomain_gradient);

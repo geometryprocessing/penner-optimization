@@ -501,6 +501,34 @@ convert_eigen_to_std_vector(const VectorX& vector_eigen,
   }
 }
 
+/// Convert vector of scalars to doubles
+inline Eigen::Matrix<double, Eigen::Dynamic, 1>
+convert_scalar_to_double_vector(const VectorX& vector_scalar)
+{
+  int num_entries = vector_scalar.size();
+  Eigen::Matrix<double, Eigen::Dynamic, 1> vector_double(num_entries);
+  for (int i = 0; i < num_entries; ++i)
+  {
+    vector_double[i] = (double) (vector_scalar[i]);
+  }
+
+  return vector_double;
+}
+
+/// Convert vector of scalars to doubles
+inline std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>
+convert_scalar_to_double_vector(const std::vector<VectorX>& vector_scalar)
+{
+  int num_entries = vector_scalar.size();
+  std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> vector_double(num_entries);
+  for (int i = 0; i < num_entries; ++i)
+  {
+    vector_double[i] = convert_scalar_to_double_vector(vector_scalar[i]);
+  }
+
+  return vector_double;
+}
+
 /// *****************
 /// Vector Generation
 /// *****************

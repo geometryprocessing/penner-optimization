@@ -12,7 +12,7 @@ namespace CurvatureMetric {
 /// @return face area
 Scalar
 compute_face_area(
-	const std::array<VectorX, 3>& vertices
+	const std::array<Eigen::VectorXd, 3>& vertices
 );
 
 /// Given three vertices in the plane, determine if the triangle they form
@@ -22,7 +22,7 @@ compute_face_area(
 /// @return true iff the triangle is inverted in the uv plane
 bool
 is_inverted_triangle(
-	const std::array<VectorX, 3>& vertices
+	const std::array<Eigen::VectorXd, 3>& vertices
 );
 
 /// Given a list of vertices in the plane, determine if the polygon they
@@ -41,8 +41,8 @@ is_inverted_triangle(
 /// @return true iff the polygon is self-overlapping
 bool
 is_self_overlapping_polygon(
-	const std::vector<VectorX>& uv_vertices,
-	const std::vector<VectorX>& vertices,
+	const std::vector<Eigen::VectorXd>& uv_vertices,
+	const std::vector<Eigen::VectorXd>& vertices,
 	std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
 	std::vector<std::vector<int>>& splitting_vertices,
 	std::vector<std::vector<Scalar>>& min_face_areas
