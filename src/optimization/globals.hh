@@ -17,7 +17,7 @@ typedef double Scalar;
 #endif
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> VectorX;
-typedef Eigen::SparseMatrix<Scalar, Eigen::RowMajor> MatrixX;
+typedef Eigen::SparseMatrix<Scalar> MatrixX;
 typedef Eigen::Triplet<Scalar> T;
 const Scalar INF = 1e10;
 

@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
 #ifdef MULTIPRECISION
 	spdlog::info("Using multiprecision");
-	mpfr::mpreal::set_default_prec(200);
+	mpfr::mpreal::set_default_prec(100);
 	mpfr::mpreal::set_emax(mpfr::mpreal::get_emax_max());
 	mpfr::mpreal::set_emin(mpfr::mpreal::get_emin_min());
 #endif
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	auto proj_params = std::make_shared<ProjectionParameters>();
 	auto opt_params = std::make_shared<OptimizationParameters>();
 	opt_params->output_dir = output_dir;
-	opt_params->num_iter = 100;
+	opt_params->num_iter = 10;
 	opt_params->use_optimal_projection = true;
 
 	// Optimize the metric

@@ -133,10 +133,8 @@ compute_as_symmetric_as_possible_translations(
     lagrangian_matrix.cols(),
     right_hand_side.size()
   );
-  //Eigen::SparseLU<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
-  Eigen::SparseQR<Eigen::SparseMatrix<Scalar>, Eigen::COLAMDOrdering<int>> solver;
-  solver.compute(lagrangian_matrix);
-  VectorX lagrangian_solution = solver.solve(-right_hand_side);
+  lagrangian_matrix.makeCompressed();
+  VectorX lagrangian_solution = solve_linear_system(lagrangian_matrix, -right_hand_side);
 
   // The desired translations are at the head of the solution vector
   spdlog::trace("Extracting halfedges");

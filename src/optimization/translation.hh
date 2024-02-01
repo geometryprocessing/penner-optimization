@@ -22,5 +22,6 @@ compute_as_symmetric_as_possible_translations(
   const VectorX& he_metric_target,
   VectorX& he_translations
 );
+// TODO: Add option to bypass and use zero translations or to solve in double precision
 
 }

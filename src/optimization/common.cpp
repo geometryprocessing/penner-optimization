@@ -19,4 +19,16 @@ VectorX solve_psd_system(const MatrixX& A, const VectorX&b)
     return solver.solve(b);
 }
 
+VectorX solve_linear_system(const MatrixX& A, const VectorX&b)
+{
+#ifdef WITH_MPFR
+    Eigen::SparseQR<MatrixX, Eigen::COLAMDOrdering<int>> solver;
+#else
+    Eigen::SparseLU<MatrixX> solver;
+#endif
+
+    solver.compute(A);
+    return solver.solve(b);
+}
+
 }

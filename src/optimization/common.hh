@@ -9,6 +9,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/SparseLU>
+#include <Eigen/SparseQR>
 #include <filesystem>
 
 #include <igl/facet_components.h>
@@ -403,6 +405,7 @@ compute_condition_number(
 }
 
 VectorX solve_psd_system(const MatrixX& A, const VectorX&b);
+VectorX solve_linear_system(const MatrixX& A, const VectorX&b);
 
 /// ********************
 /// Data Type Conversion
