@@ -36,6 +36,7 @@ if(USE_MULTIPRECISION)
   # Turning this on activates mpfr in the conformal code
   option(LIBIGL_COPYLEFT_CGAL "Use CGAL" ON)
   add_compile_definitions(WITH_MPFR)
+  find_package(MPFR REQUIRED QUIET)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})

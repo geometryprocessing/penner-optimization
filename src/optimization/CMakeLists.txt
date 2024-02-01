@@ -33,6 +33,7 @@ target_link_libraries(MetricOptimizationLib PUBLIC
   pybind11::module
   ${MPFR_LIBRARIES}
 )
+message(MPRF libraries are ${MPFR_LIBRARIES})
 target_compile_definitions(MetricOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
