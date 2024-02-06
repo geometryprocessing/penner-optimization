@@ -68,10 +68,11 @@ namespace CurvatureMetric
 	{
 		// Get precise value of pi
 		Scalar pi;
-		if (std::is_same<Scalar, mpfr::mpreal>::value)
-			pi = Scalar(mpfr::const_pi());
-		else
-			pi = Scalar(M_PI);
+#ifdef MULTIPRECISION
+		pi = Scalar(mpfr::const_pi());
+#else
+		pi = Scalar(M_PI);
+#endif
 
 		// Correct angles
 		int num_vertices = initial_cone_angles.size();

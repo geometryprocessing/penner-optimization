@@ -4,12 +4,12 @@
 #include "conformal_ideal_delaunay/globals.hh"
 #include <Eigen/Sparse>
 #include <string>
-#include "mpreal.h"
 
 namespace CurvatureMetric {
 using namespace OverlayProblem;
 
 #ifdef MULTIPRECISION
+#include "mpreal.h"
 #include <unsupported/Eigen/MPRealSupport>
 typedef mpfr::mpreal Scalar;
 #else
