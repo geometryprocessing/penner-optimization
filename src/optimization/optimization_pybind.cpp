@@ -52,7 +52,10 @@
 #include "shapes.hh"
 #include "shear.hh"
 #include "translation.hh"
+
+#ifdef USE_HIGHFIVE
 #include <highfive/H5Easy.hpp>
+#endif
 
 #ifdef RENDER_TEXTURE
   #include "conformal_ideal_delaunay/Sampling.hh"
@@ -394,6 +397,7 @@ init_parameterization_pybind(pybind11::module& m)
                              pybind11::scoped_estream_redirect>());
 }
 
+#ifdef USE_HIGHFIVE
 void save_simplify_overlay_input(std::string fname,
                                  std::vector<std::pair<int,int>> endpoints,
                                  Eigen::MatrixXd V,
@@ -451,7 +455,7 @@ load_simplify_overlay_output(
 
   return std::make_tuple(endpoints, V, F, uv, Fuv, cut_type, Vn_to_V);
 }
-  
+#endif 
 
 
 // wrap as Python module
@@ -466,6 +470,7 @@ PYBIND11_MODULE(optimization_py, m)
   init_optimization_pybind(m);
   init_parameterization_pybind(m);
 
+#ifdef USE_HIGHFIVE
   m.def("save_simplify_overlay_input", 
         &save_simplify_overlay_input,
         "Save simplify overlay mesh input to file",
@@ -476,6 +481,8 @@ PYBIND11_MODULE(optimization_py, m)
         "Load simplify overlay mesh output from file",
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
         pybind11::scoped_estream_redirect>());
+#endif
+
   m.def("write_obj_with_uv",
         &write_obj_with_uv,
         "Write obj file with uv coordinates",
