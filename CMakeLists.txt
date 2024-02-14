@@ -50,11 +50,14 @@ if (RENDER_TEXTURE)
 endif()
 
 # # Add highfive library
-find_package(HDF5 REQUIRED)
-include(highfive)
-add_library(HighFiveLib INTERFACE)
-target_include_directories(HighFiveLib SYSTEM INTERFACE ${highfive_SOURCE_DIR}/include/ ${HDF5_INCLUDE_DIRS})
-target_link_libraries(HighFiveLib INTERFACE ${HDF5_LIBRARIES})
+if (USE_HIGHFIVE)
+  find_package(HDF5 REQUIRED)
+  include(highfive)
+  add_library(HighFiveLib INTERFACE)
+  target_include_directories(HighFiveLib SYSTEM INTERFACE ${highfive_SOURCE_DIR}/include/ ${HDF5_INCLUDE_DIRS})
+  target_link_libraries(HighFiveLib INTERFACE ${HDF5_LIBRARIES})
+  add_compile_definitions(USE_HIGHFIVE)
+endif()
 
 # Set compile definitions
 if(USE_PYBIND)
@@ -128,8 +131,13 @@ if(USE_PYBIND)
   # Link libraries
   target_link_libraries(optimization_py PUBLIC
     MetricOptimizationLib
-    HighFiveLib
   )
+
+  if(USE_HIGHFIVE)
+    target_link_libraries(optimization_py PUBLIC
+      HighFiveLib
+    )
+  endif()
 
 if(USE_SUITESPARSE)
   include(suitesparse)
