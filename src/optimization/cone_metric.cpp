@@ -43,6 +43,7 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     assert(J.size() == V.size());
     int num_entries = V.size();
 
+    // Build triplet list
     typedef Eigen::Triplet<Scalar> T;
     std::vector<T> tripletList;
     tripletList.reserve(num_entries);
@@ -50,17 +51,25 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
         tripletList.push_back(T(I[k], J[k], V[k]));
     }
 
+    // Use triplet list method 
+    return change_metric_to_reduced_coordinates(tripletList, num_rows);
+}
+
+MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
+    const std::vector<Eigen::Triplet<Scalar>>& tripletList,
+    int num_rows) const
+{
     // Build Jacobian from triplets
+    int num_entries = tripletList.size();
     int num_halfedges = n_halfedges();
     MatrixX halfedge_jacobian(num_rows, num_halfedges);
     halfedge_jacobian.reserve(num_entries);
     halfedge_jacobian.setFromTriplets(tripletList.begin(), tripletList.end());
 
-    // Get transition Jacobian
-    MatrixX J_transition = get_transition_jacobian();
-
-    return halfedge_jacobian * J_transition;
+    // Use matrix method
+    return change_metric_to_reduced_coordinates(halfedge_jacobian);
 }
+
 
 MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     const MatrixX& halfedge_jacobian) const

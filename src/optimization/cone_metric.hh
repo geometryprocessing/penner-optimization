@@ -55,7 +55,9 @@ public:
         const std::vector<int>& J,
         const std::vector<Scalar>& V,
         int num_rows) const;
-
+    MatrixX change_metric_to_reduced_coordinates(
+        const std::vector<Eigen::Triplet<Scalar>>& tripletList,
+        int num_rows) const;
     MatrixX change_metric_to_reduced_coordinates(const MatrixX& halfedge_jacobian) const;
 
     virtual ~DifferentiableConeMetric() = default;
