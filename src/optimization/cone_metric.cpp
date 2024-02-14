@@ -114,9 +114,9 @@ PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_
     // Initialize jacobian to the identity
     int num_edges = e2he.size();
     m_transition_jacobian_lol =
-        std::vector<std::map<int, Scalar>>(num_edges, std::map<int, Scalar>());
+        std::vector<std::vector<std::pair<int, Scalar>>>(num_edges, std::vector<std::pair<int, Scalar>>());
     for (int e = 0; e < num_edges; ++e) {
-        m_transition_jacobian_lol[e][e] = 1.0;
+        m_transition_jacobian_lol[e].push_back(std::make_pair(e, 1.0));
     }
 }
 
@@ -207,8 +207,6 @@ std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::project_to_constrain
 
 bool PennerConeMetric::flip_ccw(int _h, bool Ptolemy)
 {
-    Scalar zero_threshold = 1e-15;
-
     // Perform the flip in the base class
     bool success = DifferentiableConeMetric::flip_ccw(_h, Ptolemy);
 
@@ -241,18 +239,21 @@ bool PennerConeMetric::flip_ccw(int _h, bool Ptolemy)
     std::vector<int> Pd_edges = {ed, ea, ebo, eao, eb};
     std::vector<Scalar> Pd_scalars =
         {-1.0, x / (1.0 + x), x / (1.0 + x), 1.0 / (1.0 + x), 1.0 / (1.0 + x)};
+    int num_entries = 0;
+    for (int i = 0; i < 5; ++i) {
+        int ei = Pd_edges[i];
+        num_entries += m_transition_jacobian_lol[ei].size();
+    }
 
     // Compute the new row of J_del corresponding to edge ed, which is the only
     // edge that changes
-    std::map<int, Scalar> J_del_d_new;
+    std::vector<std::pair<int, Scalar>> J_del_d_new;
+    J_del_d_new.reserve(num_entries);
     for (int i = 0; i < 5; ++i) {
         int ei = Pd_edges[i];
         Scalar Di = Pd_scalars[i];
         for (auto it : m_transition_jacobian_lol[ei]) {
-            J_del_d_new[it.first] += Di * it.second;
-
-            // Delete the updated entry if it is near 0
-            if (abs(J_del_d_new[it.first]) < zero_threshold) J_del_d_new.erase(it.first);
+            J_del_d_new.push_back(std::make_pair(it.first, Di * it.second));
         }
     }
 

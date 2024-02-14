@@ -116,9 +116,9 @@ public:
         // Initialize jacobian to the identity
         int num_edges = e2he.size();
         m_transition_jacobian_lol =
-            std::vector<std::map<int, Scalar>>(num_edges, std::map<int, Scalar>());
+            std::vector<std::vector<std::pair<int, Scalar>>>(num_edges, std::vector<std::pair<int, Scalar>>());
         for (int e = 0; e < num_edges; ++e) {
-            m_transition_jacobian_lol[e][e] = 1.0;
+            m_transition_jacobian_lol[e].push_back(std::make_pair(e, 1.0));
         }
     }
 
@@ -126,7 +126,7 @@ protected:
     std::vector<int> m_embed;
     std::vector<int> m_proj;
     MatrixX m_projection;
-    std::vector<std::map<int, Scalar>> m_transition_jacobian_lol;
+    std::vector<std::vector<std::pair<int, Scalar>>> m_transition_jacobian_lol;
 
     VectorX reduce_metric_coordinates(const VectorX& metric_coords) const;
     void expand_metric_coordinates(const VectorX& metric_coords);
