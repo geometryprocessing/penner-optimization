@@ -50,6 +50,8 @@ public:
     virtual void make_discrete_metric() = 0;
     virtual MatrixX get_transition_jacobian() const = 0;
 
+    int n_reduced_coordinates() const;
+
     MatrixX change_metric_to_reduced_coordinates(
         const std::vector<int>& I,
         const std::vector<int>& J,

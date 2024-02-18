@@ -113,6 +113,11 @@ bool DifferentiableConeMetric::constraint(
     return constraint_with_jacobian(*this, constraint, J_constraint, need_jacobian, only_free_vertices);
 }
 
+int DifferentiableConeMetric::n_reduced_coordinates() const
+{
+    return get_reduced_metric_coordinates().size();
+}
+
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
     : DifferentiableConeMetric(m)
 {
