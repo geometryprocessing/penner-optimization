@@ -119,19 +119,13 @@ int DifferentiableConeMetric::n_reduced_coordinates() const
 }
 
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
-    : DifferentiableConeMetric(m)
+    : DifferentiableConeMetric(m),
+    m_need_jacobian(true),
+    m_transition_jacobian_lol(m.n_edges())
 {
     build_refl_proj(m, he2e, e2he, m_proj, m_embed);
     build_refl_matrix(m_proj, m_embed, m_projection);
     expand_metric_coordinates(metric_coords);
-
-    // Initialize jacobian to the identity
-    int num_edges = e2he.size();
-    m_transition_jacobian_lol =
-        std::vector<std::vector<std::pair<int, Scalar>>>(num_edges, std::vector<std::pair<int, Scalar>>());
-    for (int e = 0; e < num_edges; ++e) {
-        m_transition_jacobian_lol[e].push_back(std::make_pair(e, 1.0));
-    }
 }
 
 VectorX PennerConeMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
@@ -177,21 +171,7 @@ std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::scale_conformally(
 
 MatrixX PennerConeMetric::get_transition_jacobian() const
 {
-    std::vector<T> tripletList;
-    int num_edges = e2he.size();
-    tripletList.reserve(5 * num_edges);
-    for (int i = 0; i < num_edges; ++i) {
-        for (auto it : m_transition_jacobian_lol[i]) {
-            tripletList.push_back(T(i, it.first, it.second));
-        }
-    }
-
-    // Create the matrix from the triplets
-    MatrixX transition_jacobian;
-    transition_jacobian.resize(num_edges, num_edges);
-    transition_jacobian.reserve(tripletList.size());
-    transition_jacobian.setFromTriplets(tripletList.begin(), tripletList.end());
-
+    MatrixX transition_jacobian = get_flip_jacobian();
     return m_identification * (transition_jacobian * m_projection);
 }
 
@@ -224,54 +204,38 @@ bool PennerConeMetric::flip_ccw(int _h, bool Ptolemy)
     // Perform the flip in the base class
     bool success = DifferentiableConeMetric::flip_ccw(_h, Ptolemy);
 
-    // Get local mesh information near hd
-    int hd = _h;
-    int hb = n[hd];
-    int ha = n[hb];
-    int hdo = opp[hd];
-    int hao = n[hdo];
-    int hbo = n[hao];
+    if (m_need_jacobian) {
+        // Get local mesh information near hd
+        int hd = _h;
+        int hb = n[hd];
+        int ha = n[hb];
+        int hdo = opp[hd];
+        int hao = n[hdo];
+        int hbo = n[hao];
 
-    // Get edges corresponding to halfedges
-    int ed = he2e[hd];
-    int eb = he2e[hb];
-    int ea = he2e[ha];
-    int eao = he2e[hao];
-    int ebo = he2e[hbo];
+        // Get edges corresponding to halfedges
+        int ed = he2e[hd];
+        int eb = he2e[hb];
+        int ea = he2e[ha];
+        int eao = he2e[hao];
+        int ebo = he2e[hbo];
 
-    // Compute the shear for the edge ed
-    // TODO Check if edge or halfedge coordinate
-    Scalar la = l[ha];
-    Scalar lb = l[hb];
-    Scalar lao = l[hao];
-    Scalar lbo = l[hbo];
-    Scalar x = (la * lbo) / (lb * lao);
+        // Compute the shear for the edge ed
+        // TODO Check if edge or halfedge coordinate
+        Scalar la = l[ha];
+        Scalar lb = l[hb];
+        Scalar lao = l[hao];
+        Scalar lbo = l[hbo];
+        Scalar x = (la * lbo) / (lb * lao);
 
-    // The matrix Pd corresponding to flipping edge ed is the identity except for
-    // the row corresponding to edge ed, which has entries defined by Pd_scalars
-    // in the column corresponding to the edge with the same index in Pd_edges
-    std::vector<int> Pd_edges = {ed, ea, ebo, eao, eb};
-    std::vector<Scalar> Pd_scalars =
-        {-1.0, x / (1.0 + x), x / (1.0 + x), 1.0 / (1.0 + x), 1.0 / (1.0 + x)};
-    int num_entries = 0;
-    for (int i = 0; i < 5; ++i) {
-        int ei = Pd_edges[i];
-        num_entries += m_transition_jacobian_lol[ei].size();
+        // The matrix Pd corresponding to flipping edge ed is the identity except for
+        // the row corresponding to edge ed, which has entries defined by Pd_scalars
+        // in the column corresponding to the edge with the same index in Pd_edges
+        std::vector<int> Pd_edges = {ed, ea, ebo, eao, eb};
+        std::vector<Scalar> Pd_scalars =
+            {-1.0, x / (1.0 + x), x / (1.0 + x), 1.0 / (1.0 + x), 1.0 / (1.0 + x)};
+        m_transition_jacobian_lol.multiply_by_matrix(Pd_edges, Pd_scalars, ed);
     }
-
-    // Compute the new row of J_del corresponding to edge ed, which is the only
-    // edge that changes
-    std::vector<std::pair<int, Scalar>> J_del_d_new;
-    J_del_d_new.reserve(num_entries);
-    for (int i = 0; i < 5; ++i) {
-        int ei = Pd_edges[i];
-        Scalar Di = Pd_scalars[i];
-        for (auto it : m_transition_jacobian_lol[ei]) {
-            J_del_d_new.push_back(std::make_pair(it.first, Di * it.second));
-        }
-    }
-
-    m_transition_jacobian_lol[ed] = J_del_d_new;
 
     return success;
 }

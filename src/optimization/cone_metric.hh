@@ -7,6 +7,96 @@
 
 namespace CurvatureMetric {
 
+class FlipMatrixGenerator
+{
+public:
+FlipMatrixGenerator(int size)
+: m_size(size) {
+    reset();
+
+}
+
+void reset() {
+    m_list_of_lists =
+        std::vector<std::vector<std::pair<int, Scalar>>>(m_size, std::vector<std::pair<int, Scalar>>());
+    for (int i = 0; i < m_size; ++i) {
+        m_list_of_lists[i].push_back(std::make_pair(i, 1.0));
+    }
+}
+
+void multiply_by_matrix(
+    const std::vector<int>& matrix_indices,
+    const std::vector<Scalar>& matrix_scalars,
+    int ed
+) {
+    int num_entries = 0;
+    for (int i = 0; i < 5; ++i) {
+        int ei = matrix_indices[i];
+        num_entries += m_list_of_lists[ei].size();
+    }
+
+    // Compute the new row of J_del corresponding to edge ed, which is the only
+    // edge that changes
+    std::vector<std::pair<int, Scalar>> J_del_d_new;
+    J_del_d_new.reserve(num_entries);
+    for (int i = 0; i < 5; ++i) {
+        int ei = matrix_indices[i];
+        Scalar Di = matrix_scalars[i];
+        for (auto it : m_list_of_lists[ei]) {
+            J_del_d_new.push_back(std::make_pair(it.first, Di * it.second));
+        }
+    }
+    std::sort(J_del_d_new.begin(), J_del_d_new.end());
+
+    // Compress vector
+    m_list_of_lists[ed] = std::vector<std::pair<int, Scalar>>();
+    m_list_of_lists[ed].reserve(num_entries);
+    int index = -1;
+    Scalar value = 0.0;
+    for (const auto& entry : J_del_d_new)
+    {
+        if (index != entry.first)
+        {
+            if (index >= 0)
+            {
+                m_list_of_lists[ed].push_back(std::make_pair(index, value));
+            }
+            index = entry.first;
+            value = entry.second;
+        }
+        else
+        {
+            value += entry.second;
+        }
+    }
+    m_list_of_lists[ed].push_back(std::make_pair(index, value));
+}
+
+MatrixX build_matrix() const {
+    // Build triplets from list of lists
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(5 * m_size);
+    for (int i = 0; i < m_size; ++i) {
+        for (auto it : m_list_of_lists[i]) {
+            tripletList.push_back(T(i, it.first, it.second));
+        }
+    }
+
+    // Create the matrix from the triplets
+    MatrixX matrix;
+    matrix.resize(m_size, m_size);
+    matrix.reserve(tripletList.size());
+    matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return matrix;
+}
+
+private:
+    int m_size;
+    std::vector<std::vector<std::pair<int, Scalar>>> m_list_of_lists;
+};
+
 class DifferentiableConeMetric : public Mesh<Scalar>
 {
 public:
@@ -95,42 +185,22 @@ public:
 
     MatrixX get_flip_jacobian() const
     {
-        typedef Eigen::Triplet<Scalar> T;
-        std::vector<T> tripletList;
-        int num_edges = e2he.size();
-        tripletList.reserve(5 * num_edges);
-        for (int i = 0; i < num_edges; ++i) {
-            for (auto it : m_transition_jacobian_lol[i]) {
-                tripletList.push_back(T(i, it.first, it.second));
-            }
-        }
-
-        // Create the matrix from the triplets
-        MatrixX transition_jacobian;
-        transition_jacobian.resize(num_edges, num_edges);
-        transition_jacobian.reserve(tripletList.size());
-        transition_jacobian.setFromTriplets(tripletList.begin(), tripletList.end());
-
-        return transition_jacobian;
+        return m_transition_jacobian_lol.build_matrix();
     }
 
     // Reset Jacobian
     void reset()
     {
         // Initialize jacobian to the identity
-        int num_edges = e2he.size();
-        m_transition_jacobian_lol =
-            std::vector<std::vector<std::pair<int, Scalar>>>(num_edges, std::vector<std::pair<int, Scalar>>());
-        for (int e = 0; e < num_edges; ++e) {
-            m_transition_jacobian_lol[e].push_back(std::make_pair(e, 1.0));
-        }
+        m_transition_jacobian_lol.reset();
     }
 
 protected:
     std::vector<int> m_embed;
     std::vector<int> m_proj;
     MatrixX m_projection;
-    std::vector<std::vector<std::pair<int, Scalar>>> m_transition_jacobian_lol;
+    bool m_need_jacobian;
+    FlipMatrixGenerator m_transition_jacobian_lol;
 
     VectorX reduce_metric_coordinates(const VectorX& metric_coords) const;
     void expand_metric_coordinates(const VectorX& metric_coords);
