@@ -7,6 +7,66 @@
 
 namespace CurvatureMetric {
 
+
+class FlipMapMatrixGenerator {
+public:
+FlipMapMatrixGenerator(int size)
+: m_size(size) {
+    reset();
+
+}
+
+void reset() {
+    m_list_of_lists =
+        std::vector<std::map<int, Scalar>>(m_size, std::map<int, Scalar>());
+    for (int i = 0; i < m_size; ++i) {
+        m_list_of_lists[i][i] = 1.0;
+    }
+}
+
+void multiply_by_matrix(
+    const std::vector<int>& matrix_indices,
+    const std::vector<Scalar>& matrix_scalars,
+    int ed
+) {
+  // Compute the new row of J_del corresponding to edge ed, which is the only
+  // edge that changes
+  std::map<int, Scalar> J_del_d_new;
+  for (int i = 0; i < 5; ++i) {
+    int ei = matrix_indices[i];
+    Scalar Di = matrix_scalars[i];
+    for (auto it : m_list_of_lists[ei]) {
+      J_del_d_new[it.first] += Di * it.second;
+    }
+  }
+  m_list_of_lists[ed] = J_del_d_new;
+}
+
+MatrixX build_matrix() const {
+    // Build triplets from list of lists
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(5 * m_size);
+    for (int i = 0; i < m_size; ++i) {
+      for (auto it : m_list_of_lists[i]) {
+        tripletList.push_back(T(i, it.first, it.second));
+      }
+    }
+
+    // Create the matrix from the triplets
+    MatrixX matrix;
+    matrix.resize(m_size, m_size);
+    matrix.reserve(tripletList.size());
+    matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return matrix;
+}
+
+private:
+    int m_size;
+    std::vector<std::map<int, Scalar>> m_list_of_lists;
+};
+
 class FlipMatrixGenerator
 {
 public:

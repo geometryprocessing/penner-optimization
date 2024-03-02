@@ -29,6 +29,12 @@ compute_shear_change(
   VectorX& he_shear_change
 );
 
+/// TODO
+void compute_shear_dual_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& independent_edges,
+    MatrixX& shear_matrix);
+
 /// Compute a basis for the space of shear coordinates for a given mesh of dual shear vectors.
 ///
 /// Note that the coefficients of these basis vectors do not correspond to shear coordinates

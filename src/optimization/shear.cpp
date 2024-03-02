@@ -199,7 +199,7 @@ void compute_spanning_tree(
         spanning_tree_vertex_in_edge));
 }
 
-void compute_independent_to_full_edge_shear_matrix(
+void compute_shear_dual_matrix(
     const Mesh<Scalar>& m,
     const std::vector<int>& independent_edges,
     MatrixX& shear_matrix)
@@ -299,7 +299,7 @@ void compute_shear_dual_basis(
     index_vector_complement(dependent_edges, num_edges, independent_edges);
 
     // Compute matrix of basis vectors
-    compute_independent_to_full_edge_shear_matrix(m, independent_edges, shear_basis_matrix);
+    compute_shear_dual_matrix(m, independent_edges, shear_basis_matrix);
 }
 
 std::tuple<MatrixX, std::vector<int>> compute_shear_dual_basis_pybind(const Mesh<Scalar>& m)
