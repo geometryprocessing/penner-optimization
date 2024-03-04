@@ -253,6 +253,7 @@ public:
     {
         // Initialize jacobian to the identity
         m_transition_jacobian_lol.reset();
+        m_flip_seq.clear();
     }
 
 protected:
