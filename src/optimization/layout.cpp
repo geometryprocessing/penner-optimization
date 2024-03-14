@@ -453,7 +453,12 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     int h = 0;
     if (start_h == -1) {
         for (int i = 0; i < m.n_halfedges(); i++) {
-            if (m.type[i] == 1 && m.type[m.opp[i]] == 2) h = m.n[m.n[i]];
+            if (m.type[i] == 1 && m.type[m.opp[i]] == 2)
+            {
+                h = m.n[m.n[i]];
+                spdlog::debug("Using edge {} as layout start", h);
+                break;
+            }
         }
     } else {
         assert(m.f[start_h] != -1);
@@ -475,13 +480,15 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     for (int i = 0; i < m.n_faces(); i++) {
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
-            done[i] = true;
+            // TODO
+            //done[i] = true;
         }
     }
     // set edge type 2 as cut
     for (int i = 0; i < num_halfedges; i++) {
         if (m.type[i] == 2) {
-            is_cut_h[i] = true;
+            // TODO
+            //is_cut_h[i] = true;
         }
     }
 
@@ -710,6 +717,7 @@ get_consistent_layout(
             std::vector<bool>());
     }
 
+    auto mc_type = mc.type;
     mc.type = std::vector<char>(mc.n_halfedges(), 0);
     //std::vector<bool> _is_cut_place_holder; // TODO Remove
     // auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder, 0);
@@ -753,9 +761,20 @@ get_consistent_layout(
         m.l[h0] = sqrt(
             (u_o[h0] - u_o[h1]) * (u_o[h0] - u_o[h1]) + (v_o[h0] - v_o[h1]) * (v_o[h0] - v_o[h1]));
     }
-    triangulate_polygon_mesh(m, u_o, v_o, f_labels);
     m.type = std::vector<char>(m.n.size(), 0);
+    int num_m_halfedges = m.n.size();
+    for (int hi = 0; hi < num_m_halfedges; ++hi) {
+        if (m_o.edge_type[hi] == CURRENT_EDGE) {
+            continue;
+        } else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
+            m.type[hi] = mc_type[m_o.origin_of_origin[hi]];
+        } else if (m_o.edge_type[hi] == ORIGINAL_EDGE) {
+            m.type[hi] = mc_type[m_o.origin[hi]];
+        }
+    }
     m.type_input = m.type;
+
+    triangulate_polygon_mesh(m, u_o, v_o, f_labels);
     m.R = std::vector<int>(m.n.size(), 0);
     m.v_rep = range(0, m.out.size());
     m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
