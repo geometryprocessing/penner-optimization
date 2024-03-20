@@ -13,8 +13,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"

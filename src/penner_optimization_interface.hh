@@ -66,7 +66,7 @@ consistent_overlay_mesh_to_VL(
     std::vector<std::vector<Scalar>>& V_overlay,
     std::vector<int>& vtx_reindex,
     std::vector<std::pair<int, int>>& endpoints,
-    const std::vector<bool> &is_cut_orig,
+    const std::vector<bool>& is_cut_orig,
     const std::vector<bool>& is_cut);
 
 /// Given a mesh with initial target and final optimized metric coordinates, generate a corresponding

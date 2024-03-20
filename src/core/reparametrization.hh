@@ -11,8 +11,7 @@ namespace CurvatureMetric {
 ///
 /// @param[in, out] m_o: mesh to reparametrize
 /// @param[in] tau: per halfeedge hyperbolic translation distances
-void
-bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau);
+void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau);
 
 /// Reparametrize points contained in equilateral reference triangles by
 /// translating a constant hyperbolic distance along each halfedge. If the sum
@@ -23,13 +22,13 @@ bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau);
 /// @param[in] n: next halfedge array for mesh
 /// @param[in] h: face to halfedge array for mesh
 /// @param[in] tau: per halfeedge hyperbolic translation distances
-void
-reparametrize_equilateral(std::vector<Pt<Scalar>>& pts,
-                          const std::vector<int>& n,
-                          const std::vector<int>& h,
-                          const VectorX& tau);
+void reparametrize_equilateral(
+    std::vector<Pt<Scalar>>& pts,
+    const std::vector<int>& n,
+    const std::vector<int>& h,
+    const VectorX& tau);
 
 #ifdef PYBIND
 #endif
 
-}
+} // namespace CurvatureMetric

@@ -94,10 +94,7 @@ public:
 
     bool flip_ccw(int _h, bool Ptolemy = true) override;
 
-    MatrixX get_flip_jacobian() const
-    {
-        return m_transition_jacobian_lol.build_matrix();
-    }
+    MatrixX get_flip_jacobian() const { return m_transition_jacobian_lol.build_matrix(); }
 
     // Reset Jacobian
     void reset()

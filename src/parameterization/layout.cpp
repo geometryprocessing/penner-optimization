@@ -11,9 +11,9 @@
 #include "projection.hh"
 #include "refinement.hh"
 #include "translation.hh"
-#include "viewers.hh"
-#include "vf_mesh.hh"
 #include "vector.hh"
+#include "vf_mesh.hh"
+#include "viewers.hh"
 
 namespace CurvatureMetric {
 
@@ -454,8 +454,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     int h = 0;
     if (start_h == -1) {
         for (int i = 0; i < m.n_halfedges(); i++) {
-            if (m.type[i] == 1 && m.type[m.opp[i]] == 2)
-            {
+            if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = m.n[m.n[i]];
                 spdlog::debug("Using edge {} as layout start", h);
                 break;
@@ -482,14 +481,14 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
             // TODO
-            //done[i] = true;
+            // done[i] = true;
         }
     }
     // set edge type 2 as cut
     for (int i = 0; i < num_halfedges; i++) {
         if (m.type[i] == 2) {
             // TODO
-            //is_cut_h[i] = true;
+            // is_cut_h[i] = true;
         }
     }
 

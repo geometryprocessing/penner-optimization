@@ -90,26 +90,20 @@ void read_vector_of_pairs_from_file(const std::string& filename, std::vector<std
 ///
 /// @param[in] log_dir: directory to write output (or an empty path for standard output)
 /// @param[in] log_name: name of the log for global access
-void
-create_log(const std::filesystem::path& log_dir, const std::string& log_name);
+void create_log(const std::filesystem::path& log_dir, const std::string& log_name);
 
 /// @brief Log information about the given mesh to a logger
 ///
 /// @param[in] m: mesh
 /// @param[in] log_name: name of the log for global access
-void
-log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name);
+void log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name);
 
 /// Write vector to file
 ///
 /// @param[in] vec: vector to write to file
 /// @param[in] filename: file to write to
 /// @param[in] precision: precision for output
-void write_vector(
-	const VectorX &vec,
-	const std::string &filename,
-	int precision=17
-);
+void write_vector(const VectorX& vec, const std::string& filename, int precision = 17);
 
 /// Write a matrix to file.
 ///

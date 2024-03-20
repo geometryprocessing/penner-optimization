@@ -1,8 +1,8 @@
 #include "cone_metric.hh"
 
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "constraint.hh"
 #include "projection.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 namespace CurvatureMetric {
 
@@ -52,7 +52,7 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
         tripletList.push_back(T(I[k], J[k], V[k]));
     }
 
-    // Use triplet list method 
+    // Use triplet list method
     return change_metric_to_reduced_coordinates(tripletList, num_rows);
 }
 
@@ -111,7 +111,12 @@ bool DifferentiableConeMetric::constraint(
     bool need_jacobian,
     bool only_free_vertices) const
 {
-    return constraint_with_jacobian(*this, constraint, J_constraint, need_jacobian, only_free_vertices);
+    return constraint_with_jacobian(
+        *this,
+        constraint,
+        J_constraint,
+        need_jacobian,
+        only_free_vertices);
 }
 
 int DifferentiableConeMetric::n_reduced_coordinates() const
@@ -120,9 +125,9 @@ int DifferentiableConeMetric::n_reduced_coordinates() const
 }
 
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
-    : DifferentiableConeMetric(m),
-    m_need_jacobian(true),
-    m_transition_jacobian_lol(m.n_edges())
+    : DifferentiableConeMetric(m)
+    , m_need_jacobian(true)
+    , m_transition_jacobian_lol(m.n_edges())
 {
     build_refl_proj(m, he2e, e2he, m_proj, m_embed);
     build_refl_matrix(m_proj, m_embed, m_projection);

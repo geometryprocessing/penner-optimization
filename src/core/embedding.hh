@@ -18,35 +18,35 @@ namespace CurvatureMetric {
 /// edge indices for variable mesh functions.
 struct ReductionMaps
 {
-  // Map between original and doubled mesh
-  std::vector<int> proj;
-  std::vector<int> embed;
+    // Map between original and doubled mesh
+    std::vector<int> proj;
+    std::vector<int> embed;
 
-  // Map between edges and halfedges of the doubled mesh
-  std::vector<int> he2e;
-  std::vector<int> e2he;
-  MatrixX projection;
+    // Map between edges and halfedges of the doubled mesh
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    MatrixX projection;
 
-  // List of fixed and free vertices for the constraint
-  // TODO: This should be part of the mesh, not the reduction maps
-  std::vector<int> fixed_v;
-  std::vector<int> free_v;
+    // List of fixed and free vertices for the constraint
+    // TODO: This should be part of the mesh, not the reduction maps
+    std::vector<int> fixed_v;
+    std::vector<int> free_v;
 
-  // List of fixed and free edge variables
-  // TODO: This should be part of the mesh, not the reduction maps
-  std::vector<int> fixed_e;
-  std::vector<int> free_e;
+    // List of fixed and free edge variables
+    // TODO: This should be part of the mesh, not the reduction maps
+    std::vector<int> fixed_e;
+    std::vector<int> free_e;
 
-  // List of boundary and interior edges
-  std::vector<int> bd_e;
-  std::vector<int> int_e;
+    // List of boundary and interior edges
+    std::vector<int> bd_e;
+    std::vector<int> int_e;
 
-  // Element counts
-  size_t num_reduced_edges;
-  size_t num_edges;
-  size_t num_halfedges;
+    // Element counts
+    size_t num_reduced_edges;
+    size_t num_edges;
+    size_t num_halfedges;
 
-  ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths = false);
+    ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths = false);
 };
 
 /// Build projection he2e mapping halfedge indices for m to a list of edge
@@ -62,16 +62,13 @@ struct ReductionMaps
 /// @param[in] m: mesh to build edge map for. Note that only m.opp is used.
 /// @param[out] he2e: map from halfedge indices to edge indices
 /// @param[out] e2he: map from edge indices to halfedge indices
-void
-build_edge_maps(const Mesh<Scalar>& m,
-                std::vector<int>& he2e,
-                std::vector<int>& e2he);
+void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he);
 
 /// Build projection from edges in a doubled mesh to the edges that intersect
 /// the original mesh i.e. edges that are not type 2.
 ///
 /// Also build an embedding of edges that intersect the original mesh to the double
-/// mesh. If there are no perpendicular edges that cross the line of symmetry (as is 
+/// mesh. If there are no perpendicular edges that cross the line of symmetry (as is
 /// the case for a doubled mesh before any flips are done), then this defines a
 /// retraction to the original surface and an embedding of the original surface
 /// in the double mesh in the topological sense.
@@ -83,12 +80,12 @@ build_edge_maps(const Mesh<Scalar>& m,
 /// the original mesh.
 /// @param[out] embed: map from edges that intersect the original mesh to the
 /// double mesh
-void
-build_refl_proj(const Mesh<Scalar>& m,
-                const std::vector<int>& he2e,
-                const std::vector<int>& e2he,
-                std::vector<int>& proj,
-                std::vector<int>& embed);
+void build_refl_proj(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& he2e,
+    const std::vector<int>& e2he,
+    std::vector<int>& proj,
+    std::vector<int>& embed);
 
 /// Build projection from halfedges in a doubled mesh to the halfedges that
 /// intersect the original mesh i.e. edges that are not type 2.
@@ -106,18 +103,14 @@ build_refl_proj(const Mesh<Scalar>& m,
 /// intersect the original mesh.
 /// @param[out] he_embed: map from halfedges that intersect the original mesh to
 /// the double mesh
-void
-build_refl_he_proj(const Mesh<Scalar>& m,
-                   const std::vector<int>& he2e,
-                   const std::vector<int>& e2he,
-                   std::vector<int>& he_proj,
-                   std::vector<int>& he_embed);
+void build_refl_he_proj(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& he2e,
+    const std::vector<int>& e2he,
+    std::vector<int>& he_proj,
+    std::vector<int>& he_embed);
 
-MatrixX
-build_edge_matrix(
-  const std::vector<int>& he2e,
-  const std::vector<int>& e2he
-);
+MatrixX build_edge_matrix(const std::vector<int>& he2e, const std::vector<int>& e2he);
 
 /// Create matrix representing the projection of the double mesh onto the
 /// embedding.
@@ -127,11 +120,10 @@ build_edge_matrix(
 /// @param[in] embed: map from edges that intersect the original mesh to the
 /// double mesh
 /// @param[out] projection: matrix representing the projection
-void
-build_refl_matrix(
-  const std::vector<int>& proj,
-  const std::vector<int>& embed,
-  MatrixX& projection);
+void build_refl_matrix(
+    const std::vector<int>& proj,
+    const std::vector<int>& embed,
+    MatrixX& projection);
 
 /// Return true iff the edge is in the original embedded mesh.
 ///
@@ -141,12 +133,7 @@ build_refl_matrix(
 /// double mesh
 /// @param[in] e: edge to check
 /// @return true iff e is in the embedded mesh
-bool
-is_embedded_edge(
-  const std::vector<int>& proj,
-  const std::vector<int>& embed,
-  int e
-);
+bool is_embedded_edge(const std::vector<int>& proj, const std::vector<int>& embed, int e);
 
 /// Utility function to reduce a symmetric function defined on the full symmetric
 /// mesh to a function defined on the embedding.
@@ -156,10 +143,10 @@ is_embedded_edge(
 /// @param[in] m: underlying symmetric mesh for edge function
 /// @param[in] symmetric_function: symmetric function on edges of symmetric mesh
 /// @param[out] reduced_function: function on embedded edges
-void
-reduce_symmetric_function(const std::vector<int>& embed,
-                          const VectorX& symmetric_function,
-                          VectorX& reduced_function);
+void reduce_symmetric_function(
+    const std::vector<int>& embed,
+    const VectorX& symmetric_function,
+    VectorX& reduced_function);
 
 /// Utility function to expand a function defined on the embedding defined by
 /// the reflection projection and embedding to a symmetric function on the full
@@ -169,10 +156,10 @@ reduce_symmetric_function(const std::vector<int>& embed,
 /// @param[in] reduced_function: function on embedded edges
 /// @param[out] symmetric_function: symmetric function on edges of symmetric
 /// mesh
-void
-expand_reduced_function(const std::vector<int>& proj,
-                        const VectorX& reduced_function,
-                        VectorX& symmetric_function);
+void expand_reduced_function(
+    const std::vector<int>& proj,
+    const VectorX& reduced_function,
+    VectorX& symmetric_function);
 
 /// Utility function to restrict a function defined on halfedges to a function
 /// defined on edges using the identification from build_edge_maps.
@@ -183,11 +170,7 @@ expand_reduced_function(const std::vector<int>& proj,
 /// @param[in] e2he: map from edge indices to halfedge indices
 /// @param[in] f_he: function on halfedges of mesh
 /// @param[out] f_e: function on edges of mesh
-void
-restrict_he_func(
-  const std::vector<int>& e2he,
-  const VectorX& f_he,
-  VectorX& f_e);
+void restrict_he_func(const std::vector<int>& e2he, const VectorX& f_he, VectorX& f_e);
 
 /// Utility function to expand a function defined on edges to a function defined
 /// on halfedges using the identification from build_edge_maps.
@@ -195,22 +178,16 @@ restrict_he_func(
 /// @param[in] he2e: map from halfedge indices to edge indices
 /// @param[in] f_e: function on edges of mesh
 /// @param[out] f_he: function on halfedges of mesh
-void
-expand_edge_func(
-  const std::vector<int>& he2e,
-  const VectorX& f_e,
-  VectorX& f_he);
+void expand_edge_func(const std::vector<int>& he2e, const VectorX& f_e, VectorX& f_he);
 
 /// Ensure mesh m is valid
 ///
-/// @param[in] m: underlying mesh 
-bool
-is_valid_halfedge(const Mesh<Scalar>& m);
+/// @param[in] m: underlying mesh
+bool is_valid_halfedge(const Mesh<Scalar>& m);
 
 /// Ensure mesh m is a valid double mesh
 ///
-/// @param[in] m: underlying mesh 
-bool
-is_valid_symmetry(const Mesh<Scalar>& m);
+/// @param[in] m: underlying mesh
+bool is_valid_symmetry(const Mesh<Scalar>& m);
 
-}
+} // namespace CurvatureMetric

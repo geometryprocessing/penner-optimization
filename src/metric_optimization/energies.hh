@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common.hh"
-#include "embedding.hh"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
 #include "cone_metric.hh"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
+#include "embedding.hh"
 
 /// \file energies.hh
 ///
@@ -21,8 +21,9 @@ namespace CurvatureMetric {
 /// @param[in] target_cone_metric: target mesh with differentiable metric
 /// @param[in] metric_coords: coordinates for the current metric
 /// @return Jacobian of scale distortion energy per face with respect to the coordinates
-VectorX
-scale_distortion_direction(const DifferentiableConeMetric &target_cone_metric, const VectorX &metric_coords);
+VectorX scale_distortion_direction(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords);
 
 /// Compute the symmetric block energy matrix for the surface Hencky strain
 /// energy in terms of faces. The following correspondences for matrix indices
@@ -33,7 +34,7 @@ scale_distortion_direction(const DifferentiableConeMetric &target_cone_metric, c
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
 /// @return 3|F|x3|F| energy matrix
-MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric &target_cone_metric);
+MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric& target_cone_metric);
 
 /// Compute the inverse of the symmetric block energy matrix for the surface Hencky strain
 /// energy in terms of faces. The following correspondences for matrix indices
@@ -44,41 +45,41 @@ MatrixX surface_hencky_strain_energy(const DifferentiableConeMetric &target_cone
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
 /// @return 3|F|x3|F| energy matrix inverse
-MatrixX surface_hencky_strain_energy_inverse(const DifferentiableConeMetric &target_cone_metric);
+MatrixX surface_hencky_strain_energy_inverse(const DifferentiableConeMetric& target_cone_metric);
 
 /// Compute the first metric tensor invariant for the mesh m with log edge
 /// lengths_full lambdas and target log edge lengths target_log_length_coords.
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
-/// @param[in] metric_coords: metric coordinates for the mesh 
+/// @param[in] metric_coords: metric coordinates for the mesh
 /// @param[out] f2J1: per face array for the first metric tensor invariant
 /// @param[out] J_f2J1: Jacobian with respect to log_length_coords for the first
 /// metric tensor invariant
 /// @param[in] need_jacobian: create Jacobian iff true
-void
-first_invariant(const DifferentiableConeMetric &target_cone_metric,
-                const VectorX &metric_coords,
-                VectorX& f2J1,
-                MatrixX& J_f2J1,
-                bool need_jacobian = false);
+void first_invariant(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    VectorX& f2J1,
+    MatrixX& J_f2J1,
+    bool need_jacobian = false);
 
 /// Compute the square of the second metric tensor invariant for the mesh m with
 /// log edge lengths log_length_coords and target log edge lengths
 /// target_log_length_coords.
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
-/// @param[in] metric_coords: metric coordinates for the mesh 
+/// @param[in] metric_coords: metric coordinates for the mesh
 /// @param[out] f2J2sq: per face array for the squared second metric tensor
 /// invariant
 /// @param[out] J_f2J2sq: Jacobian for the squared second metric tensor
 /// invariant
 /// @param[in] need_jacobian: create Jacobian iff true
-void
-second_invariant_squared(const DifferentiableConeMetric &target_cone_metric,
-                          const VectorX &metric_coords,
-                         VectorX& f2J2sq,
-                         MatrixX& J_f2J2sq,
-                         bool need_jacobian = false);
+void second_invariant_squared(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    VectorX& f2J2sq,
+    MatrixX& J_f2J2sq,
+    bool need_jacobian = false);
 
 /// Compute the metric distortion energy and gradient for the mesh m with log
 /// edge lengths lambdas and target log edge lengths lambdas_target. This energy
@@ -87,17 +88,17 @@ second_invariant_squared(const DifferentiableConeMetric &target_cone_metric,
 /// transformation.
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
-/// @param[in] metric_coords: metric coordinates for the mesh 
+/// @param[in] metric_coords: metric coordinates for the mesh
 /// @param[out] f2energy: metric distortion energy per face
 /// @param[out] J_f2energy: Jacobian of metric distortion energy per face with
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
-void
-metric_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
-                          const VectorX &metric_coords,
-                         VectorX& f2energy,
-                         MatrixX& J_f2energy,
-                         bool need_jacobian = false);
+void metric_distortion_energy(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    VectorX& f2energy,
+    MatrixX& J_f2energy,
+    bool need_jacobian = false);
 
 /// Compute the area distortion energy and gradient for the mesh m with log edge
 /// lengths lambdas and target log edge lengths lambdas_target. This energy is
@@ -105,17 +106,17 @@ metric_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
 /// sigma_i are the singular values of the face deformation transformation.
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
-/// @param[in] metric_coords: metric coordinates for the mesh 
+/// @param[in] metric_coords: metric coordinates for the mesh
 /// @param[out] f2energy: area distortion energy per face
 /// @param[out] J_f2energy: Jacobian of area distortion energy per face with
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
-void
-area_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
-                       const VectorX &metric_coords,
-                       VectorX& f2energy,
-                       MatrixX& J_f2energy,
-                       bool need_jacobian = false);
+void area_distortion_energy(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    VectorX& f2energy,
+    MatrixX& J_f2energy,
+    bool need_jacobian = false);
 
 /// Compute the symmetric dirichlet energy for the mesh m with log edge lengths
 /// lambdas and target log edge lengths lambdas_target. This energy is the per
@@ -124,17 +125,17 @@ area_distortion_energy(const DifferentiableConeMetric &target_cone_metric,
 ///  are the singular values of the face deformation transformation.
 ///
 /// @param[in] target_cone_metric: target mesh with differentiable metric
-/// @param[in] metric_coords: metric coordinates for the mesh 
+/// @param[in] metric_coords: metric coordinates for the mesh
 /// @param[out] f2energy: symmetric dirichlet energy per face
 /// @param[out] J_f2energy: Jacobian of symmetric dirichlet energy per face with
 /// respect to log_length_coords
 /// @param[in] need_jacobian: create Jacobian iff true
-void
-symmetric_dirichlet_energy(const DifferentiableConeMetric &target_cone_metric,
-                           const VectorX &metric_coords,
-                           VectorX& f2energy,
-                           MatrixX& J_f2energy,
-                           bool need_jacobian = false);
+void symmetric_dirichlet_energy(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    VectorX& f2energy,
+    MatrixX& J_f2energy,
+    bool need_jacobian = false);
 
 // ************
 // VF Functions
@@ -142,13 +143,11 @@ symmetric_dirichlet_energy(const DifferentiableConeMetric &target_cone_metric,
 
 /// Compute the 3x3 energy matrix for the surface Hencky strain for a single face.
 /// Length indices correspond to the opposite angle.
-void
-triangle_surface_hencky_strain_energy(
-  const std::array<Scalar, 3> &lengths,
-  const std::array<Scalar, 3> &cotangents,
-  Scalar face_area,
-  Eigen::Matrix<Scalar, 3, 3> &face_energy_matrix
-);
+void triangle_surface_hencky_strain_energy(
+    const std::array<Scalar, 3>& lengths,
+    const std::array<Scalar, 3>& cotangents,
+    Scalar face_area,
+    Eigen::Matrix<Scalar, 3, 3>& face_energy_matrix);
 
 // Compute the symmetric block energy matrix for the surface Hencky strain
 // energy in terms of faces. The following correspondences for matrix indices
@@ -163,11 +162,11 @@ triangle_surface_hencky_strain_energy(
 // FIXME Determine what this does and where it is used
 // TODO Make this actually take in VF and compute area, cotalpha, and l as in python
 // TODO MAKE void with reference
-VectorX
-surface_hencky_strain_energy(const VectorX& area,
-                                const MatrixX& cot_alpha,
-                                const MatrixX& l,
-                                const MatrixX& delta_ll);
+VectorX surface_hencky_strain_energy(
+    const VectorX& area,
+    const MatrixX& cot_alpha,
+    const MatrixX& l,
+    const MatrixX& delta_ll);
 
 /// Compute the per face first metric tensor invariant for a VF mesh with uv embedding
 /// given by the trace of the determinant.
@@ -177,14 +176,12 @@ surface_hencky_strain_energy(const VectorX& area,
 /// @param[in] uv: uv embedding vertices
 /// @param[in] F_uv: uv embedding faces
 /// @param[out] f2J1: map from faces to invariant values
-void
-first_invariant(
-  const Eigen::MatrixXd &V,
-  const Eigen::MatrixXi &F,
-  const Eigen::MatrixXd &uv,
-  const Eigen::MatrixXi &F_uv,
-  VectorX &f2J1
-);
+void first_invariant(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    VectorX& f2J1);
 
 /// Compute the per face second metric tensor invariant for a VF mesh with uv embedding
 /// given by the square root of the determinant.
@@ -196,14 +193,12 @@ first_invariant(
 /// @param[in] uv: uv embedding vertices
 /// @param[in] F_uv: uv embedding faces
 /// @param[out] f2J2: map from faces to invariant values
-void
-second_invariant(
-  const Eigen::MatrixXd &V,
-  const Eigen::MatrixXi &F,
-  const Eigen::MatrixXd &uv,
-  const Eigen::MatrixXi &F_uv,
-  VectorX &f2J2
-);
+void second_invariant(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    VectorX& f2J2);
 
 /// Compute the symmetric dirichlet energy for the uv parametrization of a mesh.
 ///
@@ -216,42 +211,33 @@ second_invariant(
 /// @param[in] uv: uv embedding vertices
 /// @param[in] F_uv: uv embedding faces
 /// @param[out] f2energy: map from faces to energy
-void
-symmetric_dirichlet_energy(
-  const Eigen::MatrixXd &V,
-  const Eigen::MatrixXi &F,
-  const Eigen::MatrixXd &uv,
-  const Eigen::MatrixXi &F_uv,
-  VectorX& f2energy
-);
+void symmetric_dirichlet_energy(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    VectorX& f2energy);
 
-Scalar
-root_mean_square_error(const VectorX &x, const VectorX &x0);
+Scalar root_mean_square_error(const VectorX& x, const VectorX& x0);
 
-Scalar
-relative_root_mean_square_error(const VectorX &x, const VectorX &x0);
+Scalar relative_root_mean_square_error(const VectorX& x, const VectorX& x0);
 
-Scalar
-root_mean_square_relative_error(const VectorX &x, const VectorX &x0);
+Scalar root_mean_square_relative_error(const VectorX& x, const VectorX& x0);
 
 #ifdef PYBIND
 
-VectorX
-first_invariant_vf_pybind(
-  const Eigen::MatrixXd &V,
-  const Eigen::MatrixXi &F,
-  const Eigen::MatrixXd &uv,
-  const Eigen::MatrixXi &F_uv
-);
+VectorX first_invariant_vf_pybind(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv);
 
-VectorX
-second_invariant_vf_pybind(
-  const Eigen::MatrixXd &V,
-  const Eigen::MatrixXi &F,
-  const Eigen::MatrixXd &uv,
-  const Eigen::MatrixXi &F_uv
-);
+VectorX second_invariant_vf_pybind(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv);
 
 #endif
 
-}
+} // namespace CurvatureMetric

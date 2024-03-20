@@ -3,12 +3,12 @@
 #include <igl/Timer.h>
 #include <map>
 #include <stack>
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "constraint.hh"
 #include "embedding.hh"
 #include "globals.hh"
 #include "linear_algebra.hh"
 #include "vector.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 /// FIXME Do cleaning pass
 

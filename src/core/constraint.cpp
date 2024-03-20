@@ -135,7 +135,7 @@ void vertex_angles_with_jacobian_helper(
     std::vector<int> v_rep;
     int num_angles;
     if (only_free_vertices) {
-      build_free_vertex_map(cone_metric, v_rep, num_angles);
+        build_free_vertex_map(cone_metric, v_rep, num_angles);
     } else {
         v_rep = cone_metric.v_rep;
         num_angles = cone_metric.n_ind_vertices();

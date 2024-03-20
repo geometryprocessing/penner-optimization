@@ -4,19 +4,19 @@
 
 namespace CurvatureMetric {
 
-class FlipMapMatrixGenerator {
+class FlipMapMatrixGenerator
+{
 public:
-FlipMapMatrixGenerator(int size);
+    FlipMapMatrixGenerator(int size);
 
-void reset();
+    void reset();
 
-void multiply_by_matrix(
-    const std::vector<int>& matrix_indices,
-    const std::vector<Scalar>& matrix_scalars,
-    int ed
-);
+    void multiply_by_matrix(
+        const std::vector<int>& matrix_indices,
+        const std::vector<Scalar>& matrix_scalars,
+        int ed);
 
-MatrixX build_matrix() const;
+    MatrixX build_matrix() const;
 
 private:
     int m_size;
@@ -26,17 +26,16 @@ private:
 class FlipMatrixGenerator
 {
 public:
-FlipMatrixGenerator(int size);
+    FlipMatrixGenerator(int size);
 
-void reset();
+    void reset();
 
-void multiply_by_matrix(
-    const std::vector<int>& matrix_indices,
-    const std::vector<Scalar>& matrix_scalars,
-    int ed
-);
- 
-MatrixX build_matrix() const;
+    void multiply_by_matrix(
+        const std::vector<int>& matrix_indices,
+        const std::vector<Scalar>& matrix_scalars,
+        int ed);
+
+    MatrixX build_matrix() const;
 
 private:
     int m_size;
