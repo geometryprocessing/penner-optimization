@@ -1,9 +1,8 @@
 #include "common.hh"
 #include "explicit_optimization.hh"
-#include "optimization_interface.hh"
-#include "optimization_interface.hh"
+#include "penner_optimization_interface.hh"
 #include "shear.hh"
-#include "logging.hh"
+#include "io.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 using namespace CurvatureMetric;

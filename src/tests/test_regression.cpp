@@ -3,7 +3,9 @@
 #include <igl/readOBJ.h>
 
 #include "common.hh"
-#include "optimization_interface.hh"
+#include "penner_optimization_interface.hh"
+#include "io.hh"
+#include "vector.hh"
 
 using namespace CurvatureMetric;
 

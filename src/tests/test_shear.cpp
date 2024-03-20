@@ -5,7 +5,7 @@
 #include "embedding.hh"
 #include "common.hh"
 #include "cone_metric.hh"
-#include "optimization_interface.hh"
+#include "penner_optimization_interface.hh"
 #include "projection.hh"
 
 using namespace CurvatureMetric;

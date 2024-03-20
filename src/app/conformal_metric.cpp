@@ -1,9 +1,10 @@
 #include "common.hh"
 #include "implicit_optimization.hh"
-#include "optimization_interface.hh"
+#include "penner_optimization_interface.hh"
 #include "layout.hh"
+#include "io.hh"
+#include "vector.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "logging.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 using namespace CurvatureMetric;

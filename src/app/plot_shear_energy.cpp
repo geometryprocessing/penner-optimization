@@ -2,7 +2,7 @@
 #include "explicit_optimization.hh"
 #include "targets.hh"
 #include "energies.hh"
-#include "optimization_interface.hh"
+#include "penner_optimization_interface.hh"
 #include "constraint.hh"
 #include "shear.hh"
 #include "projection.hh"

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(CurvatureMetric)
+project(PennerOptimization)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,8 +8,6 @@ add_compile_options(-fPIC)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
 if (PROJECT_IS_TOP_LEVEL)
-	message("Curvature Metric is top level project")
-  
   # Options for the project
   option(USE_PYBIND "Generate pybindings" ON)
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
@@ -99,27 +97,37 @@ if(ENABLE_VISUALIZATION)
   add_compile_definitions(ENABLE_VISUALIZATION)
 endif()
 
-# Make main cpp library
-add_subdirectory(src/optimization)
-
 if(ENABLE_VISUALIZATION)
   include(polyscope)
-  target_link_libraries(MetricOptimizationLib PRIVATE
+  set(POLYSCOPE_LIBRARIES
     polyscope
   )
 endif()
 
+# Make main cpp library
+add_subdirectory(src)
+
+
+if(USE_SUITESPARSE)
+  include(suitesparse)
+  target_link_libraries(PennerOptimizationLib PRIVATE
+    SuiteSparse::SuiteSparseConfig
+    SuiteSparse::CHOLMOD
+  )
+endif()
 
 # Build pybind optimization functions
-message("FIXME Building pybind libraries")
-
 if(USE_PYBIND)
-  message("Building pybind libraries")
   include(pybind11)
   add_library(optimization_py MODULE
-    src/optimization/optimization_pybind.cpp
+    src/penner_optimization_pybind.cpp
   )
 
+  # Link libraries
+  target_link_libraries(optimization_py PUBLIC
+    PennerOptimizationLib
+    pybind11::module
+  )
   # Link visualization methods if created
   if(RENDER_TEXTURE)
     add_compile_definitions(RENDER_TEXTURE)
@@ -127,25 +135,11 @@ if(USE_PYBIND)
       visualization
     )
   endif()
-
-  # Link libraries
-  target_link_libraries(optimization_py PUBLIC
-    MetricOptimizationLib
-  )
-
   if(USE_HIGHFIVE)
     target_link_libraries(optimization_py PUBLIC
       HighFiveLib
     )
   endif()
-
-if(USE_SUITESPARSE)
-  include(suitesparse)
-  target_link_libraries(MetricOptimizationLib PRIVATE
-    SuiteSparse::SuiteSparseConfig
-    SuiteSparse::CHOLMOD
-  )
-endif()
 
   # Set pybinding settings
   set_target_properties(optimization_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -170,7 +164,7 @@ if(NOT USE_MULTIPRECISION)
     #add_library(CurvatureMetricTestsLib
     #)
     #target_link_libraries(CurvatureMetricTestsLib PUBLIC
-    #  MetricOptimizationLib
+    #  PennerOptimizationLib
     #  Catch2::Catch2WithMain
     #)
 
@@ -179,7 +173,7 @@ if(NOT USE_MULTIPRECISION)
       src/tests/tests.cpp
     )
     target_link_libraries(CurvatureMetricTests PRIVATE
-      MetricOptimizationLib
+      PennerOptimizationLib
       Catch2::Catch2WithMain
     )
     set(TEST_DATA_ROOT "${PROJECT_SOURCE_DIR}/src/tests/regression/")
