@@ -1,0 +1,317 @@
+{
+  "global_args": {
+    "energy_choice": "p_norm",
+    "histogram_choice": "scale_factors",
+    "height": 1600,
+    "width": 2560,
+    "ylim": 100
+  },
+  "pipeline":
+  [
+    {
+      "method": "optimize",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles"
+        }
+      ]
+    },
+    {
+      "method": "overlay",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf"
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "refine",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf"
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf",
+          "histogram_choice": "scale_factors",
+          "color": "red",
+          "bin_min": -2.5,
+          "bin_max": 2.5
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf",
+          "histogram_choice": "scale_factors",
+          "color": "red",
+          "bin_min": -2.5,
+          "bin_max": 2.5
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt",
+          "histogram_choice": "scale_factors",
+          "color": "blue",
+          "bin_min": -0.5,
+          "bin_max": 0.5
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt",
+          "histogram_choice": "scale_factors",
+          "color": "blue",
+          "bin_min": -0.5,
+          "bin_max": 0.5
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf",
+          "histogram_choice": "scale_residuals",
+          "color": "red",
+          "bin_min": -2.0,
+          "bin_max": 2.0
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf",
+          "histogram_choice": "scale_residuals",
+          "color": "red",
+          "bin_min": -2.0,
+          "bin_max": 2.0
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt",
+          "histogram_choice": "scale_residuals",
+          "color": "blue",
+          "bin_min": -2.0,
+          "bin_max": 2.0
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt",
+          "histogram_choice": "scale_residuals",
+          "color": "blue",
+          "bin_min": -2.0,
+          "bin_max": 2.0
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf",
+          "histogram_choice": "stretch_factors",
+          "color": "red",
+          "bin_min": 1.0,
+          "bin_max": 4.0
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf",
+          "histogram_choice": "stretch_factors",
+          "color": "red",
+          "bin_min": 1.0,
+          "bin_max": 4.0
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt",
+          "histogram_choice": "stretch_factors",
+          "color": "blue",
+          "histogram_width": 5,
+          "bin_min": 1.0,
+          "bin_max": 1.1
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt",
+          "histogram_choice": "stretch_factors",
+          "color": "blue",
+          "histogram_width": 5,
+          "bin_min": 1.0,
+          "bin_max": 1.1
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "output_dir": "figures/objectives/log_length/strectch_tail",
+          "suffix": "opt",
+          "histogram_choice": "stretch_factors",
+          "color": "blue",
+          "histogram_width": 5,
+          "bin_min": 1.1,
+          "bin_max": 1.5
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "output_dir": "figures/objectives/log_length/strectch_tail",
+          "suffix": "opt",
+          "histogram_choice": "stretch_factors",
+          "color": "blue",
+          "histogram_width": 5,
+          "bin_min": 1.1,
+          "bin_max": 1.5
+        }
+      ]
+    },
+    {
+      "method": "render_uv",
+      "skip": false,
+      "args_list": [
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "opt_refined"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "opt_refined"
+        },
+        {
+          "fname": [
+            "kitten100K.obj"
+          ],
+          "input_dir": "data/closed-Myles",
+          "suffix": "conf_refined"
+        },
+        {
+          "fname": [
+            "julius.obj"
+          ],
+          "input_dir": "data/open-Myles",
+          "suffix": "conf_refined"
+        }
+      ]
+    }
+  ]
+}
+

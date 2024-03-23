@@ -8,7 +8,7 @@ namespace CurvatureMetric {
 /// A mesh structure to perform interpolation of points in a surface.
 ///
 /// While the overlay mesh supports changes in triangulation, this mesh
-/// also supports changes in the underlying metric. Also, it creates a
+/// also supports changes in the underlying metric. It creates a
 /// a more distinct representation of Hyperbolic and Euclidean surfaces to
 /// ensure invalid operations are prevented from occurring. This is important
 /// for interpolation as the barycentric coordinates introduce state and

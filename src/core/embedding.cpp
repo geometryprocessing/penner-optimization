@@ -7,7 +7,7 @@ ReductionMaps::ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths)
     // Build embedding and halfedge information
     build_edge_maps(m, he2e, e2he);
     build_refl_proj(m, he2e, e2he, proj, embed);
-    build_refl_matrix(proj, embed, projection);
+    projection = build_refl_matrix(proj, embed);
 
     // Get element counts from constructed maps
     num_edges = e2he.size();
@@ -174,10 +174,7 @@ MatrixX build_edge_matrix(const std::vector<int>& he2e, const std::vector<int>& 
     return identification;
 }
 
-void build_refl_matrix(
-    const std::vector<int>& proj,
-    const std::vector<int>& embed,
-    MatrixX& projection)
+MatrixX build_refl_matrix(const std::vector<int>& proj, const std::vector<int>& embed)
 {
     // Convert linear projection function e -> P(e) to a matrix
     int num_edges = proj.size();
@@ -187,9 +184,11 @@ void build_refl_matrix(
     for (int e = 0; e < num_edges; ++e) {
         tripletList.push_back(T(e, proj[e], 1.0));
     }
+    MatrixX projection;
     projection.resize(num_edges, num_embedded_edges);
     projection.reserve(tripletList.size());
     projection.setFromTriplets(tripletList.begin(), tripletList.end());
+    return projection;
 }
 
 bool is_embedded_edge(const std::vector<int>& proj, const std::vector<int>& embed, int e)

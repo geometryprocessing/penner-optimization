@@ -482,7 +482,6 @@ VectorX optimize_domain_coordinates(
     Scalar beta_0 = opt_params->beta_0;
     Scalar max_beta = opt_params->max_beta;
     Scalar max_grad_range = opt_params->max_grad_range;
-    std::string energy_choice = opt_params->energy_choice;
     std::string output_dir = opt_params->output_dir;
 
     // Log mesh data

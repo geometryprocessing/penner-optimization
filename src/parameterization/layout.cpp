@@ -15,6 +15,8 @@
 #include "vf_mesh.hh"
 #include "viewers.hh"
 
+// TODO: cleaning pass
+
 namespace CurvatureMetric {
 
 OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
@@ -142,18 +144,18 @@ bool check_uv(
 
     // Check length consistency
     Scalar uv_length_error = compute_uv_length_error(F, uv, F_uv);
-    if (!float_equal(uv_length_error, 0.0)) {
+    if (!float_equal(uv_length_error, 0.0, 1e-6)) {
         spdlog::warn("Inconsistent uv length error {} across edges", uv_length_error);
     }
 
     // Check mesh face areas
     if (!check_areas(V, F)) {
-        spdlog::warn("Mesh face area is zero");
+        spdlog::debug("Mesh face area is zero");
     }
 
     // Check uv face areas
     if (!check_areas(uv, F_uv)) {
-        spdlog::warn("Mesh layout face area is zero");
+        spdlog::debug("Mesh layout face area is zero");
     }
 
     // Return true if no issues found
@@ -419,12 +421,12 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     int num_found_vertices = std::count(is_found_vertex.begin(), is_found_vertex.end(), true);
     spdlog::trace("{}/{} vertices seen", num_found_vertices, m.n_vertices());
 
-    Eigen::MatrixXi F, F_uv;
-    compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
-    int num_components = count_components(F_uv);
-    if (num_components != 1) {
-        spdlog::error("Layout connectivity has {} components", num_components);
-    }
+    //Eigen::MatrixXi F, F_uv;
+    //compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
+    //int num_components = count_components(F_uv);
+    //if (num_components != 1) {
+    //    spdlog::error("Layout connectivity has {} components", num_components);
+    //}
 
     return is_cut_h_gen;
 };
@@ -797,12 +799,12 @@ get_consistent_layout(
     }
 
     // Check validity (not needed)
-    Eigen::MatrixXi F_poly, F_uv_poly;
-    compute_layout_faces(mc.n_vertices(), m_o, is_cut_poly, F_poly, F_uv_poly);
-    int num_poly_components = count_components(F_uv_poly);
-    if (num_poly_components != 1) {
-        spdlog::error("Overlay connectivity has {} components", num_poly_components);
-    }
+    //Eigen::MatrixXi F_poly, F_uv_poly;
+    //compute_layout_faces(mc.n_vertices(), m_o, is_cut_poly, F_poly, F_uv_poly);
+    //int num_poly_components = count_components(F_uv_poly);
+    //if (num_poly_components != 1) {
+    //    spdlog::error("Overlay connectivity has {} components", num_poly_components);
+    //}
 
     // Extend the overlay cut to the triangulated mesh
     // WARNING: Assumes triangulation halfedges added to the end
@@ -812,12 +814,12 @@ get_consistent_layout(
     }
 
     // Check validity (not needed)
-    Eigen::MatrixXi F_tri, F_uv_tri;
-    compute_layout_faces(mc.n_vertices(), m, is_cut_o, F_tri, F_uv_tri);
-    int num_tri_components = count_components(F_uv_tri);
-    if (num_tri_components != 1) {
-        spdlog::error("Triangulated overlay connectivity has {} components", num_tri_components);
-    }
+    //Eigen::MatrixXi F_tri, F_uv_tri;
+    //compute_layout_faces(mc.n_vertices(), m, is_cut_o, F_tri, F_uv_tri);
+    //int num_tri_components = count_components(F_uv_tri);
+    //if (num_tri_components != 1) {
+    //    spdlog::error("Triangulated overlay connectivity has {} components", num_tri_components);
+    //}
 
     // Now directly do layout on triangulated overlay mesh
     std::vector<Scalar> phi(m.n_vertices(), 0.0);

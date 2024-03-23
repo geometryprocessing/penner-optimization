@@ -32,7 +32,6 @@ std::string formatted_vector(const std::vector<T>& vec, std::string delim = " ")
     return vector_string.str();
 }
 
-
 /// Read a vector from a file.
 ///
 /// @param[in] filename: file with vector to read

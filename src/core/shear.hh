@@ -26,7 +26,13 @@ void compute_shear_change(
     const VectorX& he_metric_target,
     VectorX& he_shear_change);
 
-/// TODO
+/// Compute a matrix of independent basis vectors for the shear subspace of Penner coordinate space
+/// corresponding to dual shear coordinates.
+///
+/// @param[in] m: mesh
+/// @param[in] independent_edges: set of edges corresponding to a choice of independent dual shear
+/// coordinates
+/// @return: matrix with basis vectors as columns
 void compute_shear_dual_matrix(
     const Mesh<Scalar>& m,
     const std::vector<int>& independent_edges,

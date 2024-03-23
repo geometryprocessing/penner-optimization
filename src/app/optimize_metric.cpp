@@ -71,8 +71,6 @@ int main(int argc, char *argv[])
 	auto proj_params = std::make_shared<ProjectionParameters>();
 	auto opt_params = std::make_shared<OptimizationParameters>();
 	opt_params->output_dir = output_dir;
-	opt_params->num_iter = 10;
-	opt_params->use_optimal_projection = true;
 
 	// Optimize the metric
 	std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric = optimize_metric(

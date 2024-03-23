@@ -1,9 +1,7 @@
 
 import optimization_py as opt
-import optimize_impl.targets as targets
 import igl
 import numpy as np
-
 
 def lp_energy(v, w, p=2):
     """
@@ -202,9 +200,9 @@ def arap_vf(v, f, uv, fuv):
     return J1 - 2.0 * np.sqrt(J1 + 2.0 * J2) + 2.0
 
 
-def surface_hencky_strain_vf(v, f, uv, fuv):
+def quadratic_sym_dirichlet_vf(v, f, uv, fuv):
     """
-    Compute the per face ARAP energy from initial and parameterization
+    Compute the per face quadratic symmetric dirichlet energy from initial and parameterization
     vertex positions
 
     param[in] np.array v: initial mesh vertex positions
@@ -222,7 +220,6 @@ def surface_hencky_strain_vf(v, f, uv, fuv):
     weight = np.average(area_0)
 
     return opt.surface_hencky_strain_energy_vf(area_0, cot_alpha_0, l_0, ll - ll_0) / weight
-
 
 def best_fit_conformal_vf(v, f, uv, fuv):
     Th_hat = np.zeros(len(v))
@@ -294,8 +291,8 @@ def get_face_energy(
         energy = amips_vf(v, f, uv_embed, fuv) - 4
     if (colormap == 'arap'):
         energy = arap_vf(v, f, uv_embed, fuv)
-    if (colormap == 'surface_hencky_strain'):
-        energy = surface_hencky_strain_vf(v, f, uv_embed, fuv)
+    if (colormap == 'quadratic_sym_dirichlet'):
+        energy = quadratic_sym_dirichlet_vf(v, f, uv_embed, fuv)
 
     # Optionally use face weighting
     if (use_face_weight):
@@ -312,38 +309,3 @@ def get_face_energy(
         energy = np.log(np.maximum(energy + 1, 0))
 
     return energy
-
-def get_interpolated_vertex_energy(
-    v,
-    f,
-    uv,
-    fuv,
-    vn_to_v,
-    endpoints,
-    colormap,
-    use_sqrt_scale=False,
-    use_log_scale=False,
-):
-    # Ensure uv is #V x 3
-    uv_embed = np.zeros((len(uv), 3))
-    uv_embed[:,:2] = uv[:,:2]
-
-    # Get energy
-    if (colormap == 'inserted_vertices'):
-        energy = inserted_vertices(v, vn_to_v, endpoints)
-
-    # Add sqrt or log scale
-    if use_sqrt_scale:
-        energy = np.sqrt(np.maximum(energy, 0))
-    if use_log_scale:
-        energy = np.log(np.maximum(energy + 1, 0))
-
-    return energy
-
-def inserted_vertices(v, vn_to_v, endpoints):
-    # Get vertices inserted from overlay
-    r = np.zeros(len(v))
-    r[endpoints[vn_to_v][:,0]>=0] = 1
-    return r
-
-

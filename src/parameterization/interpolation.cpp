@@ -54,7 +54,7 @@ void interpolate_penner_coordinates(
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_INFO(
+        SPDLOG_DEBUG(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
@@ -65,7 +65,7 @@ void interpolate_penner_coordinates(
             halfedge_metric_coords,
             scale_factors,
             halfedge_translations);
-        SPDLOG_INFO(
+        SPDLOG_TRACE(
             "Min change in coordinates is {}",
             (halfedge_metric_coords - initial_halfedge_metric_coords).minCoeff());
         SPDLOG_TRACE(
@@ -140,7 +140,7 @@ void interpolate_penner_coordinates(
             flipped_halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_INFO(
+        SPDLOG_DEBUG(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
@@ -543,12 +543,9 @@ void InterpolationMesh::change_hyperbolic_surface_metric(
         spdlog::error("Invalid halfedge translations used");
         return;
     }
-    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
-    if (!is_trivial_symmetric_mesh()) {
-        spdlog::warn("Mesh symmetry is not trivial");
-    }
 
     // Change lengths to target values
+    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
     spdlog::trace("Changing mesh edge lengths");
     for (int h = 0; h < halfedge_metric_coords.size(); ++h) {
         mc.l[h] = exp(halfedge_metric_coords[h] / 2.0);

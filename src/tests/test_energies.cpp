@@ -19,8 +19,8 @@ TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
 
   // Use right triangle as the metric and uniform unit lengths as the target
   VectorX metric_coords(3);
-  metric_coords << 0.0, 0.0, 2.0 * std::log(std::sqrt(2));
   VectorX metric_target(3);
+  metric_coords << 0.0, 0.0, 2.0 * std::log(std::sqrt(2));
   metric_target << 0.0, 0.0, 0.0;
   PennerConeMetric cone_metric(m, metric_target);
   

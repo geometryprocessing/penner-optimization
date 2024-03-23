@@ -5,28 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import os, pickle
 
-def print_flap(C, arr, h):
-    """
-    Print value of the halfedge indexed array arr at halfedge h and the other halfedges
-    in the flap around h
-    
-    param[in] Mesh C: mesh containing h
-    param[in] np.array arr: array to print local information for
-    param[in] int h: halfedge index
-    """
-    # Get flap halfedges around h
-    ho = C.opp[h]
-    hb = C.n[h]; ha = C.n[C.n[h]]
-    hbo = C.n[C.n[ho]]; hao = C.n[ho]
-
-    # Print flap information in arr
-    print("Halfedge {} with val {}".format(h, arr[h]))
-    print("Opposite {} with val {}".format(ho, arr[ho]))
-    print("Next {} with val {}".format(hb, arr[hb]))
-    print("Prev {} with val {}".format(ha, arr[ha]))
-    print("Opposite next {} with val {}".format(hao, arr[hao]))
-    print("Opposite prev {} with val {}".format(hbo, arr[hbo]))
-
 
 def generate_histogram(
     X,

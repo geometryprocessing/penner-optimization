@@ -14,11 +14,11 @@ if (PROJECT_IS_TOP_LEVEL)
   option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
   option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
-  option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" OFF)
+  option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
+  option(RENDER_TEXTURE "Render results" ON)
 
   # Set libigl options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
-  option(RENDER_TEXTURE "Render results" OFF)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
 endif()
 
@@ -109,11 +109,11 @@ add_subdirectory(src)
 
 
 if(USE_SUITESPARSE)
-  include(suitesparse)
-  target_link_libraries(PennerOptimizationLib PRIVATE
-    SuiteSparse::SuiteSparseConfig
-    SuiteSparse::CHOLMOD
-  )
+#  include(suitesparse)
+#  target_link_libraries(PennerOptimizationLib PRIVATE
+#    SuiteSparse::SuiteSparseConfig
+#    SuiteSparse::CHOLMOD
+#  )
 endif()
 
 # Build pybind optimization functions

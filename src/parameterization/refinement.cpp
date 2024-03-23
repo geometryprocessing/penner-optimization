@@ -696,7 +696,7 @@ void RefinementMesh::refine_mesh()
         // NOTE: This should not happen, but may do to floating point error
         // or invalid inputs
         if (is_refined[current_face]) {
-            spdlog::warn("Attempted to refine face {} twice", current_face);
+            spdlog::debug("Attempted to refine face {} twice", current_face);
             continue;
         }
 

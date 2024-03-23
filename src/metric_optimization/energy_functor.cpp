@@ -275,7 +275,7 @@ RegularizedQuadraticEnergy::RegularizedQuadraticEnergy(
     Scalar mesh_area = face_area_weights.sum();
 
     // Compute regularized matrix
-    m_quadratic_energy_matrix = weight * Q + mesh_area * I;
+    m_quadratic_energy_matrix = Q + (weight * mesh_area) * I;
 }
 
 Scalar RegularizedQuadraticEnergy::energy(const VectorX& metric_coords) const
@@ -292,91 +292,6 @@ VectorX RegularizedQuadraticEnergy::gradient(const VectorX& metric_coords) const
     return m_quadratic_energy_matrix * difference;
 }
 
-Scalar ConeEnergy::energy(const VectorX& metric_coords) const
-{
-    assert(false);
-    return 0.5 * metric_coords.squaredNorm();
-    // TODO
-    //    VectorX constraint;
-    //    MatrixX J_constraint;
-    //    std::vector<int> flip_seq;
-    //    bool need_jacobian = false;
-    //    constraint_with_jacobian(*m_mesh,
-    //                             metric_coords,
-    //                             constraint,
-    //                             J_constraint,
-    //                             flip_seq,
-    //                             need_jacobian,
-    //                             m_opt_params.use_edge_lengths);
-    //
-    //    // Add L2 constraint error for fixed dof of the projection
-    //    Scalar energy = 0;
-    //    for (size_t v = 0; v < m_mesh->fixed_dof.size(); ++v)
-    //    {
-    //      if (m_mesh->fixed_dof[v])
-    //      {
-    //        energy += 0.5 * constraint[v] * constraint[v];
-    //      }
-    //    }
-    //
-    //    return energy;
-}
-
-VectorX ConeEnergy::gradient(const VectorX& metric_coords) const
-{
-    assert(false);
-    return metric_coords;
-    // TODO
-
-    //    VectorX constraint;
-    //    MatrixX J_constraint;
-    //    std::vector<int> flip_seq;
-    //    bool need_jacobian = true;
-    //    constraint_with_jacobian(*m_mesh,
-    //                             metric_coords,
-    //                             constraint,
-    //                             J_constraint,
-    //                             flip_seq,
-    //                             need_jacobian,
-    //                             m_opt_params.use_edge_lengths);
-    //
-    //    // Add L2 constraint error gradient for fixed dof of the projection
-    //    VectorX cone_gradient;
-    //    cone_gradient.setZero(metric_coords.size());
-    //    for (size_t v = 0; v < m_mesh->fixed_dof.size(); ++v)
-    //    {
-    //      if (m_mesh->fixed_dof[v])
-    //      {
-    //        cone_gradient += constraint[v] * J_constraint.row(v);
-    //      }
-    //    }
-    //
-    //    return cone_gradient;
-}
-
-// TODO
-// Add cone face weights if nontrivial
-//  if (!float_equal(m_cone_weight, 1.0))
-//  {
-//    std::vector<Scalar> face_weights;
-//    compute_cone_face_weights(m, reduction_maps, m_cone_weight, face_weights);
-//    MatrixX M_face_weight;
-//    face_halfedge_weight_matrix(face_weights, M_face_weight);
-//    M = M * M_face_weight;
-//  }
-//
-//  // Add boundary face weights if nontrivial
-//  if (!float_equal(m_bd_weight, 1.0))
-//  {
-//    std::vector<Scalar> face_weights;
-//    compute_boundary_face_weights(m, reduction_maps, m_bd_weight, face_weights);
-//    MatrixX M_face_weight;
-//    face_halfedge_weight_matrix(face_weights, M_face_weight);
-//    M = M * M_face_weight;
-//  }
-
-// FIXME Rename these variables
-// FIXME Ensure all pybind functions for the entire interface are in place
 #ifdef PYBIND
 
 MatrixX length_jacobian_pybind(const VectorX& lambdas_full)

@@ -18,6 +18,8 @@ namespace CurvatureMetric {
 /// edge indices for variable mesh functions.
 struct ReductionMaps
 {
+    ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths = false);
+
     // Map between original and doubled mesh
     std::vector<int> proj;
     std::vector<int> embed;
@@ -45,8 +47,6 @@ struct ReductionMaps
     size_t num_reduced_edges;
     size_t num_edges;
     size_t num_halfedges;
-
-    ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths = false);
 };
 
 /// Build projection he2e mapping halfedge indices for m to a list of edge
@@ -59,7 +59,7 @@ struct ReductionMaps
 /// Note: These edge maps remain valid after flips or, more generally,
 /// as long as the opp array does not change.
 ///
-/// @param[in] m: mesh to build edge map for. Note that only m.opp is used.
+/// @param[in] m: mesh to build edge map for
 /// @param[out] he2e: map from halfedge indices to edge indices
 /// @param[out] e2he: map from edge indices to halfedge indices
 void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he);
@@ -110,6 +110,11 @@ void build_refl_he_proj(
     std::vector<int>& he_proj,
     std::vector<int>& he_embed);
 
+/// Build matrix mapping edge indices to the pair of corresponding halfedge indices
+///
+/// @param[in] he2e: map from halfedge indices to edge indices
+/// @param[in] e2he: map from edge indices to halfedge indices
+/// @return matrix mapping edges to halfedges
 MatrixX build_edge_matrix(const std::vector<int>& he2e, const std::vector<int>& e2he);
 
 /// Create matrix representing the projection of the double mesh onto the
@@ -119,11 +124,8 @@ MatrixX build_edge_matrix(const std::vector<int>& he2e, const std::vector<int>& 
 /// the original mesh.
 /// @param[in] embed: map from edges that intersect the original mesh to the
 /// double mesh
-/// @param[out] projection: matrix representing the projection
-void build_refl_matrix(
-    const std::vector<int>& proj,
-    const std::vector<int>& embed,
-    MatrixX& projection);
+/// @return: matrix representing the projection
+MatrixX build_refl_matrix(const std::vector<int>& proj, const std::vector<int>& embed);
 
 /// Return true iff the edge is in the original embedded mesh.
 ///
@@ -181,6 +183,8 @@ void restrict_he_func(const std::vector<int>& e2he, const VectorX& f_he, VectorX
 void expand_edge_func(const std::vector<int>& he2e, const VectorX& f_e, VectorX& f_he);
 
 /// Ensure mesh m is valid
+///
+/// TODO: Use for cone metric class
 ///
 /// @param[in] m: underlying mesh
 bool is_valid_halfedge(const Mesh<Scalar>& m);

@@ -1,10 +1,10 @@
 #include "common.hh"
 #include "explicit_optimization.hh"
-#include "targets.hh"
 #include "energies.hh"
 #include "penner_optimization_interface.hh"
 #include "constraint.hh"
 #include "shear.hh"
+#include "io.hh"
 #include "projection.hh"
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
@@ -40,50 +40,30 @@ int main(int argc, char *argv[])
 	read_vector_from_file(Th_hat_filename, Th_hat);
 
 	// Get initial mesh for optimization
-	Mesh<Scalar> m;
 	std::vector<int> vtx_reindex;
-	VectorX reduced_metric_target;
-	generate_initial_mesh(V, F, V, F, Th_hat, m, vtx_reindex, reduced_metric_target);
-	VectorX reduced_metric_init = reduced_metric_target;
-	PennerConeMetric cone_metric(m, reduced_metric_init);
+	std::vector<int> free_cones = {};
+	bool fix_boundary = false;
+	std::unique_ptr<DifferentiableConeMetric> cone_metric = generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, false);
 
 	// Compute shear dual basis and the coordinates
-  VectorX shear_basis_coords_init, scale_factors_init;
 	MatrixX shear_basis_matrix;
   std::vector<int> independent_edges;
-	compute_shear_dual_basis(m, shear_basis_matrix, independent_edges);
-	compute_shear_basis_coordinates(m, reduced_metric_init, shear_basis_matrix, shear_basis_coords_init, scale_factors_init);
-	spdlog::info("Initial coordinates are {}", shear_basis_coords_init);
-
-  // Get maps for going between halfedge, edge, full, and reduced
-  // representations as well as free and fixed edges and vertices
-  ReductionMaps reduction_maps(m);
+	compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
 
   // Build energy functions for given energy
-	auto proj_params = std::make_shared<ProjectionParameters>();
-	auto opt_params = std::make_shared<OptimizationParameters>();
-	opt_params->energy_choice = energy_choice;
-  VectorX metric_target;
-  expand_reduced_function(
-    reduction_maps.proj, reduced_metric_target, metric_target);
-  EnergyFunctor opt_energy(cone_metric, metric_target, *opt_params);
-
-  // Build matrix to map scale factors to edge coordinates
-  MatrixX scale_factor_basis_matrix = conformal_scaling_matrix(m);
+  LogLengthEnergy opt_energy(*cone_metric);
 
   // Build independent and dependent basis vectors by adding a global scaling term
   // to the shear basis and removing and arbitrary basis vector from the scale factors
-  VectorX domain_coords;
   MatrixX constraint_domain_matrix, constraint_codomain_matrix;
+  VectorX domain_coords, codomain_coords;
   compute_optimization_domain(
-    m,
-    shear_basis_coords_init,
-    scale_factors_init,
+    *cone_metric,
     shear_basis_matrix,
-    scale_factor_basis_matrix,
-    domain_coords,
     constraint_domain_matrix,
-    constraint_codomain_matrix
+    constraint_codomain_matrix,
+    domain_coords,
+    codomain_coords
   );
   spdlog::info(
     "Plotting {} coordinates with codomain of dimension {}",
@@ -94,6 +74,7 @@ int main(int argc, char *argv[])
 	Scalar y0 = domain_coords[1];
 
 	// Iterate over grid
+	auto proj_params = std::make_shared<ProjectionParameters>();
 	Scalar delta = 2.0 * range / static_cast<Scalar>(num_grid_steps - 1);
 	Eigen::MatrixXd energy_grid(num_grid_steps, num_grid_steps);
 	for (int i = 0; i < num_grid_steps; ++i)
@@ -108,11 +89,12 @@ int main(int argc, char *argv[])
 
 			// Compute the energy for the shear metric coordinates
 			Scalar energy = compute_domain_coordinate_energy(
-					cone_metric,
-					reduction_maps,
+					*cone_metric,
 					opt_energy,
-					domain_coords,
 					constraint_domain_matrix,
+					constraint_codomain_matrix,
+					domain_coords,
+					codomain_coords,
 					proj_params);
 			energy_grid(i, j) = double(energy);
 		}

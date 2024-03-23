@@ -111,30 +111,21 @@ void init_classes_pybind(pybind11::module& m)
         m,
         "OptimizationParameters")
         .def(pybind11::init<>())
-        .def_readwrite("num_iter", &OptimizationParameters::num_iter)
-        .def_readwrite("beta_0", &OptimizationParameters::beta_0)
+        .def_readwrite("output_dir", &OptimizationParameters::output_dir)
+        .def_readwrite("use_checkpoints", &OptimizationParameters::use_checkpoints)
         .def_readwrite("min_ratio", &OptimizationParameters::min_ratio)
+        .def_readwrite("num_iter", &OptimizationParameters::num_iter)
         .def_readwrite("require_energy_decr", &OptimizationParameters::require_energy_decr)
         .def_readwrite(
             "require_gradient_proj_negative",
             &OptimizationParameters::require_gradient_proj_negative)
         .def_readwrite("max_angle_incr", &OptimizationParameters::max_angle_incr)
-        .def_readwrite("use_optimal_projection", &OptimizationParameters::use_optimal_projection)
-        .def_readwrite("max_angle", &OptimizationParameters::max_angle)
-        .def_readwrite("p", &OptimizationParameters::p)
-        .def_readwrite("fix_bd_lengths", &OptimizationParameters::fix_bd_lengths)
-        .def_readwrite("energy_choice", &OptimizationParameters::energy_choice)
-        .def_readwrite("bd_weight", &OptimizationParameters::bd_weight)
-        .def_readwrite("cone_weight", &OptimizationParameters::cone_weight)
-        .def_readwrite("max_grad_range", &OptimizationParameters::max_grad_range)
         .def_readwrite("max_energy_incr", &OptimizationParameters::max_energy_incr)
-        .def_readwrite("max_beta", &OptimizationParameters::max_beta)
         .def_readwrite("direction_choice", &OptimizationParameters::direction_choice)
-        .def_readwrite("output_dir", &OptimizationParameters::output_dir)
-        .def_readwrite("reg_factor", &OptimizationParameters::reg_factor)
-        .def_readwrite("use_edge_lengths", &OptimizationParameters::use_edge_lengths)
-        .def_readwrite("use_checkpoints", &OptimizationParameters::use_checkpoints)
-        .def_readwrite("use_log", &OptimizationParameters::use_log);
+        .def_readwrite("beta_0", &OptimizationParameters::beta_0)
+        .def_readwrite("max_beta", &OptimizationParameters::max_beta)
+        .def_readwrite("max_grad_range", &OptimizationParameters::max_grad_range)
+        .def_readwrite("max_angle", &OptimizationParameters::max_angle);
 
 #ifdef RENDER_TEXTURE
     pybind11::class_<Viewer>(m, "Viewer").def(pybind11::init<>());
@@ -225,7 +216,8 @@ void init_classes_pybind(pybind11::module& m)
         .def_readwrite("proj", &ReductionMaps::proj)
         .def_readwrite("embed", &ReductionMaps::embed);
 
-    pybind11::class_<EnergyFunctor>(m, "EnergyFunctor");
+    pybind11::class_<EnergyFunctor>(m, "EnergyFunctor")
+        .def("energy", static_cast<Scalar (EnergyFunctor::*)(const DifferentiableConeMetric&) const>(&EnergyFunctor::energy));
 
     pybind11::class_<LogLengthEnergy, EnergyFunctor>(m, "LogLengthEnergy")
         .def(pybind11::init<const DifferentiableConeMetric&, int>());
@@ -330,6 +322,31 @@ void init_conformal_pybind(pybind11::module& m)
 void init_energies_pybind(pybind11::module& m)
 {
     m.def(
+        "first_invariant",
+        &first_invariant_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "second_invariant_squared",
+        &second_invariant_squared_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "metric_distortion_energy",
+        &metric_distortion_energy_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "area_distortion_energy",
+        &area_distortion_energy_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "symmetric_dirichlet_energy",
+        &symmetric_dirichlet_energy_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
         "first_invariant_vf",
         &first_invariant_vf_pybind,
         pybind11::
@@ -337,6 +354,11 @@ void init_energies_pybind(pybind11::module& m)
     m.def(
         "second_invariant_vf",
         &second_invariant_vf_pybind,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "surface_hencky_strain_energy_vf",
+        &surface_hencky_strain_energy_vf,
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(
@@ -362,6 +384,11 @@ void init_optimization_pybind(pybind11::module& m)
     m.def(
         "project_metric_to_constraint",
         &project_metric_to_constraint,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "compute_max_constraint",
+        &compute_max_constraint,
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(

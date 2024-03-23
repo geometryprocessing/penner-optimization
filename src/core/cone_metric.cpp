@@ -4,6 +4,8 @@
 #include "constraint.hh"
 #include "projection.hh"
 
+// TODO: Clean code
+
 namespace CurvatureMetric {
 
 DifferentiableConeMetric::DifferentiableConeMetric(const Mesh<Scalar>& m)
@@ -32,6 +34,44 @@ void DifferentiableConeMetric::get_corner_angles(VectorX& he2angle, VectorX& he2
     if (m_is_discrete_metric) {
         corner_angles(*this, he2angle, he2cot);
     }
+}
+
+std::unique_ptr<DifferentiableConeMetric> DifferentiableConeMetric::project_to_constraint(
+    std::shared_ptr<ProjectionParameters> proj_params) const
+{
+    SolveStats<Scalar> solve_stats;
+    return project_to_constraint(solve_stats, proj_params);
+}
+
+bool DifferentiableConeMetric::constraint(
+    VectorX& constraint,
+    MatrixX& J_constraint,
+    bool need_jacobian,
+    bool only_free_vertices) const
+{
+    return constraint_with_jacobian(
+        *this,
+        constraint,
+        J_constraint,
+        need_jacobian,
+        only_free_vertices);
+}
+
+void DifferentiableConeMetric::undo_flips()
+{
+    std::vector<int> flip_seq = m_flip_seq;
+    for (auto h_iter = flip_seq.rbegin(); h_iter != flip_seq.rend(); ++h_iter) {
+        int h = *h_iter;
+        flip_ccw(h);
+        flip_ccw(h);
+        flip_ccw(h);
+    }
+    m_flip_seq = {};
+}
+
+int DifferentiableConeMetric::n_reduced_coordinates() const
+{
+    return get_reduced_metric_coordinates().size();
 }
 
 MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
@@ -79,71 +119,19 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     return halfedge_jacobian * J_transition;
 }
 
-std::unique_ptr<DifferentiableConeMetric> DifferentiableConeMetric::project_to_constraint(
-    std::shared_ptr<ProjectionParameters> proj_params) const
-{
-    SolveStats<Scalar> solve_stats;
-    return project_to_constraint(solve_stats, proj_params);
-}
-
-bool DifferentiableConeMetric::flip_ccw(int _h, bool Ptolemy)
-{
-    m_flip_seq.push_back(_h);
-    return Mesh<Scalar>::flip_ccw(_h, Ptolemy);
-}
-
-void DifferentiableConeMetric::undo_flips()
-{
-    std::vector<int> flip_seq = m_flip_seq;
-    for (auto h_iter = flip_seq.rbegin(); h_iter != flip_seq.rend(); ++h_iter) {
-        int h = *h_iter;
-        flip_ccw(h);
-        flip_ccw(h);
-        flip_ccw(h);
-    }
-    m_flip_seq = {};
-}
-
-
-bool DifferentiableConeMetric::constraint(
-    VectorX& constraint,
-    MatrixX& J_constraint,
-    bool need_jacobian,
-    bool only_free_vertices) const
-{
-    return constraint_with_jacobian(
-        *this,
-        constraint,
-        J_constraint,
-        need_jacobian,
-        only_free_vertices);
-}
-
-int DifferentiableConeMetric::n_reduced_coordinates() const
-{
-    return get_reduced_metric_coordinates().size();
-}
-
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
     : DifferentiableConeMetric(m)
     , m_need_jacobian(true)
     , m_transition_jacobian_lol(m.n_edges())
 {
     build_refl_proj(m, he2e, e2he, m_proj, m_embed);
-    build_refl_matrix(m_proj, m_embed, m_projection);
+    m_projection = build_refl_matrix(m_proj, m_embed);
     expand_metric_coordinates(metric_coords);
 }
 
-VectorX PennerConeMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
+VectorX PennerConeMetric::get_reduced_metric_coordinates() const
 {
-    int num_reduced_coordinates = m_embed.size();
-    VectorX reduced_metric_coords(num_reduced_coordinates);
-    for (int E = 0; E < num_reduced_coordinates; ++E) {
-        int h = e2he[m_embed[E]];
-        reduced_metric_coords[E] = metric_coords[h];
-    }
-
-    return reduced_metric_coords;
+    return reduce_metric_coordinates(get_metric_coordinates());
 }
 
 std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::clone_cone_metric() const
@@ -157,58 +145,12 @@ std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::set_metric_coordinat
     return std::make_unique<PennerConeMetric>(PennerConeMetric(*this, metric_coords));
 }
 
-VectorX PennerConeMetric::get_reduced_metric_coordinates() const
+bool PennerConeMetric::flip_ccw(int halfedge_index, bool Ptolemy)
 {
-    return reduce_metric_coordinates(get_metric_coordinates());
-}
-
-std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::scale_conformally(
-    const VectorX& u) const
-{
-    int num_reduced_coordinates = m_embed.size();
-    VectorX reduced_metric_coords(num_reduced_coordinates);
-    for (int E = 0; E < num_reduced_coordinates; ++E) {
-        int h = e2he[m_embed[E]];
-        reduced_metric_coords[E] = 2.0 * log(l[h]) + (u[v_rep[to[h]]] + u[v_rep[to[opp[h]]]]);
-    }
-
-    return set_metric_coordinates(reduced_metric_coords);
-}
-
-MatrixX PennerConeMetric::get_transition_jacobian() const
-{
-    MatrixX transition_jacobian = get_flip_jacobian();
-    return m_identification * (transition_jacobian * m_projection);
-}
-
-void PennerConeMetric::make_discrete_metric()
-{
-    // Make the copied mesh Delaunay with Ptolemy flips
-    VectorX u;
-    u.setZero(n_ind_vertices());
-    DelaunayStats del_stats;
-    SolveStats<Scalar> solve_stats;
-    bool use_ptolemy = true;
-    ConformalIdealDelaunay<Scalar>::MakeDelaunay(*this, u, del_stats, solve_stats, use_ptolemy);
-    m_is_discrete_metric = true;
-    return;
-}
-
-std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::project_to_constraint(
-    SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<ProjectionParameters> proj_params) const
-{
-    VectorX u;
-    u.setZero(n_ind_vertices());
-    auto projection_out = compute_constraint_scale_factors(*this, u, proj_params);
-    solve_stats = std::get<1>(projection_out);
-    return scale_conformally(u);
-}
-
-bool PennerConeMetric::flip_ccw(int _h, bool Ptolemy)
-{
-    // Perform the flip in the base class
-    bool success = DifferentiableConeMetric::flip_ccw(_h, Ptolemy);
+    // Perform the (Ptolemy) flip in the base class
+    int _h = halfedge_index;
+    m_flip_seq.push_back(_h);
+    bool success = Mesh<Scalar>::flip_ccw(_h, Ptolemy);
 
     if (m_need_jacobian) {
         // Get local mesh information near hd
@@ -246,6 +188,68 @@ bool PennerConeMetric::flip_ccw(int _h, bool Ptolemy)
     return success;
 }
 
+std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::scale_conformally(
+    const VectorX& u) const
+{
+    int num_reduced_coordinates = m_embed.size();
+    VectorX reduced_metric_coords(num_reduced_coordinates);
+    for (int E = 0; E < num_reduced_coordinates; ++E) {
+        int h = e2he[m_embed[E]];
+        reduced_metric_coords[E] = 2.0 * log(l[h]) + (u[v_rep[to[h]]] + u[v_rep[to[opp[h]]]]);
+    }
+
+    return set_metric_coordinates(reduced_metric_coords);
+}
+
+std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::project_to_constraint(
+    SolveStats<Scalar>& solve_stats,
+    std::shared_ptr<ProjectionParameters> proj_params) const
+{
+    VectorX u;
+    u.setZero(n_ind_vertices());
+    auto projection_out = compute_constraint_scale_factors(*this, u, proj_params);
+    solve_stats = std::get<1>(projection_out);
+    return scale_conformally(u);
+}
+
+void PennerConeMetric::make_discrete_metric()
+{
+    // Make the copied mesh Delaunay with Ptolemy flips
+    VectorX u;
+    u.setZero(n_ind_vertices());
+    DelaunayStats del_stats;
+    SolveStats<Scalar> solve_stats;
+    bool use_ptolemy = true;
+    ConformalIdealDelaunay<Scalar>::MakeDelaunay(*this, u, del_stats, solve_stats, use_ptolemy);
+    m_is_discrete_metric = true;
+    return;
+}
+
+MatrixX PennerConeMetric::get_transition_jacobian() const
+{
+    MatrixX transition_jacobian = get_flip_jacobian();
+    return m_identification * (transition_jacobian * m_projection);
+}
+
+void PennerConeMetric::reset()
+{
+    // Initialize jacobian to the identity
+    m_transition_jacobian_lol.reset();
+    m_flip_seq.clear();
+}
+
+VectorX PennerConeMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
+{
+    int num_reduced_coordinates = m_embed.size();
+    VectorX reduced_metric_coords(num_reduced_coordinates);
+    for (int E = 0; E < num_reduced_coordinates; ++E) {
+        int h = e2he[m_embed[E]];
+        reduced_metric_coords[E] = metric_coords[h];
+    }
+
+    return reduced_metric_coords;
+}
+
 void PennerConeMetric::expand_metric_coordinates(const VectorX& metric_coords)
 {
     int num_embedded_edges = m_embed.size();
@@ -274,20 +278,23 @@ DiscreteMetric::DiscreteMetric(const Mesh<Scalar>& m, const VectorX& log_length_
 {
     m_is_discrete_metric = true;
     build_refl_proj(m, he2e, e2he, m_proj, m_embed);
-    build_refl_matrix(m_proj, m_embed, m_projection);
+    m_projection = build_refl_matrix(m_proj, m_embed);
     expand_metric_coordinates(log_length_coords);
 }
 
-VectorX DiscreteMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
+VectorX DiscreteMetric::get_reduced_metric_coordinates() const
 {
-    int num_reduced_coordinates = m_embed.size();
-    VectorX reduced_metric_coords(num_reduced_coordinates);
-    for (int E = 0; E < num_reduced_coordinates; ++E) {
-        int h = e2he[m_embed[E]];
-        reduced_metric_coords[E] = metric_coords[h];
-    }
+    return reduce_metric_coordinates(get_metric_coordinates());
+}
 
-    return reduced_metric_coords;
+bool DiscreteMetric::flip_ccw(int halfedge_index, bool Ptolemy)
+{
+    // Perform the Euclidean flip in the base class
+    // TODO Add warning and validity check
+    int _h = halfedge_index;
+    m_flip_seq.push_back(_h);
+    bool success = Mesh<Scalar>::flip_ccw(_h, Ptolemy);
+    return success;
 }
 
 std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::clone_cone_metric() const
@@ -299,11 +306,6 @@ std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::set_metric_coordinates
     const VectorX& metric_coords) const
 {
     return std::make_unique<DiscreteMetric>(DiscreteMetric(*this, metric_coords));
-}
-
-VectorX DiscreteMetric::get_reduced_metric_coordinates() const
-{
-    return reduce_metric_coordinates(get_metric_coordinates());
 }
 
 std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::scale_conformally(const VectorX& u) const
@@ -318,18 +320,6 @@ std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::scale_conformally(cons
     return set_metric_coordinates(reduced_metric_coords);
 }
 
-
-MatrixX DiscreteMetric::get_transition_jacobian() const
-{
-    return m_identification * m_projection;
-}
-
-void DiscreteMetric::make_discrete_metric()
-{
-    // Always true
-    return;
-}
-
 std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
     std::shared_ptr<ProjectionParameters> proj_params) const
@@ -341,13 +331,28 @@ std::unique_ptr<DifferentiableConeMetric> DiscreteMetric::project_to_constraint(
     return scale_conformally(u);
 }
 
-bool DiscreteMetric::flip_ccw(int _h, bool Ptolemy)
+void DiscreteMetric::make_discrete_metric()
 {
-    // Perform the flip in the base class
-    // TODO Add warning and validity check
-    return DifferentiableConeMetric::flip_ccw(_h, Ptolemy);
+    // Always true
+    return;
 }
 
+MatrixX DiscreteMetric::get_transition_jacobian() const
+{
+    return m_identification * m_projection;
+}
+
+VectorX DiscreteMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
+{
+    int num_reduced_coordinates = m_embed.size();
+    VectorX reduced_metric_coords(num_reduced_coordinates);
+    for (int E = 0; E < num_reduced_coordinates; ++E) {
+        int h = e2he[m_embed[E]];
+        reduced_metric_coords[E] = metric_coords[h];
+    }
+
+    return reduced_metric_coords;
+}
 
 void DiscreteMetric::expand_metric_coordinates(const VectorX& metric_coords)
 {

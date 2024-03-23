@@ -6,7 +6,6 @@
 namespace CurvatureMetric {
 
 /// Create matrix mapping vertex scale factors to their corresponding edges.
-/// FIXME Make void with reference
 ///
 /// @param[in] m: mesh
 /// @return matrix representing the conformal scaling of edges
@@ -81,7 +80,7 @@ VectorX project_descent_direction(
 /// Project a descent direction to the tangent plane of the angle constraint
 /// manifold for the given surface with orthogonal projection.
 ///
-/// @param[in] m: surface
+/// @param[in] cone_metric: mesh with metric
 /// @param[in] descent_direction: current descent direction
 /// @return descent direction after projection to the constraint
 VectorX project_descent_direction(

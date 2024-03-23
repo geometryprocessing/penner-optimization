@@ -1,2 +1,0 @@
-- Replace build_edge_maps and build_refl_proj with ReductionMaps parameter where possible
-- Make validation script for refactoring

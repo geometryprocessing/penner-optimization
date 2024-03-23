@@ -240,7 +240,7 @@ std::
         const Eigen::MatrixXi& F,
         const std::vector<Scalar>& Th_hat,
         const DifferentiableConeMetric& initial_cone_metric,
-        const VectorX& metric_coords,
+        const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling)
 {
@@ -249,8 +249,10 @@ std::
     Mesh<Scalar> m =
         FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
-    // Get metric target
+    // Get metric target coordinates
+    auto cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
     VectorX metric_target = initial_cone_metric.get_metric_coordinates();
+    VectorX metric_coords = cone_metric->get_metric_coordinates();
 
     // Fit conformal scale factors
     VectorX metric_coords_scaled = metric_coords;
@@ -262,15 +264,15 @@ std::
         metric_coords_scaled = metric_coords - B * scale_factors;
     }
     VectorX metric_diff = metric_coords_scaled - metric_target;
-    SPDLOG_INFO(
+    SPDLOG_DEBUG(
         "Scale factors in range [{}, {}]",
         scale_factors.minCoeff(),
         scale_factors.maxCoeff());
-    SPDLOG_INFO(
+    SPDLOG_DEBUG(
         "Scaled metric coordinates in range [{}, {}]",
         metric_coords_scaled.minCoeff(),
         metric_coords_scaled.maxCoeff());
-    SPDLOG_INFO(
+    SPDLOG_DEBUG(
         "Differences from target to optimized metric in range [{}, {}]",
         metric_diff.minCoeff(),
         metric_diff.maxCoeff());

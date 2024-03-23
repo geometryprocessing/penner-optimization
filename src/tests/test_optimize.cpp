@@ -21,7 +21,6 @@ TEST_CASE("The optimium edge length for a triangle can be computed", "[optimize]
   // Use default optimization without edge flips
   auto proj_params = std::make_shared<ProjectionParameters>();
   auto opt_params = std::make_shared<OptimizationParameters>();
-  opt_params->use_edge_lengths = true;
   opt_params->num_iter = 5;
 
   VectorX metric_target(3);
@@ -74,7 +73,6 @@ TEST_CASE("The optimium edge length for a square can be computed", "[optimize]")
   // Use default optimization without edge flips
   auto proj_params = std::make_shared<ProjectionParameters>();
   auto opt_params = std::make_shared<OptimizationParameters>();
-  opt_params->use_edge_lengths = true;
   opt_params->num_iter = 5;
 
   // Use right triangle as the initial metric

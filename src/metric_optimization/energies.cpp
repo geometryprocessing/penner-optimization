@@ -50,8 +50,8 @@ void first_invariant(
 
     // Convert metric coordinates to squared halfedge lengths
     // TODO Replace with method to convert reduced to full coordinates in the mesh class
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = target_cone_metric.clone_cone_metric();
-    cone_metric->set_metric_coordinates(metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric =
+        target_cone_metric.set_metric_coordinates(metric_coords);
     VectorX l_sq(num_halfedges);
     for (int h = 0; h < num_halfedges; ++h) {
         l_sq[h] = cone_metric->l[h] * cone_metric->l[h];
@@ -99,12 +99,12 @@ void second_invariant_squared(
     bool need_jacobian)
 {
     // TODO Replace with method to convert reduced to full coordinates in the mesh class
-    std::unique_ptr<DifferentiableConeMetric> cone_metric = target_cone_metric.clone_cone_metric();
-    cone_metric->set_metric_coordinates(metric_coords);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric =
+        target_cone_metric.set_metric_coordinates(metric_coords);
 
     // Compute areas the metric and target metric
-    VectorX he2areasq_target = areas(target_cone_metric);
-    VectorX he2areasq = areas(*cone_metric);
+    VectorX he2areasq_target = squared_areas(target_cone_metric);
+    VectorX he2areasq = squared_areas(*cone_metric);
     // TODO Replace with for loop using halfedge metric coordinates. Redundant, but fast
 
     // Compute array from faces to squared second invariant
@@ -462,7 +462,7 @@ void symmetric_dirichlet_energy_vf(
     }
 }
 
-VectorX surface_hencky_strain_energy(
+VectorX surface_hencky_strain_energy_vf(
     const VectorX& area,
     const MatrixX& cot_alpha,
     const MatrixX& l,
@@ -562,6 +562,62 @@ Scalar root_mean_square_relative_error(const VectorX& x, const VectorX& x0)
 // FIXME Rename these variables
 // FIXME Ensure all pybind functions for the entire interface are in place
 #ifdef PYBIND
+
+std::tuple<VectorX, MatrixX> first_invariant_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian)
+{
+    VectorX face_energy;
+    MatrixX jacobian;
+    first_invariant(target_cone_metric, metric_coords, face_energy, jacobian, need_jacobian);
+    return std::make_tuple(face_energy, jacobian);
+}
+
+std::tuple<VectorX, MatrixX> second_invariant_squared_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian)
+{
+    VectorX face_energy;
+    MatrixX jacobian;
+    second_invariant_squared(target_cone_metric, metric_coords, face_energy, jacobian, need_jacobian);
+    return std::make_tuple(face_energy, jacobian);
+}
+
+std::tuple<VectorX, MatrixX> metric_distortion_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian)
+{
+    VectorX face_energy;
+    MatrixX jacobian;
+    metric_distortion_energy(target_cone_metric, metric_coords, face_energy, jacobian, need_jacobian);
+    return std::make_tuple(face_energy, jacobian);
+}
+
+std::tuple<VectorX, MatrixX> area_distortion_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian)
+{
+    VectorX face_energy;
+    MatrixX jacobian;
+    area_distortion_energy(target_cone_metric, metric_coords, face_energy, jacobian, need_jacobian);
+    return std::make_tuple(face_energy, jacobian);
+}
+
+std::tuple<VectorX, MatrixX> symmetric_dirichlet_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian)
+{
+    VectorX face_energy;
+    MatrixX jacobian;
+    symmetric_dirichlet_energy(target_cone_metric, metric_coords, face_energy, jacobian, need_jacobian);
+    return std::make_tuple(face_energy, jacobian);
+}
+
 VectorX first_invariant_vf_pybind(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,

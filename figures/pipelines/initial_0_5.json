@@ -1,0 +1,80 @@
+{
+  "global_args": {
+    "fname": [
+      "bumpy_torus.obj"
+    ],
+    "input_dir": "data/closed-Myles",
+    "energy_choice": "quadratic_sym_dirichlet",
+    "colormap": "scale_factors",
+    "histogram_choice": "scale_factors",
+    "direction_choice": "projected_newton",
+    "initial_pert_sd": 0.5,
+    "height": 1600,
+    "width": 2560
+  },
+  "pipeline":
+  [
+    {
+      "method": "optimize",
+      "skip": false,
+      "args_list": [
+        {}
+      ]
+    },
+    {
+      "method": "overlay",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf"
+        },
+        {
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "refine",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf"
+        },
+        {
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf",
+          "color": "red",
+          "bin_min": -5,
+          "bin_max": 5
+        },
+        {
+          "suffix": "opt",
+          "color": "blue",
+          "bin_min": -1.0,
+          "bin_max": 1.0
+        }
+      ]
+    },
+    {
+      "method": "render_uv",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf_refined"
+        },
+        {
+          "suffix": "opt_refined"
+        }
+      ]
+    }
+  ]
+}
+

@@ -25,9 +25,9 @@ target_link_libraries(optimize_shear PRIVATE
 PennerOptimizationLib
 )
 
-#add_executable(plot_shear_energy
-#  plot_shear_energy.cpp
-#)
-#target_link_libraries(plot_shear_energy PRIVATE
-#  PennerOptimizationLib
-#)
+add_executable(plot_shear_energy
+  plot_shear_energy.cpp
+)
+target_link_libraries(plot_shear_energy PRIVATE
+  PennerOptimizationLib
+)

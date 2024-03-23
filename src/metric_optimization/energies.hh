@@ -162,7 +162,7 @@ void triangle_surface_hencky_strain_energy(
 // FIXME Determine what this does and where it is used
 // TODO Make this actually take in VF and compute area, cotalpha, and l as in python
 // TODO MAKE void with reference
-VectorX surface_hencky_strain_energy(
+VectorX surface_hencky_strain_energy_vf(
     const VectorX& area,
     const MatrixX& cot_alpha,
     const MatrixX& l,
@@ -218,13 +218,59 @@ void symmetric_dirichlet_energy(
     const Eigen::MatrixXi& F_uv,
     VectorX& f2energy);
 
+/// Compute the root mean square error of length n vector x relative to length n x0
+///
+/// The root mean square error is given as sqrt( ||x - x0||_2^2 / n )
+///
+/// @param[in] x: vector of values
+/// @param[in] x0: base vector of values
+/// @return root mean square error
 Scalar root_mean_square_error(const VectorX& x, const VectorX& x0);
 
+/// Compute the relative root mean square error of length n vector x relative to length n x0
+///
+/// The relative root mean square error is given as sqrt( ||x - x0||_2^2 / (n ||x0||_2^2) )
+///
+/// @param[in] x: vector of values
+/// @param[in] x0: base vector of values
+/// @return relative root mean square error
 Scalar relative_root_mean_square_error(const VectorX& x, const VectorX& x0);
 
+/// Compute the root mean square relative error of length n vector x relative to length n x0
+///
+/// The root mean square relative error is given as sqrt( sum_i ((x - x0_i) / x0_i)^2 / n )
+///
+/// @param[in] x: vector of values
+/// @param[in] x0: base vector of values
+/// @return relative root mean square error
 Scalar root_mean_square_relative_error(const VectorX& x, const VectorX& x0);
 
 #ifdef PYBIND
+
+std::tuple<VectorX, MatrixX> first_invariant_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian);
+
+std::tuple<VectorX, MatrixX> second_invariant_squared_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian);
+
+std::tuple<VectorX, MatrixX> metric_distortion_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian);
+
+std::tuple<VectorX, MatrixX> area_distortion_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian);
+
+std::tuple<VectorX, MatrixX> symmetric_dirichlet_energy_pybind(
+    const DifferentiableConeMetric& target_cone_metric,
+    const VectorX& metric_coords,
+    bool need_jacobian);
 
 VectorX first_invariant_vf_pybind(
     const Eigen::MatrixXd& V,

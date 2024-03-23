@@ -526,6 +526,7 @@ VectorX line_search_with_projection(
             cone_metric->project_to_constraint(solve_stats, proj_params);
         num_linear_solves += solve_stats.n_solves;
         reduced_metric_coords = constrained_cone_metric->get_reduced_metric_coordinates();
+        spdlog::get("optimize_metric")->set_level(spdlog::level::info);
 
         // Check if the projection was successful and reduce beta if not
         if (!check_projection_success(
@@ -600,10 +601,8 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
     // Extract relevant parameters for main optimization method
     int num_iter = opt_params->num_iter;
     Scalar beta_0 = opt_params->beta_0;
-    std::string energy_choice = opt_params->energy_choice;
     std::string direction_choice = opt_params->direction_choice;
     std::string output_dir = opt_params->output_dir;
-    bool use_optimal_projection = opt_params->use_optimal_projection;
     Scalar max_grad_range = opt_params->max_grad_range;
 
     // Log mesh data TODO
@@ -638,7 +637,7 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
     std::unique_ptr<DifferentiableConeMetric> initial_constrained_cone_metric =
         initial_cone_metric.project_to_constraint(proj_params);
     assert(float_equal(compute_max_constraint(*initial_constrained_cone_metric), 0.0, 1e-6));
-    spdlog::get("optimize_metric")->info("Performing initial projection to the constraint");
+    spdlog::get("optimize_metric")->set_level(spdlog::level::info);
 
     // Log the initial energy
     Scalar initial_energy = opt_energy.energy(*initial_constrained_cone_metric);
@@ -650,7 +649,7 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
     VectorX reduced_metric_coords =
         initial_constrained_cone_metric->get_reduced_metric_coordinates();
     VectorX prev_reduced_metric_coords = reduced_metric_coords;
-    VectorX gradient, unconstrained_descent_direction, descent_direction;
+    VectorX gradient, descent_direction;
     VectorX prev_gradient(0);
     VectorX prev_descent_direction(0);
     igl::Timer timer;
@@ -665,31 +664,16 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
             initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
 
         // Get descent direction
-        if (use_optimal_projection) {
+        if (direction_choice == "projected_newton") {
             compute_projected_newton_descent_direction(
                 *cone_metric,
                 opt_energy,
                 gradient,
                 descent_direction);
             num_linear_solves++; // TODO Would be better to have near solver code
-        } else {
-            // Get the initial descent direction
-            compute_descent_direction(
-                *cone_metric,
-                opt_energy,
-                prev_gradient,
-                prev_descent_direction,
-                gradient,
-                unconstrained_descent_direction,
-                direction_choice);
-            spdlog::get("optimize_metric")
-                ->info(
-                    "Unconstrained descent direction found with norm {}",
-                    unconstrained_descent_direction.norm());
-
-            // Project descent direction to constraint
-            descent_direction =
-                project_descent_direction(*cone_metric, unconstrained_descent_direction);
+        } else if (direction_choice == "projected_gradient") {
+            gradient = opt_energy.gradient(*cone_metric);
+            descent_direction = project_descent_direction(*cone_metric, -gradient);
             num_linear_solves++; // TODO Would be better to have near solver code
         }
         convergence_ratio = compute_convergence_ratio(gradient, descent_direction);

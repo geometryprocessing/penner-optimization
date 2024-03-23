@@ -34,19 +34,6 @@ VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric);
 /// @param[out] face_area_weights: weights per face
 VectorX compute_face_area_weights(const DifferentiableConeMetric& cone_metric);
 
-/// Compute a vector of weights for faces adjacent to cones.
-///
-/// @param[in] m: (possibly symmetric) mesh
-/// @param[in] reduction_maps: reduction maps
-/// @param[in] cone_weight: weight to give cone adjacent faces
-/// @param[out] face_weights: weights for faces
-//[[deprecated]] void
-// compute_cone_face_weights(
-//    const Mesh<Scalar> &m,
-//    const ReductionMaps &reduction_maps,
-//    Scalar cone_weight,
-//    std::vector<Scalar> &face_weights);
-
 /// Compute a vector of weights for faces adjacent to the boundary.
 ///
 /// @param[in] m: (possibly symmetric) mesh
