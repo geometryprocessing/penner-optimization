@@ -17,12 +17,13 @@ VectorX scale_distortion_direction(
     const VectorX& metric_coords)
 {
     // Compute the psuedoinverse for the conformal scaling matrix
-    MatrixX B = conformal_scaling_matrix(target_cone_metric);
+    MatrixX E = target_cone_metric.get_expansion_matrix().transpose();
+    MatrixX B = E * conformal_scaling_matrix(target_cone_metric);
     MatrixX A = B.transpose() * B;
 
     // Solve for the gradient of the L2 norm of the best fit conformal scale
     // factor
-    VectorX metric_target = target_cone_metric.get_metric_coordinates();
+    VectorX metric_target = target_cone_metric.get_reduced_metric_coordinates();
     MatrixX L = A.transpose() * A;
     VectorX w = B.transpose() * (metric_coords - metric_target);
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;

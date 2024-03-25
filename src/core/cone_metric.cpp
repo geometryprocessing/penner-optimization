@@ -238,6 +238,11 @@ void PennerConeMetric::reset()
     m_flip_seq.clear();
 }
 
+MatrixX PennerConeMetric::get_expansion_matrix() const
+{
+    return m_identification * m_projection;
+}
+
 VectorX PennerConeMetric::reduce_metric_coordinates(const VectorX& metric_coords) const
 {
     int num_reduced_coordinates = m_embed.size();
@@ -338,6 +343,11 @@ void DiscreteMetric::make_discrete_metric()
 }
 
 MatrixX DiscreteMetric::get_transition_jacobian() const
+{
+    return m_identification * m_projection;
+}
+
+MatrixX DiscreteMetric::get_expansion_matrix() const
 {
     return m_identification * m_projection;
 }

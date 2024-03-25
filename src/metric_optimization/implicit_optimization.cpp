@@ -423,6 +423,10 @@ bool check_projection_success(
     spdlog::get("optimize_metric")
         ->info("Maximum constraint error after projection is {}", max_constraint);
     Scalar constraint_threshold = max_initial_constraint + opt_params->max_angle_incr;
+    if (max_constraint > 1e-8) {
+        spdlog::get("optimize_metric")->info("Reducing step size as the angle error is too large");
+        return false;
+    }
     if (max_constraint > constraint_threshold) {
         spdlog::get("optimize_metric")
             ->info(

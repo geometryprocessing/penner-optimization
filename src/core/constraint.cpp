@@ -93,28 +93,6 @@ void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& 
     }
 }
 
-
-void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_angles)
-{
-    // Build map from independent vertices to free vertices
-    int num_ind_vertices = m.n_ind_vertices();
-    num_angles = 0;
-    std::vector<int> v_map(num_ind_vertices, -1);
-    for (int v = 0; v < num_ind_vertices; ++v) {
-        if (!m.fixed_dof[v]) {
-            v_map[v] = num_angles;
-            num_angles++;
-        }
-    }
-
-    // Build map from vertices to free vertices
-    int num_vertices = m.v_rep.size();
-    v_rep.resize(num_vertices);
-    for (int v = 0; v < num_vertices; ++v) {
-        v_rep[v] = v_map[m.v_rep[v]];
-    }
-}
-
 void vertex_angles_with_jacobian_helper(
     const DifferentiableConeMetric& cone_metric,
     VectorX& vertex_angles,
@@ -237,6 +215,27 @@ bool constraint_with_jacobian(
     }
 
     return true;
+}
+
+void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_free_vertices)
+{
+    // Build map from independent vertices to free vertices
+    int num_ind_vertices = m.n_ind_vertices();
+    num_free_vertices = 0;
+    std::vector<int> v_map(num_ind_vertices, -1);
+    for (int v = 0; v < num_ind_vertices; ++v) {
+        if (!m.fixed_dof[v]) {
+            v_map[v] = num_free_vertices;
+            num_free_vertices++;
+        }
+    }
+
+    // Build map from vertices to free vertices
+    int num_vertices = m.v_rep.size();
+    v_rep.resize(num_vertices);
+    for (int v = 0; v < num_vertices; ++v) {
+        v_rep[v] = v_map[m.v_rep[v]];
+    }
 }
 
 Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric)

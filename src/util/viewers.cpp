@@ -79,4 +79,27 @@ view_halfedge_mesh_layout(
 #endif
 }
 
+void view_parameterization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT) {
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    std::string mesh_handle = "cut_mesh";
+
+    // Cut mesh along seams
+    Eigen::MatrixXd V_cut;
+    cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
+
+    // Add cut mesh with 
+    polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT);
+    polyscope::getSurfaceMesh(mesh_handle)->addVertexParameterizationQuantity("uv", uv);
+
+    polyscope::show();
+#else
+    spdlog::info("Visualization disabled");
+#endif
+    }
+
 }

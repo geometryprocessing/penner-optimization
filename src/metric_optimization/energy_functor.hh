@@ -146,6 +146,7 @@ private:
     virtual Scalar energy(const VectorX& metric_coords) const override;
     virtual VectorX gradient(const VectorX& metric_coords) const override;
     std::unique_ptr<DifferentiableConeMetric> m_target_cone_metric;
+    MatrixX m_expansion_matrix;
 };
 
 /// Intrinsic Symmetric Dirichlet energy relative to a target metric

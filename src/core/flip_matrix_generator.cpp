@@ -98,16 +98,16 @@ void FlipMapMatrixGenerator::reset()
 }
 
 void FlipMapMatrixGenerator::multiply_by_matrix(
-    const std::vector<int>& matrix_indices,
-    const std::vector<Scalar>& matrix_scalars,
+    const std::vector<int>& column_indices,
+    const std::vector<Scalar>& values,
     int ed)
 {
     // Compute the new row of J_del corresponding to edge ed, which is the only
     // edge that changes
     std::map<int, Scalar> J_del_d_new;
     for (int i = 0; i < 5; ++i) {
-        int ei = matrix_indices[i];
-        Scalar Di = matrix_scalars[i];
+        int ei = column_indices[i];
+        Scalar Di = values[i];
         for (auto it : m_list_of_lists[ei]) {
             J_del_d_new[it.first] += Di * it.second;
         }

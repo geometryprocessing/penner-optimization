@@ -196,20 +196,18 @@ MatrixX QuadraticSymmetricDirichletEnergy::hessian_inverse(const VectorX&) const
 
 LogScaleEnergy::LogScaleEnergy(const DifferentiableConeMetric& target_cone_metric)
     : m_target_cone_metric(target_cone_metric.clone_cone_metric())
+    , m_expansion_matrix(target_cone_metric.get_expansion_matrix())
 {}
 
 Scalar LogScaleEnergy::energy(const VectorX& metric_coords) const
 {
-    // TODO Need to refactor to properly use halfedge coordinates
     // Can convert halfedge gradient g to reduced gradient with T^t g = (df dT)^t
-    assert(metric_coords.size() == m_target_cone_metric->n_halfedges());
-    VectorX u = best_fit_conformal(*m_target_cone_metric, metric_coords);
+    VectorX u = best_fit_conformal(*m_target_cone_metric, m_expansion_matrix * metric_coords);
     return 0.5 * (u.dot(u));
 }
 
 VectorX LogScaleEnergy::gradient(const VectorX& metric_coords) const
 {
-    assert(metric_coords.size() == m_target_cone_metric->n_halfedges());
     return scale_distortion_direction(*m_target_cone_metric, metric_coords);
 }
 

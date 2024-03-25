@@ -79,6 +79,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)
+include(cli11)
 
 # Optionally create visualization library
 if(RENDER_TEXTURE)
@@ -107,15 +108,6 @@ endif()
 
 # Make main cpp library
 add_subdirectory(src)
-
-
-if(USE_SUITESPARSE)
-#  include(suitesparse)
-#  target_link_libraries(PennerOptimizationLib PRIVATE
-#    SuiteSparse::SuiteSparseConfig
-#    SuiteSparse::CHOLMOD
-#  )
-endif()
 
 # Build pybind optimization functions
 if(USE_PYBIND)
@@ -160,14 +152,6 @@ if(NOT USE_MULTIPRECISION)
   # Optionally build tests
   if(BUILD_CURVATURE_METRIC_TESTS)
     include(Catch2)
-
-    # Build testing libraries
-    #add_library(CurvatureMetricTestsLib
-    #)
-    #target_link_libraries(CurvatureMetricTestsLib PUBLIC
-    #  PennerOptimizationLib
-    #  Catch2::Catch2WithMain
-    #)
 
     # Build testing executable
     add_executable(CurvatureMetricTests

@@ -138,6 +138,11 @@ public:
     /// @return change of coordinates Jacobian matrix 
     virtual MatrixX get_transition_jacobian() const = 0;
 
+    /// Get the matrix to expand metric coordinates from reduced to full
+    ///
+    /// @return metric expansion matrix
+    virtual MatrixX get_expansion_matrix() const = 0;
+
     // **********************************************************************
     // General methods: non-virtual methods that don't need to be overwritten
     // **********************************************************************
@@ -247,6 +252,7 @@ public:
     // Discrete metric methods
     void make_discrete_metric() override;
     MatrixX get_transition_jacobian() const override;
+    MatrixX get_expansion_matrix() const override;
 
     // ********************************************
     // Unique methods: methods unique to this class
@@ -307,6 +313,7 @@ public:
     // Discrete metric methods
     void make_discrete_metric() override;
     MatrixX get_transition_jacobian() const override;
+    MatrixX get_expansion_matrix() const override;
 
 protected:
     std::vector<int> m_embed;

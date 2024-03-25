@@ -21,6 +21,15 @@ typedef Eigen::SparseMatrix<Scalar> MatrixX;
 typedef Eigen::Triplet<Scalar> T;
 const Scalar INF = 1e10;
 
+/// Energies available for optimization
+enum class EnergyChoice {
+    log_length, // 2-norm of the metric coordinates
+    log_scale, // scaling energy of best fit scale factors
+    quadratic_sym_dirichlet, // quadratic approximation to symmetric Dirichlet
+    sym_dirichlet, // symmetric Dirichlet
+    p_norm // 4-norm of the metric coordinates
+};
+
 // Parameters to pass to the conformal method for projecting to the constraint.
 // More detail on these parameters can be found in the documentation for that
 // method.
@@ -33,7 +42,8 @@ struct ProjectionParameters
 #else
     Scalar error_eps = 1e-8; // minimum error termination condition
 #endif
-    bool do_reduction = true; // reduce the initial line step if the range of coordinate values is large
+    bool do_reduction =
+        true; // reduce the initial line step if the range of coordinate values is large
     bool initial_ptolemy = true; // initial_ptolemy: use ptolemy flips for the initial make_delaunay
     bool use_edge_flips = true; // use intrinsic edge flips
     std::string output_dir = "";
@@ -47,7 +57,8 @@ struct OptimizationParameters
     bool use_checkpoints = false; // if true, checkpoint state to output directory
 
     // Convergence parameters
-    Scalar min_ratio = 0.0; // minimum ratio of projected to ambient descent direction for convergence
+    Scalar min_ratio =
+        0.0; // minimum ratio of projected to ambient descent direction for convergence
     int num_iter = 200; // maximum number of iterations
 
     // Line step choice parameters

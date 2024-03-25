@@ -1,7 +1,6 @@
 #include "penner_optimization_interface.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "embedding.hh"
-#include "energy_functor.hh"
 #include "interpolation.hh"
 #include "layout.hh"
 #include "projection.hh"
@@ -55,6 +54,53 @@ std::unique_ptr<DifferentiableConeMetric> generate_initial_mesh(
         interpolation_mesh.convert_to_hyperbolic_surface(flip_sequence, hyperbolic_flip_sequence);
         reduced_metric_coords = interpolation_mesh.get_reduced_metric_coordinates();
         return std::make_unique<PennerConeMetric>(m, reduced_metric_coords);
+    }
+}
+
+std::unique_ptr<EnergyFunctor> generate_energy(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<Scalar>& Th_hat,
+    const DifferentiableConeMetric& target_cone_metric,
+    const EnergyChoice& energy_choice)
+{
+    // Generate chosen energy
+    if (energy_choice == EnergyChoice::log_length) {
+        return std::make_unique<LogLengthEnergy>(LogLengthEnergy(target_cone_metric));
+    } else if (energy_choice == EnergyChoice::log_scale) {
+        return std::make_unique<LogScaleEnergy>(LogScaleEnergy(target_cone_metric));
+    } else if (energy_choice == EnergyChoice::quadratic_sym_dirichlet) {
+        // Build discrete mesh
+        std::vector<int> vtx_reindex;
+        std::vector<int> free_cones = {};
+        bool fix_boundary = false;
+        std::unique_ptr<DifferentiableConeMetric> eucl_cone_metric =
+            generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, true);
+        DiscreteMetric discrete_metric(
+            *eucl_cone_metric,
+            eucl_cone_metric->get_metric_coordinates());
+
+        // Build energy
+        return std::make_unique<QuadraticSymmetricDirichletEnergy>(
+            QuadraticSymmetricDirichletEnergy(target_cone_metric, discrete_metric));
+    } else if (energy_choice == EnergyChoice::sym_dirichlet) {
+        // Build discrete mesh
+        std::vector<int> vtx_reindex;
+        std::vector<int> free_cones = {};
+        bool fix_boundary = false;
+        std::unique_ptr<DifferentiableConeMetric> eucl_cone_metric =
+            generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, true);
+        DiscreteMetric discrete_metric(
+            *eucl_cone_metric,
+            eucl_cone_metric->get_metric_coordinates());
+
+        // Build energy
+        return std::make_unique<SymmetricDirichletEnergy>(
+            SymmetricDirichletEnergy(target_cone_metric, discrete_metric));
+    } else if (energy_choice == EnergyChoice::p_norm) {
+        return std::make_unique<LogLengthEnergy>(LogLengthEnergy(target_cone_metric, 4));
+    } else {
+        return std::make_unique<LogLengthEnergy>(LogLengthEnergy(target_cone_metric));
     }
 }
 
@@ -331,4 +377,109 @@ std::
         is_cut,
         {});
 }
+
+std::
+    tuple<
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool> // is_cut_h
+        >
+    generate_VF_mesh_from_discrete_metric(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const std::vector<Scalar>& Th_hat,
+        const VectorX& reduced_log_edge_lengths,
+        std::vector<bool> cut_h)
+{
+    // Get mesh with vertex reindexing
+    std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
+    Mesh<Scalar> m =
+        FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+
+    // Get layout topology from mesh
+    std::vector<bool> is_cut = compute_layout_topology(m, cut_h);
+
+    // Set metric for layout
+		DiscreteMetric discrete_metric(m, reduced_log_edge_lengths);
+
+    // Create trivial overlay mesh
+    OverlayMesh<Scalar> m_o(discrete_metric);
+    make_tufted_overlay(m_o, V, F, Th_hat);
+
+    // Convert vertices to transposed vector format
+    std::vector<std::vector<Scalar>> V_overlay_vec(3);
+    for (int i = 0; i < 3; ++i) {
+        V_overlay_vec[i].resize(V.rows());
+        for (int j = 0; j < V.rows(); ++j) {
+            V_overlay_vec[i][j] = V(vtx_reindex[j], i);
+        }
+    }
+
+    // Get endpoints
+    std::vector<std::pair<int, int>> endpoints;
+    find_origin_endpoints(m_o, endpoints);
+
+		// Compute layout
+    std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
+    std::vector<int> vtx_reindex_mutable = vtx_reindex;
+    auto layout_res = consistent_overlay_mesh_to_VL(
+        F,
+        Th_hat,
+        m_o,
+        u_vec,
+        V_overlay_vec,
+        vtx_reindex_mutable,
+        endpoints,
+        is_cut,
+        {});
+
+/*
+    // Set metric for layout
+		DiscreteMetric discrete_metric(m, reduced_log_edge_lengths);
+
+		// Build layout in uv plane
+    std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
+    std::vector<bool> _is_cut_place_holder = is_cut;
+    auto layout_res = compute_layout(discrete_metric, u_vec, _is_cut_place_holder);
+    auto u_h = std::get<0>(layout_res);
+    auto v_h = std::get<1>(layout_res);
+    is_cut = std::get<2>(layout_res);
+
+		int num_vertices = V.rows();
+    Eigen::MatrixXd uv(num_vertices, 2);
+    for (int fijk = 0; fijk < num_faces; ++fijk) {
+        // Get halfedges of face
+        int hij = m.h[fijk];
+        int hjk = m.n[hij];
+        int hki = m.n[hjk];
+
+        // Get vertices of face
+        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
+        int vk = vtx_reindex[m.v_rep[m.to[hjk]]];
+        int vi = vtx_reindex[m.v_rep[m.to[hki]]];
+
+        // Write face with halfedge and opposite vertex data
+        F_halfedge(fijk, 0) = hij;
+        F_halfedge(fijk, 1) = hjk;
+        F_halfedge(fijk, 2) = hki;
+        F(fijk, 0) = vi;
+        F(fijk, 1) = vj;
+        F(fijk, 2) = vk;
+    }
+
+    return std::make_tuple(F, F_halfedge);
+    uv.col(0) = u_col;
+    uv.col(1) = v_col;
+		*/
+
+		Eigen::MatrixXd V_l = std::get<1>(layout_res);
+		Eigen::MatrixXi F_l = std::get<2>(layout_res);
+		Eigen::MatrixXd uv = std::get<3>(layout_res);
+		Eigen::MatrixXi FT = std::get<4>(layout_res);
+
+		return std::make_tuple(V_l, F_l, uv, FT, cut_h);
+}
+
 } // namespace CurvatureMetric

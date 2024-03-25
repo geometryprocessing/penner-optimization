@@ -146,14 +146,16 @@ def generate_mesh(args, fname=None):
 
     # Build energies (default to 2-norm)
     energy_choice = args['energy_choice']
-    if (energy_choice == "p_norm"):
+    if (energy_choice == "log_length"):
         opt_energy = opt.LogLengthEnergy(C_embed, args['power'])
-    elif (energy_choice == "scale_distortion"):
+    elif (energy_choice == "log_scale"):
         opt_energy = opt.LogScaleEnergy(C_embed)
     elif (energy_choice == "quadratic_sym_dirichlet"):
         opt_energy = opt.QuadraticSymmetricDirichletEnergy(C_embed, C_eucl)
     elif (energy_choice == "sym_dirichlet"):
         opt_energy = opt.SymmetricDirichletEnergy(C_embed, C_eucl)
+    elif (energy_choice == "p_norm"):
+        opt_energy = opt.LogLengthEnergy(C_embed, args['power'])
     else:
         opt_energy = opt.LogLengthEnergy(C_embed, 2)
 

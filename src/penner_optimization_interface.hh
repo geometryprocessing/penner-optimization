@@ -1,6 +1,7 @@
 #pragma once
 #include "common.hh"
 #include "cone_metric.hh"
+#include "energy_functor.hh"
 
 namespace CurvatureMetric {
 
@@ -27,6 +28,20 @@ std::unique_ptr<DifferentiableConeMetric> generate_initial_mesh(
     bool fix_boundary = false,
     bool use_discrete_metric = false);
 
+/// Generate a distortion energy for a given target mesh.
+///
+/// @param[in] V: initial vertices
+/// @param[in] F: initial faces
+/// @param[in] Th_hat: target angles
+/// @param[in] target_cone_metric: target mesh
+/// @param[in] energy_choice: energy type to construct
+/// @return energy functor for the chosen energy and mesh
+std::unique_ptr<EnergyFunctor> generate_energy(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<Scalar>& Th_hat,
+    const DifferentiableConeMetric& target_cone_metric,
+    const EnergyChoice& energy_choice);
 
 /// Correct cone angles that are multiples of pi/60 to machine precision.
 ///
@@ -47,27 +62,6 @@ void write_obj_with_uv(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv);
-
-std::tuple<
-    OverlayMesh<Scalar>, // m_o
-    Eigen::MatrixXd, // V_o
-    Eigen::MatrixXi, // F_o
-    Eigen::MatrixXd, // uv_o
-    Eigen::MatrixXi, // FT_o
-    std::vector<bool>, // is_cut_h
-    std::vector<bool>, // is_cut_o
-    std::vector<int>, // Fn_to_F
-    std::vector<std::pair<int, int>>> // endpoints_o
-consistent_overlay_mesh_to_VL(
-    const Eigen::MatrixXi& F,
-    const std::vector<Scalar>& Theta_hat,
-    OverlayMesh<Scalar>& mo,
-    std::vector<Scalar>& u,
-    std::vector<std::vector<Scalar>>& V_overlay,
-    std::vector<int>& vtx_reindex,
-    std::vector<std::pair<int, int>>& endpoints,
-    const std::vector<bool>& is_cut_orig,
-    const std::vector<bool>& is_cut);
 
 /// Given a mesh with initial target and final optimized metric coordinates, generate a corresponding
 /// overlay VF mesh with parametrization.
@@ -101,5 +95,20 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> is_cut = {},
         bool do_best_fit_scaling = false);
+
+std::
+    tuple<
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool> // is_cut_h
+        >
+    generate_VF_mesh_from_discrete_metric(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const std::vector<Scalar>& Th_hat,
+        const VectorX& reduced_log_edge_lengths,
+        std::vector<bool> cut_h = {});
 
 } // namespace CurvatureMetric

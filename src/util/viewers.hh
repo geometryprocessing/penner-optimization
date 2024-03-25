@@ -32,4 +32,16 @@ view_halfedge_mesh_layout(
   const std::vector<Scalar>& v_vec
 );
 
+/// View a mesh with parameterization grid
+///
+/// @param[in] V: mesh vertices
+/// @param[in] F: mesh faces
+/// @param[in] uv: mesh uv vertices
+/// @param[in] F_uv: mesh uv faces
+void view_parameterization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT);
+
 }

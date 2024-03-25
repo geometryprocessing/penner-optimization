@@ -15,7 +15,8 @@ add_executable(optimize_metric
   optimize_metric.cpp
 )
 target_link_libraries(optimize_metric PRIVATE
-PennerOptimizationLib
+  PennerOptimizationLib
+  CLI11::CLI11
 )
 
 add_executable(optimize_shear
