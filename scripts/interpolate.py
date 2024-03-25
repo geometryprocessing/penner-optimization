@@ -34,7 +34,7 @@ def interpolate_metric(
         interpolated_metric = C.set_metric_coordinates(lambdas)
         projected_metric = opt.project_metric_to_constraint(
             interpolated_metric, proj_params, "")
-        lambdas = projected_metric.get_metric_coordinates()
+        lambdas = projected_metric.get_reduced_metric_coordinates()
         np.savetxt(os.path.join(output_dir, 'lambdas_' + str(i)), lambdas)
 
 

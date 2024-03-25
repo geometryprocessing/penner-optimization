@@ -20,6 +20,7 @@ if (PROJECT_IS_TOP_LEVEL)
   # Set libigl options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
+  option ( SUITESPARSE_USE_CUDA OFF )
 endif()
 
 #find_package(Boost REQUIRED COMPONENTS system filesystem serialization)

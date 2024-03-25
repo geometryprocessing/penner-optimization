@@ -69,9 +69,9 @@ def error_table(args):
             # Load input mesh information
             try:
                 input_dir = args['input_dir']
-                logger.info("Loading initial mesh at {}".format(input_dir))
-                v3d_orig, f_orig = igl.read_triangle_mesh(
-                    os.path.join(input_dir, m+'.obj'))
+                input_path = os.path.join(input_dir, m+'.obj')
+                logger.info("Loading initial mesh at {}".format(input_path))
+                v3d_orig, f_orig = igl.read_triangle_mesh(input_path)
             except:
                 logger.error("Could not load initial mesh")
                 return
@@ -86,11 +86,14 @@ def error_table(args):
                 logger.error("Could not load uvs for {}".format(name))
 
             # Get topology information
+            logger.info("Getting count information")
             error_dict['num_faces'].append(len(f_orig))
             error_dict['num_overlay_faces'].append(len(f))
+
+            logger.info("Getting topology information")
             error_dict['is_manifold'].append(igl.is_edge_manifold(f))
-            error_dict['num_components'].append(
-                np.max(igl.face_components(fuv)) + 1)
+            error_dict['num_components'].append(-1)
+            #    np.max(igl.face_components(fuv)) + 1)
 
             # Get areas
             logger.info("Computing areas")

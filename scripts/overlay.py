@@ -79,7 +79,7 @@ def overlay_one(args, fname):
         C_o = opt.add_overlay(C_embed, lambdas)
         opt.make_tufted_overlay(C_o, v3d, f, Th_hat)
         v_overlay = v3d[vtx_reindex].T
-        endpoints = np.full((len(C.out), 2), -1)
+        endpoints = np.full((len(C_embed.out), 2), -1)
 
         # Get layout parametrization from overlay
         logger.info("Getting parametrization from overlay")

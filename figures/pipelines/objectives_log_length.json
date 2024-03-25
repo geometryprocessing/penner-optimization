@@ -255,7 +255,7 @@
             "kitten100K.obj"
           ],
           "input_dir": "data/closed-Myles",
-          "output_dir": "figures/objectives/log_length/strectch_tail",
+          "output_dir": "output/objectives/log_length/strectch_tail",
           "suffix": "opt",
           "histogram_choice": "stretch_factors",
           "color": "blue",
@@ -268,7 +268,7 @@
             "julius.obj"
           ],
           "input_dir": "data/open-Myles",
-          "output_dir": "figures/objectives/log_length/strectch_tail",
+          "output_dir": "output/objectives/log_length/strectch_tail",
           "suffix": "opt",
           "histogram_choice": "stretch_factors",
           "color": "blue",

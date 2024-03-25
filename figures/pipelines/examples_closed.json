@@ -62,6 +62,7 @@
       "method": "render_uv",
       "skip": false,
       "args_list": [
+        {
           "suffix": "conf_refined"
         },
         {

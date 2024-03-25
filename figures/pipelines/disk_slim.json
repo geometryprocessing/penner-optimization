@@ -3,7 +3,7 @@
     "fname": [
       "nicolo_da_uzzano.obj"
     ],
-    "input_dir": "data/open-myles",
+    "input_dir": "data/open-Myles",
     "colormap": "sym_dirichlet",
     "free_bd_angles": true,
     "no_cones": true,
@@ -36,7 +36,7 @@
       ]
     },
     {
-      "method": "render_layout",
+      "method": "render_uv",
       "skip": false,
       "args_list": [
         {
@@ -45,7 +45,7 @@
       ]
     },
     {
-      "method": "render_uv",
+      "method": "render_layout",
       "skip": false,
       "args_list": [
         {

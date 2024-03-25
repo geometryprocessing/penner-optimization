@@ -58,6 +58,7 @@
 #endif
 
 #ifdef RENDER_TEXTURE
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/Sampling.hh"
 #include "visualization.hh"
 #endif
@@ -290,10 +291,10 @@ void init_conformal_pybind(pybind11::module& m)
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 // TODO Replace with internal method
-//  m.def("overlay_mesh_to_VL",
-//        &overlay_mesh_to_VL<Scalar>,
-//        pybind11::call_guard<pybind11::scoped_ostream_redirect,
-//                             pybind11::scoped_estream_redirect>());
+  m.def("overlay_mesh_to_VL",
+        &overlay_mesh_to_VL<Scalar>,
+        pybind11::call_guard<pybind11::scoped_ostream_redirect,
+                             pybind11::scoped_estream_redirect>());
 #ifdef RENDER_TEXTURE
     m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
     m.def("get_pt_mat", &get_pt_mat, "get pt_mat");
@@ -359,6 +360,11 @@ void init_energies_pybind(pybind11::module& m)
     m.def(
         "surface_hencky_strain_energy_vf",
         &surface_hencky_strain_energy_vf,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "conformal_scaling_matrix",
+        &conformal_scaling_matrix,
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(

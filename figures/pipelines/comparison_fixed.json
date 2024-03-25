@@ -35,18 +35,6 @@
       ]
     },
     {
-      "method": "refine",
-      "skip": false,
-      "args_list": [
-        {
-          "suffix": "conf"
-        },
-        {
-          "suffix": "opt"
-        }
-      ]
-    },
-    {
       "method": "colormap_histogram",
       "skip": false,
       "args_list": [
@@ -54,19 +42,20 @@
           "color": "blue",
           "bin_min": 0,
           "bin_max": 3,
-          "label": "sym. dirichlet"
+          "label": "sym. dirichlet",
+          "suffix": "opt_overlay"
         }
       ]
     },
     {
-      "method": "render_pipeline",
+      "method": "render_uv",
       "skip": false,
       "args_list": [
         {
-          "suffix": "conf_refined"
+          "suffix": "conf_overlay"
         },
         {
-          "suffix": "opt_refined"
+          "suffix": "opt_overlay"
         }
       ]
     }

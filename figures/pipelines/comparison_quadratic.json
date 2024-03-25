@@ -50,14 +50,14 @@
       "skip": false,
       "args_list": [
         {
-          "suffix": "conf_simplified_with_uv",
+          "suffix": "conf_refined",
           "color": "red",
           "bin_min": 0,
           "bin_max": 3,
           "label": "sym. dirichlet"
         },
         {
-          "suffix": "opt_simplified_with_uv",
+          "suffix": "opt_refined",
           "bin_min": 0,
           "bin_max": 3,
           "color": "blue",

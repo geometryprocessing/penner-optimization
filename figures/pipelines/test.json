@@ -3,7 +3,7 @@
     "fname": [
       "eight.obj"
     ],
-    "input_dir": "data/cut-myles",
+    "input_dir": "data/cut-Myles",
     "energy_choice": "p_norm",
     "colormap": "scale_factors",
     "opt_num_iter": 50
