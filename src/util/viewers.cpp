@@ -84,13 +84,13 @@ void view_parameterization(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& FT) {
-#ifdef ENABLE_VISUALIZATION
-    polyscope::init();
-    std::string mesh_handle = "cut_mesh";
-
     // Cut mesh along seams
     Eigen::MatrixXd V_cut;
     cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    std::string mesh_handle = "cut_mesh";
 
     // Add cut mesh with 
     polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT);

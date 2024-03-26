@@ -422,6 +422,11 @@ void init_optimization_pybind(pybind11::module& m)
         &generate_VF_mesh_from_metric,
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "generate_VF_mesh_from_discrete_metric",
+        &generate_VF_mesh_from_discrete_metric,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
 
 void init_parameterization_pybind(pybind11::module& m)

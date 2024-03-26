@@ -72,33 +72,16 @@ def overlay_one(args, fname):
         return
 
     # Get overlay
-    # TODO Replace with method akin to generate_VF_mesh_from_metric for log edge lenghts
     if args['use_edge_lengths']:
         logger.info("Using edge lengths")
-        u = np.zeros(len(v3d))
-        C_o = opt.add_overlay(C_embed, lambdas)
-        opt.make_tufted_overlay(C_o, v3d, f, Th_hat)
-        v_overlay = v3d[vtx_reindex].T
-        endpoints = np.full((len(C_embed.out), 2), -1)
-
-        # Get layout parametrization from overlay
-        logger.info("Getting parametrization from overlay")
-        parametrize_res = opt.overlay_mesh_to_VL(
+        parametrize_res = opt.generate_VF_mesh_from_discrete_metric(
             v3d,
             f,
             Th_hat,
-            C_o,
-            u,
-            v_overlay,
-            vtx_reindex,
-            endpoints,
-            -1
+            lambdas,
+            []
         )
-        v_o, f_o, u_param_o, v_param_o, ft_o, is_cut_h, _, fn_to_f, endpoints = parametrize_res
-        v_o = np.array(v_o)
-        f_o = np.array(f_o)
-        ft_o = np.array(ft_o)
-        uvt_o = np.array([u_param_o, v_param_o]).T
+        v_o, f_o, uvt_o, ft_o, is_cut_h = parametrize_res
     else:
         logger.info("Using Penner coordinates")
         parametrize_res = opt.generate_VF_mesh_from_metric(
@@ -112,6 +95,16 @@ def overlay_one(args, fname):
         )
         C_o, v_o, f_o, uvt_o, ft_o, is_cut_h, _, fn_to_f, endpoints = parametrize_res
 
+        # Write fn_to_f to file
+        face_map_path = os.path.join(output_dir, name + '_fn_to_f')
+        logger.info("Saving new to old face map at {}".format(face_map_path))
+        np.savetxt(face_map_path, fn_to_f, fmt='%i')
+
+        # Write endpoints to file
+        endpoints_path = os.path.join(output_dir, name + '_endpoints')
+        logger.info("Saving endpoints at {}".format(endpoints_path))
+        np.savetxt(endpoints_path, endpoints, fmt='%i')
+
     # Save new meshes
     uv_mesh_path = os.path.join(output_dir, name + '_overlay.obj')
     logger.info("Saving uv mesh at {}".format(uv_mesh_path))
@@ -122,15 +115,6 @@ def overlay_one(args, fname):
     logger.info("Saving cut information at {}".format(simp_path))
     np.savetxt(simp_path, is_cut_h)
 
-    # Write fn_to_f to file
-    face_map_path = os.path.join(output_dir, name + '_fn_to_f')
-    logger.info("Saving new to old face map at {}".format(face_map_path))
-    np.savetxt(face_map_path, fn_to_f, fmt='%i')
-
-    # Write endpoints to file
-    endpoints_path = os.path.join(output_dir, name + '_endpoints')
-    logger.info("Saving endpoints at {}".format(endpoints_path))
-    np.savetxt(endpoints_path, endpoints, fmt='%i')
 
 
 def overlay_many(args):
