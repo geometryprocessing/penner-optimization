@@ -38,6 +38,6 @@ data*
 output*
 
 # Caches
-*__pycache__
+__pycache__/
 *.DS_Store
 
