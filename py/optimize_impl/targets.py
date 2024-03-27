@@ -36,7 +36,7 @@ def generate_tutte_param(v, f):
     """
     bd = igl.boundary_loop(f)
     bd_uv = igl.map_vertices_to_circle(v, bd)
-    uv = igl.harmonic(v, f, bd, bd_uv, 1)
+    uv = igl.harmonic_weights(v, f, bd, bd_uv, 1)
     uv_embed = np.zeros((len(uv), 3))
     uv_embed[:,:2] = uv[:,:2]
 
