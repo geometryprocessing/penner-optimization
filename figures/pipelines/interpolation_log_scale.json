@@ -19,7 +19,7 @@
       "skip": false,
       "args_list": [
         {
-          "lambdas_dir": "output/interpolation/log_length"
+          "lambdas_dir": "output/interpolation_log_length"
         }
       ]
     },

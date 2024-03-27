@@ -405,7 +405,7 @@ bool check_projection_success(
     VectorX constraint;
     MatrixX J_constraint;
     bool need_jacobian = false;
-    bool only_free_vertices = false;
+    bool only_free_vertices = true;
     bool success =
         cone_metric.constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
 
