@@ -1,16 +1,3 @@
-add_executable(conformal_metric
-  conformal_metric.cpp
-)
-target_link_libraries(conformal_metric PRIVATE
-  PennerOptimizationLib
-)
-if(USE_SUITESPARSE)
-target_link_libraries(conformal_metric PRIVATE
-  SuiteSparse::SuiteSparseConfig
-  SuiteSparse::CHOLMOD
-)
-endif()
-
 add_executable(optimize_metric
   optimize_metric.cpp
 )
@@ -23,7 +10,8 @@ add_executable(optimize_shear
   optimize_shear.cpp
 )
 target_link_libraries(optimize_shear PRIVATE
-PennerOptimizationLib
+  PennerOptimizationLib
+  CLI11::CLI11
 )
 
 add_executable(plot_shear_energy

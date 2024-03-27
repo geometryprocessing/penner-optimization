@@ -6,7 +6,7 @@
 
 An implementation of [Metric Optimization in Penner Coordinates](https://dl.acm.org/doi/10.1145/3618394).
 
-![Contour pipeline](media/teaser.jpg)
+![Parameterization with interpolation](media/teaser.jpg)
 
 ### Overview
 
@@ -54,7 +54,12 @@ Scripts to generate the figures of "Metric Optimization in Penner Coordinates" a
 TODO
 The models (with parameterizations) and cameras used in [Algebraic Smooth Occluding Contours](http://ryanjcapouellez.com/papers/algebraic_smooth_occluding_contours.html) necessary for these scripts can be downloaded [here](http://ryanjcapouellez.com/papers/algebraic-contours-data.zip); they must be copied to `data/meshes` and `data/cameras` respectively.
 
-The figure bash scripts can be run independently or in batch with the command
+A Conda environment must be activated (before compiling the code) with
+```
+conda env create -f environment.yml
+conda activate penner-optimization
+```
+The figure bash scripts can then be run independently or in batch with
 ```
 bash fig-all.sh
 ```

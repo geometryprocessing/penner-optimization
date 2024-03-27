@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     spdlog::set_level(spdlog::level::info);
     std::filesystem::create_directories(output_dir);
-		opt_params->output_dir = output_dir;
+    opt_params->output_dir = output_dir;
 
 		// TODO Make this automatic
 		if (use_discrete_metric)

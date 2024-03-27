@@ -435,45 +435,6 @@ std::
         is_cut,
         {});
 
-/*
-    // Set metric for layout
-		DiscreteMetric discrete_metric(m, reduced_log_edge_lengths);
-
-		// Build layout in uv plane
-    std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
-    std::vector<bool> _is_cut_place_holder = is_cut;
-    auto layout_res = compute_layout(discrete_metric, u_vec, _is_cut_place_holder);
-    auto u_h = std::get<0>(layout_res);
-    auto v_h = std::get<1>(layout_res);
-    is_cut = std::get<2>(layout_res);
-
-		int num_vertices = V.rows();
-    Eigen::MatrixXd uv(num_vertices, 2);
-    for (int fijk = 0; fijk < num_faces; ++fijk) {
-        // Get halfedges of face
-        int hij = m.h[fijk];
-        int hjk = m.n[hij];
-        int hki = m.n[hjk];
-
-        // Get vertices of face
-        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
-        int vk = vtx_reindex[m.v_rep[m.to[hjk]]];
-        int vi = vtx_reindex[m.v_rep[m.to[hki]]];
-
-        // Write face with halfedge and opposite vertex data
-        F_halfedge(fijk, 0) = hij;
-        F_halfedge(fijk, 1) = hjk;
-        F_halfedge(fijk, 2) = hki;
-        F(fijk, 0) = vi;
-        F(fijk, 1) = vj;
-        F(fijk, 2) = vk;
-    }
-
-    return std::make_tuple(F, F_halfedge);
-    uv.col(0) = u_col;
-    uv.col(1) = v_col;
-		*/
-
 		Eigen::MatrixXd V_l = std::get<1>(layout_res);
 		Eigen::MatrixXi F_l = std::get<2>(layout_res);
 		Eigen::MatrixXd uv = std::get<3>(layout_res);

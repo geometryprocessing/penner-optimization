@@ -10,52 +10,48 @@
 
 namespace CurvatureMetric {
 
-void
-view_flipped_triangles(
-  const Eigen::MatrixXd& V,
-  const Eigen::MatrixXi& F,
-  const Eigen::MatrixXd& uv,
-  const Eigen::MatrixXi& F_uv
-) {
-  // Cut the mesh along the parametrization seams
-	Eigen::MatrixXd V_cut;
-	cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
+void view_flipped_triangles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv)
+{
+    // Cut the mesh along the parametrization seams
+    Eigen::MatrixXd V_cut;
+    cut_mesh_along_parametrization_seams(V, F, uv, F_uv, V_cut);
 
-  // Get the flipped elements
-  Eigen::VectorXi flipped_f;
-  igl::flipped_triangles(uv, F_uv, flipped_f);
-  spdlog::info("{} flipped elements", flipped_f.size());
+    // Get the flipped elements
+    Eigen::VectorXi flipped_f;
+    igl::flipped_triangles(uv, F_uv, flipped_f);
+    spdlog::info("{} flipped elements", flipped_f.size());
 
-  // Convert flipped element list to a scalar function
-  int num_faces = F_uv.rows();
-  Eigen::VectorXd is_flipped;
-  is_flipped.setZero(num_faces);
-  for (int i = 0; i < flipped_f.size(); ++i)
-  {
-    int fi = flipped_f[i];
-    is_flipped[fi] = 1.0;
-    spdlog::info("Face {}: {} is flipped", fi, F_uv.row(fi));
-  }
+    // Convert flipped element list to a scalar function
+    int num_faces = F_uv.rows();
+    Eigen::VectorXd is_flipped;
+    is_flipped.setZero(num_faces);
+    for (int i = 0; i < flipped_f.size(); ++i) {
+        int fi = flipped_f[i];
+        is_flipped[fi] = 1.0;
+        spdlog::info("Face {}: {} is flipped", fi, F_uv.row(fi));
+    }
 
 #if ENABLE_VISUALIZATION
-  // Add the mesh and uv mesh with flipped element maps
-  polyscope::init();
-	polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
-    ->addFaceScalarQuantity("is_flipped", is_flipped);
-  polyscope::getSurfaceMesh("mesh")
-		->addVertexParameterizationQuantity("uv", uv);
-	polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv)
-    ->addFaceScalarQuantity("is_flipped", is_flipped);
-  polyscope::show();
+    // Add the mesh and uv mesh with flipped element maps
+    polyscope::init();
+    polyscope::registerSurfaceMesh("mesh", V_cut, F_uv)
+        ->addFaceScalarQuantity("is_flipped", is_flipped);
+    polyscope::getSurfaceMesh("mesh")->addVertexParameterizationQuantity("uv", uv);
+    polyscope::registerSurfaceMesh2D("uv mesh", uv, F_uv)
+        ->addFaceScalarQuantity("is_flipped", is_flipped);
+    polyscope::show();
 #endif // ENABLE_VISUALIZATION
 }
 
-void
-view_halfedge_mesh_layout(
-  const Mesh<Scalar>& m,
-  const std::vector<Scalar>& u_vec,
-  const std::vector<Scalar>& v_vec
-) {
+void view_halfedge_mesh_layout(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec)
+{
     Eigen::VectorXd u, v;
     convert_std_to_eigen_vector(u_vec, u);
     convert_std_to_eigen_vector(v_vec, v);
@@ -83,7 +79,8 @@ void view_parameterization(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& FT) {
+    const Eigen::MatrixXi& FT)
+{
     // Cut mesh along seams
     Eigen::MatrixXd V_cut;
     cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
@@ -92,14 +89,16 @@ void view_parameterization(
     polyscope::init();
     std::string mesh_handle = "cut_mesh";
 
-    // Add cut mesh with 
+    // Add cut mesh with
     polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT);
-    polyscope::getSurfaceMesh(mesh_handle)->addVertexParameterizationQuantity("uv", uv);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexParameterizationQuantity("uv", uv)
+        ->setEnabled(true);
 
     polyscope::show();
 #else
     spdlog::info("Visualization disabled");
 #endif
-    }
-
 }
+
+} // namespace CurvatureMetric

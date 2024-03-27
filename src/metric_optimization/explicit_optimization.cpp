@@ -484,10 +484,10 @@ VectorX optimize_domain_coordinates(
     Scalar max_grad_range = opt_params->max_grad_range;
     std::string output_dir = opt_params->output_dir;
 
-    // Log mesh data
-    create_log(output_dir, "mesh_data");
-    spdlog::get("mesh_data")->set_level(spdlog::level::trace);
-    log_mesh_information(m, "mesh_data");
+    // Log mesh data TODO
+    //create_log(output_dir, "mesh_data");
+    //spdlog::get("mesh_data")->set_level(spdlog::level::trace);
+    //log_mesh_information(m, "mesh_data");
 
     // Creat log for diagnostics if an output directory is specified
     create_log(output_dir, "optimize_metric");

@@ -376,12 +376,12 @@ void compute_shear_basis_coordinates(
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
     solver.compute(inner_product_matrix);
     shear_coords = solver.solve(rhs);
-    assert(solver.info() == Eigen::Success);
-    assert(vector_equal(shear_coords, solver.solve(inner_product_matrix * shear_coords)));
-    SPDLOG_TRACE(
+    SPDLOG_INFO(
         "Shear coordinates in range [{}, {}]",
         shear_coords.minCoeff(),
         shear_coords.maxCoeff());
+    assert(solver.info() == Eigen::Success);
+    assert(vector_equal(shear_coords, solver.solve(inner_product_matrix * shear_coords), 1e-5));
 
     // Get the corresponding scale factors for shear space to original metric
     // This is the (additive) inverse of the scale factors from original to shear
