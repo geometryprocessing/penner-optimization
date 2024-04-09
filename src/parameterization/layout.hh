@@ -149,6 +149,32 @@ get_consistent_layout(
     const std::vector<bool>& is_cut_orig,
     const std::vector<bool>& is_cut);
 
+
+// TODO: Document this technical function
+// Exposed for usage in other libraries
+std::
+    tuple<
+        OverlayMesh<Scalar>, // m_o
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool>, // is_cut_h
+        std::vector<bool>, // is_cut_o
+        std::vector<int>, // Fn_to_F
+        std::vector<std::pair<int, int>> // endpoints_o
+        >
+    consistent_overlay_mesh_to_VL(
+        const Eigen::MatrixXi& F,
+        const std::vector<Scalar>& Theta_hat,
+        OverlayMesh<Scalar>& mo,
+        std::vector<Scalar>& u,
+        std::vector<std::vector<Scalar>>& V_overlay,
+        std::vector<int>& vtx_reindex,
+        std::vector<std::pair<int, int>>& endpoints,
+        const std::vector<bool>& is_cut_orig,
+        const std::vector<bool>& is_cut);
+
 #ifdef PYBIND
 std::
     tuple<
