@@ -234,7 +234,7 @@ def load_pipeline(pipeline_path):
 
 def get_logger(log_path, level=logging.INFO):
     # Create the logging file handler
-    logger = multiprocessing.get_logger()
+    logger = logging.get_logger(log_path)
     logger.setLevel(level)
     if os.path.exists(log_path):
         os.remove(log_path)

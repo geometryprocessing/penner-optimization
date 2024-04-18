@@ -487,6 +487,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     int h = 0;
     if (start_h == -1) {
         for (int i = 0; i < m.n_halfedges(); i++) {
+            if (m.type[i] == 0) break;
             if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = m.n[m.n[i]];
                 spdlog::debug("Using edge {} as layout start", h);
