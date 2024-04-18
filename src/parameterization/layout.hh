@@ -49,15 +49,7 @@ OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_me
 /// @brief: Make an overlay mesh into a tufted double cover
 ///
 /// @param[in] mo: mesh to make tufted
-/// @param[in] V: original vertices used to generate mo
-/// @param[in] F: original face array used to generate mo
-/// @param[in] Theta_hat: original angles used to generate mo
-/// FIXME This should not build the vertex information internally.
-void make_tufted_overlay(
-    OverlayMesh<Scalar>& mo,
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<Scalar>& Theta_hat);
+void make_tufted_overlay(OverlayMesh<Scalar>& mo);
 
 /// Given a VF mesh, check that the face areas are nonzero
 ///
@@ -165,12 +157,11 @@ std::
         std::vector<std::pair<int, int>> // endpoints_o
         >
     consistent_overlay_mesh_to_VL(
-        const Eigen::MatrixXi& F,
-        const std::vector<Scalar>& Theta_hat,
         OverlayMesh<Scalar>& mo,
+        const std::vector<int>& vtx_reindex,
+        const std::vector<bool>& is_bd,
         std::vector<Scalar>& u,
         std::vector<std::vector<Scalar>>& V_overlay,
-        std::vector<int>& vtx_reindex,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut);

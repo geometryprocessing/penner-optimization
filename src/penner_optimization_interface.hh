@@ -125,6 +125,26 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> is_cut = {},
         bool do_best_fit_scaling = false);
+std::
+    tuple<
+        OverlayMesh<Scalar>, // m_o
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool>, // is_cut_h
+        std::vector<bool>, // is_cut_o
+        std::vector<int>, // Fn_to_F
+        std::vector<std::pair<int, int>> // endpoints_o
+        >
+    generate_VF_mesh_from_halfedge_metric(
+        const Eigen::MatrixXd& V,
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const DifferentiableConeMetric& initial_cone_metric,
+        const VectorX& reduced_metric_coords,
+        std::vector<bool> cut_h,
+        bool do_best_fit_scaling);
 
 std::
     tuple<

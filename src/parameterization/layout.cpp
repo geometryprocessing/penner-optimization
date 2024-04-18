@@ -75,21 +75,22 @@ OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_me
     return mo;
 }
 
-void make_tufted_overlay(
-    OverlayMesh<Scalar>& mo,
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<Scalar>& Theta_hat)
+void make_tufted_overlay(OverlayMesh<Scalar>& mo)
 {
-    std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    FV_to_double(V, F, V, F, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+    auto& m = mo._m;
+    if (m.type[0] == 0) return; // nothing to do for closed mesh
 
-    if (bnd_loops.size() != 0) {
-        int n_v = V.rows();
-        auto mc = mo.cmesh();
-        create_tufted_cover(mo._m.type, mo._m.R, indep_vtx, dep_vtx, v_rep, mo._m.out, mo._m.to);
-        mo._m.v_rep = range(0, n_v);
+    int n_ind_v = m.n_ind_vertices();
+    int n_he = m.n_halfedges();
+
+    // Modify the to and out arrays to identify dependent vertices with their reflection
+    m.out = std::vector<int>(n_ind_v);
+    for (int i = 0; i < n_he; ++i)
+    {
+        m.out[m.v_rep[m.to[i]]] = i;
+        m.to[i] = m.v_rep[m.to[i]];
     }
+    m.v_rep = range(0, n_ind_v);
 }
 
 bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
@@ -889,47 +890,34 @@ std::
         std::vector<std::pair<int, int>> // endpoints_o
         >
     consistent_overlay_mesh_to_VL(
-        const Eigen::MatrixXi& F,
-        const std::vector<Scalar>& Theta_hat,
         OverlayMesh<Scalar>& mo,
+        const std::vector<int>& vtx_reindex,
+        const std::vector<bool>& is_bd,
         std::vector<Scalar>& u,
         std::vector<std::vector<Scalar>>& V_overlay,
-        std::vector<int>& vtx_reindex,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut)
 {
+    const auto& m = mo.cmesh();
+
     // get cones and bd
     std::vector<int> cones, bd;
-    std::vector<bool> is_bd = igl::is_border_vertex(F);
     for (size_t i = 0; i < is_bd.size(); i++) {
         if (is_bd[i]) {
             bd.push_back(i);
         }
     }
-    for (size_t i = 0; i < Theta_hat.size(); i++) {
-        if ((!is_bd[i]) && abs(Theta_hat[i] - 2 * M_PI) > 1e-15) {
+    for (size_t i = 0; i < m.Th_hat.size(); i++) {
+        if ((!is_bd[i]) && abs(m.Th_hat[i] - 2 * M_PI) > 1e-15) {
             cones.push_back(i);
         }
     }
 
     std::vector<int> f_labels = get_overlay_face_labels(mo);
 
-    // reindex cones and bd
-    std::vector<int> vtx_reindex_rev(vtx_reindex.size());
-    for (size_t i = 0; i < vtx_reindex.size(); i++) {
-        vtx_reindex_rev[vtx_reindex[i]] = i;
-    }
-    for (size_t i = 0; i < cones.size(); i++) {
-        cones[i] = vtx_reindex_rev[cones[i]];
-    }
-    for (size_t i = 0; i < bd.size(); i++) {
-        bd[i] = vtx_reindex_rev[bd[i]];
-    }
-
     spdlog::trace("#bd_vt: {}", bd.size());
     spdlog::trace("#cones: {}", cones.size());
-    spdlog::trace("vtx reindex size: {}", vtx_reindex.size());
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout

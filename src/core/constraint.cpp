@@ -143,7 +143,7 @@ void vertex_angles_with_jacobian_helper(
     std::vector<int> v_rep;
     int num_angles;
     if (only_free_vertices) {
-        build_free_vertex_map(cone_metric, v_rep, num_angles);
+        build_free_vertex_rep(cone_metric, v_rep, num_angles);
     } else {
         v_rep = cone_metric.v_rep;
         num_angles = cone_metric.n_ind_vertices();
@@ -247,18 +247,26 @@ bool constraint_with_jacobian(
     return true;
 }
 
-void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_free_vertices)
+void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_map, int& num_free_vertices)
 {
     // Build map from independent vertices to free vertices
     int num_ind_vertices = m.n_ind_vertices();
     num_free_vertices = 0;
-    std::vector<int> v_map(num_ind_vertices, -1);
+    v_map = std::vector<int>(num_ind_vertices, -1);
     for (int v = 0; v < num_ind_vertices; ++v) {
         if (!m.fixed_dof[v]) {
             v_map[v] = num_free_vertices;
             num_free_vertices++;
         }
     }
+
+}
+
+void build_free_vertex_rep(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_free_vertices)
+{
+    // Build vertex map
+    std::vector<int> v_map;
+    build_free_vertex_map(m, v_map, num_free_vertices);
 
     // Build map from vertices to free vertices
     int num_vertices = m.v_rep.size();

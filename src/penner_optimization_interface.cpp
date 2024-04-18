@@ -168,7 +168,6 @@ void write_obj_with_uv(
     igl::writeOBJ(filename, V, F, N, FN, uv, F_uv);
 }
 
-
 std::
     tuple<
         OverlayMesh<Scalar>, // m_o
@@ -195,10 +194,51 @@ std::
     Mesh<Scalar> m =
         FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
+    return generate_VF_mesh_from_halfedge_metric(V, m, vtx_reindex, initial_cone_metric, reduced_metric_coords, cut_h, do_best_fit_scaling);
+}
+
+
+std::vector<bool> find_boundary_vertices(const Mesh<Scalar>& m)
+{
+    std::vector<bool> is_bd(m.n_ind_vertices(), false);
+    for (int i = 0; i < m.n_halfedges(); i++) {
+        if ((m.type[i] == 1) && (m.type[m.opp[i]] == 2))
+        {
+            is_bd[m.v_rep[m.to[i]]] = true;
+        }
+    }
+
+    return is_bd;
+}
+
+std::
+    tuple<
+        OverlayMesh<Scalar>, // m_o
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool>, // is_cut_h
+        std::vector<bool>, // is_cut_o
+        std::vector<int>, // Fn_to_F
+        std::vector<std::pair<int, int>> // endpoints_o
+        >
+    generate_VF_mesh_from_halfedge_metric(
+        const Eigen::MatrixXd& V,
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const DifferentiableConeMetric& initial_cone_metric,
+        const VectorX& reduced_metric_coords,
+        std::vector<bool> cut_h,
+        bool do_best_fit_scaling)
+{
     // Get metric target coordinates
     auto cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
     VectorX metric_target = initial_cone_metric.get_metric_coordinates();
     VectorX metric_coords = cone_metric->get_metric_coordinates();
+
+    // Get boundary vertices
+    std::vector<bool> is_bd = find_boundary_vertices(m);
 
     // Fit conformal scale factors
     VectorX metric_coords_scaled = metric_coords;
@@ -241,7 +281,7 @@ std::
         reverse_interpolation_mesh,
         V_overlay);
     OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
-    make_tufted_overlay(m_o, V, F, Th_hat);
+    make_tufted_overlay(m_o);
 
     // Get endpoints
     std::vector<std::pair<int, int>> endpoints;
@@ -267,12 +307,11 @@ std::
     // auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec,
     // vtx_reindex_mutable, endpoints, -1); FIXME
     return consistent_overlay_mesh_to_VL(
-        F,
-        Th_hat,
         m_o,
+        vtx_reindex,
+        is_bd,
         u,
         V_overlay_vec,
-        vtx_reindex_mutable,
         endpoints,
         is_cut,
         {});
@@ -298,6 +337,9 @@ std::
     Mesh<Scalar> m =
         FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
+    // Get boundary vertices
+    std::vector<bool> is_bd = find_boundary_vertices(m);
+
     // Get layout topology from mesh
     std::vector<bool> is_cut = compute_layout_topology(m, cut_h);
 
@@ -306,7 +348,7 @@ std::
 
     // Create trivial overlay mesh
     OverlayMesh<Scalar> m_o(discrete_metric);
-    make_tufted_overlay(m_o, V, F, Th_hat);
+    make_tufted_overlay(m_o);
 
     // Convert vertices to transposed vector format
     std::vector<std::vector<Scalar>> V_overlay_vec(3);
@@ -323,14 +365,13 @@ std::
 
 		// Compute layout
     std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
-    std::vector<int> vtx_reindex_mutable = vtx_reindex;
+    //std::vector<int> vtx_reindex_mutable = vtx_reindex;
     auto layout_res = consistent_overlay_mesh_to_VL(
-        F,
-        Th_hat,
         m_o,
+        vtx_reindex,
+        is_bd,
         u_vec,
         V_overlay_vec,
-        vtx_reindex_mutable,
         endpoints,
         is_cut,
         {});

@@ -84,13 +84,19 @@ bool constraint_with_jacobian(
     bool need_jacobian = true,
     bool only_free_vertices = true);
 
+/// Build a map from independent vertices to only vertices marked as free in the mesh
+///
+/// @param[in] m: mesh
+/// @param[out] v_mao: map from independent vertices to free vertex index or -1 for fixed vertices
+/// @param[out] num_free_vertices: number of free vertices
+void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_map, int& num_free_vertices);
 
 /// Build a map from all vertices to only vertices marked as free in the mesh
 ///
 /// @param[in] m: mesh
 /// @param[out] v_rep: map from all vertices to free vertex index or -1 for fixed vertices
 /// @param[out] num_free_vertices: number of free vertices
-void build_free_vertex_map(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_free_vertices);
+void build_free_vertex_rep(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& num_free_vertices);
 
 /// Compute the maximum cone angle constraint error.
 /// 
