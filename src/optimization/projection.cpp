@@ -137,7 +137,8 @@ MatrixX compute_descent_direction_projection_matrix(const MatrixX& J_constraint)
 VectorX project_descent_direction(
     const VectorX& descent_direction,
     const VectorX& constraint,
-    const MatrixX& J_constraint)
+    const MatrixX& J_constraint,
+    std::string output_dir)
 {
     // Solve for correction vector mu
     MatrixX L = J_constraint * J_constraint.transpose();
@@ -149,13 +150,32 @@ VectorX project_descent_direction(
     spdlog::trace("Direction projection solve took {} s", time);
     SPDLOG_TRACE("Correction mu has norm {}", mu.norm());
 
+    // TODO Make optional
+    if (output_dir != "")
+    {
+        auto fname = output_dir + "/projection_solve_times.csv";
+        std::ofstream mf, nf;
+        std::fstream pf;
+        pf.open(fname, std::ios_base::in);
+        nf.open(fname, std::ios_base::app);
+
+        if (!(pf.peek() != std::ifstream::traits_type::eof()))
+        {
+          nf << "solve_time" << std::endl;
+        } 
+        nf << time << std::endl;
+        pf.close();
+        nf.close();
+    }
+
     // Compute lambdas line search direction
     return descent_direction + (J_constraint.transpose() * mu);
 }
 
 VectorX project_descent_direction(
     const DifferentiableConeMetric& cone_metric,
-    const VectorX& descent_direction)
+    const VectorX& descent_direction,
+    std::string output_dir)
 {
     // Compute the constraint function and its Jacobian
     VectorX constraint;
@@ -170,7 +190,7 @@ VectorX project_descent_direction(
     SPDLOG_TRACE("Constraint has norm {}", constraint.norm());
 
     // Project the descent direction to the constraint tangent plane
-    return project_descent_direction(descent_direction, constraint, J_constraint);
+    return project_descent_direction(descent_direction, constraint, J_constraint, output_dir);
 }
 
 

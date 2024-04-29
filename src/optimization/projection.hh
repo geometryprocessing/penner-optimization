@@ -82,7 +82,8 @@ namespace CurvatureMetric
   VectorX
   project_descent_direction(const VectorX &descent_direction,
                             const VectorX &constraint,
-                            const MatrixX &J_constraint);
+                            const MatrixX &J_constraint,
+                            std::string output_dir="");
 
   /// Project a descent direction to the tangent plane of the angle constraint
   /// manifold for the given surface with orthogonal projection.
@@ -90,6 +91,6 @@ namespace CurvatureMetric
   /// @param[in] m: surface
   /// @param[in] descent_direction: current descent direction
   /// @return descent direction after projection to the constraint
-  VectorX project_descent_direction(const DifferentiableConeMetric &cone_metric, const VectorX &descent_direction);
+  VectorX project_descent_direction(const DifferentiableConeMetric &cone_metric, const VectorX &descent_direction, std::string output_dir="");
 
 }

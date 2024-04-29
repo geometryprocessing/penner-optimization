@@ -47,6 +47,8 @@ void initialize_data_log(const std::filesystem::path& data_log_path)
     output_file << "rmse,";
     output_file << "rrmse,";
     output_file << "rmsre,";
+    output_file << "line_step_error,";
+    output_file << "line_step_energy,";
     output_file << "convergence_ratio,";
     output_file << "max_change_in_metric_coords,";
     output_file << "actual_to_unconstrained_direction_ratio,";
@@ -197,6 +199,8 @@ void write_data_log_entry(const OptimizationLog& log, const std::filesystem::pat
     output_file << std::fixed << std::setprecision(17) << log.rmse << ",";
     output_file << std::fixed << std::setprecision(17) << log.rrmse << ",";
     output_file << std::fixed << std::setprecision(17) << log.rmsre << ",";
+    output_file << std::fixed << std::setprecision(17) << log.line_step_error << ",";
+    output_file << std::fixed << std::setprecision(17) << log.line_step_energy << ",";
     output_file << std::fixed << std::setprecision(17) << log.convergence_ratio << ",";
     output_file << std::fixed << std::setprecision(17) << log.max_change_in_metric_coords << ",";
     output_file << std::fixed << std::setprecision(17)
@@ -361,7 +365,8 @@ void compute_projected_newton_descent_direction(
 // Check if the line step is valid and stable
 bool check_line_step_success(
     const DifferentiableConeMetric& cone_metric,
-    std::shared_ptr<OptimizationParameters> opt_params)
+    std::shared_ptr<OptimizationParameters> opt_params,
+    OptimizationLog& log)
 {
     // Compute the contraint values after the line step
     VectorX constraint;
@@ -373,6 +378,7 @@ bool check_line_step_success(
         J_constraint,
         need_jacobian,
         only_free_vertices);
+    log.line_step_error = constraint.cwiseAbs().maxCoeff();
 
     // Shrink step size if the constraint is not computed correctly due to a triangle inequality
     // violation
@@ -492,7 +498,8 @@ VectorX line_search_with_projection(
     std::shared_ptr<ProjectionParameters> proj_params,
     std::shared_ptr<OptimizationParameters> opt_params,
     Scalar& beta,
-    int& num_linear_solves)
+    int& num_linear_solves,
+    OptimizationLog& log)
 {
     // Expand the initial metric coordinates to the doubled surface
     VectorX initial_reduced_metric_coords = initial_cone_metric.get_reduced_metric_coordinates();
@@ -509,6 +516,7 @@ VectorX line_search_with_projection(
     // Compute the initial constraint value and convergence ratio
     Scalar max_initial_constraint = compute_max_constraint(initial_cone_metric);
 
+    VectorX reduced_line_step_metric_coords;
     while (true) {
         // Break if the step size is too small
         if (beta < 1e-16) {
@@ -517,16 +525,17 @@ VectorX line_search_with_projection(
         }
 
         // Make a line step in log space
-        VectorX reduced_line_step_metric_coords =
+        reduced_line_step_metric_coords =
             initial_reduced_metric_coords + beta * descent_direction;
         std::unique_ptr<DifferentiableConeMetric> cone_metric =
             initial_cone_metric.set_metric_coordinates(reduced_line_step_metric_coords);
 
         // Check if the line step is valid and reduce beta if not
-        if (!check_line_step_success(*cone_metric, opt_params)) {
+        if (!check_line_step_success(*cone_metric, opt_params, log)) {
             beta /= 2.0;
             continue;
         }
+        log.line_step_energy = opt_energy.energy(*cone_metric);
 
         // Project to the constraint
         SolveStats<Scalar> solve_stats;
@@ -547,7 +556,7 @@ VectorX line_search_with_projection(
         // Compute the gradient and its orthogonal projection
         VectorX gradient = opt_energy.gradient(*constrained_cone_metric);
         VectorX constrained_gradient =
-            project_descent_direction(*constrained_cone_metric, gradient);
+            project_descent_direction(*constrained_cone_metric, gradient, opt_params->output_dir);
         num_linear_solves++;
         SPDLOG_TRACE("Projected gradient is {}", descent_direction.dot(constrained_gradient));
 
@@ -567,6 +576,17 @@ VectorX line_search_with_projection(
         // Break the loop if no flag to reduce beta was hit
         break;
     }
+
+    // Get edge lengths for line step
+    //int num_reduced_edges = reduced_line_step_metric_coords .size();
+    //VectorX l_init(num_reduced_edges);
+    //VectorX l(num_reduced_edges);
+    //for (int E = 0; E < num_reduced_edges; ++E)
+    //{
+    //    l_init[E] = exp(metric_init[E] / 2.0);
+    //    l[E] = exp(reduced_line_step_metric_coords[E] / 2.0);
+    //}
+    //log.line_step_rmsre = root_mean_square_relative_error(similarity_metric.l, l_init);
 
     return reduced_metric_coords;
 }
@@ -697,7 +717,7 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
 
             // Project descent direction to constraint
             descent_direction =
-                project_descent_direction(*cone_metric, unconstrained_descent_direction);
+                project_descent_direction(*cone_metric, unconstrained_descent_direction, output_dir);
             num_linear_solves++; // TODO Would be better to have near solver code
         }
         convergence_ratio = compute_convergence_ratio(gradient, descent_direction);
@@ -720,7 +740,8 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric_log(
             proj_params,
             opt_params,
             beta,
-            num_linear_solves);
+            num_linear_solves,
+            log);
 
         // Write iteration data if output directory specified
         log.num_iterations = iter;

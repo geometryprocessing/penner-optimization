@@ -22,6 +22,8 @@ namespace CurvatureMetric
     Scalar rmse;                                    // Root mean squared edge lengths
     Scalar rrmse;                                   // Relative root mean squared edge lengths
     Scalar rmsre;                                   // Root mean squared relative edge lengths
+    Scalar line_step_error;                         // Max angle constraint error after the line step
+    Scalar line_step_energy;                        // Energy after line step
     int num_flips;                                  // Number of flips for MakeDelaunay
     Scalar convergence_ratio;                       // Convergence ratio
     Scalar max_change_in_metric_coords;             // Maximum change per edge in the metric coordinates
