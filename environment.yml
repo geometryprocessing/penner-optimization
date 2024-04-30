@@ -1,4 +1,4 @@
-name: curvature-metric
+name: penner-optimization
 channels:
   - conda-forge
   - defaults

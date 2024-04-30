@@ -1,0 +1,116 @@
+{
+  "global_args": {
+    "fname": [
+      "raptor50K.obj"
+    ],
+    "input_dir": "data/closed-Myles",
+    "energy_choice": "quadratic_sym_dirichlet",
+    "colormap": "scale_factors",
+    "histogram_choice": "scale_factors",
+    "direction_choice": "projected_newton",
+    "height": 1600,
+    "width": 2560
+  },
+  "pipeline":
+  [
+    {
+      "method": "optimize",
+      "skip": false,
+      "args_list": [
+        {}
+      ]
+    },
+    {
+      "method": "interpolate",
+      "skip": false,
+      "args_list": [
+        {
+          "num_steps": 3
+        }
+      ]
+    },
+    {
+      "method": "overlay",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "0"
+        },
+        {
+          "suffix": "1"
+        },
+        {
+          "suffix": "2"
+        }
+      ]
+    },
+    {
+      "method": "refine",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "0"
+        },
+        {
+          "suffix": "1"
+        },
+        {
+          "suffix": "2"
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "0",
+          "histogram_choice": "compare_scale_factors",
+          "color": "red",
+          "second_color": "blue",
+          "bin_min": -5,
+          "bin_max": 5
+        },
+        {
+          "suffix": "1",
+          "histogram_choice": "compare_scale_factors",
+          "color": "red",
+          "second_color": "blue",
+          "comparison_label": "interpolated",
+          "bin_min": -5,
+          "bin_max": 5
+        },
+        {
+          "suffix": "2",
+          "histogram_choice": "compare_scale_factors",
+          "color": "red",
+          "second_color": "blue",
+          "bin_min": -5,
+          "bin_max": 5
+        }
+      ]
+    },
+    {
+      "method": "render_uv",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "0_refined",
+          "colormap_scale": 2,
+          "uv_scale": 0.5
+        },
+        {
+          "suffix": "1_refined",
+          "colormap_scale": 2,
+          "uv_scale": 0.5
+        },
+        {
+          "suffix": "2_refined",
+          "colormap_scale": 2,
+          "uv_scale": 0.5
+        }
+      ]
+    }
+  ]
+}
+

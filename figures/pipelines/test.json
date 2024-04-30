@@ -1,0 +1,92 @@
+{
+  "global_args": {
+    "fname": [
+      "eight.obj"
+    ],
+    "input_dir": "data/cut-Myles",
+    "energy_choice": "p_norm",
+    "colormap": "scale_factors",
+    "opt_num_iter": 50
+  },
+  "pipeline":
+  [
+    {
+      "method": "optimize",
+      "skip": false,
+      "args_list": [
+        {}
+      ]
+    },
+    {
+      "method": "overlay",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf"
+        },
+        {
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "refine",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf"
+        },
+        {
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "energy_table",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf"
+        },
+        {
+          "suffix": "opt"
+        }
+      ]
+    },
+    {
+      "method": "error_table",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf_refined"
+        },
+        {
+          "suffix": "opt_refined"
+        }
+      ]
+    },
+    {
+      "method": "histogram",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "opt",
+          "histogram_choice": "compare_scale_factors"
+        }
+      ]
+    },
+    {
+      "method": "render_uv",
+      "skip": false,
+      "args_list": [
+        {
+          "suffix": "conf_refined"
+        },
+        {
+          "suffix": "opt_refined"
+        }
+      ]
+    }
+  ]
+}
+
