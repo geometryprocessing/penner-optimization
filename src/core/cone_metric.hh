@@ -186,7 +186,7 @@ public:
     /// Determine how many flips have been performed since the metric was initialized
     ///
     /// @return number of flips
-    int num_flips() { return m_flip_seq.size(); };
+    int num_flips() const { return m_flip_seq.size(); };
 
     /// Get the full sequence of flips that have been performed since the metric was initialized
     ///
