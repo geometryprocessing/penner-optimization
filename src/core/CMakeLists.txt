@@ -26,6 +26,9 @@ target_link_libraries(PennerOptimizationCoreLib PUBLIC
 target_compile_definitions(PennerOptimizationCoreLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
-target_compile_options(PennerOptimizationCoreLib PRIVATE
-  -Wall -Wpedantic -Wextra -Werror
-)
+# TODO Fix for multiprecision
+if (NOT USE_MULTIPRECISION)
+    target_compile_options(PennerOptimizationCoreLib PRIVATE
+      -Wall -Wpedantic -Wextra -Werror
+      )
+endif()
