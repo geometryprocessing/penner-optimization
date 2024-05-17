@@ -15,6 +15,7 @@ add_library(PennerOptimizationCoreLib
 )
 target_include_directories(PennerOptimizationCoreLib PUBLIC .)
 target_link_libraries(PennerOptimizationCoreLib PUBLIC
+  Eigen3::Eigen
   conformal_cpp
   igl::core
   igl::predicates
