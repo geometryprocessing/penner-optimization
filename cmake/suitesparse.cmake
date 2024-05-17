@@ -5,8 +5,8 @@ endif()
 include(FetchContent)
 FetchContent_Declare(
     suitesparse
-		SYSTEM
+	SYSTEM
     GIT_REPOSITORY https://github.com/DrTimothyAldenDavis/SuiteSparse.git
-		GIT_TAG stable
+	GIT_TAG stable
 )
 FetchContent_MakeAvailable(suitesparse)

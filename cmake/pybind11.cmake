@@ -7,6 +7,7 @@ endif()
 include(FetchContent)
 FetchContent_Declare(
   pybind11
+  SYSTEM
   GIT_REPOSITORY https://github.com/pybind/pybind11.git
 )
 FetchContent_GetProperties(pybind11)
