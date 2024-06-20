@@ -85,9 +85,13 @@ if(RENDER_TEXTURE)
     igl::core
     igl::glfw
     igl::png
-    igl::embree
     plot
   )
+if(USE_EMBREE)
+  target_link_libraries(rendering PUBLIC
+    igl::embree
+  )
+endif()
   set(RENDER_LIBRARIES
     rendering
   )
