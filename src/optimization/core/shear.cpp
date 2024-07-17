@@ -30,16 +30,16 @@
 *********************************************************************************/
 #include "optimization/core/shear.h"
 
-#include <Eigen/SparseLU>
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/core/projection.h"
 #include "optimization/core/reparametrization.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 VectorX compute_shear(const Mesh<Scalar>& m, const VectorX& he_metric_coords)
 {
@@ -426,4 +426,5 @@ void compute_shear_basis_coordinates(
         scale_factors));
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

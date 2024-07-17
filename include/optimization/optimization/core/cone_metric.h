@@ -32,11 +32,12 @@
 
 #include <memory>
 
+#include "util/embedding.h"
 #include "optimization/core/common.h"
-#include "optimization/core/embedding.h"
 #include "optimization/core/flip_matrix_generator.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Representation of a differentiable intrinsic metric on a mesh with angle constraints at cones.
 ///
@@ -354,4 +355,5 @@ protected:
     void expand_metric_coordinates(const VectorX& metric_coords);
 };
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

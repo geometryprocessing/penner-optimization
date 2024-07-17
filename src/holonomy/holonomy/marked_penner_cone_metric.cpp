@@ -1,6 +1,6 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-#include "holonomy/core/vector.h"
+#include "util/vector.h"
 #include "holonomy/core/viewer.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
@@ -15,8 +15,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
-
+namespace Penner {
+namespace Holonomy {
 
 bool is_reflection_structure_valid(
     const std::vector<int>& next,
@@ -110,7 +110,7 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(
     const VectorX& metric_coords,
     const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
     const std::vector<Scalar>& kappa)
-    : CurvatureMetric::PennerConeMetric(m, metric_coords)
+    : Optimization::PennerConeMetric(m, metric_coords)
     , kappa_hat(kappa)
     , m_dual_loop_manager(m.n_edges())
 {
@@ -316,7 +316,7 @@ MatrixX MarkedPennerConeMetric::constraint_jacobian(const VectorX& cotangents)
 
 std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<CurvatureMetric::ProjectionParameters> proj_params) const
+    std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
 {
     // Copy parameters
     NewtonParameters alg_params;
@@ -327,7 +327,7 @@ std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_con
     alg_params.output_dir = proj_params->output_dir;
 
     // Optimize metric angles
-    MatrixX identity = CurvatureMetric::id_matrix(n_reduced_coordinates());
+    MatrixX identity = id_matrix(n_reduced_coordinates());
     NewtonLog log;
     MarkedPennerConeMetric optimized_metric =
         optimize_subspace_metric_angles_log(*this, identity, alg_params, log);
@@ -423,4 +423,5 @@ void view_homology_basis(
 #endif
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

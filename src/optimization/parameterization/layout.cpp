@@ -36,18 +36,19 @@
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/Layout.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/parameterization/interpolation.h"
 #include "optimization/core/projection.h"
 #include "optimization/parameterization/refinement.h"
 #include "optimization/parameterization/translation.h"
-#include "optimization/core/vector.h"
-#include "optimization/core/vf_mesh.h"
+#include "util/vector.h"
+#include "util/vf_mesh.h"
 #include "optimization/util/viewers.h"
 
 // TODO: cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
 {
@@ -1011,4 +1012,5 @@ std::
 
 #endif
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

@@ -32,13 +32,14 @@
 
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
 /// @file Methods to analyze the convergence of a metric to a global minimum on the
 /// constraint surface.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Given a metric and direction, compute the energy values for optimization
 /// at given (potentially negative) step sizes before and after the projection to the
@@ -63,4 +64,5 @@ void compute_direction_energy_values(
     VectorX& projected_energies);
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

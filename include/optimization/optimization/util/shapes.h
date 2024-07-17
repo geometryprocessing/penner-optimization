@@ -38,7 +38,9 @@
 // embedded case has three symmetric edges adjacent to the origin and three
 // symmetric edges not adjacent to the origin.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
+
 void
 map_to_sphere(size_t num_vertices, std::vector<Scalar>& Th_hat);
 
@@ -85,4 +87,5 @@ std::tuple<Mesh<Scalar>,    // m
            >
 generate_double_triangle_mesh_pybind();
 
-}
+} // namespace Optimization
+} // namespace Penner

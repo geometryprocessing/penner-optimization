@@ -4,8 +4,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-namespace PennerHolonomy {
-
+namespace Penner {
+namespace Holonomy {
 /**
  * @brief Compute vertex holonomy angles for a mesh with given angles
  *
@@ -25,6 +25,17 @@ VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha);
  */
 VectorX
 Kappa(const Mesh<Scalar>& m, const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops, const VectorX& alpha);
+
+/**
+ * @brief Compute vertex cone holonomy constraints
+ * 
+ * @param[in] marked_metric: marked mesh with metric
+ * @param[in] angles: per-corner angles of the metric
+ * @return vector of vertex constraint errors
+ */
+VectorX compute_vertex_constraint(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& angles);
 
 /**
  * @brief Compute vertex and dual loop holonomy constraints
@@ -89,4 +100,5 @@ void add_basis_loop_constraints(
     VectorX& constraint,
     int offset = 0);
     
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

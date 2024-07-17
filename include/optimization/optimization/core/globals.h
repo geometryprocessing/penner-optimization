@@ -30,26 +30,10 @@
 *********************************************************************************/
 #pragma once
 
-#include <Eigen/Sparse>
-#include <string>
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "conformal_ideal_delaunay/globals.hh"
+#include "util/common.h"
 
-namespace CurvatureMetric {
-using namespace OverlayProblem;
-
-#ifdef MULTIPRECISION
-#include <unsupported/Eigen/MPRealSupport>
-#include "mpreal.h"
-typedef mpfr::mpreal Scalar;
-#else
-typedef double Scalar;
-#endif
-
-typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> VectorX;
-typedef Eigen::SparseMatrix<Scalar> MatrixX;
-typedef Eigen::Triplet<Scalar> T;
-const Scalar INF = 1e10;
+namespace Penner {
+namespace Optimization {
 
 /// Energies available for optimization
 enum class EnergyChoice {
@@ -107,4 +91,6 @@ struct OptimizationParameters
     Scalar max_grad_range = 10; // maximum allowed gradient range (reduce if larger)
     Scalar max_angle = INF; // maximum allowed cone angle error (reduce if larger)
 };
-} // namespace CurvatureMetric
+
+} // namespace Optimization
+} // namespace Penner

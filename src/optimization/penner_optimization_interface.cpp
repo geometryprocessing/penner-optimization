@@ -30,18 +30,19 @@
 *********************************************************************************/
 #include "optimization/penner_optimization_interface.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
+#include "util/vector.h"
 #include "optimization/parameterization/interpolation.h"
 #include "optimization/parameterization/layout.h"
 #include "optimization/core/projection.h"
 #include "optimization/parameterization/translation.h"
-#include "optimization/core/vector.h"
 #include "optimization/util/viewers.h"
 
 /// FIXME Do cleaning pass
 
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 std::unique_ptr<DifferentiableConeMetric> generate_initial_mesh(
     const Eigen::MatrixXd& V,
@@ -384,4 +385,5 @@ std::
 		return std::make_tuple(V_l, F_l, uv, FT, cut_h);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner 

@@ -1,6 +1,7 @@
 #include "holonomy/core/quality.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 Scalar compute_triangle_quality(Scalar lij, Scalar ljk, Scalar lki)
 {
@@ -58,4 +59,5 @@ Scalar compute_min_angle(const DifferentiableConeMetric& cone_metric)
     return angles.minCoeff();
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

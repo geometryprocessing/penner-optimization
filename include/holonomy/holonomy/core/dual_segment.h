@@ -2,7 +2,8 @@
 
 #include "holonomy/core/common.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 typedef std::array<int, 2> DualSegment;
 
@@ -136,4 +137,5 @@ void view_dual_path(
     const Mesh<Scalar>& m,
     const std::vector<DualSegment>& dual_path);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

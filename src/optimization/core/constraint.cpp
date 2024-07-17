@@ -30,11 +30,12 @@
 *********************************************************************************/
 #include "optimization/core/constraint.h"
 
+#include "util/embedding.h"
+#include "util/linear_algebra.h"
 #include "optimization/core/area.h"
-#include "optimization/core/embedding.h"
-#include "optimization/core/linear_algebra.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 bool satisfies_triangle_inequality(const Mesh<Scalar>& cone_metric)
 {
@@ -291,4 +292,5 @@ Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric)
     return sup_norm(constraint);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

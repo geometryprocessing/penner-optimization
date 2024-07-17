@@ -32,7 +32,8 @@
 
 #include "optimization/core/common.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Class for incrementally building the flip change of coordinate matrix
 class FlipMatrixGenerator
@@ -107,4 +108,5 @@ private:
     std::vector<std::map<int, Scalar>> m_list_of_lists;
 };
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

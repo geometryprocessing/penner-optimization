@@ -33,14 +33,15 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 
 /// \file energies.h
 ///
 /// Differentiable per face energy functions with gradients for the metric
 /// optimization for both halfedge and VF representations
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 // ******************
 // Halfedge Functions
@@ -316,4 +317,5 @@ VectorX second_invariant_vf_pybind(
 
 #endif
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

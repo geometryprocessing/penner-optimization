@@ -3,7 +3,8 @@
 #include "optimization/core/constraint.h"
 #include <queue>
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form)
 {
@@ -110,7 +111,7 @@ MatrixX build_closed_one_form_matrix(
     std::vector<int> v_rep;
     int num_vertex_forms;
     if (eliminate_vertex) {
-      CurvatureMetric::build_free_vertex_map(m, v_rep, num_vertex_forms);
+      Optimization::build_free_vertex_map(m, v_rep, num_vertex_forms);
     } else {
         v_rep = m.v_rep;
         num_vertex_forms = m.n_ind_vertices();
@@ -329,4 +330,5 @@ VectorX scale_edges_by_zero_form(
 }
 
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

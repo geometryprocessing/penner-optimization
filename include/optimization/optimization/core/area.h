@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Compute the squared area of the triangle with edge lengths li, lj, lk using
 /// the numerically stable version of Heron's formula.
@@ -66,28 +67,29 @@ Scalar squared_area_length_derivative(Scalar variable_length, Scalar lj, Scalar 
 
 /// Compute the squared area of the triangle containing each halfedge for the cone metric
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] m: mesh with metric
 /// @return map from halfedges to the square of the area of the face containing it
-VectorX squared_areas(const DifferentiableConeMetric& cone_metric);
+VectorX squared_areas(const Mesh<Scalar>& m);
 
 /// Compute the area of the triangle containing each halfedge for the cone metric
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] m: mesh with metric
 /// @param[out] he2area: map from halfedges to the area of the face containing it
-VectorX areas(const DifferentiableConeMetric& cone_metric);
+VectorX areas(const Mesh<Scalar>& m);
 
 /// Compute the derivatives of the squared area of the triangle containing each
 /// halfedge for the mesh with respect to the halfedge length coordinates.
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] m: mesh with metric
 /// @return map from halfedges to the derivative of the square of the area of the face containing it
-VectorX squared_area_length_derivatives(const DifferentiableConeMetric& cone_metric);
+VectorX squared_area_length_derivatives(const Mesh<Scalar>& m);
 
 /// Compute the derivatives of the squared area of the triangle containing each
 /// halfedge for the mesh with respect to the halfedge log length coordinates.
 ///
-/// @param[in] cone_metric: mesh with differentiable metric
+/// @param[in] m: mesh with metric
 /// @return map from halfedges to the derivative of the square of the area of the face containing it
-VectorX squared_area_log_length_derivatives(const DifferentiableConeMetric& cone_metric);
+VectorX squared_area_log_length_derivatives(const Mesh<Scalar>& m);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

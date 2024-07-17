@@ -41,7 +41,8 @@
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Compute the Jacobian matrix of the change of coordinates from log edge
 /// lengths to regular edge lengths.
@@ -332,4 +333,5 @@ MatrixX length_jacobian_pybind(const VectorX& lambdas_full)
 
 #endif
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

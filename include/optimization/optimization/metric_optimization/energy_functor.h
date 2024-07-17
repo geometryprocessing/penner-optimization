@@ -30,13 +30,14 @@
 *********************************************************************************/
 #pragma once
 
+#include "util/embedding.h"
+#include "util/linear_algebra.h"
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "optimization/core/embedding.h"
-#include "optimization/core/linear_algebra.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Functor to compute a differentiable energy over a mesh with an intrinsic
 /// metric in terms of log edge or Penner coordinates.
@@ -230,4 +231,5 @@ private:
 
 // TODO: Cone energy
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

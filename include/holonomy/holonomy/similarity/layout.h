@@ -7,7 +7,8 @@
 
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Generate a parameterization for a VF mesh with a similarity metric structure.
@@ -32,7 +33,7 @@ namespace PennerHolonomy {
  */
 std::
     tuple<
-        CurvatureMetric::OverlayMesh<Scalar>, // m_o
+        OverlayMesh<Scalar>, // m_o
         Eigen::MatrixXd, // V_o
         Eigen::MatrixXi, // F_o
         Eigen::MatrixXd, // uv_o
@@ -49,4 +50,5 @@ std::
         const SimilarityPennerConeMetric& initial_similarity_metric,
         std::vector<bool> cut_h);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

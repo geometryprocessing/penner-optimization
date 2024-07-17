@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Check the triangle inequality for every triangle in the mesh with respect to the
 /// halfedge metric coordinates
@@ -106,4 +107,5 @@ Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric);
 
 /// TODO Optionally add halfedge coordinate Jacobians
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

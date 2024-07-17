@@ -3,7 +3,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Compute a conformally equivalent similarity metric satisfying holonomy constraints.
@@ -20,4 +21,5 @@ void compute_conformal_similarity_metric(
     const AlgorithmParameters& alg_params,
     const LineSearchParameters& ls_params);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

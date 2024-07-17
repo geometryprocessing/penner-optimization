@@ -2,7 +2,17 @@
 
 #include "holonomy/core/common.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
+
+/**
+ * @brief Parameters for cross field generation
+ *
+ */
+struct FieldParameters
+{
+    Scalar min_angle = 0.; // minimum allowed cone angle in the cross field
+};
 
 /**
  * @brief Given a mesh with a per-face frame field, 
@@ -21,11 +31,13 @@ VectorX generate_rotation_form_from_cross_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& frame_field);
 
-VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m);
+VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params);
 
 VectorX generate_intrinsic_rotation_form(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXd& V);
+    const Eigen::MatrixXd& V,
+    const FieldParameters& field_params);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

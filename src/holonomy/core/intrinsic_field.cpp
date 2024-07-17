@@ -8,12 +8,12 @@
 #include <igl/boundary_facets.h>
 
 #include "holonomy/core/field.h"
-#include "holonomy/core/spanning_tree.h"
+#include "util/spanning_tree.h"
 #include "holonomy/core/viewer.h"
 #include "holonomy/core/forms.h"
 
 #include "optimization/core/constraint.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 #include <stdexcept>
 
@@ -22,7 +22,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // compute the cone angles at vertices
 VectorX compute_cone_angles(const Mesh<Scalar>& m, const VectorX& alpha)
@@ -203,7 +204,7 @@ void IntrinsicNRosyField::initialize_local_frames(const Mesh<Scalar>& m)
     is_face_fixed[0] = true;
 
     // Compute corner angles
-    CurvatureMetric::corner_angles(m, he2angle, he2cot);
+    Optimization::corner_angles(m, he2angle, he2cot);
 
     // Compute the angle between reference halfedges across faces
     int num_halfedges = m.n_halfedges();
@@ -266,7 +267,7 @@ void IntrinsicNRosyField::initialize_double_local_frames(const Mesh<Scalar>& m)
     }
 
     // Compute corner angles
-    CurvatureMetric::corner_angles(m, he2angle, he2cot);
+    Optimization::corner_angles(m, he2angle, he2cot);
 
     // Compute the angle between reference halfedges across faces
     kappa.setZero(num_halfedges);
@@ -287,7 +288,7 @@ void IntrinsicNRosyField::initialize_double_local_frames(const Mesh<Scalar>& m)
 void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
 {
     // Get edge maps
-    CurvatureMetric::build_edge_maps(m, he2e, e2he);
+    build_edge_maps(m, he2e, e2he);
 
     // Build dual spanning tree
     int num_halfedges = m.n_halfedges();
@@ -309,7 +310,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
 void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
 {
     // Get edge maps
-    CurvatureMetric::build_edge_maps(m, he2e, e2he);
+    build_edge_maps(m, he2e, e2he);
 
     // Initialize period jumps of value pi/2 to 0
     int num_halfedges = m.n_halfedges();
@@ -988,7 +989,7 @@ std::vector<Scalar> generate_cones_from_rotation_form_FIXME(
 {
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    CurvatureMetric::corner_angles(m, he2angle, he2cot);
+    Optimization::corner_angles(m, he2angle, he2cot);
 
     // Compute cones from the rotation form as holonomy - rotation around each vertex
     // Per-halfedge iteration is used for faster computation
@@ -1033,23 +1034,22 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     spdlog::info("Gauss-Bonnet error before cone removal: {}", th_hat_sum - targetsum);
 
     int num_vertices = Th_hat.size();
-    std::vector<bool> is_cone(num_vertices, false);
     std::queue<int> cones = {};
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        if (Th_hat[vi] < min_angle)
+        if (Th_hat[vi] < min_angle + 1e-6)
         {
-            is_cone[vi] = true;
             cones.push(vi);
         }
-    } 
+    }
     while (!cones.empty())
     {
         int vi = cones.front();
         cones.pop();
-        if (Th_hat[vi] > min_angle) continue;
+        if (Th_hat[vi] > min_angle - 1e-6) continue;
         spdlog::info("Fixing {} cone at {} in rotation form", Th_hat[vi], vi);
 
+        // find largest cone angle near the cone vertex
         int h_opt = -1;
         Scalar max_angle = -1.;
         int h_start = m.out[vi];
@@ -1057,7 +1057,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         int vj;
         do {
             vj = m.v_rep[m.to[hij]];
-            if ((!is_cone[vj]) && (Th_hat[vj] > max_angle))
+            if (Th_hat[vj] > max_angle)
             {
                 h_opt = hij;
                 max_angle = Th_hat[vj];
@@ -1066,21 +1066,32 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
             
             hij = m.opp[m.n[m.n[hij]]];
         } while (hij != h_start);
-        if (h_opt == -1) continue;
-        vj = m.v_rep[m.to[h_opt]];
-        spdlog::info("Decreasing cone {} at {}", Th_hat[vj], vj);
 
-        rotation_form[h_opt] -= (M_PI / 2.);
-        rotation_form[m.opp[h_opt]] += M_PI / 2.;
-        rotation_form[m.R[h_opt]] += M_PI / 2.;
-        rotation_form[m.opp[m.R[h_opt]]] -= M_PI / 2.;
-        Th_hat[vi] += M_PI / 2.;
-        Th_hat[vj] -= M_PI / 2.;
-
-        if (Th_hat[vj] < min_angle) 
+        // push curvature to adjacent cone if candidate found
+        if (h_opt != -1)
         {
-            cones.push(vj);
-            is_cone[vj] = true;
+            vj = m.v_rep[m.to[h_opt]];
+            spdlog::info("Decreasing cone {} at {}", Th_hat[vj], vj);
+
+            // modify the rotation form and resulting cone angles
+            rotation_form[h_opt] -= (M_PI / 2.);
+            rotation_form[m.opp[h_opt]] += M_PI / 2.;
+            rotation_form[m.R[h_opt]] += M_PI / 2.;
+            rotation_form[m.opp[m.R[h_opt]]] -= M_PI / 2.;
+            Th_hat[vi] += M_PI / 2.;
+            Th_hat[vj] -= M_PI / 2.;
+
+            // check if candidate vertex is now a cone
+            if (Th_hat[vj] < min_angle + 1e-6) 
+            {
+                cones.push(vj);
+            }
+        }
+
+        // check if vertex vi is still a cone
+        if (Th_hat[vi] < min_angle + 1e-6) 
+        {
+            cones.push(vi);
         }
     }
 
@@ -1152,25 +1163,25 @@ polyscope::getSurfaceMesh(mesh_handle)
 polyscope::getSurfaceMesh(mesh_handle)
     ->addHalfedgeScalarQuantity(
         "kappa",
-        CurvatureMetric::convert_scalar_to_double_vector(kappa))
+        convert_scalar_to_double_vector(kappa))
     ->setColorMap("coolwarm")
     ->setEnabled(false);
 polyscope::getSurfaceMesh(mesh_handle)
     ->addHalfedgeScalarQuantity(
         "period jump",
-        CurvatureMetric::convert_scalar_to_double_vector(period_jump_mesh))
+        convert_scalar_to_double_vector(period_jump_mesh))
     ->setColorMap("coolwarm")
     ->setEnabled(false);
 polyscope::getSurfaceMesh(mesh_handle)
     ->addHalfedgeScalarQuantity(
         "period value",
-        CurvatureMetric::convert_scalar_to_double_vector(period_value_mesh))
+        convert_scalar_to_double_vector(period_value_mesh))
     ->setColorMap("coolwarm")
     ->setEnabled(false);
 polyscope::getSurfaceMesh(mesh_handle)
     ->addFaceScalarQuantity(
         "theta",
-        CurvatureMetric::convert_scalar_to_double_vector(theta))
+        convert_scalar_to_double_vector(theta))
     ->setColorMap("coolwarm")
     ->setEnabled(true);
 polyscope::show();
@@ -1179,4 +1190,5 @@ polyscope::show();
     return compute_rotation_form(m);
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

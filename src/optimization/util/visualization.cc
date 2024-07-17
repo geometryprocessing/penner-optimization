@@ -30,8 +30,8 @@
 *********************************************************************************/
 #include "visualization.h"
 
-namespace CurvatureMetric
-{
+namespace Penner {
+namespace Optimization {
 
 
 Viewer generate_mesh_viewer(const Eigen::MatrixXd &v,
@@ -104,4 +104,5 @@ void save_mesh_screen_capture(Viewer &viewer,
     igl::png::writePNG(R, G, B, A, image_path);
 }
 
-}
+} // namespace Optimization
+} // namespace Penner

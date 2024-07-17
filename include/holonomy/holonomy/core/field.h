@@ -3,7 +3,8 @@
 
 #include "holonomy/core/common.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Generate a cross field for a mesh
@@ -18,4 +19,5 @@ std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
     const Eigen::MatrixXi& F);
 
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Compute the per halfedge logarithmic shear values for the mesh m with
 /// logarithmic lengths lambdas_he
@@ -106,4 +107,5 @@ void compute_shear_basis_coordinates(
     VectorX& shear_coords,
     VectorX& scale_factors);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

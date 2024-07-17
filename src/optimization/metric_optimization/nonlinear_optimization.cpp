@@ -29,11 +29,12 @@
 *                                          *                                     *
 *********************************************************************************/
 #include "optimization/metric_optimization/nonlinear_optimization.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 void compute_conjugate_gradient_direction(
     const VectorX& gradient,
@@ -132,4 +133,5 @@ void compute_lbfgs_direction(
     descent_direction = -z;
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

@@ -1,6 +1,7 @@
 #include "holonomy/core/common.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Compute the triangle quality as the ratio of outradius to inradius.
@@ -28,4 +29,5 @@ VectorX compute_mesh_quality(const DifferentiableConeMetric& cone_metric);
  */
 Scalar compute_min_angle(const DifferentiableConeMetric& cone_metric);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

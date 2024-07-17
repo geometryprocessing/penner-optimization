@@ -41,9 +41,9 @@
 #include <set>
 #include <stack>
 #include "optimization/core/area.h"
-#include "optimization/core/io.h"
+#include "util/io.h"
 #include "optimization/parameterization/refinement.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 #include "optimization/util/viewers.h"
 
 #if ENABLE_VISUALIZATION
@@ -53,7 +53,8 @@
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
 {
@@ -63,7 +64,7 @@ Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
     Scalar lk = (vertices[0] - vertices[2]).norm();
 
     // Compute area from lengths
-    return sqrt(max(squared_area(li, lj, lk), 0));
+    return sqrt(max(squared_area(li, lj, lk), Scalar(0.)));
 }
 
 bool is_inverted_triangle(const std::array<Eigen::VectorXd, 3>& vertices)
@@ -318,4 +319,5 @@ void view_triangulation(
 }
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

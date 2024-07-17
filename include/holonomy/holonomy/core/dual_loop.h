@@ -3,7 +3,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_segment.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 typedef std::array<int, 2> DualSegment;
 
@@ -346,5 +347,5 @@ private:
     std::vector<int> m_temp_list;
 };
 
-
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

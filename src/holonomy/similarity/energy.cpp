@@ -2,7 +2,8 @@
 
 #include "holonomy/core/forms.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 JumpEnergy::JumpEnergy(const Mesh<Scalar>& m)
     : m_opp(m.opp)
@@ -37,13 +38,13 @@ VectorX JumpEnergy::gradient(const VectorX& metric_coords) const
 MatrixX JumpEnergy::hessian(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 MatrixX JumpEnergy::hessian_inverse(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 CoordinateEnergy::CoordinateEnergy(
@@ -80,13 +81,13 @@ VectorX CoordinateEnergy::gradient(const VectorX& metric_coords) const
 MatrixX CoordinateEnergy::hessian(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 MatrixX CoordinateEnergy::hessian_inverse(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 IntegratedEnergy::IntegratedEnergy(const SimilarityPennerConeMetric& target_similarity_metric)
@@ -105,10 +106,10 @@ IntegratedEnergy::IntegratedEnergy(const SimilarityPennerConeMetric& target_simi
     // Get metric expansion matrix
     MatrixX identification, projection;
     std::vector<int> he2e, e2he, proj, embed;
-    CurvatureMetric::build_edge_maps(target_similarity_metric, he2e, e2he);
-    CurvatureMetric::build_refl_proj(target_similarity_metric, he2e, e2he, proj, embed);
-    identification = CurvatureMetric::build_edge_matrix(he2e, e2he);
-    projection = CurvatureMetric::build_refl_matrix(proj, embed);
+    build_edge_maps(target_similarity_metric, he2e, e2he);
+    build_refl_proj(target_similarity_metric, he2e, e2he, proj, embed);
+    identification = build_edge_matrix(he2e, e2he);
+    projection = build_refl_matrix(proj, embed);
 
     // Build energy matrices
     m_scaling_matrix = integrated_scaling_matrix * (integral_matrix * one_form_matrix);
@@ -167,13 +168,13 @@ VectorX IntegratedEnergy::gradient(const VectorX& metric_coords) const
 MatrixX IntegratedEnergy::hessian(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 MatrixX IntegratedEnergy::hessian_inverse(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 // Utility power 2 function
@@ -193,8 +194,8 @@ Scalar TriangleQualityEnergy::energy(const VectorX& metric_coords) const
 
     // Build edge maps
     std::vector<int> he2e, e2he, proj, embed;
-    CurvatureMetric::build_edge_maps(m_target_marked_metric, he2e, e2he);
-    CurvatureMetric::build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
+    build_edge_maps(m_target_marked_metric, he2e, e2he);
+    build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
 
     // Compute embedded edge lengths 
     int num_halfedges = he2e.size();
@@ -226,8 +227,8 @@ VectorX TriangleQualityEnergy::gradient(const VectorX& metric_coords) const
 
     // Build edge maps
     std::vector<int> he2e, e2he, proj, embed;
-    CurvatureMetric::build_edge_maps(m_target_marked_metric, he2e, e2he);
-    CurvatureMetric::build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
+    build_edge_maps(m_target_marked_metric, he2e, e2he);
+    build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
 
     // Compute embedded edge lengths 
     int num_halfedges = he2e.size();
@@ -270,13 +271,13 @@ VectorX TriangleQualityEnergy::gradient(const VectorX& metric_coords) const
 MatrixX TriangleQualityEnergy::hessian(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 MatrixX TriangleQualityEnergy::hessian_inverse(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 LogTriangleQualityEnergy::LogTriangleQualityEnergy(const MarkedPennerConeMetric& target_marked_metric)
@@ -289,8 +290,8 @@ Scalar LogTriangleQualityEnergy::energy(const VectorX& metric_coords) const
 
     // Build edge maps
     std::vector<int> he2e, e2he, proj, embed;
-    CurvatureMetric::build_edge_maps(m_target_marked_metric, he2e, e2he);
-    CurvatureMetric::build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
+    build_edge_maps(m_target_marked_metric, he2e, e2he);
+    build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
 
     // Get sum of face energies
     int num_faces = m_target_marked_metric.n_faces();
@@ -321,8 +322,8 @@ VectorX LogTriangleQualityEnergy::gradient(const VectorX& metric_coords) const
 
     // Build edge maps
     std::vector<int> he2e, e2he, proj, embed;
-    CurvatureMetric::build_edge_maps(m_target_marked_metric, he2e, e2he);
-    CurvatureMetric::build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
+    build_edge_maps(m_target_marked_metric, he2e, e2he);
+    build_refl_proj(m_target_marked_metric, he2e, e2he, proj, embed);
     
     // Compute gradient by edge iteration
     VectorX gradient;
@@ -355,13 +356,14 @@ VectorX LogTriangleQualityEnergy::gradient(const VectorX& metric_coords) const
 MatrixX LogTriangleQualityEnergy::hessian(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
 MatrixX LogTriangleQualityEnergy::hessian_inverse(const VectorX& metric_coords) const
 {
     throw std::runtime_error("No hessian defined");
-    return CurvatureMetric::id_matrix(metric_coords.size());
+    return id_matrix(metric_coords.size());
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

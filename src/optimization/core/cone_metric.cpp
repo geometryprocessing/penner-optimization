@@ -36,7 +36,8 @@
 
 // TODO: Clean code
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 DifferentiableConeMetric::DifferentiableConeMetric(const Mesh<Scalar>& m)
     : Mesh<Scalar>(m)
@@ -417,4 +418,5 @@ void DiscreteMetric::expand_metric_coordinates(const VectorX& metric_coords)
     // TODO error
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

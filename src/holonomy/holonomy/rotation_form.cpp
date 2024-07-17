@@ -7,7 +7,8 @@
 #include <igl/boundary_facets.h>
 #include <igl/per_face_normals.h>
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Dot product of vectors in R3
 template <typename VectorType>
@@ -132,19 +133,25 @@ VectorX generate_rotation_form_from_cross_field(
     return rotation_form;
 }
 
-VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m)
+VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params)
 {
     IntrinsicNRosyField field_generator;
+    field_generator.min_angle = field_params.min_angle;
+    
     return field_generator.run(m);
 }
 
 VectorX generate_intrinsic_rotation_form(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXd& V)
+    const Eigen::MatrixXd& V,
+    const FieldParameters& field_params)
 {
     IntrinsicNRosyField field_generator;
+    field_generator.min_angle = field_params.min_angle;
+
     return field_generator.run_with_viewer(m, vtx_reindex, V);
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

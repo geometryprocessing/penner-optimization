@@ -33,14 +33,15 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseQR>
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "optimization/core/embedding.h"
-#include "optimization/core/linear_algebra.h"
+#include "util/embedding.h"
+#include "util/linear_algebra.h"
 #include "optimization/core/reparametrization.h"
 #include "optimization/core/shear.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Generate the Lagrangian system Lx = b for the least squares solution to the halfedge
 /// translations in the hyperbolic metric needed to satisfy the per halfedge shear
@@ -171,4 +172,5 @@ void compute_as_symmetric_as_possible_translations(
     he_translations = lagrangian_solution.head(num_halfedges);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

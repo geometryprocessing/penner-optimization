@@ -31,11 +31,12 @@
 #include "optimization/core/reparametrization.h"
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
 {
@@ -107,4 +108,6 @@ void reparametrize_equilateral(
 
 #ifdef PYBIND
 #endif
-} // namespace CurvatureMetric
+
+} // namespace Optimization
+} // namespace Penner

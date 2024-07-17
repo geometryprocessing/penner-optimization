@@ -33,7 +33,8 @@
 #include "optimization/core/cone_metric.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Generate a mesh with initial target metric coordinates for optimization
 ///
@@ -161,4 +162,5 @@ std::
         const VectorX& reduced_log_edge_lengths,
         std::vector<bool> cut_h = {});
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

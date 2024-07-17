@@ -32,7 +32,7 @@
 
 #include <filesystem>
 #include "optimization/core/common.h"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
 /// @file Methods to optimize a metric satisfying angle constraints using an explicit
@@ -40,7 +40,8 @@
 /// space of Penner coordinates. The domain of this space has |E| - |V| + d degrees of
 /// freedom, where d > 0 is the number of vertices with free angles in the mesh.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// @brief Compute a maximal independent optimization domain for optimization from a mesh with
 /// a specified shear subspace basis.
@@ -153,4 +154,5 @@ VectorX optimize_shear_basis_coordinates(
     std::shared_ptr<ProjectionParameters> proj_params,
     std::shared_ptr<OptimizationParameters> opt_params);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

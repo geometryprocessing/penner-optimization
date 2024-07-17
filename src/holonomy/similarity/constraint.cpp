@@ -4,7 +4,8 @@
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/holonomy/constraint.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 VectorX compute_similarity_constraint(
     const SimilarityPennerConeMetric& similarity_metric,
@@ -16,7 +17,7 @@ VectorX compute_similarity_constraint(
 
     std::vector<int> v_map;
     int num_vertex_forms;
-    CurvatureMetric::build_free_vertex_map(similarity_metric, v_map, num_vertex_forms);
+    Optimization::build_free_vertex_map(similarity_metric, v_map, num_vertex_forms);
 
     // Initialize the constraint
     constraint.setZero(num_vertex_forms + n_s + n_f - 1);
@@ -42,7 +43,7 @@ MatrixX compute_one_form_constraint_jacobian(
     // Get free vertex map
     std::vector<int> v_rep;
     int num_vertex_forms;
-    CurvatureMetric::build_free_vertex_rep(similarity_metric, v_rep, num_vertex_forms);
+    Optimization::build_free_vertex_rep(similarity_metric, v_rep, num_vertex_forms);
 
     // Add entries for vertex angles constraints
     for (int h = 0; h < n_h; h++) {
@@ -100,7 +101,7 @@ MatrixX compute_one_form_constraint_jacobian(
 
 // Matrix to expand per-edge one form to per-halfedge one form
 MatrixX compute_one_form_expansion_matrix(
-    const CurvatureMetric::DifferentiableConeMetric& cone_metric)
+    const DifferentiableConeMetric& cone_metric)
 {
     int n_h = cone_metric.n_halfedges();
     int n_e = cone_metric.n_edges();
@@ -122,7 +123,7 @@ MatrixX compute_one_form_expansion_matrix(
 
 // Matrix to reduce per-halfedge one form to per-edge one form
 MatrixX compute_one_form_reduction_matrix(
-    const CurvatureMetric::DifferentiableConeMetric& cone_metric)
+    const DifferentiableConeMetric& cone_metric)
 {
     int n_h = cone_metric.n_halfedges();
     int n_e = cone_metric.n_edges();
@@ -237,4 +238,5 @@ void compute_similarity_constraint_with_jacobian(
     }
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

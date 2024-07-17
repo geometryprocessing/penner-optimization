@@ -9,7 +9,8 @@
 #include "optimization/core/area.h"
 #include "optimization/core/constraint.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 void similarity_corner_angles(
     const SimilarityPennerConeMetric& similarity_metric,
@@ -39,7 +40,7 @@ void similarity_corner_angles(
         Scalar lk = exp(metric_coords[hk] / 2.0);
 
         // Compute the cotangent of the angles
-        Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(CurvatureMetric::squared_area(li, lj, lk), 0.0));
+        Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(Optimization::squared_area(li, lj, lk), 0.0));
         Scalar Ijk = (-li * li + lj * lj + lk * lk);
         Scalar iJk = (li * li - lj * lj + lk * lk);
         Scalar ijK = (li * li + lj * lj - lk * lk);
@@ -156,8 +157,8 @@ bool EdgeFlip(
     DelaunayStats& delaunay_stats,
     bool Ptolemy = true)
 {
-    CurvatureMetric::FlipStats flip_stats;
-    bool success = CurvatureMetric::EdgeFlip<Scalar>(
+    FlipStats flip_stats;
+    bool success = ::Penner::EdgeFlip<Scalar>(
         m,
         e,
         tag,
@@ -302,7 +303,7 @@ bool SimilarityPennerConeMetric::constraint(
 
 std::unique_ptr<DifferentiableConeMetric> SimilarityPennerConeMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<CurvatureMetric::ProjectionParameters> proj_params) const
+    std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
 {
     solve_stats.n_solves++; // TODO Make accurate
     AlgorithmParameters alg_params;
@@ -373,7 +374,7 @@ VectorX SimilarityPennerConeMetric::reduce_one_form(const VectorX& one_form) con
     VectorX coefficients = solver.solve(b);
     SPDLOG_TRACE(
         "Error is {}",
-        CurvatureMetric::sup_norm(one_form - closed_one_form_matrix * coefficients));
+        sup_norm(one_form - closed_one_form_matrix * coefficients));
     return coefficients;
 }
 
@@ -389,7 +390,7 @@ SimilarityPennerConeMetric SimilarityPennerConeMetric::scale_by_one_form() const
     u.setZero(num_vertices);
     std::vector<int> v_map;
     int num_angles;
-    CurvatureMetric::build_free_vertex_map(*this, v_map, num_angles);
+    Optimization::build_free_vertex_map(*this, v_map, num_angles);
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (v_map[vi] >= 0) {
             u[vi] = coefficients[v_map[vi]];
@@ -442,4 +443,5 @@ void SimilarityPennerConeMetric::separate_coordinates(
     harmonic_form_coords = reduced_metric_coords.tail(num_basis_loops);
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

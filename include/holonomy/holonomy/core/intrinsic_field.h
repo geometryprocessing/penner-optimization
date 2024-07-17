@@ -2,7 +2,8 @@
 
 #include "holonomy/core/common.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 class IntrinsicNRosyField
 {
@@ -57,6 +58,5 @@ private:
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
 };
 
-
-
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

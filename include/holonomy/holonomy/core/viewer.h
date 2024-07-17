@@ -2,12 +2,14 @@
 #pragma once
 
 #include "holonomy/core/common.h"
+#include "holonomy/holonomy/marked_penner_cone_metric.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 #ifdef ENABLE_VISUALIZATION
 extern glm::vec3 BEIGE;
@@ -100,10 +102,41 @@ void view_triangulation(
     std::string mesh_handle="",
     bool show=true);
 
+void view_constraint_error(
+    const MarkedPennerConeMetric& marked_metric,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    std::string mesh_handle="",
+    bool show=true);
+
 void view_quad_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     std::string mesh_handle="",
     bool show=true);
 
-} // namespace PennerHolonomy
+void view_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const std::vector<Scalar>& vertex_function,
+    std::string mesh_handle="",
+    bool show=true);
+void view_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& vertex_function,
+    std::string mesh_handle="",
+    bool show=true);
+
+void view_independent_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& vertex_function,
+    std::string mesh_handle="",
+    bool show=true);
+
+} // namespace Holonomy
+} // namespace Penner

@@ -1,14 +1,16 @@
 #include "holonomy/core/boundary_basis.h"
 
-#include "holonomy/core/boundary.h"
+#include "holonomy/core/dual_lengths.h"
+#include "util/boundary.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 BoundaryBasisGenerator::BoundaryBasisGenerator(const Mesh<Scalar>& m)
     : m_mesh(m)
 {
     // Build halfedge to edge maps
-    CurvatureMetric::build_edge_maps(m, m_he2e, m_e2he);
+    build_edge_maps(m, m_he2e, m_e2he);
 
     // Get boundary components
     m_basis_boundary_handles = find_boundary_components(m);
@@ -83,4 +85,5 @@ std::vector<int> BoundaryBasisGenerator::construct_boundary_path_basis_loop(int 
     return basis_loop;
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

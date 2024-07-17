@@ -1,10 +1,14 @@
 #pragma once
 
 #include "holonomy/core/common.h"
+#include "util/io.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include <igl/Timer.h>
 
-namespace PennerHolonomy {
+#include <igl/Timer.h>
+
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Parameters for Newton holonomy optimization
@@ -177,7 +181,7 @@ protected:
     std::ofstream metric_status_file;
     igl::Timer timer;
     NewtonLog log;
-    std::unique_ptr<CurvatureMetric::EnergyFunctor> l2_energy;
+    std::unique_ptr<Optimization::EnergyFunctor> l2_energy;
 
     void initialize_logging();
     void initialize_metric_status_log(MarkedPennerConeMetric& marked_metric);
@@ -219,4 +223,5 @@ protected:
     bool is_converged();
 };
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

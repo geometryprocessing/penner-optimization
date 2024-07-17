@@ -3,7 +3,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Determine if a one form is valid.
@@ -128,4 +129,5 @@ VectorX scale_edges_by_zero_form(
     const VectorX& metric_coords,
     const VectorX& zero_form);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Generate an overlay mesh for the mesh m with given metric coordinates integrated
 /// as the mesh metric.
@@ -176,4 +177,5 @@ std::
 #endif
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

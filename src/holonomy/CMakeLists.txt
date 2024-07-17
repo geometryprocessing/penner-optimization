@@ -1,7 +1,7 @@
 set(HolonomyCoreSrc
-  core/boundary.cpp
   core/boundary_basis.cpp
   core/common.cpp
+  core/dual_lengths.cpp
   core/dual_loop.cpp
   core/dual_segment.cpp
   core/field.cpp
@@ -9,9 +9,6 @@ set(HolonomyCoreSrc
   core/homology_basis.cpp
   core/intrinsic_field.cpp
   core/quality.cpp
-  core/spanning_tree.cpp
-  core/vector.cpp
-  core/VF_mesh.cpp
   core/viewer.cpp
 )
 
@@ -41,10 +38,8 @@ add_library(PennerHolonomyLib
 )
 target_include_directories(PennerHolonomyLib PUBLIC ../../include/holonomy)
 target_link_libraries(PennerHolonomyLib PUBLIC
+  PennerUtilLib
   PennerOptimizationLib
-  ${MPFR_LIBRARIES}
-  igl::core
-  ${SUITESPARSE_LIBS}
   ${VISUALIZATION_LIBS}
 )
 target_link_libraries(PennerHolonomyLib PRIVATE
@@ -61,3 +56,25 @@ if (NOT USE_MULTIPRECISION)
       -Wall -Wpedantic -Wextra -Werror
     )
 endif()
+
+if(USE_PYBIND)
+  add_library(holonomy_py MODULE
+    holonomy_pybind.cpp
+  )
+
+  # Link libraries
+  target_link_libraries(holonomy_py PUBLIC
+    PennerHolonomyLib
+    pybind11::module
+    ${RENDER_LIBRARIES}
+  )
+
+  # Set pybinding settings
+  set_target_properties(holonomy_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+    ${PROJECT_SOURCE_DIR}/py
+  )
+  set_target_properties(holonomy_py PROPERTIES PREFIX
+    "${PYTHON_MODULE_PREFIX}"
+  )
+endif()
+

@@ -4,8 +4,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
-namespace PennerHolonomy {
-
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Compute vector of one form constraints.
@@ -48,5 +48,5 @@ void compute_similarity_constraint_with_jacobian(
     MatrixX& J_constraint,
     bool need_jacobian=true);
 
-
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

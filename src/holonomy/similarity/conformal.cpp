@@ -4,7 +4,8 @@
 #include "holonomy/similarity/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Compute the descent direction for a similarity metric with given angles and angle cotangents
 VectorX compute_descent_direction(
@@ -18,7 +19,7 @@ VectorX compute_descent_direction(
     VectorX constraint = compute_similarity_constraint(similarity_metric, alpha);
 
     // Solve for descent direction (in one form edge coordinates)
-    VectorX descent_direction = CurvatureMetric::solve_linear_system(J, constraint);
+    VectorX descent_direction = solve_linear_system(J, constraint);
 
     // TODO Determine method to solve for newton decrement and add steepest descent
     // weighting if necessary
@@ -230,4 +231,5 @@ void compute_conformal_similarity_metric(
     }
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

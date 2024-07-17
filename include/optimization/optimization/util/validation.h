@@ -37,7 +37,8 @@
 #include "optimization/core/constraint.h"
 #include "optimization/core/cone_metric.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 inline std::vector<Scalar>
 validate_hencky_strain_face(Scalar l1, Scalar l2, Scalar l3)
@@ -183,4 +184,5 @@ validate_constraint(
     spdlog::error("Constraint error for norm {} vector is {}", h.norm(), error);
   }
 }  
-}
+} // namespace Optimization
+} // namespace Penner

@@ -3,7 +3,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Compute the holonomy angle with respect to a metric along a dual segment.
@@ -44,4 +45,5 @@ Scalar compute_dual_loop_rotation(
     const VectorX& rotation_form,
     const DualLoop& dual_loop);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

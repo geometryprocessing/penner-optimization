@@ -3,15 +3,10 @@ set(OptimizationCoreSrc
   core/common.cpp
   core/cone_metric.cpp
   core/constraint.cpp
-  core/embedding.cpp
   core/flip_matrix_generator.cpp
-  core/io.cpp
-  core/linear_algebra.cpp
   core/projection.cpp
   core/reparametrization.cpp
   core/shear.cpp
-  core/vector.cpp
-  core/vf_mesh.cpp
 )
 
 set(MetricOptimizationSrc
@@ -46,13 +41,7 @@ add_library(PennerOptimizationLib
 )
 target_include_directories(PennerOptimizationLib PUBLIC ../../include/optimization)
 target_link_libraries(PennerOptimizationLib PUBLIC
-  conformal_cpp
-  Eigen3::Eigen
-  igl::core
-  igl::predicates
-  spdlog::spdlog
-  ${MPFR_LIBRARIES}
-  ${POLYSCOPE_LIBRARIES}
+  PennerUtilLib
 )
 target_compile_definitions(PennerOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

@@ -30,9 +30,10 @@
 *********************************************************************************/
 #include "optimization/core/area.h"
 
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 Scalar squared_area(Scalar li, Scalar lj, Scalar lk)
 {
@@ -98,23 +99,23 @@ Scalar squared_area_length_derivative(Scalar variable_length, Scalar lj, Scalar 
     }
 }
 
-VectorX squared_areas(const DifferentiableConeMetric& cone_metric)
+VectorX squared_areas(const Mesh<Scalar>& m)
 {
-    int num_halfedges = cone_metric.n_halfedges();
+    int num_halfedges = m.n_halfedges();
     VectorX he2areasq(num_halfedges);
 
-    int num_faces = cone_metric.h.size();
+    int num_faces = m.h.size();
     // #pragma omp parallel for
     for (int f = 0; f < num_faces; f++) {
         // Get halfedges of face f
-        int hi = cone_metric.h[f];
-        int hj = cone_metric.n[hi];
-        int hk = cone_metric.n[hj];
+        int hi = m.h[f];
+        int hj = m.n[hi];
+        int hk = m.n[hj];
 
         // Get lengths of the halfedges
-        Scalar li = cone_metric.l[hi];
-        Scalar lj = cone_metric.l[hj];
-        Scalar lk = cone_metric.l[hk];
+        Scalar li = m.l[hi];
+        Scalar lj = m.l[hj];
+        Scalar lk = m.l[hk];
 
         // Compute the area of the face adjacent to the halfedges
         Scalar areasq = squared_area(li, lj, lk);
@@ -126,12 +127,12 @@ VectorX squared_areas(const DifferentiableConeMetric& cone_metric)
     return he2areasq;
 }
 
-VectorX areas(const DifferentiableConeMetric& cone_metric)
+VectorX areas(const Mesh<Scalar>& m)
 {
-    int num_halfedges = cone_metric.n_halfedges();
+    int num_halfedges = m.n_halfedges();
 
     // Compute squared areas
-    VectorX he2areasq = squared_areas(cone_metric);
+    VectorX he2areasq = squared_areas(m);
     assert(he2areasq.size() == num_halfedges);
 
     // Take square roots
@@ -143,25 +144,25 @@ VectorX areas(const DifferentiableConeMetric& cone_metric)
     return he2area;
 }
 
-VectorX squared_area_length_derivatives(const DifferentiableConeMetric& cone_metric)
+VectorX squared_area_length_derivatives(const Mesh<Scalar>& m)
 {
-    int num_halfedges = cone_metric.n_halfedges();
+    int num_halfedges = m.n_halfedges();
     VectorX he2areasqderiv(num_halfedges);
 
     // Compute maps from halfedges to derivatives of area with respect to the edge
     // length
-    int num_faces = cone_metric.h.size();
+    int num_faces = m.h.size();
     // #pragma omp parallel for
     for (int f = 0; f < num_faces; f++) {
         // Get halfedges of face f
-        int hi = cone_metric.h[f];
-        int hj = cone_metric.n[hi];
-        int hk = cone_metric.n[hj];
+        int hi = m.h[f];
+        int hj = m.n[hi];
+        int hk = m.n[hj];
 
         // Get lengths of the halfedges
-        Scalar li = cone_metric.l[hi];
-        Scalar lj = cone_metric.l[hj];
-        Scalar lk = cone_metric.l[hk];
+        Scalar li = m.l[hi];
+        Scalar lj = m.l[hj];
+        Scalar lk = m.l[hk];
 
         // Compute the derivative of the area of f with respect to each halfedge
         he2areasqderiv[hi] = squared_area_length_derivative(li, lj, lk);
@@ -172,21 +173,22 @@ VectorX squared_area_length_derivatives(const DifferentiableConeMetric& cone_met
     return he2areasqderiv;
 }
 
-VectorX squared_area_log_length_derivatives(const DifferentiableConeMetric& cone_metric)
+VectorX squared_area_log_length_derivatives(const Mesh<Scalar>& m)
 {
-    int num_halfedges = cone_metric.n_halfedges();
+    int num_halfedges = m.n_halfedges();
 
     // Compute squared areas length derivatives
-    VectorX he2areasq_deriv = squared_area_length_derivatives(cone_metric);
+    VectorX he2areasq_deriv = squared_area_length_derivatives(m);
     assert(he2areasq_deriv.size() == num_halfedges);
 
     // Apply chain rule to A(l) = A(e^(lambda/2))
     VectorX he2areasq_log_deriv(num_halfedges);
     for (int h = 0; h < num_halfedges; ++h) {
-        he2areasq_log_deriv[h] = he2areasq_deriv[h] * cone_metric.l[h] / 2.0;
+        he2areasq_log_deriv[h] = he2areasq_deriv[h] * m.l[h] / 2.0;
     }
 
     return he2areasq_log_deriv;
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

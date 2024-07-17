@@ -1,17 +1,18 @@
 #include "holonomy/core/field.h"
 
-#include "holonomy/core/VF_mesh.h"
+#include "util/vf_mesh.h"
 #include "holonomy/core/dual_loop.h"
 #include "holonomy/core/forms.h"
 
 #include "optimization/core/constraint.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 #if USE_COMISO
 #include <igl/copyleft/comiso/nrosy.h>
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
     const Eigen::MatrixXd& V,
@@ -54,5 +55,5 @@ std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
     return std::make_tuple(frame_field, Th_hat);
 }
 
-
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

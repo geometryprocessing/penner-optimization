@@ -34,16 +34,18 @@
 #include <Eigen/SparseQR>
 #include "optimization/core/area.h"
 #include "optimization/core/constraint.h"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/core/globals.h"
-#include "optimization/core/io.h"
+#include "util/io.h"
 #include "optimization/metric_optimization/nonlinear_optimization.h"
 #include "optimization/core/projection.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
+
 Scalar compute_convergence_ratio(
     const VectorX& unconstrained_descent_direction,
     const VectorX& constrained_descent_direction)
@@ -781,4 +783,5 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric(
     return optimize_metric_log(initial_cone_metric, opt_energy, log, proj_params, opt_params);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

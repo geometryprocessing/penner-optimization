@@ -6,7 +6,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 DualLoopManager::DualLoopManager(int num_edges)
 {
@@ -78,7 +79,7 @@ void DualLoopManager::register_loop_edges(
 {
     // Get edge maps
     std::vector<int> he2e, e2he;
-    CurvatureMetric::build_edge_maps(m, he2e, e2he);
+    build_edge_maps(m, he2e, e2he);
 
     // Add all loops adjacent to the dual loop
     for (const auto& dual_segment : dual_loop) {
@@ -678,4 +679,5 @@ void DualLoopConnectivity::delete_segment_index(int segment_index)
 }
 
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

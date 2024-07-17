@@ -42,10 +42,10 @@
 #include <stack>
 #include "optimization/core/area.h"
 #include "conformal_ideal_delaunay/Halfedge.hh"
-#include "optimization/core/io.h"
+#include "util/io.h"
 #include "optimization/parameterization/triangulation.h"
-#include "optimization/core/vector.h"
-#include "optimization/core/vf_mesh.h"
+#include "util/vector.h"
+#include "util/vf_mesh.h"
 #include "optimization/util/viewers.h"
 
 #if ENABLE_VISUALIZATION
@@ -55,7 +55,8 @@
 
 /// FIXME Do cleaning pass (Done through viewers)
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 RefinementMesh::RefinementMesh(
     const Eigen::MatrixXd& V,
@@ -1173,4 +1174,5 @@ bool RefinementMesh::is_valid_refinement_mesh() const
     return true;
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

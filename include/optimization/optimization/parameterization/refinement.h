@@ -36,7 +36,8 @@
 /// Methods to refine a triangulation with an accompanying overlay layout sufficiently
 /// to ensure the parametrization does not have inverted elements.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// A class to represent a mesh that supports an overlay refinement scheme.
 class RefinementMesh
@@ -285,4 +286,5 @@ private:
     bool is_valid_refinement_mesh() const;
 };
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

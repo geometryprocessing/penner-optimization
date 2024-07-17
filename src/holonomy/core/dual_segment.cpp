@@ -6,7 +6,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 bool is_valid_dual_segment(const Mesh<Scalar>& m, const DualSegment& dual_segment)
 {
@@ -307,4 +308,5 @@ void view_dual_path(
 #endif
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

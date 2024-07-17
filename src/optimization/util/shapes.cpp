@@ -29,7 +29,7 @@
 *                                          *                                     *
 *********************************************************************************/
 #include "optimization/util/shapes.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 // Some good simple tests are simplex embeddings that are natural (one vertex
@@ -38,7 +38,8 @@
 // embedded case has three symmetric edges adjacent to the origin and three
 // symmetric edges not adjacent to the origin.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 void
 map_to_sphere(size_t num_vertices, std::vector<Scalar>& Th_hat)
 {
@@ -158,4 +159,6 @@ generate_double_triangle_mesh_pybind()
   generate_double_triangle_mesh(m, vtx_reindex);
   return std::make_tuple(m, vtx_reindex);
 }
-}
+
+} // namespace Optimization
+} // namespace Penner

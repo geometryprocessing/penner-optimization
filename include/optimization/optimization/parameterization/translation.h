@@ -32,7 +32,8 @@
 
 #include "optimization/core/common.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Generate the least squares solution to the halfedge translations in the
 /// hyperbolic metric needed to satisfy the per halfedge shear change and face
@@ -52,4 +53,5 @@ void compute_as_symmetric_as_possible_translations(
     VectorX& he_translations);
 // TODO: Add option to bypass and use zero translations or to solve in double precision
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

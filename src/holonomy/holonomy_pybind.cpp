@@ -3,19 +3,21 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "core/common.h"
-#include "core/boundary.h"
-#include "similarity/conformal.h"
-#include "similarity/energy.h"
-#include "holonomy_interface.h"
-#include "similarity/layout.h"
-#include "holonomy/newton.h"
-#include "holonomy/cones.h"
-#include "core/quality.h"
-#include "holonomy/marked_penner_cone_metric.h"
-#include "similarity/similarity_penner_cone_metric.h"
+#include "holonomy/core/common.h"
+#include "holonomy/core/quality.h"
+#include "holonomy/holonomy/cones.h"
+#include "holonomy/holonomy/marked_penner_cone_metric.h"
+#include "holonomy/holonomy/newton.h"
+#include "holonomy/holonomy/rotation_form.h"
+#include "holonomy/holonomy_interface.h"
+#include "holonomy/similarity/conformal.h"
+#include "holonomy/similarity/energy.h"
+#include "holonomy/similarity/layout.h"
+#include "holonomy/similarity/similarity_penner_cone_metric.h"
+#include "util/boundary.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 #ifdef PYBIND
 #ifndef MULTIPRECISION
@@ -36,8 +38,7 @@ PYBIND11_MODULE(holonomy_py, m)
         .value("primal_min_dual_max", HomotopyBasisGenerator::Weighting::primal_min_dual_max)
         .export_values();
 
-    pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(
-        m, "NewtonParameters")
+    pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")
         .def(pybind11::init<>())
         .def_readwrite("output_dir", &NewtonParameters::output_dir)
         .def_readwrite("error_log", &NewtonParameters::error_log)
@@ -52,16 +53,19 @@ PYBIND11_MODULE(holonomy_py, m)
         .def_readwrite("log_level", &NewtonParameters::log_level);
 
     pybind11::class_<MarkedMetricParameters, std::shared_ptr<MarkedMetricParameters>>(
-        m, "MarkedMetricParameters")
+        m,
+        "MarkedMetricParameters")
         .def(pybind11::init<>())
         .def_readwrite("use_initial_zero", &MarkedMetricParameters::use_initial_zero)
         .def_readwrite("remove_loop_constraints", &MarkedMetricParameters::remove_loop_constraints)
         .def_readwrite("free_interior", &MarkedMetricParameters::free_interior)
         .def_readwrite("weighting", &MarkedMetricParameters::weighting);
 
-    pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(
-        m,
-        "MarkedPennerConeMetric")
+    pybind11::class_<FieldParameters, std::shared_ptr<FieldParameters>>(m, "FieldParameters")
+        .def(pybind11::init<>())
+        .def_readwrite("min_angle", &FieldParameters::min_angle);
+
+    pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
         .def_readwrite("kappa_hat", &MarkedPennerConeMetric::kappa_hat)
         .def("flip_ccw", &MarkedPennerConeMetric::flip_ccw)
         .def("undo_flips", &MarkedPennerConeMetric::undo_flips)
@@ -76,70 +80,38 @@ PYBIND11_MODULE(holonomy_py, m)
 
     pybind11::class_<DualLoop>(m, "DualLoop");
 
-    pybind11::class_<BoundaryPath>(m, "BoundaryPath")
-        .def(pybind11::init<const Mesh<Scalar>&, int>());
-
-    pybind11::class_<IntrinsicRefinementMesh>(m, "IntrinsicRefinementMesh")
-        .def(pybind11::init<const MarkedPennerConeMetric&>())
-        .def("refine_face", &IntrinsicRefinementMesh::refine_face)
-        .def("refine_spanning_faces", &IntrinsicRefinementMesh::refine_spanning_faces)
-        .def("generate_mesh", &IntrinsicRefinementMesh::generate_mesh)
-        .def("generate_marked_metric", &IntrinsicRefinementMesh::generate_marked_metric)
-        .def("generate_dirichlet_metric", &IntrinsicRefinementMesh::generate_dirichlet_metric);
-
-    pybind11::class_<DirichletPennerConeMetric, MarkedPennerConeMetric>(
-        m,
-        "DirichletPennerConeMetric")
-        .def(pybind11::init<
-          const MarkedPennerConeMetric&,
-          const std::vector<BoundaryPath>&,
-          const MatrixX&,
-          const VectorX&
-        >())
-        .def_readwrite("ell_hat", &DirichletPennerConeMetric::ell_hat)
-        .def("get_boundary_constraint_system", &DirichletPennerConeMetric::get_boundary_constraint_system)
-        .def("get_path_starting_vertices", &DirichletPennerConeMetric::get_path_starting_vertices);
-
-    pybind11::class_<BoundaryConstraintGenerator>(m, "BoundaryConstraintGenerator")
-        .def(pybind11::init<const Mesh<Scalar>&>())
-        .def("mark_cones_as_junctions", &BoundaryConstraintGenerator::mark_cones_as_junctions)
-        .def("set_uniform_feature_lengths", &BoundaryConstraintGenerator::set_uniform_feature_lengths)
-        .def("build_boundary_constraint_system", &BoundaryConstraintGenerator::build_boundary_constraint_system);
-
-
-    pybind11::class_<FeatureFinder>(m, "FeatureFinder")
-        .def(pybind11::init<const Eigen::MatrixXd&, const Eigen::MatrixXi>())
-        .def("mark_dihedral_angle_features", &FeatureFinder::mark_dihedral_angle_features)
-        .def("prune_junctions", &FeatureFinder::prune_junctions)
-        .def("prune_closed_loops", &FeatureFinder::prune_closed_loops)
-        .def("prune_small_features", &FeatureFinder::prune_small_features)
-        .def("prune_small_components", &FeatureFinder::prune_small_components)
-        .def("view_features", &FeatureFinder::view_features)
-        .def("generate_feature_cut_mesh", &FeatureFinder::generate_feature_cut_mesh);
-
-    pybind11::class_<CoordinateEnergy, CurvatureMetric::EnergyFunctor>(m, "CoordinateEnergy")
+    pybind11::class_<CoordinateEnergy, Optimization::EnergyFunctor>(m, "CoordinateEnergy")
         .def(pybind11::init<const DifferentiableConeMetric&, std::vector<int>>());
-    pybind11::class_<IntegratedEnergy, CurvatureMetric::EnergyFunctor>(m, "IntegratedEnergy")
+    pybind11::class_<IntegratedEnergy, Optimization::EnergyFunctor>(m, "IntegratedEnergy")
         .def(pybind11::init<const SimilarityPennerConeMetric&>());
 
     m.def("compute_mesh_quality", &compute_mesh_quality, default_call_guard);
     m.def("compute_min_angle", &compute_min_angle, default_call_guard);
     m.def("fix_cones", &fix_cones, default_call_guard);
     m.def("add_optimal_cone_pair", &add_optimal_cone_pair, default_call_guard);
-    m.def("generate_polygon_cones", &generate_polygon_cones, default_call_guard);
-    m.def("find_boundary_vertices", pybind11::overload_cast<const Mesh<Scalar>&, const std::vector<int>&>(&find_boundary_vertices), default_call_guard);
-    m.def("build_boundary_paths", &build_boundary_paths, default_call_guard);
+    m.def(
+        "find_boundary_vertices",
+        pybind11::overload_cast<const Mesh<Scalar>&, const std::vector<int>&>(
+            &find_boundary_vertices),
+        default_call_guard);
 
     m.def("generate_mesh", &generate_mesh, default_call_guard);
     m.def("generate_marked_metric", &generate_marked_metric, default_call_guard);
-    m.def("generate_union_metric", &generate_union_metric, default_call_guard);
-    m.def("generate_aligned_metric", &generate_aligned_metric, default_call_guard);
     m.def("generate_refined_marked_metric", &generate_refined_marked_metric, default_call_guard);
     m.def("generate_similarity_metric", &generate_similarity_metric, default_call_guard);
-    m.def("compute_conformal_similarity_metric", &compute_conformal_similarity_metric, default_call_guard);
+    m.def(
+        "compute_conformal_similarity_metric",
+        &compute_conformal_similarity_metric,
+        default_call_guard);
 
     m.def("optimize_subspace_metric_angles", &optimize_subspace_metric_angles, default_call_guard);
     m.def("optimize_metric_angles", &optimize_metric_angles, default_call_guard);
+    m.def(
+        "generate_intrinsic_rotation_form",
+        pybind11::
+            overload_cast<const Eigen::MatrixXd&, const Eigen::MatrixXi&, const FieldParameters&>(
+                &generate_intrinsic_rotation_form),
+        default_call_guard);
 
     m.def("make_interior_free", &make_interior_free, default_call_guard);
 
@@ -152,4 +124,5 @@ PYBIND11_MODULE(holonomy_py, m)
 #endif
 #endif
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

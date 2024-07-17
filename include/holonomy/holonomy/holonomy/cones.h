@@ -3,7 +3,8 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Compute the cones from a rotation form on an intrinsic mesh.
@@ -75,4 +76,5 @@ std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric
 
 void make_interior_free(Mesh<Scalar>& m);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

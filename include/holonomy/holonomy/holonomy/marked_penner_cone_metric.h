@@ -6,7 +6,8 @@
 
 #include "optimization/core/cone_metric.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // TODO Refactor this and cone metric for more minimal inheritance
 
@@ -22,7 +23,7 @@ bool is_valid_mesh(const Mesh<Scalar>& m);
 /**
  * @brief Class to represent a mesh with a Penner metric and homology basis markings
  */
-class MarkedPennerConeMetric : public CurvatureMetric::PennerConeMetric
+class MarkedPennerConeMetric : public Optimization::PennerConeMetric
 {
 public:
     // Additional constraints for homology loops
@@ -129,7 +130,7 @@ public:
     // TODO Use Newton
     virtual std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
         SolveStats<Scalar>& solve_stats,
-        std::shared_ptr<CurvatureMetric::ProjectionParameters> proj_params =
+        std::shared_ptr<Optimization::ProjectionParameters> proj_params =
             nullptr) const override;
 
     // Flip method
@@ -164,4 +165,5 @@ void view_homology_basis(
     std::string mesh_handle="",
     bool show=true);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -4,7 +4,8 @@
 
 #include "optimization/core/constraint.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha)
 {
@@ -114,6 +115,21 @@ void add_symmetry_constraints(
     }
 }
 
+VectorX compute_vertex_constraint(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& angles)
+{
+    // Use all vertices
+    std::vector<int> v_map = marked_metric.v_rep;
+    int n_v = n_v = marked_metric.n_ind_vertices();
+
+    // Build the constraint
+    VectorX constraint = VectorX::Zero(n_v);
+    add_vertex_constraints(marked_metric, v_map, angles, constraint, 0);
+
+    return constraint;
+}
+
 VectorX compute_metric_constraint(
     const MarkedPennerConeMetric& marked_metric,
     const VectorX& angles,
@@ -124,7 +140,7 @@ VectorX compute_metric_constraint(
     std::vector<int> v_map;
     int n_v;
     if (only_free_vertices) {
-        CurvatureMetric::build_free_vertex_map(marked_metric, v_map, n_v);
+        Optimization::build_free_vertex_map(marked_metric, v_map, n_v);
     } else {
         v_map = marked_metric.v_rep;
         n_v = marked_metric.n_ind_vertices();
@@ -146,7 +162,7 @@ VectorX _compute_metric_constraint(
 
     std::vector<int> v_map;
     int n_v;
-    CurvatureMetric::build_free_vertex_map(marked_metric, v_map, n_v);
+    Optimization::build_free_vertex_map(marked_metric, v_map, n_v);
     spdlog::debug("{} vertex constraints", n_v);
 
     // Build the constraint
@@ -243,7 +259,7 @@ MatrixX compute_metric_constraint_jacobian(
     std::vector<int> v_map;
     int num_vertex_forms;
     if (only_free_vertices) {
-        CurvatureMetric::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
+        Optimization::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
     } else {
         v_map = marked_metric.v_rep;
         num_vertex_forms = marked_metric.n_ind_vertices();
@@ -296,7 +312,7 @@ MatrixX _compute_metric_constraint_jacobian(
     // Get vertex representation
     int num_vertex_forms;
     std::vector<int> v_map;
-    CurvatureMetric::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
+    Optimization::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
 
     // Get corner angle derivatives with respect to metric coordinates
     MatrixX J_corner_angle_metric = compute_metric_corner_angle_jacobian(marked_metric, cotangents);
@@ -373,4 +389,5 @@ void compute_metric_constraint_with_jacobian(
     }
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

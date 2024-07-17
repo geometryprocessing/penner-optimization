@@ -34,7 +34,8 @@
 ///
 /// Methods to determine if polygons are self-overlapping and triangulate them
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Given three vertices in the plane, compute the triangle area
 ///
@@ -89,4 +90,5 @@ void triangulate_self_overlapping_polygon(
     std::vector<std::array<int, 3>>& faces);
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

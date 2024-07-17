@@ -1,6 +1,6 @@
 #include "holonomy/holonomy/cones.h"
 
-#include "holonomy/core/boundary.h"
+#include "util/boundary.h"
 #include "holonomy/core/forms.h"
 #include "holonomy/holonomy/holonomy.h"
 
@@ -8,7 +8,8 @@
 
 #include <random>
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Check cones computed from rotation form match more direct vertex iteration computation
 bool validate_cones_from_rotation_form(
@@ -18,7 +19,7 @@ bool validate_cones_from_rotation_form(
 {
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    CurvatureMetric::corner_angles(m, he2angle, he2cot);
+    Optimization::corner_angles(m, he2angle, he2cot);
 
     // Get boundary vertices if symmetric mesh with boundary
     int num_vertices = m.n_vertices();
@@ -26,7 +27,7 @@ bool validate_cones_from_rotation_form(
     std::vector<bool> is_boundary_vertex(num_vertices, false);
     if (is_symmetric) {
         std::vector<int> boundary_vertices = find_boundary_vertices(m);
-        CurvatureMetric::convert_index_vector_to_boolean_array(
+        convert_index_vector_to_boolean_array(
             boundary_vertices,
             num_vertices,
             is_boundary_vertex);
@@ -70,7 +71,7 @@ std::vector<Scalar> generate_cones_from_rotation_form(
     assert(is_valid_one_form(m, rotation_form));
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    CurvatureMetric::corner_angles(m, he2angle, he2cot);
+    Optimization::corner_angles(m, he2angle, he2cot);
 
     // Compute cones from the rotation form as holonomy - rotation around each vertex
     // Per-halfedge iteration is used for faster computation
@@ -142,7 +143,7 @@ std::pair<int, int> count_cones(const Mesh<Scalar>& m)
     std::vector<bool> is_boundary_vertex(num_vertices, false);
     if (is_symmetric) {
         std::vector<int> boundary_vertices = find_boundary_vertices(m);
-        CurvatureMetric::convert_index_vector_to_boolean_array(
+        convert_index_vector_to_boolean_array(
             boundary_vertices,
             num_vertices,
             is_boundary_vertex);
@@ -190,7 +191,7 @@ Scalar compute_total_curvature(const Mesh<Scalar>& m)
     std::vector<bool> is_boundary_vertex(num_vertices, false);
     if (is_symmetric) {
         std::vector<int> boundary_vertices = find_boundary_vertices(m);
-        CurvatureMetric::convert_index_vector_to_boolean_array(
+        convert_index_vector_to_boolean_array(
             boundary_vertices,
             num_vertices,
             is_boundary_vertex);
@@ -432,4 +433,5 @@ void make_interior_free(Mesh<Scalar>& m)
     }
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

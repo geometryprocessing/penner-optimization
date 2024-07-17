@@ -33,13 +33,14 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 
 /// \file energy_functor.h
 ///
 /// Methods to weight energies, e.g., per element energies by element area weights
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// @brief Given a vector of weights and a vector of values, compute the weighted 2 norm
 /// as the sum of the product of the weights and squared values
@@ -52,17 +53,29 @@ Scalar compute_weighted_norm(const VectorX& weights, const VectorX& values);
 /// @brief Compute per edge weights for a mesh with a given metric as 1/3 of the areas
 /// of the two adjacent faces
 ///
-/// @param[in] m: mesh
-/// @param[in] log_edge_lengths: log edge length metric for the mesh
+/// @param[in] cone_metric: mesh with differentiable metric
 /// @param[out] edge_area_weights: weights per edge
 VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric);
+
+/// @brief Compute per vertex area weights for a mesh
+///
+/// @param[in] m: mesh
+/// @return weights per vertex
+VectorX compute_vertex_area_weights(const Mesh<Scalar>& m);
+
+/// @brief Compute per independent vertex area weights for a mesh
+///
+/// The weights are half the sum of identified vertex weights.
+///
+/// @param[in] m: mesh
+/// @return weights per independent vertex
+VectorX compute_independent_vertex_area_weights(const Mesh<Scalar>& m);
 
 /// @brief Compute per face area weights for a mesh
 ///
 /// @param[in] m: mesh
-/// @param[in] log_edge_lengths: log edge length metric for the mesh
-/// @param[out] face_area_weights: weights per face
-VectorX compute_face_area_weights(const DifferentiableConeMetric& cone_metric);
+/// @return weights per face
+VectorX compute_face_area_weights(const Mesh<Scalar>& m);
 
 /// Compute a vector of weights for faces adjacent to the boundary.
 ///
@@ -77,4 +90,5 @@ void compute_boundary_face_weights(
     std::vector<Scalar>& face_weights);
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

@@ -32,14 +32,15 @@
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/core/projection.h"
 #include "optimization/core/reparametrization.h"
 #include "optimization/parameterization/translation.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
@@ -942,4 +943,5 @@ bool overlay_has_all_original_halfedges(OverlayMesh<Scalar>& mo)
     return (num_missing_original_halfedges == 0);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

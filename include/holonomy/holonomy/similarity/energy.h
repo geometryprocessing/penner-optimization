@@ -5,14 +5,15 @@
 
 #include "optimization/metric_optimization/energy_functor.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Energy for the difference between halfedge lengths. For a metric, this energy
  * is always zero, but it may be nontrivial for similarity structures.
  * 
  */
-class JumpEnergy : public CurvatureMetric::EnergyFunctor
+class JumpEnergy : public Optimization::EnergyFunctor
 {
 public:
     /**
@@ -36,7 +37,7 @@ private:
  * represent a jump energy for a similarity structure by using the scaling form coordinates.
  * 
  */
-class CoordinateEnergy : public CurvatureMetric::EnergyFunctor
+class CoordinateEnergy : public Optimization::EnergyFunctor
 {
 public:
     /**
@@ -65,7 +66,7 @@ private:
  * of the scaling one-form. 
  * 
  */
-class IntegratedEnergy : public CurvatureMetric::EnergyFunctor
+class IntegratedEnergy : public Optimization::EnergyFunctor
 {
 public:
     /**
@@ -97,7 +98,7 @@ private:
  * TODO: Replace with inverse of current energy to ensure well defined.
  * 
  */
-class TriangleQualityEnergy : public CurvatureMetric::EnergyFunctor
+class TriangleQualityEnergy : public Optimization::EnergyFunctor
 {
 public:
     /**
@@ -121,7 +122,7 @@ private:
  * of log edge lengths (lij + ljk - 2lki).
  * 
  */
-class LogTriangleQualityEnergy : public CurvatureMetric::EnergyFunctor
+class LogTriangleQualityEnergy : public Optimization::EnergyFunctor
 {
 public:
     /**
@@ -140,4 +141,5 @@ private:
     virtual MatrixX hessian_inverse(const VectorX& metric_coords) const override;
 };
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

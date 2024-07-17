@@ -40,7 +40,8 @@
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 VectorX scale_distortion_direction(
     const DifferentiableConeMetric& target_cone_metric,
@@ -673,4 +674,5 @@ VectorX second_invariant_vf_pybind(
 
 #endif
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

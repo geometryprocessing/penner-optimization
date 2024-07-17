@@ -35,7 +35,9 @@
 #include "optimization/metric_optimization/implicit_optimization.h"
 #include "optimization/core/projection.h"
 
-namespace CurvatureMetric {
+
+namespace Penner {
+namespace Optimization {
 
 void compute_direction_energy_values(
     const DifferentiableConeMetric& m,
@@ -234,4 +236,5 @@ step_projected_descent_direction); gradient_signs[i] =
   }
   */
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

@@ -4,7 +4,8 @@
 #include "holonomy/core/forms.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // TODO Refactor this and mesh class
 
@@ -51,7 +52,7 @@ public:
         bool only_free_vertices) const override;
     std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
         SolveStats<Scalar>& solve_stats,
-        std::shared_ptr<CurvatureMetric::ProjectionParameters> proj_params =
+        std::shared_ptr<Optimization::ProjectionParameters> proj_params =
             nullptr) const override;
 
     // Discrete metric methods
@@ -102,4 +103,5 @@ void MakeSimilarityDelaunay(
     SolveStats<Scalar>& solve_stats,
     bool Ptolemy = true);
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -38,7 +38,7 @@
 #include "optimization/core/area.h"
 #include "optimization/core/constraint.h"
 #include "optimization/metric_optimization/convergence.h"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/explicit_optimization.h"
@@ -63,7 +63,8 @@
 #include "visualization.h"
 #endif
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 #ifdef PYBIND
 #ifndef MULTIPRECISION
@@ -546,4 +547,6 @@ PYBIND11_MODULE(optimization_py, m)
 }
 #endif
 #endif
-} // namespace CurvatureMetric
+
+} // namespace Optimization
+} // namespace Penner

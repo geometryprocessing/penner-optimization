@@ -3,14 +3,14 @@
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/core/viewer.h"
-#include "holonomy/core/vector.h"
+#include "util/vector.h"
 
 #include <nlohmann/json.hpp>
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/core/projection.h"
 #include "optimization/core/shear.h"
-#include "optimization/core/io.h"
+#include "util/io.h"
 
 #ifdef USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
@@ -21,7 +21,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Initialize logging level
 void OptimizeHolonomyNewton::initialize_logging() {
@@ -39,7 +40,7 @@ void OptimizeHolonomyNewton::initialize_logging() {
 void OptimizeHolonomyNewton::initialize_metric_status_log(MarkedPennerConeMetric& marked_metric)
 {
     // Open main logging file
-    std::string data_log_path = CurvatureMetric::join_path(alg_params.output_dir, "metric_status_log.csv");
+    std::string data_log_path = join_path(alg_params.output_dir, "metric_status_log.csv");
     spdlog::info("Writing data to {}", data_log_path);
     metric_status_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
     marked_metric.write_status_log(metric_status_file, true);
@@ -56,7 +57,7 @@ void OptimizeHolonomyNewton::initialize_data_log()
     std::string data_log_path;
 
     // Open main logging file
-    data_log_path = CurvatureMetric::join_path(alg_params.output_dir, "iteration_data_log.csv");
+    data_log_path = join_path(alg_params.output_dir, "iteration_data_log.csv");
     spdlog::info("Writing data to {}", data_log_path);
     log_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
     log_file << "num_iter,";
@@ -87,7 +88,7 @@ void OptimizeHolonomyNewton::write_data_log_entry()
 void OptimizeHolonomyNewton::initialize_timing_log()
 {
     // Open timing logging file
-    std::string data_log_path = CurvatureMetric::join_path(alg_params.output_dir, "iteration_timing_log.csv");
+    std::string data_log_path = join_path(alg_params.output_dir, "iteration_timing_log.csv");
     spdlog::info("Writing timing data to {}", data_log_path);
     timing_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
     timing_file << "time,";
@@ -116,7 +117,7 @@ void OptimizeHolonomyNewton::write_timing_log_entry()
 
 void OptimizeHolonomyNewton::initialize_energy_log()
 {
-    std::string data_log_path = CurvatureMetric::join_path(alg_params.output_dir, "iteration_energy_log.csv");
+    std::string data_log_path = join_path(alg_params.output_dir, "iteration_energy_log.csv");
     spdlog::info("Writing energy data to {}", data_log_path);
     energy_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
     energy_file << "l2_energy,";
@@ -141,7 +142,7 @@ void OptimizeHolonomyNewton::write_energy_log_entry()
 
 void OptimizeHolonomyNewton::initialize_stability_log()
 {
-    std::string data_log_path = CurvatureMetric::join_path(alg_params.output_dir, "iteration_stability_log.csv");
+    std::string data_log_path = join_path(alg_params.output_dir, "iteration_stability_log.csv");
     spdlog::info("Writing stability data to {}", data_log_path);
     stability_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
     stability_file << "max_error,";
@@ -210,7 +211,7 @@ void OptimizeHolonomyNewton::initialize_checkpoints()
     if (alg_params.checkpoint_frequency <= 0) return;
 
     // Create output directory for checkpoints
-    checkpoint_dir = CurvatureMetric::join_path(alg_params.output_dir, "checkpoint");
+    checkpoint_dir = join_path(alg_params.output_dir, "checkpoint");
     std::filesystem::create_directory(checkpoint_dir);
 }
 
@@ -225,24 +226,24 @@ void OptimizeHolonomyNewton::checkpoint_direction()
     std::string suffix = std::to_string(log.num_iter);
 
     // Write metric coordinates
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "metric_coords_" + suffix);
+    checkpoint_path = join_path(checkpoint_dir, "metric_coords_" + suffix);
     write_vector(reduced_metric_coords, checkpoint_path);
 
     // Write corner angles
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "angles_" + suffix);
+    checkpoint_path = join_path(checkpoint_dir, "angles_" + suffix);
     write_vector(alpha, checkpoint_path);
 
     // Write constraint vector
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "constraint_" + suffix);
+    checkpoint_path = join_path(checkpoint_dir, "constraint_" + suffix);
     write_vector(constraint, checkpoint_path);
 
     // Write descent direction
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "direction_" + suffix);
+    checkpoint_path = join_path(checkpoint_dir, "direction_" + suffix);
     write_vector(descent_direction, checkpoint_path);
 
     // Write Jacobian
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "jacobian_" + suffix);
-    CurvatureMetric::write_sparse_matrix(J, checkpoint_path);
+    checkpoint_path = join_path(checkpoint_dir, "jacobian_" + suffix);
+    write_sparse_matrix(J, checkpoint_path);
 }
 
 void OptimizeHolonomyNewton::checkpoint_metric(const MarkedPennerConeMetric& marked_metric) {
@@ -254,25 +255,25 @@ void OptimizeHolonomyNewton::checkpoint_metric(const MarkedPennerConeMetric& mar
 
     // Write best fit scale factors
     int num_halfedges = marked_metric.n_halfedges();
-    VectorX scale_factors = CurvatureMetric::best_fit_conformal(marked_metric, VectorX::Zero(num_halfedges));
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "scale_factors_" + suffix);
+    VectorX scale_factors = Optimization::best_fit_conformal(marked_metric, VectorX::Zero(num_halfedges));
+    checkpoint_path = join_path(checkpoint_dir, "scale_factors_" + suffix);
     write_vector(scale_factors, checkpoint_path);
 
     // Write edge shears
     int num_edges = marked_metric.n_edges();
     MatrixX shear_dual_matrix;
     std::vector<int> edges;
-    CurvatureMetric::arange(num_edges, edges);
-    CurvatureMetric::compute_shear_dual_matrix(marked_metric, edges, shear_dual_matrix);
+    arange(num_edges, edges);
+    Optimization::compute_shear_dual_matrix(marked_metric, edges, shear_dual_matrix);
     VectorX metric_coords = marked_metric.get_metric_coordinates();
     VectorX shears = shear_dual_matrix.transpose() * metric_coords;
-    checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, "shears_" + suffix);
+    checkpoint_path = join_path(checkpoint_dir, "shears_" + suffix);
     write_vector(shears, checkpoint_path);
 
     // Write dual loop face sequences
     for (int i = 0; i < marked_metric.n_homology_basis_loops(); ++i) {
         std::string checkpoint_file = "dual_loop_" + std::to_string(i) + "_" + suffix;
-        checkpoint_path = CurvatureMetric::join_path(checkpoint_dir, checkpoint_file);
+        checkpoint_path = join_path(checkpoint_dir, checkpoint_file);
         write_vector(
             marked_metric.get_homology_basis_loops()[i]->generate_face_sequence(marked_metric),
             checkpoint_path);
@@ -296,9 +297,9 @@ void OptimizeHolonomyNewton::update_log_error(const MarkedPennerConeMetric& mark
 
     // Update metric error
     log.l2_energy = l2_energy->EnergyFunctor::energy(marked_metric);
-    log.rmse = CurvatureMetric::root_mean_square_error(l, l_init);
-    log.rrmse = CurvatureMetric::relative_root_mean_square_error(l, l_init);
-    log.rmsre = CurvatureMetric::root_mean_square_relative_error(l, l_init);
+    log.rmse = Optimization::root_mean_square_error(l, l_init);
+    log.rrmse = Optimization::relative_root_mean_square_error(l, l_init);
+    log.rmsre = Optimization::root_mean_square_relative_error(l, l_init);
 
     // Update corner angle measurements
     log.min_corner_angle = alpha.minCoeff();
@@ -588,8 +589,8 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
     timer.start();
     alg_params = input_alg_params;
     lambda = alg_params.lambda0;
-    l2_energy = std::make_unique<CurvatureMetric::LogLengthEnergy>(
-        CurvatureMetric::LogLengthEnergy(initial_marked_metric));
+    l2_energy = std::make_unique<Optimization::LogLengthEnergy>(
+        Optimization::LogLengthEnergy(initial_marked_metric));
     initialize_logging();
     initialize_logs();
     initialize_checkpoints();
@@ -656,7 +657,7 @@ MarkedPennerConeMetric optimize_metric_angles(
     const NewtonParameters& alg_params)
 {
     // Optimize metric with full metric space (basis is identity)
-    MatrixX identity = CurvatureMetric::id_matrix(initial_marked_metric.n_reduced_coordinates());
+    MatrixX identity = id_matrix(initial_marked_metric.n_reduced_coordinates());
     OptimizeHolonomyNewton solver;
     return solver.run(initial_marked_metric, identity, alg_params);
 }
@@ -724,17 +725,18 @@ void view_optimization_state(
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexScalarQuantity(
             "angle error",
-            CurvatureMetric::convert_scalar_to_double_vector(angle_constraint))
+            convert_scalar_to_double_vector(angle_constraint))
         ->setColorMap("coolwarm")
         ->setEnabled(true);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexScalarQuantity(
             "scale distortion",
-            CurvatureMetric::convert_scalar_to_double_vector(scale_distortion))
+            convert_scalar_to_double_vector(scale_distortion))
         ->setColorMap("coolwarm")
         ->setEnabled(true);
     if (show) polyscope::show();
 #endif
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -30,7 +30,8 @@
 *********************************************************************************/
 #include "optimization/core/common.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 bool vector_equal(VectorX v, VectorX w, Scalar eps)
 {
@@ -83,4 +84,5 @@ Scalar matrix_sup_norm(const MatrixX& matrix)
     return max_value;
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

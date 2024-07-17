@@ -34,7 +34,7 @@
 #include "optimization/core/constraint.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/core/projection.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 #include <igl/cotmatrix_entries.h>
 #include <igl/doublearea.h>
@@ -42,7 +42,8 @@
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 Scalar compute_weighted_norm(const VectorX& weights, const VectorX& values)
 {
@@ -57,20 +58,52 @@ Scalar compute_weighted_norm(const VectorX& weights, const VectorX& values)
     return weighted_norm;
 }
 
-VectorX compute_face_area_weights(const DifferentiableConeMetric& cone_metric)
+VectorX compute_face_area_weights(const Mesh<Scalar>& m)
 {
     // Compute area per halfedges
-    VectorX he2area = areas(cone_metric);
+    VectorX he2area = areas(m);
 
     // Reorganize areas to be per face
-    int num_faces = cone_metric.h.size();
+    int num_faces = m.h.size();
     VectorX face_area_weights(num_faces);
     for (int f = 0; f < num_faces; ++f) {
-        face_area_weights[f] = he2area[cone_metric.h[f]];
+        face_area_weights[f] = he2area[m.h[f]];
     }
-    spdlog::trace("f to areas: {}", face_area_weights.transpose());
 
     return face_area_weights;
+}
+
+VectorX compute_vertex_area_weights(const Mesh<Scalar>& m)
+{
+    // Compute area per halfedges
+    VectorX he2area = areas(m);
+
+    // sum up face area weights around vertex
+    int num_vertices = m.n_vertices();
+    int num_halfedges = m.n_halfedges();
+    VectorX vertex_area_weights = VectorX::Zero(num_vertices);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        int vj = m.to[hij];
+        vertex_area_weights[vj] += he2area[hij] / 3.;
+    }
+
+    return vertex_area_weights;
+}
+
+VectorX compute_independent_vertex_area_weights(const Mesh<Scalar>& m)
+{
+    // compute all vertex weights
+    VectorX vertex_area_weights = compute_vertex_area_weights(m);
+
+    // sum up halved vertex weights for independent vertices
+    int num_vertices = m.n_vertices();
+    int num_ind_vertices = m.n_ind_vertices();
+    VectorX ind_vertex_weights = VectorX::Zero(num_ind_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        ind_vertex_weights[m.v_rep[vi]] += vertex_area_weights[vi] / 2.;
+    }
+
+    return ind_vertex_weights;
 }
 
 VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric)
@@ -250,4 +283,5 @@ void compute_boundary_face_weights(
 }
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

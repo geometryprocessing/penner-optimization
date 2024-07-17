@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// A mesh structure to perform interpolation of points in a surface.
 ///
@@ -296,4 +297,5 @@ void interpolate_vertex_positions(
 
 bool overlay_has_all_original_halfedges(OverlayMesh<Scalar>& mo);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

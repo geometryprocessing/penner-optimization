@@ -30,15 +30,16 @@
 *********************************************************************************/
 #include "optimization/util/viewers.h"
 
-#include "optimization/core/vector.h"
-#include "optimization/core/vf_mesh.h"
+#include "util/vector.h"
+#include "util/vf_mesh.h"
 
 #include <igl/flipped_triangles.h>
 #if ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"
 #endif // ENABLE_VISUALIZATION
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 void view_flipped_triangles(
     const Eigen::MatrixXd& V,
@@ -131,4 +132,5 @@ void view_parameterization(
 #endif
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

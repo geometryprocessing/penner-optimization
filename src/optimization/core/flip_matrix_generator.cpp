@@ -30,7 +30,8 @@
 *********************************************************************************/
 #include "optimization/core/flip_matrix_generator.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 FlipMatrixGenerator::FlipMatrixGenerator(int size)
     : m_size(size)
@@ -166,4 +167,5 @@ MatrixX FlipMapMatrixGenerator::build_matrix() const
     return matrix;
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

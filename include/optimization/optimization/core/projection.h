@@ -33,7 +33,8 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Create matrix mapping vertex scale factors to their corresponding edges.
 ///
@@ -117,4 +118,5 @@ VectorX project_descent_direction(
     const DifferentiableConeMetric& cone_metric,
     const VectorX& descent_direction);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

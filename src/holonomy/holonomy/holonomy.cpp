@@ -6,7 +6,8 @@
 
 #include <stdexcept>
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 Scalar compute_dual_segment_holonomy(
     const Mesh<Scalar>& m,
@@ -85,4 +86,5 @@ Scalar compute_dual_loop_rotation(
     return rotation;
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

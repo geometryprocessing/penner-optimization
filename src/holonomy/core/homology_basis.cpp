@@ -1,11 +1,13 @@
 #include "holonomy/core/homology_basis.h"
 
-#include "holonomy/core/vector.h"
+#include "util/vector.h"
+#include "holonomy/core/dual_lengths.h"
 
 #include <random>
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Construct a clockwise sequence of dual segments around a vertex in the mesh
 std::vector<DualSegment> build_clockwise_vertex_dual_segment_sequence(
@@ -42,7 +44,7 @@ HomotopyBasisGenerator::HomotopyBasisGenerator(const Mesh<Scalar>& m, int root, 
     : m_mesh(m)
 {
     // Build halfedge to edge maps
-    CurvatureMetric::build_edge_maps(m, m_he2e, m_e2he);
+    build_edge_maps(m, m_he2e, m_e2he);
 
     // Build spanning tree and cotree with given weighting
     if (weighting == Weighting::minimal_homotopy) {
@@ -202,4 +204,5 @@ std::vector<int> HomotopyBasisGenerator::construct_homology_basis_loop(int index
     return std::get<0>(construct_homology_basis_edge_loop(index));
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

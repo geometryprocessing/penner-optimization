@@ -28,14 +28,14 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#ifndef VISUALIZATION_HH
-#define VISUALIZATION_HH
+#pragma once
+
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/png/writePNG.h>
 #include <string>
 
-namespace CurvatureMetric
-{
+namespace Penner {
+namespace Optimization {
 
 typedef igl::opengl::glfw::Viewer Viewer;
 
@@ -58,5 +58,6 @@ void save_mesh_screen_capture(Viewer &viewer,
                               int width,
                               int height);
 
-}
-#endif
+
+} // namespace Optimization
+} // namespace Penner

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "holonomy/core/common.h"
-#include "holonomy/core/spanning_tree.h"
+#include "util/spanning_tree.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Class to generate boundary loops and boundary path basis loops
@@ -55,4 +56,5 @@ private:
     DualTree m_dual_tree;
 };
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

@@ -1,6 +1,6 @@
 #include "holonomy/holonomy_interface.h"
 
-#include "holonomy/core/boundary.h"
+#include "util/boundary.h"
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
 #include "holonomy/core/intrinsic_field.h"
@@ -13,8 +13,8 @@
 #include "optimization/core/cone_metric.h"
 #include "optimization/core/constraint.h"
 #include "optimization/parameterization/interpolation.h"
-#include "optimization/core/io.h"
-#include "optimization/core/vector.h"
+#include "util/io.h"
+#include "util/vector.h"
 #include "optimization/parameterization/refinement.h"
 
 
@@ -29,7 +29,8 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 std::vector<int> extend_vtx_reindex(
     const Mesh<Scalar>& m,
@@ -51,7 +52,7 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     // Convert VF mesh to halfedge
     bool fix_boundary = false;
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    Mesh<Scalar> m = CurvatureMetric::FV_to_double<Scalar>(
+    Mesh<Scalar> m = FV_to_double<Scalar>(
         V,
         F,
         uv,
@@ -199,11 +200,11 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     VectorX scale_factors;
     scale_factors.setZero(m.n_ind_vertices());
     bool is_hyperbolic = false;
-    CurvatureMetric::InterpolationMesh interpolation_mesh(m, scale_factors, is_hyperbolic);
+    Optimization::InterpolationMesh interpolation_mesh(m, scale_factors, is_hyperbolic);
 
     // Get initial log length coordinates
     VectorX log_length_coords = interpolation_mesh.get_halfedge_metric_coordinates();
-    CurvatureMetric::DiscreteMetric discrete_metric(m, log_length_coords);
+    Optimization::DiscreteMetric discrete_metric(m, log_length_coords);
 
     // compute basis loops
     std::vector<std::unique_ptr<DualLoop>> basis_loops;
@@ -211,7 +212,7 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
 
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    CurvatureMetric::corner_angles(discrete_metric, he2angle, he2cot);
+    Optimization::corner_angles(discrete_metric, he2angle, he2cot);
 
     // Compute rotation angles along dual loops if loop constraints are needed
     int num_basis_loops = basis_loops.size();
@@ -248,7 +249,7 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     if (marked_metric_params.remove_symmetry) {
         m.Th_hat = std::vector<Scalar>(m.n_vertices(), 0.);
         m.fixed_dof = std::vector<bool>(m.n_vertices(), false);
-        CurvatureMetric::arange(m.n_vertices(), m.v_rep);
+        arange(m.n_vertices(), m.v_rep);
         for (int hij = 0; hij < num_halfedges; ++hij) {
             m.type[hij] = 0;
             //m.R[hij] = 0;
@@ -298,7 +299,7 @@ generate_mesh(
     // Convert VF mesh to halfedge
     bool fix_boundary = false;
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    Mesh<Scalar> m = CurvatureMetric::FV_to_double<Scalar>(
+    Mesh<Scalar> m = FV_to_double<Scalar>(
         V,
         F,
         uv,
@@ -327,7 +328,7 @@ infer_marked_metric(
     std::vector<int> vtx_reindex_mesh, indep_vtx, dep_vtx, v_rep, bnd_loops;
     std::vector<int> free_cones(0);
     bool fix_boundary = false;
-    Mesh<Scalar> m = CurvatureMetric::FV_to_double<Scalar>(
+    Mesh<Scalar> m = FV_to_double<Scalar>(
         V,
         F,
         V,
@@ -344,7 +345,8 @@ infer_marked_metric(
     // Generate rotation form and cones
     VectorX rotation_form;
     if (use_intrinsic) {
-        rotation_form = generate_intrinsic_rotation_form(m);
+        FieldParameters field_params;
+        rotation_form = generate_intrinsic_rotation_form(m, field_params);
     } else {
         rotation_form = generate_rotation_form_from_cross_field(m, vtx_reindex_mesh, V, F, frame_field);
     }
@@ -361,6 +363,43 @@ infer_marked_metric(
     }
 
     return std::make_tuple(marked_metric, vtx_reindex, rotation_form, Th_hat);
+}
+
+std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const FieldParameters& field_params)
+{
+    // generate halfedge mesh
+    std::vector<int> vtx_reindex;
+    std::vector<int> free_cones(0);
+    std::vector<Scalar> Th_hat = std::vector<Scalar>(V.rows(), 2 * M_PI);
+    bool fix_boundary = false;
+    bool use_discrete_metric = true;
+    std::unique_ptr<DifferentiableConeMetric> cone_metric =
+        Optimization::generate_initial_mesh(
+            V,
+            F,
+            V,
+            F,
+            Th_hat,
+            vtx_reindex,
+            free_cones,
+            fix_boundary,
+            use_discrete_metric);
+
+    // compute rotation form
+    VectorX rotation_form = generate_intrinsic_rotation_form(*cone_metric, vtx_reindex, V, field_params);
+
+    // generate cones from the rotation form
+    bool has_bd = (cone_metric->type[0] != 0);
+    Th_hat = generate_cones_from_rotation_form(
+        *cone_metric,
+        vtx_reindex,
+        rotation_form,
+        has_bd);
+
+    return std::make_tuple(rotation_form, Th_hat);
 }
 
 std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refined_marked_metric(
@@ -428,7 +467,8 @@ std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refine
     m.fixed_dof[0] = true;
 
     // Get rotation form and corresponding cones
-    VectorX rotation_form = generate_intrinsic_rotation_form(m);
+    FieldParameters field_params;
+    VectorX rotation_form = generate_intrinsic_rotation_form(m, field_params);
     std::vector<Scalar> Th_hat = generate_cones_from_rotation_form(m, rotation_form);
     m.Th_hat = Th_hat;
 
@@ -460,7 +500,7 @@ std::tuple<SimilarityPennerConeMetric, std::vector<int>> generate_similarity_met
     // Convert VF mesh to halfedge
     bool fix_boundary = false;
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    Mesh<Scalar> m = CurvatureMetric::FV_to_double<Scalar>(
+    Mesh<Scalar> m = FV_to_double<Scalar>(
         V,
         F,
         uv,
@@ -575,4 +615,5 @@ void optimize_triangle_quality(MarkedPennerConeMetric& marked_metric, double max
     }
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

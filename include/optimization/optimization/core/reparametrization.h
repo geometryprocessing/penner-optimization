@@ -32,7 +32,8 @@
 
 #include "optimization/core/common.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Reparametrize the barycentric coordinates for the equilateral triangle by
 /// translating a constant hyperbolic distance along each halfedge. If the sum
@@ -61,4 +62,5 @@ void reparametrize_equilateral(
 #ifdef PYBIND
 #endif
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

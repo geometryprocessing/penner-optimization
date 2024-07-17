@@ -34,16 +34,16 @@
 #include <map>
 #include <stack>
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
+#include "util/embedding.h"
+#include "util/linear_algebra.h"
+#include "util/vector.h"
 #include "optimization/core/constraint.h"
-#include "optimization/core/embedding.h"
 #include "optimization/core/globals.h"
-#include "optimization/core/linear_algebra.h"
-#include "optimization/core/vector.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
-
+namespace Penner {
+namespace Optimization {
 
 MatrixX conformal_scaling_matrix(const Mesh<Scalar>& m)
 {
@@ -206,4 +206,5 @@ VectorX project_descent_direction(
 }
 
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

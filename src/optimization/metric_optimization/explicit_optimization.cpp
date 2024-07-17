@@ -33,18 +33,19 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseQR>
 #include "optimization/core/constraint.h"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/core/globals.h"
-#include "optimization/core/io.h"
+#include "util/io.h"
 #include "optimization/metric_optimization/nonlinear_optimization.h"
 #include "optimization/core/projection.h"
 #include "optimization/core/shear.h"
-#include "optimization/core/vector.h"
+#include "util/vector.h"
 
 /// FIXME Do cleaning pass
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 void initialize_explicit_data_log(const std::filesystem::path& data_log_path)
 {
@@ -713,4 +714,5 @@ VectorX optimize_shear_basis_coordinates(
         opt_params);
 }
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

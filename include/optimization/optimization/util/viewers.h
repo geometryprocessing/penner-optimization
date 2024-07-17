@@ -35,7 +35,8 @@
 ///
 /// Some simple viewers to be used to analyze and debug the optimization pipeline.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// View the triangles in the mesh with inverted elements.
 ///
@@ -75,4 +76,5 @@ void view_parameterization(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& FT);
 
-}
+} // namespace Optimization
+} // namespace Penner

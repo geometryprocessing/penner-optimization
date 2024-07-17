@@ -38,7 +38,8 @@
 /// These methods are intended to be general enough to apply to both implicit projected gradient
 /// descent and unconstrained gradient descent.
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 /// Compute a nonlinear conjugate gradient descent direction from a given gradient and
 /// previous iteration data. Supported choices for the coefficient of "beta" are:
@@ -88,4 +89,5 @@ void compute_lbfgs_direction(
     const VectorX& gradient,
     VectorX& descent_direction);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

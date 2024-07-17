@@ -1,8 +1,7 @@
 
 #include "holonomy/core/viewer.h"
 
-#include "holonomy/core/vector.h"
-#include "holonomy/core/VF_mesh.h"
+#include "util/vf_mesh.h"
 
 #include <igl/boundary_facets.h>
 #include <igl/doublearea.h>
@@ -13,8 +12,9 @@
 
 #include <random>
 
-#include "optimization/core/vector.h"
-#include "optimization/core/vf_mesh.h"
+#include "util/vector.h"
+#include "util/vf_mesh.h"
+#include "holonomy/holonomy/constraint.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/curve_network.h"
@@ -22,7 +22,8 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 #ifdef ENABLE_VISUALIZATION
 glm::vec3 BEIGE(0.867, 0.765, 0.647);
@@ -189,8 +190,8 @@ void view_dual_graph(
         is_dual_vertex[m.f[hij]] = true;
     }
     std::vector<int> dual_vertices, dual_halfedges;
-    CurvatureMetric::convert_boolean_array_to_index_vector(is_dual_vertex, dual_vertices);
-    CurvatureMetric::convert_boolean_array_to_index_vector(is_edge, dual_halfedges);
+    convert_boolean_array_to_index_vector(is_dual_vertex, dual_vertices);
+    convert_boolean_array_to_index_vector(is_edge, dual_halfedges);
 
     // Add all dual face vertices at endpoints of edges
     int num_dual_vertices = dual_vertices.size();
@@ -239,8 +240,8 @@ void view_primal_graph(
         is_vertex[vtx_reindex[m.v_rep[m.to[hij]]]] = true;
     }
     std::vector<int> graph_vertices, graph_halfedges;
-    CurvatureMetric::convert_boolean_array_to_index_vector(is_vertex, graph_vertices);
-    CurvatureMetric::convert_boolean_array_to_index_vector(is_edge, graph_halfedges);
+    convert_boolean_array_to_index_vector(is_vertex, graph_vertices);
+    convert_boolean_array_to_index_vector(is_edge, graph_halfedges);
 
     // Add all vertices at endpoints of edges
     int num_graph_vertices = graph_vertices.size();
@@ -433,7 +434,7 @@ void view_rotation_form(
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "rotation_form",
-            CurvatureMetric::convert_scalar_to_double_vector(rotation_form_mesh))
+            convert_scalar_to_double_vector(rotation_form_mesh))
         ->setColorMap("coolwarm")
         ->setEnabled(true);
     polyscope::registerPointCloud(mesh_handle + "_cones", cone_positions);
@@ -626,7 +627,7 @@ void view_parameterization(
 
     // Cut mesh along seams
     Eigen::MatrixXd V_cut;
-    CurvatureMetric::cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
+    cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
     auto [uv_length_error, uv_angle_error, uv_angle] = compute_seamless_error(F, uv, FT);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
@@ -644,15 +645,15 @@ void view_parameterization(
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv length error",
-            CurvatureMetric::convert_scalar_to_double_vector(uv_length_error));
+            convert_scalar_to_double_vector(uv_length_error));
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv angle error",
-            CurvatureMetric::convert_scalar_to_double_vector(uv_angle_error));
+            convert_scalar_to_double_vector(uv_angle_error));
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv angle",
-            CurvatureMetric::convert_scalar_to_double_vector(uv_angle));
+            convert_scalar_to_double_vector(uv_angle));
 
     if (show) polyscope::show();
 #else
@@ -725,5 +726,138 @@ void view_layout(
 #endif
 }
 
+void view_constraint_error(
+    const MarkedPennerConeMetric& marked_metric,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    std::string mesh_handle,
+    bool show)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "constraint error";
+    }
 
-} // namespace PennerHolonomy
+    int num_vertices = V.rows();
+    if (show) {
+        spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
+    }
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, marked_metric, vtx_reindex);
+
+    // Make mesh into discrete metric
+    spdlog::debug("Making metric discrete");
+    MarkedPennerConeMetric marked_metric_copy = marked_metric;
+    marked_metric_copy.make_discrete_metric();
+
+    // Generate corner angles
+    spdlog::debug("Computing corner angles");
+    VectorX he2angle;
+    VectorX cotangents;
+    marked_metric_copy.get_corner_angles(he2angle, cotangents);
+
+    // Generate cones and cone errors
+    spdlog::debug("Computing cones and errors");
+    VectorX vertex_constraint = compute_vertex_constraint(marked_metric_copy, he2angle);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, vtx_reindex, marked_metric);
+    VectorX cone_error = vector_compose(vertex_constraint, marked_metric.v_rep);
+
+#ifdef ENABLE_VISUALIZATION
+    spdlog::debug("Initializing mesh");
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity(
+            "cone error",
+            convert_scalar_to_double_vector(cone_error))
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    polyscope::registerPointCloud(mesh_handle + "_cones", cone_positions);
+    polyscope::getPointCloud(mesh_handle + "_cones")
+        ->addScalarQuantity("index", cone_values)
+        ->setColorMap("coolwarm")
+        ->setMapRange({-M_PI, M_PI})
+        ->setEnabled(true);
+    if (show) polyscope::show();
+#endif
+}
+
+void view_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& vertex_function,
+    std::string mesh_handle,
+    bool show)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "vertex function";
+    }
+
+    int num_vertices = V.rows();
+    if (show) {
+        spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
+    }
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
+
+#ifdef ENABLE_VISUALIZATION
+    spdlog::debug("Initializing mesh");
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity(
+            "function value",
+            convert_scalar_to_double_vector(vertex_function))
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    if (show) polyscope::show();
+#endif
+}
+
+void view_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const std::vector<Scalar>& vertex_function,
+    std::string mesh_handle,
+    bool show)
+{
+    VectorX vertex_function_eig;
+    convert_std_to_eigen_vector(vertex_function, vertex_function_eig);
+    view_vertex_function(m, vtx_reindex, V, vertex_function_eig, mesh_handle, show);
+}
+
+void view_independent_vertex_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& vertex_function,
+    std::string mesh_handle,
+    bool show)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "independent vertex function mesh";
+    }
+
+    int num_vertices = V.rows();
+    if (show) {
+        spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
+    }
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
+
+    VectorX double_vertex_constraint = vector_compose(vertex_function, m.v_rep);
+
+#ifdef ENABLE_VISUALIZATION
+    spdlog::debug("Initializing mesh");
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity(
+            "function value",
+            convert_scalar_to_double_vector(double_vertex_constraint))
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    if (show) polyscope::show();
+#endif
+}
+
+} // namespace Holonomy
+} // namespace Penner

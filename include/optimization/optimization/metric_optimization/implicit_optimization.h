@@ -34,10 +34,11 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "optimization/core/embedding.h"
+#include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
-namespace CurvatureMetric {
+namespace Penner {
+namespace Optimization {
 
 // Log for implicit optimization iteration values
 struct OptimizationLog
@@ -100,4 +101,5 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric(
     std::shared_ptr<ProjectionParameters> proj_params = nullptr,
     std::shared_ptr<OptimizationParameters> opt_params = nullptr);
 
-} // namespace CurvatureMetric
+} // namespace Optimization
+} // namespace Penner

@@ -4,7 +4,8 @@
 #include "optimization/parameterization/translation.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 // Use interpolation method that also tracks the flips in the marked metric
 // TODO Replace with method in Penner code that tracks flip sequence
@@ -12,8 +13,8 @@ void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const SimilarityPennerConeMetric& initial_marked_metric,
     SimilarityPennerConeMetric& marked_metric,
-    CurvatureMetric::InterpolationMesh& interpolation_mesh,
-    CurvatureMetric::InterpolationMesh& reverse_interpolation_mesh)
+    Optimization::InterpolationMesh& interpolation_mesh,
+    Optimization::InterpolationMesh& reverse_interpolation_mesh)
 {
     marked_metric = initial_marked_metric;
 
@@ -22,7 +23,7 @@ void interpolate_penner_coordinates(
     trivial_scale_factors.setZero(mesh.n_ind_vertices());
     bool is_hyperbolic = false;
     interpolation_mesh =
-        CurvatureMetric::InterpolationMesh(mesh, trivial_scale_factors, is_hyperbolic);
+        Optimization::InterpolationMesh(mesh, trivial_scale_factors, is_hyperbolic);
 
     // Get initial reflection structure
     Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
@@ -47,7 +48,7 @@ void interpolate_penner_coordinates(
 
     // Compute translations for reparametrization
     VectorX translations;
-    CurvatureMetric::compute_as_symmetric_as_possible_translations(
+    Optimization::compute_as_symmetric_as_possible_translations(
         mc,
         flipped_metric_coords,
         initial_metric_coords,
@@ -72,7 +73,7 @@ void interpolate_penner_coordinates(
     Mesh<Scalar> m_layout = interpolation_mesh.get_mesh();
     is_hyperbolic = true;
     reverse_interpolation_mesh =
-        CurvatureMetric::InterpolationMesh(m_layout, trivial_scale_factors, is_hyperbolic);
+        Optimization::InterpolationMesh(m_layout, trivial_scale_factors, is_hyperbolic);
 
     // Undo the flips to make the hyperbolic surface with new metric Delaunay
     reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
@@ -95,7 +96,7 @@ void interpolate_penner_coordinates(
 
 std::
     tuple<
-        CurvatureMetric::OverlayMesh<Scalar>, // m_o
+        OverlayMesh<Scalar>, // m_o
         Eigen::MatrixXd, // V_o
         Eigen::MatrixXi, // F_o
         Eigen::MatrixXd, // uv_o
@@ -115,7 +116,7 @@ std::
     // Get mesh with vertex reindexing
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
     Mesh<Scalar> m =
-        CurvatureMetric::FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+        FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
     // Find boundary halfedges
     std::vector<bool> is_bd(m.n_ind_vertices(), false);
@@ -129,7 +130,7 @@ std::
     // Compute interpolation overlay mesh
     // TODO: Use consistent interpolation code from the Penner codebase
     Eigen::MatrixXd V_overlay;
-    CurvatureMetric::InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
+    Optimization::InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
     SimilarityPennerConeMetric similarity_metric = initial_similarity_metric;
     spdlog::trace("Interpolating penner coordinates");
     interpolate_penner_coordinates(
@@ -145,7 +146,7 @@ std::
         interpolation_mesh,
         reverse_interpolation_mesh,
         V_overlay);
-    CurvatureMetric::OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
+    OverlayMesh<Scalar> m_o = interpolation_mesh.get_overlay_mesh();
 
     // Scale the overlay mesh and make tufted
     auto [metric_coords, u_integral, is_cut_integral] =
@@ -154,7 +155,7 @@ std::
     for (int h = 0; h < metric_coords.size(); ++h) {
         mc.l[h] = exp(metric_coords[h] / 2.0);
     }
-    CurvatureMetric::make_tufted_overlay(m_o);
+    Optimization::make_tufted_overlay(m_o);
 
     // Get endpoints
     std::vector<std::pair<int, int>> endpoints;
@@ -170,12 +171,12 @@ std::
     }
 
     // Get layout topology from original mesh
-    std::vector<bool> is_cut = CurvatureMetric::compute_layout_topology(m, cut_h);
+    std::vector<bool> is_cut = Optimization::compute_layout_topology(m, cut_h);
 
     // Convert overlay mesh to VL format
     spdlog::trace("Getting layout");
     std::vector<Scalar> u(m.n_ind_vertices(), 0.0);
-    return CurvatureMetric::consistent_overlay_mesh_to_VL(
+    return Optimization::consistent_overlay_mesh_to_VL(
         m_o,
         vtx_reindex,
         is_bd,
@@ -186,4 +187,5 @@ std::
         is_cut_integral);
 }
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner

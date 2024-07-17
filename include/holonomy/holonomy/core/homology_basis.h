@@ -3,9 +3,10 @@
 
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
-#include "holonomy/core/spanning_tree.h"
+#include "util/spanning_tree.h"
 
-namespace PennerHolonomy {
+namespace Penner {
+namespace Holonomy {
 
 /**
  * @brief Construct a clockwise dual path around a vertex in the mesh.
@@ -133,4 +134,5 @@ private:
 typedef HomotopyBasisGenerator HomologyBasisGenerator;
 
 
-} // namespace PennerHolonomy
+} // namespace Holonomy
+} // namespace Penner
