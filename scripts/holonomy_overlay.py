@@ -25,6 +25,16 @@ def similarity_overlay_one(args, fname):
     output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
     os.makedirs(output_dir, exist_ok=True)
 
+    # Skip meshes that are already processed
+    try:
+        uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
+        V, F = igl.read_triangle_mesh(uv_mesh_path)
+        if (len(V) > 0):
+            print("Skipping processed mesh")
+            return
+    except:
+        pass
+
     # Get logger
     log_path = os.path.join(output_dir, name+'_convert_to_vf.log')
     logger = script_util.get_logger(log_path)
@@ -32,21 +42,11 @@ def similarity_overlay_one(args, fname):
 
     try:
         V, F = igl.read_triangle_mesh(os.path.join(args['input_dir'], fname))
+        Th_hat = np.loadtxt(os.path.join(output_dir, m + '_Th_hat'), dtype=float)
+        rotation_form = np.loadtxt(os.path.join(output_dir, m + '_kappa_hat'), dtype=float)
     except:
         logger.info("Could not open mesh data at {}", args['input_dir'])
         return
-
-    if args['fit_field']:
-        field_params = holonomy.FieldParameters()
-        field_params.min_angle = np.pi
-        rotation_form, Th_hat = holonomy.generate_intrinsic_rotation_form(V, F, field_params)
-    else:
-        try:
-            Th_hat = np.loadtxt(os.path.join(args['input_dir'], name + "_Th_hat"), dtype=float)
-            rotation_form = np.loadtxt(os.path.join(args['input_dir'], name + "_kappa_hat"), dtype=float)
-        except:
-            logger.info("Could not open rotation form")
-            return
 
     # Get final optimized lambdas
     try:
@@ -95,11 +95,6 @@ def similarity_overlay_one(args, fname):
     refinement_mesh = opt.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
     V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = refinement_mesh.get_VF_mesh()
 
-    # Write combined refined mesh with uv
-    uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
-    logger.info("Saving refined uv mesh at {}".format(uv_mesh_path))
-    opt.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
-
     # Save cut information
     simp_path = os.path.join(output_dir, name + '_is_cut_h')
     logger.info("Saving cut information at {}".format(simp_path))
@@ -136,6 +131,11 @@ def similarity_overlay_one(args, fname):
     endpoints_path = os.path.join(output_dir, name + '_endpoints')
     logger.info("Saving endpoints at {}".format(endpoints_path))
     np.savetxt(endpoints_path, endpoints_o, fmt='%i')
+
+    # Write combined refined mesh with uv
+    uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
+    logger.info("Saving refined uv mesh at {}".format(uv_mesh_path))
+    opt.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
 
 def similarity_overlay_many(args):
     script_util.run_many(similarity_overlay_one, args)

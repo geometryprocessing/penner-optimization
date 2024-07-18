@@ -121,7 +121,7 @@ VectorX compute_vertex_constraint(
 {
     // Use all vertices
     std::vector<int> v_map = marked_metric.v_rep;
-    int n_v = n_v = marked_metric.n_ind_vertices();
+    int n_v = marked_metric.n_ind_vertices();
 
     // Build the constraint
     VectorX constraint = VectorX::Zero(n_v);

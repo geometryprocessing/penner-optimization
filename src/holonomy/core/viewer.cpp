@@ -797,6 +797,7 @@ void view_vertex_function(
         spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
     }
     auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
+    if (num_vertices != vertex_function.size()) return;
 
 #ifdef ENABLE_VISUALIZATION
     spdlog::debug("Initializing mesh");

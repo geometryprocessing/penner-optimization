@@ -15,7 +15,7 @@ public:
         const std::vector<int>& vtx_reindex,
         const Eigen::MatrixXd& V);
 
-    Scalar min_angle = 1e-3;
+    Scalar min_angle = 0.;
 
 private:
     // Local frames

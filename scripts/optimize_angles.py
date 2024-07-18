@@ -35,6 +35,7 @@ def constrain_similarity_one(args, fname):
     except:
         pass
 
+    # get triangle mesh
     try:
         V, F = igl.read_triangle_mesh(os.path.join(args['input_dir'], fname))
         if (len(V) < 4):
@@ -44,7 +45,9 @@ def constrain_similarity_one(args, fname):
         logger.info("Could not open mesh data")
         return
 
+    # get precomputed form, or generate on the fly
     if args['fit_field']:
+        logger.info("Fitting cross field")
         field_params = holonomy.FieldParameters()
         field_params.min_angle = np.pi
         rotation_form, Th_hat = holonomy.generate_intrinsic_rotation_form(V, F, field_params)
@@ -55,6 +58,12 @@ def constrain_similarity_one(args, fname):
         except:
             logger.info("Could not open rotation form")
             return
+
+    # save form to output file
+    output_path = os.path.join(output_dir, name + '_Th_hat')
+    np.savetxt(output_path, Th_hat)
+    output_path = os.path.join(output_dir, name + '_kappa_hat')
+    np.savetxt(output_path, rotation_form)
 
     # Generate initial similarity metric
     free_cones = []

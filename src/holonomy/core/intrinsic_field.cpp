@@ -1037,7 +1037,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     std::queue<int> cones = {};
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        if (Th_hat[vi] < min_angle + 1e-6)
+        if (Th_hat[vi] < min_angle - 1e-6)
         {
             cones.push(vi);
         }
@@ -1046,7 +1046,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     {
         int vi = cones.front();
         cones.pop();
-        if (Th_hat[vi] > min_angle - 1e-6) continue;
+        if (Th_hat[vi] > min_angle + 1e-6) continue;
         spdlog::info("Fixing {} cone at {} in rotation form", Th_hat[vi], vi);
 
         // find largest cone angle near the cone vertex
@@ -1076,20 +1076,22 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
             // modify the rotation form and resulting cone angles
             rotation_form[h_opt] -= (M_PI / 2.);
             rotation_form[m.opp[h_opt]] += M_PI / 2.;
-            rotation_form[m.R[h_opt]] += M_PI / 2.;
-            rotation_form[m.opp[m.R[h_opt]]] -= M_PI / 2.;
+            if (m.type[h_opt] != 0) {
+                rotation_form[m.R[h_opt]] += M_PI / 2.;
+                rotation_form[m.opp[m.R[h_opt]]] -= M_PI / 2.;
+            }
             Th_hat[vi] += M_PI / 2.;
             Th_hat[vj] -= M_PI / 2.;
 
             // check if candidate vertex is now a cone
-            if (Th_hat[vj] < min_angle + 1e-6) 
+            if (Th_hat[vj] < min_angle - 1e-6) 
             {
                 cones.push(vj);
             }
         }
 
         // check if vertex vi is still a cone
-        if (Th_hat[vi] < min_angle + 1e-6) 
+        if (Th_hat[vi] < min_angle - 1e-6) 
         {
             cones.push(vi);
         }

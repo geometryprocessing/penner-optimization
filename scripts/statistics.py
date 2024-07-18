@@ -61,12 +61,13 @@ def run_statistics(args):
         m = fname[:dot_index]
         name = m
         models.append(m)
+        mesh_output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
 
         try:
             # Get mesh
             V, F = igl.read_triangle_mesh(os.path.join(args['input_dir'], fname))
-            Th_hat = np.loadtxt(os.path.join(args['input_dir'], m + "_Th_hat"), dtype=float)
-            rotation_form = np.loadtxt(os.path.join(args['input_dir'], m + "_kappa_hat"), dtype=float)
+            Th_hat = np.loadtxt(os.path.join(mesh_output_dir, m + '_Th_hat'), dtype=float)
+            rotation_form = np.loadtxt(os.path.join(mesh_output_dir, m + '_kappa_hat'), dtype=float)
 
             # Generate metric TODO use constructor
             free_cones = []
@@ -85,7 +86,6 @@ def run_statistics(args):
 
 
             # get final metric coordinates
-            mesh_output_dir = script_util.get_mesh_output_directory(args['output_dir'], m)
             metric_coords_path = os.path.join(mesh_output_dir, name + "_metric_coords")
             logger.info("Loading metric coordinates from {}".format(metric_coords_path))
             reduced_metric_coords = np.loadtxt(metric_coords_path)
