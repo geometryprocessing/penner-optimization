@@ -34,6 +34,7 @@
 
 #include <igl/facet_components.h>
 #include <igl/boundary_facets.h>
+#include <igl/remove_unreferenced.h>
 #include <igl/unique.h>
 #include <igl/per_vertex_normals.h>
 
@@ -52,11 +53,12 @@ void remove_unreferenced(
     std::vector<int>& new_to_old_map)
 {
     int num_faces = F.rows();
+    int cols = F.cols();
 
     // Iterate over faces to find all referenced vertices in sorted order
     std::vector<int> referenced_vertices;
     for (int fi = 0; fi < num_faces; ++fi) {
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < cols; ++j) {
             int vk = F(fi, j);
             referenced_vertices.push_back(vk);
         }
@@ -78,9 +80,9 @@ void remove_unreferenced(
     }
 
     // Reindex the vertices in the face list
-    FN.resize(num_faces, 3);
+    FN.resize(num_faces, cols);
     for (int fi = 0; fi < num_faces; ++fi) {
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < cols; ++j) {
             int vk = F(fi, j);
             int k = old_to_new_map[vk];
             FN(fi, j) = k;
@@ -113,6 +115,40 @@ void cut_mesh_along_parametrization_seams(
             V_cut.row(uvi) = V.row(vi);
         }
     }
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> generate_seams(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& FT)
+{
+    // get boundary edges of the uv map
+    Eigen::MatrixXi uv_edges;
+    Eigen::VectorXi J, K;
+    igl::boundary_facets(FT, uv_edges, J, K);
+
+    // get 3D vertices on seam
+    int num_seam_edges = J.size();
+    Eigen::MatrixXi edges(num_seam_edges, 2);
+    for (int i = 0; i < num_seam_edges; ++i)
+    {
+        edges(i, 0) = F(J[i], (K[i] + 1)%3);
+        edges(i, 1) = F(J[i], (K[i] + 2)%3);
+    }
+
+    // reindex to remove redundant
+    Eigen::MatrixXi seam_edges;
+    std::vector<int> new_to_old_map;
+    remove_unreferenced(edges, seam_edges, new_to_old_map);
+
+    // get new vertices
+    int num_seam_vertices = new_to_old_map.size();
+    Eigen::MatrixXd seam_vertices(num_seam_vertices, 3);
+    for (int i = 0; i < num_seam_vertices; ++i) {
+        seam_vertices.row(i) = V.row(new_to_old_map[i]);
+    }
+
+    return std::make_tuple(seam_vertices, seam_edges);
 }
 
 std::vector<int> find_boundary_vertices(const Eigen::MatrixXi& F)

@@ -55,6 +55,18 @@ void remove_unreferenced(
     Eigen::MatrixXi& FN,
     std::vector<int>& new_to_old_map);
 
+/// Given a mesh with a parametrization, generate the 3D seam polylines
+///
+/// @param[in] V: mesh vertices
+/// @param[in] F: mesh faces
+/// @param[in] FT: parametrization faces
+/// @return seam vertices
+/// @return seam edges
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> generate_seams(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& FT);
+
 /// Given a mesh with a parametrization, cut the mesh along the parametrization seams to
 /// create a vertex set corresponding to the faces of the uv domain.
 ///

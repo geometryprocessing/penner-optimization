@@ -110,5 +110,15 @@ void compute_submatrix(
  */
 Matrix2x2 compute_rotation(Scalar theta);
 
+/**
+ * @brief Generate equally spaced values in an interval [a, b]
+ * 
+ * @param a: starting value
+ * @param b: ending value
+ * @param num_steps: number of steps to use in the linspace
+ * @return a vector of equally spaced values between a and b
+ */
+std::vector<Scalar> generate_linspace(Scalar a, Scalar b, int num_steps);
+
 
 } // namespace Penner

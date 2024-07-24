@@ -26,6 +26,10 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     const std::vector<int>& vtx_reindex,
     const Mesh<Scalar>& m);
 
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_closed_cone_vertices(
+    const Eigen::MatrixXd& V,
+    const std::vector<Scalar>& Th_hat);
+
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_mesh_faces(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex);

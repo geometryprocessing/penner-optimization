@@ -325,6 +325,32 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     return std::make_tuple(cone_positions, cone_values);
 }
 
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_closed_cone_vertices(
+    const Eigen::MatrixXd& V,
+    const std::vector<Scalar>& Th_hat)
+{
+    // get cone indices
+    int num_vertices = V.rows();
+    std::vector<int> cone_indices;
+    cone_indices.reserve(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        if (float_equal(Th_hat[vi], 2 * M_PI)) continue;
+        cone_indices.push_back(vi);
+    }
+
+    // build cone positions and values
+    int num_cones = cone_indices.size();
+    Eigen::MatrixXd cone_positions(num_cones, 3);
+    Eigen::VectorXd cone_values(num_cones);
+    for (int i = 0; i < num_cones; ++i) {
+        int vi = cone_indices[i];
+        cone_positions.row(i) = V.row(vi);
+        cone_values[i] = (double)(Th_hat[vi]) - (2 * M_PI);
+    }
+
+    return std::make_tuple(cone_positions, cone_values);
+}
+
 Eigen::MatrixXd generate_subset_vertices(
     const Eigen::MatrixXd& V,
     const std::vector<int>& vertex_indices)

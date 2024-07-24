@@ -185,5 +185,22 @@ MatrixX solve_linear_system(const MatrixX& A, const MatrixX&B)
     return solver.solve(B);
 }
 
+std::vector<Scalar> generate_linspace(Scalar a, Scalar b, int num_steps)
+{
+    std::vector<Scalar> linspace(num_steps + 1);
+
+    // iteratively compute linspace
+    Scalar delta = (b - a) / static_cast<Scalar>(num_steps);
+    linspace[0] = a;
+    for (int i = 0; i < num_steps; ++i)
+    {
+        linspace[i + 1] = linspace[i] + delta;
+    }
+
+    // clamp last value exactly to b
+    linspace.back() = b;
+
+    return linspace;
+}
 
 } // namespace Penner
