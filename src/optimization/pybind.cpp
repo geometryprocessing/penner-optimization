@@ -45,7 +45,7 @@
 #include "optimization/metric_optimization/implicit_optimization.h"
 #include "optimization/parameterization/interpolation.h"
 #include "optimization/parameterization/layout.h"
-#include "optimization/penner_optimization_interface.h"
+#include "optimization/interface.h"
 #include "optimization/core/projection.h"
 #include "optimization/parameterization/refinement.h"
 #include "optimization/core/reparametrization.h"

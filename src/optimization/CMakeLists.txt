@@ -33,7 +33,7 @@ set(OptimizationUtilSrc
 )
 
 add_library(PennerOptimizationLib
-  penner_optimization_interface.cpp
+  interface.cpp
   ${OptimizationCoreSrc}
   ${MetricOptimizationSrc}
   ${ParameterizationSrc}
@@ -52,7 +52,7 @@ target_compile_options(PennerOptimizationLib PRIVATE
 
 if(USE_PYBIND)
   add_library(optimization_py MODULE
-    penner_optimization_pybind.cpp
+    pybind.cpp
   )
 
   # Link libraries

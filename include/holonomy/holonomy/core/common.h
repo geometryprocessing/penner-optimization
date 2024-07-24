@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include "optimization/penner_optimization_interface.h"
+#include "optimization/interface.h"
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 #include "util/vector.h"

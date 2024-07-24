@@ -3,13 +3,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "holonomy/interface.h"
 #include "holonomy/core/common.h"
 #include "holonomy/core/quality.h"
 #include "holonomy/holonomy/cones.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 #include "holonomy/holonomy/rotation_form.h"
-#include "holonomy/holonomy_interface.h"
 #include "holonomy/similarity/conformal.h"
 #include "holonomy/similarity/energy.h"
 #include "holonomy/similarity/layout.h"

@@ -28,7 +28,7 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#include "optimization/penner_optimization_interface.h"
+#include "optimization/interface.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "util/embedding.h"
 #include "util/vector.h"

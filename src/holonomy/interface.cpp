@@ -1,4 +1,4 @@
-#include "holonomy/holonomy_interface.h"
+#include "holonomy/interface.h"
 
 #include "util/boundary.h"
 #include "holonomy/core/boundary_basis.h"

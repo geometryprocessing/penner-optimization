@@ -30,7 +30,7 @@ set(SimilaritySrc
 )
 
 add_library(PennerHolonomyLib
-  holonomy_interface.cpp
+  interface.cpp
   ${HolonomyCoreSrc}
   ${HolonomySrc}
   ${SimilaritySrc}
@@ -59,7 +59,7 @@ endif()
 
 if(USE_PYBIND)
   add_library(holonomy_py MODULE
-    holonomy_pybind.cpp
+    pybind.cpp
   )
 
   # Link libraries
