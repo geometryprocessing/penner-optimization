@@ -142,6 +142,9 @@ endif()
 # Optionally build pybind 
 if(USE_PYBIND)
   include(pybind11)
+  set(PYBIND_LIBRARIES
+    pybind11::module
+  )
 endif()
 
 # Install executables to bin directory

@@ -129,7 +129,7 @@ bool contains_small_cones(const std::vector<Scalar>& Th_hat, int min_cone_index)
 
 bool contains_zero_cones(const std::vector<Scalar>& Th_hat)
 {
-    return contains_small_cones(Th_hat, 0.);
+    return contains_small_cones(Th_hat, 1);
 }
 
 // Count negative and positive cones

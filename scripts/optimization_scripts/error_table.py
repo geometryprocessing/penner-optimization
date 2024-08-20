@@ -5,7 +5,7 @@ import optimize_impl.energies as energies
 import script_util
 import igl
 import pandas as pd
-import optimization_py as opt
+import penner
 import numpy as np
 import os
 import sys
@@ -102,7 +102,7 @@ def error_table(args):
             mesh_areas = 0.5 * igl.doublearea(v3d, f)
             uv_areas = 0.5 * igl.doublearea(uv_embed, fuv)
             error_dict['uv_length_error'].append(
-                opt.compute_uv_length_error(f, uv, fuv))
+                penner.compute_uv_length_error(f, uv, fuv))
             error_dict['min_overlay_area'].append(np.min(mesh_areas))
             error_dict['max_overlay_area'].append(np.max(mesh_areas))
             error_dict['min_uv_area'].append(np.min(uv_areas))

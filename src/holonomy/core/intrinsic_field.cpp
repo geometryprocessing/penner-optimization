@@ -1057,7 +1057,9 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         int vj;
         do {
             vj = m.v_rep[m.to[hij]];
-            if (Th_hat[vj] > max_angle)
+
+            // skip boundary edges
+            if ((m.R[m.opp[hij]] != hij) && (Th_hat[vj] > max_angle))
             {
                 h_opt = hij;
                 max_angle = Th_hat[vj];

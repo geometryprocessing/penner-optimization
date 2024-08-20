@@ -1,7 +1,7 @@
 
 import numpy as np
 import scipy as sp
-import optimization_py as opt
+import penner
 
 def optimize_shear_basis_coordinates(
     C,
@@ -23,15 +23,15 @@ def optimize_shear_basis_coordinates(
     param[in] num_iter: number of iterations to perform
     return optimized metric coordinates
     """
-    reduction_maps = opt.ReductionMaps(C)
+    reduction_maps = penner.ReductionMaps(C)
 
     # Compute optimization domain
-    constraint_domain_matrix, constraint_codomain_matrix, init_domain_coords, init_codomain_coords = opt.compute_optimization_domain(
+    constraint_domain_matrix, constraint_codomain_matrix, init_domain_coords, init_codomain_coords = penner.compute_optimization_domain(
         C,
         shear_basis_matrix)
 
     def fun(domain_coords):
-        return opt.compute_domain_coordinate_energy(
+        return penner.compute_domain_coordinate_energy(
             C,
             opt_energy,
             constraint_domain_matrix,
@@ -42,7 +42,7 @@ def optimize_shear_basis_coordinates(
         )
 
     def jac(domain_coords):
-        energy, gradient = opt.compute_domain_coordinate_energy_with_gradient(
+        energy, gradient = penner.compute_domain_coordinate_energy_with_gradient(
             C,
             opt_energy,
             constraint_domain_matrix,
@@ -77,7 +77,7 @@ def optimize_shear_basis_coordinates(
 
     # Get output metric coordinates
     domain_coords = np.array(res.x)
-    reduced_metric_coords = opt.compute_domain_coordinate_metric(
+    reduced_metric_coords = penner.compute_domain_coordinate_metric(
         C,
         constraint_domain_matrix,
         constraint_codomain_matrix,

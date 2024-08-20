@@ -1,5 +1,5 @@
 
-import optimization_py as opt
+import penner
 import igl
 import numpy as np
 
@@ -70,7 +70,7 @@ def get_areas_per_edge(C, lambdas_full, proj_maps):
     param[in] tuple(np.array) proj_maps: tuple of he2e, e2he, proj, embed, and P maps
     return np.array: list of per edge areas
     """
-    he2areasq = np.array(opt.areas_squared_from_lambdas(C, lambdas_full))
+    he2areasq = np.array(penner.areas_squared_from_lambdas(C, lambdas_full))
     he2area = np.sqrt(he2areasq)
     opp = np.array(C.opp)
     he2e, e2he, proj, embed, P = proj_maps
@@ -219,16 +219,16 @@ def quadratic_sym_dirichlet_vf(v, f, uv, fuv):
     ll = 2.0 * np.log(l)
     weight = np.average(area_0)
 
-    return opt.surface_hencky_strain_energy_vf(area_0, cot_alpha_0, l_0, ll - ll_0) / weight
+    return penner.surface_hencky_strain_energy_vf(area_0, cot_alpha_0, l_0, ll - ll_0) / weight
 
 def best_fit_conformal_vf(v, f, uv, fuv):
     Th_hat = np.zeros(len(v))
 
-    C_v = opt.generate_initial_mesh(v, f, v, f, Th_hat, [], [], False, True)
-    C_uv = opt.generate_initial_mesh(v, f, uv, fuv, Th_hat, [], [], False, True)
-    _, vtx_reindex = opt.fv_to_double(v, f, v, f, Th_hat, [], False)
+    C_v = penner.generate_initial_mesh(v, f, v, f, Th_hat, [], [], False, True)
+    C_uv = penner.generate_initial_mesh(v, f, uv, fuv, Th_hat, [], [], False, True)
+    _, vtx_reindex = penner.fv_to_double(v, f, v, f, Th_hat, [], False)
     metric_coords = C_uv.get_metric_coordinates()
-    r_perm = opt.best_fit_conformal(C_v, metric_coords)
+    r_perm = penner.best_fit_conformal(C_v, metric_coords)
     
     # Reindex energy
     r = np.zeros_like(r_perm)

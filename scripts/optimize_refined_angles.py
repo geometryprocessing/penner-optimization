@@ -5,8 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
-import optimization_py as opt 
-import holonomy_py as holonomy
+import penner
 import igl
 import optimization_scripts.script_util as script_util
 
@@ -32,17 +31,17 @@ def optimize_refined_one(args, fname):
         return
 
     # Generate initial similarity metric
-    marked_metric_params = holonomy.MarkedMetricParameters()
+    marked_metric_params = penner.MarkedMetricParameters()
     marked_metric_params.use_initial_zero = args['use_initial_zero']
     marked_metric_params.remove_loop_constraints = args['remove_loop_constraints']
     try:
-        marked_metric, Th_hat, rotation_form = holonomy.generate_refined_marked_metric(V, F, args['min_angle'], marked_metric_params)
+        marked_metric, Th_hat, rotation_form = penner.generate_refined_marked_metric(V, F, args['min_angle'], marked_metric_params)
     except:
         logger.info("Could not build refined metric")
         return
 
     # Initialize parameters
-    alg_params = holonomy.NewtonParameters()
+    alg_params = penner.NewtonParameters()
     alg_params.error_eps = args['conf_error_eps']
     alg_params.max_itr = args['conf_max_itr']
     alg_params.do_reduction = args['do_reduction']
@@ -56,7 +55,7 @@ def optimize_refined_one(args, fname):
     # Project to constraint, undoing flips to restore initial connectivity
     logger.info("Optimizing metric")
     try:
-        marked_metric = holonomy.optimize_metric_angles(marked_metric, alg_params)
+        marked_metric = penner.optimize_metric_angles(marked_metric, alg_params)
         marked_metric.undo_flips()
     except:
         logger.info("Could not optimize metric")
@@ -76,8 +75,8 @@ def optimize_refined_many(args):
     script_util.run_many(optimize_refined_one, args)
 
 def add_optimize_refined_arguments(parser):
-    alg_params = opt.AlgorithmParameters()
-    ls_params = opt.LineSearchParameters()
+    alg_params = penner.AlgorithmParameters()
+    ls_params = penner.LineSearchParameters()
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")

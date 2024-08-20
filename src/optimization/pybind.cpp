@@ -28,10 +28,7 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "optimization/pybind.h"
 
 #include "optimization/core/common.h"
 
@@ -376,7 +373,7 @@ void init_energies_pybind(pybind11::module& m)
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
 
-void init_optimization_pybind(pybind11::module& m)
+void init_opt_pybind(pybind11::module& m)
 {
     m.def(
         "correct_cone_angles",
@@ -510,17 +507,13 @@ load_simplify_overlay_output(std::string fname)
 }
 #endif
 
-
-// wrap as Python module
-PYBIND11_MODULE(optimization_py, m)
+void init_optimization_pybind(pybind11::module& m)
 {
-    m.doc() = "pybind for optimization module";
-
     init_classes_pybind(m);
     init_conformal_pybind(m);
 
     init_energies_pybind(m);
-    init_optimization_pybind(m);
+    init_opt_pybind(m);
     init_parameterization_pybind(m);
 
 #ifdef USE_HIGHFIVE
@@ -545,6 +538,7 @@ PYBIND11_MODULE(optimization_py, m)
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
+
 #endif
 #endif
 

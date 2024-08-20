@@ -4,8 +4,7 @@
 import optimize_impl.energies as energies
 import script_util
 import pandas as pd
-import optimization_py as opt
-import holonomy_py as holonomy
+import penner
 import numpy as np
 import os, math
 import sys
@@ -71,8 +70,8 @@ def run_statistics(args):
 
             # Generate metric TODO use constructor
             free_cones = []
-            marked_metric_params = holonomy.MarkedMetricParameters()
-            marked_metric, _ = holonomy.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
+            marked_metric_params = penner.MarkedMetricParameters()
+            marked_metric, _ = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
 
             # Get target metric
             if (args['use_delaunay']):
@@ -122,7 +121,7 @@ def run_statistics(args):
 
                 if statistic == 'cones':
                     is_bd = igl.is_border_vertex(V, F)
-                    _, vtx_reindex = opt.fv_to_double(V, F, V, F, Th_hat, [], False)
+                    _, vtx_reindex = penner.fv_to_double(V, F, V, F, Th_hat, [], False)
                     cones = np.array([id for id in range(len(Th_hat)) if np.abs(Th_hat[id]-2*math.pi) > 1e-15 and not is_bd[id]], dtype=int)
                     cones = [idx for idx in range(len(vtx_reindex)) if vtx_reindex[idx] in cones]
                     statistics_dict[statistic].append(len(cones))

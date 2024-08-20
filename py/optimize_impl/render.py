@@ -2,7 +2,7 @@ import igl
 import numpy as np
 from conformal_impl.overload_math import *
 from tqdm import trange
-import optimization_py as opt
+import penner
 from matplotlib import cm, colors
 import optimize_impl.energies as energies
 import os
@@ -285,7 +285,7 @@ def render_layout(
         ao = np.average(ao[f], axis=1)
 
     # Generate mesh viewer with shading for layout
-    viewer = opt.generate_mesh_viewer(uv, f, show_lines)
-    opt.add_shading_to_mesh(viewer, c, ao, lighting_factor)
+    viewer = penner.generate_mesh_viewer(uv, f, show_lines)
+    penner.add_shading_to_mesh(viewer, c, ao, lighting_factor)
 
     return viewer

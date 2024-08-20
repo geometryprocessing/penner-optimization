@@ -186,15 +186,6 @@ void generate_basis_loops(
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
     MarkedMetricParameters marked_metric_params);
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi>
-parameterize_components(
-    const MarkedPennerConeMetric& embedding_metric,
-    const MarkedPennerConeMetric& original_metric,
-    const MarkedPennerConeMetric& marked_metric,
-    const Eigen::MatrixXd& V_cut,
-    const std::vector<int>& vtx_reindex
-);
-
 std::vector<int> extend_vtx_reindex(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex

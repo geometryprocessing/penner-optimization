@@ -5,7 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import script_util
-import optimization_py as opt
+import penner
 import igl
 import optimize_impl.render as render
 
@@ -133,7 +133,7 @@ def render_layout_one(args, fname):
     os.makedirs(os.path.join(output_dir, 'images'), exist_ok=True)
     image_path = os.path.join(output_dir, 'images', name+'_layout.png')
     logger.info("Saving layout to {}".format(image_path))
-    opt.save_mesh_screen_capture(viewer, image_path, args['height'], args['width'])
+    penner.save_mesh_screen_capture(viewer, image_path, args['height'], args['width'])
 
     # Render layout
     logger.info("Rendering layout")
@@ -151,7 +151,7 @@ def render_layout_one(args, fname):
     os.makedirs(os.path.join(args['output_dir'], 'images'), exist_ok=True)
     image_path = os.path.join(args['output_dir'], 'images', name+'_layout.png')
     logger.info("Saving layout to {}".format(image_path))
-    opt.save_mesh_screen_capture(viewer, image_path, args['height'], args['width'])
+    penner.save_mesh_screen_capture(viewer, image_path, args['height'], args['width'])
 
     logger.info("Done")
     

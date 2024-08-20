@@ -7,7 +7,7 @@ from matplotlib import cm, colors
 from conformal_impl.halfedge import *
 import optimize_impl.energies as energies
 import optimize_impl.render as render
-import optimization_py as opt
+import penner
 import pickle
 import igl
 import numpy as np
@@ -159,9 +159,9 @@ def render_uv_one(args, fname):
 
     # Get point matrices
     logger.info("Getting point matrices")
-    fid_mat, bc_mat = opt.get_pt_mat(
+    fid_mat, bc_mat = penner.get_pt_mat(
         cam, v3d, f, vc, fc, red_size, blue_size, W, H)
-    fid_mat_sin, bc_mat_sin = opt.get_pt_mat(
+    fid_mat_sin, bc_mat_sin = penner.get_pt_mat(
         cam,
         v3d_orig,
         f_orig,

@@ -31,6 +31,7 @@ set(SimilaritySrc
 
 add_library(PennerHolonomyLib
   interface.cpp
+  pybind.cpp
   ${HolonomyCoreSrc}
   ${HolonomySrc}
   ${SimilaritySrc}
@@ -56,25 +57,3 @@ if (NOT USE_MULTIPRECISION)
       -Wall -Wpedantic -Wextra -Werror
     )
 endif()
-
-if(USE_PYBIND)
-  add_library(holonomy_py MODULE
-    pybind.cpp
-  )
-
-  # Link libraries
-  target_link_libraries(holonomy_py PUBLIC
-    PennerHolonomyLib
-    pybind11::module
-    ${RENDER_LIBRARIES}
-  )
-
-  # Set pybinding settings
-  set_target_properties(holonomy_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-    ${PROJECT_SOURCE_DIR}/py
-  )
-  set_target_properties(holonomy_py PROPERTIES PREFIX
-    "${PYTHON_MODULE_PREFIX}"
-  )
-endif()
-

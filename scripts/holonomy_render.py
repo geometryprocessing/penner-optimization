@@ -11,8 +11,8 @@ sys.path.append(module_dir)
 import numpy as np
 import igl
 import pickle
-import optimization_py as opt
 import render as render
+import penner
 import optimize_impl.energies as energies
 from conformal_impl.halfedge import *
 from matplotlib import cm, colors
@@ -137,12 +137,12 @@ def render_uv_one(args, fname):
             #for loop in bd_loops:
             #    for i in np.arange(len(loop) - 1):
             #        cut_to_sin_list.append([loop[i], loop[i+1]])
-        v_cut_to_sin, f_cut_to_sin = opt.get_edges(v3d_orig, f_orig, cut_to_sin_list, bd_thick)
+        v_cut_to_sin, f_cut_to_sin = penner.get_edges(v3d_orig, f_orig, cut_to_sin_list, bd_thick)
 
     # Get point matrices
     logger.info("Getting point matrices")
-    fid_mat, bc_mat = opt.get_pt_mat(cam, v3d, f, vc, fc, red_size, blue_size, W, H)
-    fid_mat_sin, bc_mat_sin = opt.get_pt_mat(
+    fid_mat, bc_mat = penner.get_pt_mat(cam, v3d, f, vc, fc, red_size, blue_size, W, H)
+    fid_mat_sin, bc_mat_sin = penner.get_pt_mat(
         cam,
         v3d_orig,
         f_orig,

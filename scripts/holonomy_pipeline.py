@@ -9,9 +9,7 @@ import numpy as np
 import optimization_scripts.script_util as script_util
 import holonomy_render
 import optimize_angles
-import optimize_fixed_boundary
 import optimize_refined_angles
-import optimize_aligned_angles
 import render_mesh
 import statistics
 import holonomy_overlay
@@ -36,6 +34,28 @@ if __name__ == "__main__":
     pipeline_spec = script_util.load_pipeline(pipeline_args.pipeline_path)
     pipeline_dir = os.path.dirname(pipeline_args.pipeline_path)
 
+    # build dictionary of methods for adding arguments
+    argument_funcs = {}
+    argument_funcs['optimize_angles'] = optimize_similarity.add_optimize_similarity_arguments
+    argument_funcs['optimize_similarity'] = optimize_similarity.optimize_similarity_many
+    argument_funcs['holonomy_overlay'] = holonomy_overlay.add_similarity_overlay_arguments
+    argument_funcs['statistics'] = statistics.add_statistics_arguments
+    argument_funcs['holonomy_histogram'] = holonomy_histogram.add_similarity_histogram_arguments
+    argument_funcs['holonomy_render'] = holonomy_render.add_render_uv_arguments
+    argument_funcs['render_mesh'] = render_mesh.add_render_mesh_arguments
+    argument_funcs['optimize_refined_angles'] = optimize_refined_angles.add_optimize_refined_arguments
+
+    # build dictionary of methods
+    pipeline_funcs = {}
+    pipeline_funcs['optimize_angles'] = optimize_angles.constrain_similarity_many
+    pipeline_funcs['optimize_similarity'] = optimize_angles.constrain_similarity_many
+    pipeline_funcs['holonomy_overlay'] = holonomy_overlay.similarity_overlay_many
+    pipeline_funcs['statistics'] = statistics.run_statistics
+    pipeline_funcs['holonomy_histogram'] = holonomy_histogram.similarity_histogram_many
+    pipeline_funcs['holonomy_render'] = holonomy_render.render_uv_many
+    pipeline_funcs['render_mesh'] = render_mesh.render_mesh_many
+    pipeline_funcs['optimize_refined_angles'] = optimize_refined_angles.optimize_refined_many
+
     # Load global arguments
     global_args = pipeline_spec['global_args']
     if 'output_dir' not in global_args:
@@ -58,133 +78,16 @@ if __name__ == "__main__":
         args_list = pipeline_item['args_list']
         if pipeline_item['skip']:
             continue
-        if (method == 'optimize_angles'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                optimize_angles.add_constrain_similarity_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
 
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
+        for args_spec in args_list:
+            # Get default arguments for method
+            parser_method = generate_parser()
+            argument_funcs[method](parser_method)
+            args_default = vars(parser_method.parse_args(""))
 
-                # Run optimization
-                optimize_angles.constrain_similarity_many(args)
-        if (method == 'optimize_fixed_boundary'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                optimize_fixed_boundary.add_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
+            # Overwrite arguments 
+            args = script_util.overwrite_args(args_default, global_args)
+            args = script_util.overwrite_args(args_default, args_spec)
 
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run optimization
-                optimize_fixed_boundary.run_many(args)
-        if (method == 'optimize_similarity'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                optimize_similarity.add_optimize_similarity_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run optimization
-                optimize_similarity.optimize_similarity_many(args)
-        if (method == 'holonomy_overlay'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                holonomy_overlay.add_similarity_overlay_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run optimization
-                holonomy_overlay.similarity_overlay_many(args)
-        if (method == 'statistics'):
-            for args_spec in args_list:
-                # Get default arguments for method
-                parser_method = generate_parser()
-                statistics.add_statistics_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run method
-                statistics.run_statistics(args)
-        if (method == 'holonomy_histogram'):
-            for args_spec in args_list:
-                # Get default arguments for method
-                parser_method = script_util.generate_parser()
-                holonomy_histogram.add_similarity_histogram_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run method
-                holonomy_histogram.similarity_histogram_many(args)
-        if (method == 'holonomy_render'):
-            for args_spec in args_list:
-                # Get default arguments for rendering from uv
-                parser_method = generate_parser()
-                holonomy_render.add_render_uv_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run method
-                holonomy_render.render_uv_many(args)
-        if (method == 'render_mesh'):
-            for args_spec in args_list:
-                # Get default arguments for rendering from uv
-                parser_method = generate_parser()
-                render_mesh.add_render_mesh_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run method
-                render_mesh.render_mesh_many(args)
-        if (method == 'optimize_refined_angles'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                optimize_refined_angles.add_optimize_refined_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run optimization
-                optimize_refined_angles.optimize_refined_many(args)
-        if (method == 'optimize_aligned_angles'):
-            for args_spec in args_list:
-                # Get default arguments for optimization
-                parser_method = generate_parser()
-                optimize_aligned_angles.add_arguments(parser_method)
-                args_default = vars(parser_method.parse_args(""))
-
-                # Overwrite arguments 
-                args = script_util.overwrite_args(args_default, global_args)
-                args = script_util.overwrite_args(args_default, args_spec)
-
-                # Run optimization
-                optimize_aligned_angles.run_many(args)
+            # Run method
+            pipeline_funcs[method](args)

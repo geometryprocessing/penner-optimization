@@ -4,7 +4,7 @@
 import optimize_impl.energies as energies
 import script_util
 import pandas as pd
-import optimization_py as opt
+import penner
 import numpy as np
 import os
 import sys
@@ -72,7 +72,7 @@ def energy_table(args):
                 args, fname)
             lambdas_target = C.get_reduced_metric_coordinates()
             name = m + '_'+args['suffix']
-            reduction_maps = opt.ReductionMaps(C)
+            reduction_maps = penner.ReductionMaps(C)
             proj = np.array(reduction_maps.proj)
             he2e = np.array(reduction_maps.he2e)
             try:
@@ -90,35 +90,35 @@ def energy_table(args):
 
             # Compute metric tensor invariants
             logger.info("Getting metric invariants")
-            f2J1, _ = opt.first_invariant(
+            f2J1, _ = penner.first_invariant(
                 C_embed, lambdas[proj], False)
-            f2J2sq, _ = opt.second_invariant_squared(
+            f2J2sq, _ = penner.second_invariant_squared(
                 C_embed, lambdas[proj], False)
             f2J2 = np.sqrt(np.abs(f2J2sq))
 
             # Compute distortion measures
             logger.info("Getting distortion measures")
-            f2metric_dist, _ = opt.metric_distortion_energy(
+            f2metric_dist, _ = penner.metric_distortion_energy(
                 C_embed, lambdas[proj], False)
-            f2area_dist, _ = opt.area_distortion_energy(
+            f2area_dist, _ = penner.area_distortion_energy(
                 C_embed, lambdas[proj], False)
-            f2sym_dirichlet_dist, _ = opt.symmetric_dirichlet_energy(
+            f2sym_dirichlet_dist, _ = penner.symmetric_dirichlet_energy(
                 C_embed, lambdas[proj], False)
 
             logger.info("Getting scale factors")
-            u = opt.best_fit_conformal(C_embed, lambdas[proj[he2e]])
+            u = penner.best_fit_conformal(C_embed, lambdas[proj[he2e]])
 
             # Compute constraint errors
             logger.info("Getting constraint error")
-            max_constraint = opt.compute_max_constraint(C)
+            max_constraint = penner.compute_max_constraint(C)
 
             # Make energy functors
-            length_energy = opt.LogLengthEnergy(C_embed, 2)
-            quad_energy = opt.QuadraticSymmetricDirichletEnergy(
+            length_energy = penner.LogLengthEnergy(C_embed, 2)
+            quad_energy = penner.QuadraticSymmetricDirichletEnergy(
                 C_embed, C_eucl)
-            scale_energy = opt.LogScaleEnergy(C_embed)
-            pnorm_energy = opt.LogLengthEnergy(C_embed, 4)
-            sym_dir_energy = opt.SymmetricDirichletEnergy(C_embed, C_eucl)
+            scale_energy = penner.LogScaleEnergy(C_embed)
+            pnorm_energy = penner.LogLengthEnergy(C_embed, 4)
+            sym_dir_energy = penner.SymmetricDirichletEnergy(C_embed, C_eucl)
 
             # Record energy_dict
             logger.info("Adding energies")

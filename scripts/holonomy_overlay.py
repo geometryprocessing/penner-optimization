@@ -5,8 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
-import holonomy_py as holonomy
-import optimization_py as opt 
+import penner
 import pickle, math, logging
 import igl
 import optimization_scripts.script_util as script_util
@@ -60,7 +59,7 @@ def similarity_overlay_one(args, fname):
     # Get mesh information
     is_bd = igl.is_border_vertex(V, F)
     build_double = (np.sum(is_bd) != 0)
-    _, vtx_reindex = opt.fv_to_double(V, F, V, F, Th_hat, [], False)
+    _, vtx_reindex = penner.fv_to_double(V, F, V, F, Th_hat, [], False)
 
     # Get cones
     cones = np.array([id for id in range(len(Th_hat)) if np.abs(Th_hat[id]-2*math.pi) > 1e-15 and not is_bd[id]], dtype=int)
@@ -75,24 +74,24 @@ def similarity_overlay_one(args, fname):
 
     # Generate initial similarity metric
     free_cones = []
-    marked_metric_params = holonomy.MarkedMetricParameters()
-    marked_metric, _ = holonomy.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
+    marked_metric_params = penner.MarkedMetricParameters()
+    marked_metric, _ = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
 
     # Make overlay
     cut_h = []
-    #_, V_o, F_o, uv_o, FT_o, is_cut_h, _, fn_to_f, endpoints = holonomy.generate_VF_mesh_from_marked_metric(V, F, Th_hat, marked_metric, cut_h)
-    #vf_res = opt.generate_VF_mesh_from_metric(V, F, Th_hat, marked_metric, marked_metric.get_metric_coordinates(), cut_h, False)
-    vf_res = opt.generate_VF_mesh_from_metric(V, F, Th_hat, marked_metric, reduced_metric_coords, cut_h, False)
+    #_, V_o, F_o, uv_o, FT_o, is_cut_h, _, fn_to_f, endpoints = penner.generate_VF_mesh_from_marked_metric(V, F, Th_hat, marked_metric, cut_h)
+    #vf_res = penner.generate_VF_mesh_from_metric(V, F, Th_hat, marked_metric, marked_metric.get_metric_coordinates(), cut_h, False)
+    vf_res = penner.generate_VF_mesh_from_metric(V, F, Th_hat, marked_metric, reduced_metric_coords, cut_h, False)
     _, V_o, F_o, uv_o, FT_o, is_cut_h, _, fn_to_f_o, endpoints_o = vf_res
 
     # Save new meshes
     uv_mesh_path = os.path.join(output_dir, name + '_overlay_with_uv.obj')
     logger.info("Saving uv mesh at {}".format(uv_mesh_path))
-    opt.write_obj_with_uv(uv_mesh_path, V_o, F_o, uv_o, FT_o)
+    penner.write_obj_with_uv(uv_mesh_path, V_o, F_o, uv_o, FT_o)
 
     # Refine original mesh using overlay
     logger.info("Running refinement")
-    refinement_mesh = opt.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
+    refinement_mesh = penner.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
     V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = refinement_mesh.get_VF_mesh()
 
     # Save cut information
@@ -135,14 +134,14 @@ def similarity_overlay_one(args, fname):
     # Write combined refined mesh with uv
     uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
     logger.info("Saving refined uv mesh at {}".format(uv_mesh_path))
-    opt.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
+    penner.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
 
 def similarity_overlay_many(args):
     script_util.run_many(similarity_overlay_one, args)
 
 def add_similarity_overlay_arguments(parser):
-    alg_params = opt.AlgorithmParameters()
-    ls_params = opt.LineSearchParameters()
+    alg_params = penner.AlgorithmParameters()
+    ls_params = penner.LineSearchParameters()
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")

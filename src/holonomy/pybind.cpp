@@ -1,7 +1,4 @@
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "holonomy/pybind.h"
 
 #include "holonomy/interface.h"
 #include "holonomy/core/common.h"
@@ -22,10 +19,8 @@ namespace Holonomy {
 #ifdef PYBIND
 #ifndef MULTIPRECISION
 
-// wrap as Python module
-PYBIND11_MODULE(holonomy_py, m)
+void init_holonomy_pybind(pybind11::module& m)
 {
-    m.doc() = "pybind for optimization module";
     spdlog::set_level(spdlog::level::info);
     pybind11::call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>
         default_call_guard;
@@ -56,6 +51,7 @@ PYBIND11_MODULE(holonomy_py, m)
         m,
         "MarkedMetricParameters")
         .def(pybind11::init<>())
+        .def_readwrite("use_log_length", &MarkedMetricParameters::use_log_length)
         .def_readwrite("use_initial_zero", &MarkedMetricParameters::use_initial_zero)
         .def_readwrite("remove_loop_constraints", &MarkedMetricParameters::remove_loop_constraints)
         .def_readwrite("free_interior", &MarkedMetricParameters::free_interior)

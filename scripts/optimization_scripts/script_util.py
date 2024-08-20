@@ -1,18 +1,19 @@
+import os
+import sys
+script_dir = os.path.dirname(__file__)
+module_dir = os.path.join(script_dir, '..', '..', 'py')
+sys.path.append(module_dir)
+
 import math
 import logging
 import multiprocessing
 import json
 import optimize_impl.targets as targets
-import optimization_py as opt
+import penner
 import numpy as np
 import igl
 import time
 import argparse
-import os
-import sys
-script_dir = os.path.dirname(__file__)
-module_dir = os.path.join(script_dir, '..', 'py')
-sys.path.append(module_dir)
 
 
 def get_mesh_output_directory(output_dir_base, m):
@@ -58,7 +59,7 @@ def add_parameter_arguments(parser):
                         type=int, default=2)
 
     # Conformal parameters
-    proj_params = opt.ProjectionParameters()
+    proj_params = penner.ProjectionParameters()
     parser.add_argument("-m", "--conf_max_itr",   help="maximum number of iterations for the conformal method",
                         type=int, default=proj_params.max_itr)
     parser.add_argument("--conf_error_eps",      help="maximum error for conformal projection",
@@ -69,7 +70,7 @@ def add_parameter_arguments(parser):
                         type=bool, default=proj_params.do_reduction)
 
     # Optimization parameters
-    opt_params = opt.OptimizationParameters()
+    opt_params = penner.OptimizationParameters()
     parser.add_argument("-n", "--opt_num_iter",   help="maximum number of iterations for optimization",
                         type=int, default=opt_params.num_iter)
     parser.add_argument("--beta",                help="initial beta value",
@@ -119,7 +120,7 @@ def generate_mesh(args, fname=None):
     else:
         Th_hat = np.loadtxt(os.path.join(
             args['input_dir'], name + "_Th_hat"), dtype=float)
-        Th_hat = np.array(opt.correct_cone_angles(Th_hat))
+        Th_hat = np.array(penner.correct_cone_angles(Th_hat))
 
     # Get free cones
     free_cones = []
@@ -137,27 +138,27 @@ def generate_mesh(args, fname=None):
 
     # Create halfedge mesh and lambdas
     vtx_reindex = []
-    C = opt.generate_initial_mesh(v3d, f, uv, fuv, Th_hat, vtx_reindex,
+    C = penner.generate_initial_mesh(v3d, f, uv, fuv, Th_hat, vtx_reindex,
                                   free_cones, args['free_bd_angles'], args['use_edge_lengths'])
-    C_embed = opt.generate_initial_mesh(
+    C_embed = penner.generate_initial_mesh(
         v3d, f, v3d, f, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], args['use_edge_lengths'])
-    C_eucl = opt.generate_initial_mesh(
+    C_eucl = penner.generate_initial_mesh(
         v3d, f, v3d, f, Th_hat, vtx_reindex, free_cones, args['free_bd_angles'], True)
 
     # Build energies (default to 2-norm)
     energy_choice = args['energy_choice']
     if (energy_choice == "log_length"):
-        opt_energy = opt.LogLengthEnergy(C_embed, args['power'])
+        opt_energy = penner.LogLengthEnergy(C_embed, args['power'])
     elif (energy_choice == "log_scale"):
-        opt_energy = opt.LogScaleEnergy(C_embed)
+        opt_energy = penner.LogScaleEnergy(C_embed)
     elif (energy_choice == "quadratic_sym_dirichlet"):
-        opt_energy = opt.QuadraticSymmetricDirichletEnergy(C_embed, C_eucl)
+        opt_energy = penner.QuadraticSymmetricDirichletEnergy(C_embed, C_eucl)
     elif (energy_choice == "sym_dirichlet"):
-        opt_energy = opt.SymmetricDirichletEnergy(C_embed, C_eucl)
+        opt_energy = penner.SymmetricDirichletEnergy(C_embed, C_eucl)
     elif (energy_choice == "p_norm"):
-        opt_energy = opt.LogLengthEnergy(C_embed, args['power'])
+        opt_energy = penner.LogLengthEnergy(C_embed, args['power'])
     else:
-        opt_energy = opt.LogLengthEnergy(C_embed, 2)
+        opt_energy = penner.LogLengthEnergy(C_embed, 2)
 
     # Optionally overwrite with lengths from files
     if args['use_lengths_from_file']:
@@ -180,7 +181,7 @@ def generate_mesh(args, fname=None):
 
 def generate_parameters(args):
     # Set projection parameters
-    proj_params = opt.ProjectionParameters()
+    proj_params = penner.ProjectionParameters()
     proj_params.max_itr = args['conf_max_itr']
     proj_params.error_eps = args['conf_error_eps']
     proj_params.bound_norm_thres = args['bound_norm_thres']
@@ -192,7 +193,7 @@ def generate_parameters(args):
         proj_params.use_edge_flips = False
 
     # Set optimization parameters
-    opt_params = opt.OptimizationParameters()
+    opt_params = penner.OptimizationParameters()
     opt_params.num_iter = args['opt_num_iter']
     opt_params.beta_0 = args['beta']
     opt_params.min_ratio = args['min_ratio']
@@ -271,5 +272,5 @@ def get_boundary_edges(v3d, uv, f, fuv, bd_thick):
     v_cut = np.zeros((len(uv), 3))
     v_cut[fuv] = v3d[f]
     bd_list = igl.boundary_facets(fuv)
-    v_bd, f_bd = opt.get_edges(v_cut, fuv, bd_list, bd_thick)
+    v_bd, f_bd = penner.get_edges(v_cut, fuv, bd_list, bd_thick)
     return v_bd, f_bd
