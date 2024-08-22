@@ -75,6 +75,8 @@ bool is_reflection_structure_valid(
 
 bool is_valid_mesh(const Mesh<Scalar>& m)
 {
+    if (m.n_halfedges() == 0) return true;
+
     // build previous map
     std::vector<int> prev = invert_map(m.n);
 

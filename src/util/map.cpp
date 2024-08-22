@@ -51,7 +51,7 @@ int compute_map_range(const std::vector<int>& map)
 {
     // get range of map
     int domain = map.size(); 
-    int range = -1;
+    int range = 0;
     for (int i = 0; i < domain; ++i)
     {
         if (range < (map[i] + 1))
