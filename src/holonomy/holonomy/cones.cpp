@@ -310,15 +310,26 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
     bool is_symmetric = (m.type[0] != 0);
     Scalar angle_delta = (is_symmetric) ? M_PI : (M_PI / 2.);
 
-    // Add 5 cone
-    int vi = get_flat_vertex(m, only_interior);
-    spdlog::debug("Adding positive cone at {}", vi);
-    m.Th_hat[vi] += angle_delta;
+    int num_vertices = m.n_vertices();
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        // check if vertex is valid
+        int Vi = m.v_rep[vi];
+        if (m.Th_hat[Vi] < 2. * angle_delta) continue;
+        if ((only_interior) && (!is_interior(m, vi))) continue;
 
-    // Add 3 cone
-    int vj = get_flat_vertex(m, only_interior);
-    spdlog::debug("Adding negative cone at {}", vj);
-    m.Th_hat[vj] -= angle_delta;
+        // check if adjacent vertex is valid
+        int vj = m.to[m.out[vi]];
+        int Vj = m.v_rep[vj];
+        if ((only_interior) && (!is_interior(m, vj))) continue;
+
+        // add cones
+        spdlog::debug("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);
+        spdlog::debug("Adding positive cone at {} with angle {}", Vj, m.Th_hat[Vj]);
+        m.Th_hat[m.v_rep[vi]] -= angle_delta;
+        m.Th_hat[m.v_rep[vj]] += angle_delta;
+        return;
+    }
 }
 
 std::tuple<int, int> get_constraint_outliers(
