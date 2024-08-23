@@ -17,7 +17,7 @@ if (PROJECT_IS_TOP_LEVEL)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   option(USE_PYBIND "Generate pybindings" ON)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
-  add_option(USE_EMBREE "Use Embree for rendering" OFF)
+  option(USE_EMBREE "Use Embree for rendering" OFF)
 
   # Set libigl and suitesparse options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
