@@ -1058,8 +1058,8 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         do {
             vj = m.v_rep[m.to[hij]];
 
-            // skip boundary edges
-            if ((m.R[m.opp[hij]] != hij) && (Th_hat[vj] > max_angle))
+            // FIXME if ((m.R[m.opp[hij]] != hij) && (Th_hat[vj] > max_angle))
+            if (Th_hat[vj] > max_angle)
             {
                 h_opt = hij;
                 max_angle = Th_hat[vj];
@@ -1090,6 +1090,8 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
             {
                 cones.push(vj);
             }
+        } else {
+            spdlog::warn("Could not find candidate cone for correction");
         }
 
         // check if vertex vi is still a cone

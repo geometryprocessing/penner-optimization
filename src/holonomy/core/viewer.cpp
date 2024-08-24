@@ -228,7 +228,9 @@ void view_primal_graph(
     const Eigen::MatrixXd& V,
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const std::vector<bool> is_edge)
+    const std::vector<bool> is_edge,
+    std::string handle,
+    bool show)
 {
     int num_vertices = m.n_ind_vertices();
     int num_halfedges = m.n_halfedges();
@@ -267,10 +269,11 @@ void view_primal_graph(
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
-    polyscope::registerPointCloud("graph vertices", graph_vertex_positions)
+    polyscope::registerPointCloud(handle + " graph vertices", graph_vertex_positions)
         ->setPointRadius(0.00025);
-    polyscope::registerCurveNetwork("graph tree", graph_vertex_positions, edges)
+    polyscope::registerCurveNetwork(handle + " graph tree", graph_vertex_positions, edges)
         ->setRadius(0.00015);
+    if (show) polyscope::show();
 #endif
 }
 

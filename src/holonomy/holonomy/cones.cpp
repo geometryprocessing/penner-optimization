@@ -330,6 +330,15 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
         m.Th_hat[m.v_rep[vj]] += angle_delta;
         return;
     }
+
+    // try again with interior if fails
+    if (only_interior)
+    {
+        spdlog::warn("Cannot add cone pair in interior");
+        add_random_cone_pair(m, false);
+    } else {
+        spdlog::error("Cannot add cone pair");
+    }
 }
 
 std::tuple<int, int> get_constraint_outliers(

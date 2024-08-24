@@ -97,7 +97,9 @@ void view_primal_graph(
     const Eigen::MatrixXd& V,
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const std::vector<bool> is_edge);
+    const std::vector<bool> is_edge,
+    std::string handle="",
+    bool show=true);
 
 void view_triangulation(
     const Eigen::MatrixXd& V,
