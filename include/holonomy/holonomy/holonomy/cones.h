@@ -76,5 +76,7 @@ std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric
 
 void make_interior_free(Mesh<Scalar>& m);
 
+std::pair<int, int> count_cones(const Mesh<Scalar>& m);
+
 } // namespace Holonomy
 } // namespace Penner

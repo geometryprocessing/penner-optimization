@@ -47,6 +47,18 @@ std::vector<Type> convert_vector(const Eigen::Matrix<Type, Eigen::Dynamic, 1>& v
     return std::vector<Type>(v.data(), v.data() + v.size());
 }
 
+template <typename VectorType>
+Scalar compute_total_sum(const VectorType& v)
+{
+    Scalar total_sum = 0.;
+    int n = v.size();
+    for (int i = 0; i < n; ++i)
+    {
+        total_sum += v[i];
+    }
+    return total_sum;
+}
+
 /// Convert standard template library vector to an Eigen vector.
 ///
 /// @param[in] vector_std: standard template library vector to copy

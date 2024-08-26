@@ -821,12 +821,16 @@ void view_vertex_function(
         mesh_handle = "vertex function";
     }
 
-    int num_vertices = V.rows();
     if (show) {
-        spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
+        spdlog::info("Viewing {} mesh", mesh_handle);
     }
     auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
-    if (num_vertices != vertex_function.size()) return;
+    int num_vertices = m.n_vertices();
+    if (num_vertices != vertex_function.size())
+    {
+        spdlog::error("Inconsistent number of vertices and function size");
+        return;
+    }
 
 #ifdef ENABLE_VISUALIZATION
     spdlog::debug("Initializing mesh");

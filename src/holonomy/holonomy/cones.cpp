@@ -132,7 +132,6 @@ bool contains_zero_cones(const std::vector<Scalar>& Th_hat)
     return contains_small_cones(Th_hat, 1);
 }
 
-// Count negative and positive cones
 std::pair<int, int> count_cones(const Mesh<Scalar>& m)
 {
     const auto& Th_hat = m.Th_hat;
