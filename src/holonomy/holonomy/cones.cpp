@@ -314,13 +314,26 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
     {
         // check if vertex is valid
         int Vi = m.v_rep[vi];
-        if (m.Th_hat[Vi] < 2. * angle_delta) continue;
+        if (!float_equal(m.Th_hat[Vi], 4. * angle_delta)) continue;
         if ((only_interior) && (!is_interior(m, vi))) continue;
 
-        // check if adjacent vertex is valid
-        int vj = m.to[m.out[vi]];
+        // try to find valid adjacent vertex
+        int hik = m.out[vi];
+        int hij = hik;
+        int vj = m.to[hij];
+        do {
+            hij = m.n[m.opp[hij]];
+            vj = m.to[hij];
+            if ((only_interior) && (!is_interior(m, vj))) continue;
+            if (!float_equal(m.Th_hat[m.v_rep[vj]], 4. * angle_delta)) continue;
+            break;
+        }
+        while (hij != hik);
+
+        // check if valid adjacent vertex found
         int Vj = m.v_rep[vj];
         if ((only_interior) && (!is_interior(m, vj))) continue;
+        if (!float_equal(m.Th_hat[Vj], 4. * angle_delta)) continue;
 
         // add cones
         spdlog::debug("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);
