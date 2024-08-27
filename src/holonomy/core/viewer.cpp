@@ -235,6 +235,10 @@ void view_primal_graph(
     int num_vertices = m.n_ind_vertices();
     int num_halfedges = m.n_halfedges();
 
+    if (show) {
+        spdlog::info("Viewing primal graph {}", handle);
+    }
+
     // Get vertices in the graph
     std::vector<bool> is_vertex(num_vertices, false);
     for (int hij = 0; hij < num_halfedges; ++hij) {
