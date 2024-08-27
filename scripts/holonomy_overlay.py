@@ -1,4 +1,4 @@
-# Script to generate an overlay from a similarity mesh
+# Script to generate an overlay from a marked mesh
 
 import os, sys
 script_dir = os.path.dirname(__file__)
@@ -28,10 +28,11 @@ def similarity_overlay_one(args, fname):
     # Skip meshes that are already processed
     try:
         uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
-        V, F = igl.read_triangle_mesh(uv_mesh_path)
-        if (len(V) > 0):
-            print("Skipping processed mesh")
-            return
+        if os.path.isfile(uv_mesh_path):
+            V, F = igl.read_triangle_mesh(uv_mesh_path)
+            if (len(V) > 0):
+                print("Skipping processed mesh")
+                return
     except:
         pass
 
