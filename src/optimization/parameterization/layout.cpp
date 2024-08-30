@@ -38,11 +38,13 @@
 #include "conformal_ideal_delaunay/Layout.hh"
 #include "util/embedding.h"
 #include "optimization/parameterization/interpolation.h"
+#include "optimization/core/viewer.h"
 #include "optimization/core/projection.h"
 #include "optimization/parameterization/refinement.h"
 #include "optimization/parameterization/translation.h"
 #include "util/vector.h"
 #include "util/vf_mesh.h"
+#include "util/io.h"
 #include "optimization/util/viewers.h"
 
 // TODO: cleaning pass
@@ -911,15 +913,16 @@ std::
         }
     }
     for (size_t i = 0; i < m.Th_hat.size(); i++) {
-        if ((!is_bd[i]) && abs(m.Th_hat[i] - 2 * M_PI) > 1e-15) {
+        if ((!is_bd[i]) && abs(m.Th_hat[i] - 2 * M_PI) > 1e-12) {
             cones.push_back(i);
         }
     }
 
     std::vector<int> f_labels = get_overlay_face_labels(mo);
 
+    SPDLOG_INFO("Cone angles: {}", formatted_vector(m.Th_hat, "\n", 16));
     spdlog::trace("#bd_vt: {}", bd.size());
-    spdlog::trace("#cones: {}", cones.size());
+    spdlog::info("#cones: {}", cones.size());
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout

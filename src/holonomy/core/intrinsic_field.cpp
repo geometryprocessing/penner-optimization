@@ -1151,7 +1151,7 @@ VectorX IntrinsicNRosyField::run_with_viewer(
 
     // Initialize viewer
     auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
-    view_dual_graph(V, m, vtx_reindex, is_period_jump_fixed);
+    Optimization::view_dual_graph(V, m, vtx_reindex, is_period_jump_fixed);
     VectorX kappa_mesh = generate_FV_halfedge_data(F_halfedge, kappa);
     VectorX period_jump_scaled(period_jump.size());
     for (int i = 0; i < period_jump.size(); ++i)

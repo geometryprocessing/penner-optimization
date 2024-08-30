@@ -57,11 +57,11 @@ inline std::filesystem::path join_path(
 /// @param[in] delim: deliminator between vector entries
 /// @return formatted vector
 template <typename T>
-std::string formatted_vector(const std::vector<T>& vec, std::string delim = " ")
+std::string formatted_vector(const std::vector<T>& vec, std::string delim = " ", int precision=8)
 {
     std::stringstream vector_string;
     for (size_t i = 0; i < vec.size(); ++i) {
-        vector_string << vec[i] << delim;
+        vector_string << std::fixed << std::setprecision(precision) << vec[i] << delim;
     }
 
     return vector_string.str();

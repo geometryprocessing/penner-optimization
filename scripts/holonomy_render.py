@@ -72,25 +72,6 @@ def render_uv_one(args, fname):
     build_double = (np.sum(is_bd) != 0)
     logger.info("Is double: {}".format(build_double))
 
-	# FIXME Add option to use conversion directly
-    # Load vn_to_v from simplification
-    try:
-        vertex_map_path = os.path.join(uv_dir, m + "_output", name + '_vn_to_v')
-        logger.info("Loading vertex map at {}".format(vertex_map_path))
-        vn_to_v = np.loadtxt(vertex_map_path, dtype=int)
-    except:
-        logger.error("Could not load vertex map")
-        vn_to_v = np.arange(len(v3d))
-
-    # Load endpoints from simplification
-    try:
-        endpoints_path = os.path.join(uv_dir, m + "_output", name + '_endpoints')
-        logger.info("Loading endpoints at {}".format(endpoints_path))
-        endpoints = np.loadtxt(endpoints_path, dtype=int)
-    except:
-        logger.error("Could not load endpoints")
-        endpoints = np.full((len(v3d), 2), -1)
-
     # Load camera information
     try:
         camera_path = os.path.join(args['camera_dir'], m+'_camera.pickle')
@@ -173,20 +154,8 @@ def render_uv_one(args, fname):
 
     # Get colormap for the mesh
     logger.info('Getting {} colormap'.format(args['colormap']))
-    if args['interpolate_from_original']:
-        r = energies.get_interpolated_vertex_energy(
-            v3d,
-            f,
-            uv,
-            fuv,
-            vn_to_v,
-            endpoints,
-            args['colormap']
-        )
-    else:
-        r = energies.get_vertex_energy(v3d, f, uv, fuv, args['colormap'])
-    r = 0.25 + 0.0 * np.abs(r)
-    r = 0.5 + 0.0 * np.abs(r)
+    #r = np.full(len(v3d), 0.25)
+    r = np.full(len(v3d), 0.5)
     #colormap = cm.get_cmap('YlOrBr')
     #colormap = cm.get_cmap('OrRd')
     #colormap = cm.get_cmap('PuRd')

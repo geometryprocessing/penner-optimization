@@ -7,6 +7,7 @@ set(OptimizationCoreSrc
   core/projection.cpp
   core/reparametrization.cpp
   core/shear.cpp
+  core/viewer.cpp
 )
 
 set(MetricOptimizationSrc
