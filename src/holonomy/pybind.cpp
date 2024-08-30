@@ -84,6 +84,7 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("compute_mesh_quality", &compute_mesh_quality, default_call_guard);
     m.def("compute_min_angle", &compute_min_angle, default_call_guard);
     m.def("fix_cones", &fix_cones, default_call_guard);
+    m.def("add_random_cone_pair", &add_random_cone_pair, default_call_guard);
     m.def("add_optimal_cone_pair", &add_optimal_cone_pair, default_call_guard);
     m.def(
         "find_boundary_vertices",
