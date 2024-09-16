@@ -116,6 +116,7 @@ void init_holonomy_pybind(pybind11::module& m)
         "generate_VF_mesh_from_similarity_metric",
         &generate_VF_mesh_from_similarity_metric,
         default_call_guard);
+
 }
 
 #endif

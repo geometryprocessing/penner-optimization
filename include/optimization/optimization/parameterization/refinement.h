@@ -286,5 +286,35 @@ private:
     bool is_valid_refinement_mesh() const;
 };
 
+/**
+ * @brief Reconstruct the original mesh from an overlay mesh with halfedge
+ * 
+ * @param F: overlay mesh faces
+ * @param F_uv: overlay mesh parametric domain faces
+ * @param F_to_Fn: list of overlay subfaces of the original mesh faces
+ * @param endpoints: map from overlay vertices to the endpoints of their containing edge
+ * @param F_orig: reconstructed original mesh faces
+ * @param corner_v_points: list of halfedge vertices opposite a corner
+ * @param F_uv_orig: reconstructed original mesh parametric domain faces
+ * @param corner_uv_points: list of halfedge uv vertices opposite a corner
+ */
+void build_faces(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& F_uv,
+    const std::vector<std::vector<int>>& F_to_Fn,
+    const std::vector<std::pair<int, int>>& endpoints,
+    Eigen::MatrixXi& F_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_v_points,
+    Eigen::MatrixXi& F_uv_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points);
+
+/**
+ * @brief Construct list of subfaces from the overlay to original face map
+ * 
+ * @param Fn_to_F: map from overlay faces to the original face containing it
+ * @return list of overlay subfaces of the original mesh faces
+ */
+std::vector<std::vector<int>> build_F_to_Fn(const std::vector<int>& Fn_to_F);
+
 } // namespace Optimization
 } // namespace Penner

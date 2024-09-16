@@ -920,7 +920,7 @@ std::
 
     std::vector<int> f_labels = get_overlay_face_labels(mo);
 
-    SPDLOG_INFO("Cone angles: {}", formatted_vector(m.Th_hat, "\n", 16));
+    SPDLOG_TRACE("Cone angles: {}", formatted_vector(m.Th_hat, "\n", 16));
     spdlog::trace("#bd_vt: {}", bd.size());
     spdlog::info("#cones: {}", cones.size());
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());

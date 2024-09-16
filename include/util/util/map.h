@@ -12,7 +12,19 @@ namespace Penner {
  * @param[in] v: vector
  * @return max of v
  */
-Scalar vector_max(const std::vector<Scalar>& v);
+
+template <typename Type>
+Type vector_max(const std::vector<Type>& v)
+{
+    if (v.empty()) return 0.0;
+
+    Type max_value = v[0];
+    for (const auto& vi : v) {
+        max_value = max(max_value, vi);
+    }
+
+    return max_value;
+}
 
 /**
  * @brief Negate every value of a vector of scalars
@@ -28,10 +40,8 @@ int argmax(const VectorType& v)
     int size = v.size();
     if (size == 0) return -1;
     int max_index = 0;
-    for (int i = 1; i < size; ++i)
-    {
-        if (v[i] > v[max_index])
-        {
+    for (int i = 1; i < size; ++i) {
+        if (v[i] > v[max_index]) {
             max_index = i;
         }
     }
@@ -45,10 +55,8 @@ int argmin(const VectorType& v)
     int size = v.size();
     if (size == 0) return -1;
     int min_index = 0;
-    for (int i = 1; i < size; ++i)
-    {
-        if (v[i] < v[min_index])
-        {
+    for (int i = 1; i < size; ++i) {
+        if (v[i] < v[min_index]) {
             min_index = i;
         }
     }
@@ -58,7 +66,7 @@ int argmin(const VectorType& v)
 
 /**
  * @brief Determine if a vector contains a NaN
- * 
+ *
  * @param v: vector to check
  * @return true if the vector contains a NaN
  * @return false otherwise
@@ -108,7 +116,7 @@ VectorType vector_reindex(const VectorType& v, const IndexVectorType& reindex)
  *
  * @param[in] v: vector to reindex
  * @param[in] reindex: permutation to invert
- * @return composition i -> v[reindex[i]]
+ * @return composition i -> v[reindex^{-1}[i]]
  */
 template <typename VectorType, typename IndexVectorType>
 VectorType vector_inverse_reindex(const VectorType& v, const IndexVectorType& reindex)
@@ -123,8 +131,60 @@ VectorType vector_inverse_reindex(const VectorType& v, const IndexVectorType& re
 }
 
 /**
- * @brief Compute the range n of a map f: [0,...,m-1] -> [0,...,n-1]
+ * @brief Reindex the (column index) domain of a matrix of row vectors.
  * 
+ * The reindex map f(i) can be many to one, in which case an arbitrary value of f^{-1}(j)
+ * will be used for mat(j, :)
+ * 
+ * @param mat: matrix to reindex
+ * @param reindex: reindexing map
+ * @return composition i -> mat(reindex^{-1}(i), :)
+ */
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+matrix_inverse_reindex_domain(
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>&  mat,
+    const Eigen::VectorXi& reindex)
+{
+    int domain_size = reindex.size();
+    int range_size = reindex.maxCoeff() + 1;
+    int dimension = mat.cols();
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> reindex_mat(range_size, dimension);
+    for (int i = 0; i < domain_size; ++i) {
+        reindex_mat.row(reindex[i]) = mat.row(i);
+    }
+
+    return reindex_mat;
+}
+
+/**
+ * @brief Reindex the range of an index matrix 
+ * 
+ * @param mat: matrix of indices
+ * @param reindex: reindex map for indices
+ * @return reindexed map
+ */
+template <typename Type>
+Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic>
+matrix_reindex_range(
+    const Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic>&  mat,
+    const Eigen::VectorXi& reindex)
+{
+    int domain_size = mat.rows();
+    int dimension = mat.cols();
+    Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> reindex_mat(domain_size, dimension);
+    for (int i = 0; i < domain_size; ++i) {
+        for (int j = 0; j < dimension; ++j) {
+            reindex_mat(i, j) = reindex[mat(i, j)];
+        }
+    }
+
+    return reindex_mat;
+}
+
+/**
+ * @brief Compute the range n of a map f: [0,...,m-1] -> [0,...,n-1]
+ *
  * @param map: integer index map
  * @return range of the map
  */
@@ -132,7 +192,7 @@ int compute_map_range(const std::vector<int>& map);
 
 /**
  * @brief Invert a map (using a left inverse for noninvertible maps)
- * 
+ *
  * @param map: map to invert
  * @return left inverse of the map
  */
@@ -140,7 +200,7 @@ std::vector<int> invert_map(const std::vector<int>& map);
 
 /**
  * @brief Generate a random permutation
- * 
+ *
  * @param n: size of the permutation
  * @return permutation vector
  */
@@ -148,7 +208,7 @@ std::vector<int> generate_permutation(int n);
 
 /**
  * @brief Shuffle the image indices of a map
- * 
+ *
  * @param map: integer index map
  * @return shuffled index map
  */
@@ -218,16 +278,20 @@ VectorType union_vectors(const std::vector<VectorType>& vectors)
     int count = 0;
     for (const auto& vector : vectors) {
         int vector_size = vector.size();
-        total_vector.segment(count, vector_size) = vector;
-        count += vector_size;
+        for (int i = 0; i < vector_size; ++i)
+        {
+            total_vector[count] = vector[i];
+            ++count;
+        }
     }
 
     return total_vector;
 }
 
 /**
- * @brief Create a map from a set of a given size to a subset, with -1 for entries not in the subset.
- * 
+ * @brief Create a map from a set of a given size to a subset, with -1 for entries not in the
+ * subset.
+ *
  * @param set_size: size of the ambient set
  * @param subset_indices: indices of the subset in the set
  * @return map from set indices to subset indices

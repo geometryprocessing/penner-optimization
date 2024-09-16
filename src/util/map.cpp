@@ -6,20 +6,6 @@
 
 namespace Penner {
 
-Scalar
-vector_max(const std::vector<Scalar>& v)
-{
-	if (v.empty()) return 0.0;
-
-  Scalar max_value = v[0];
-  for (const auto& vi : v)
-  {
-    max_value = max(max_value, vi);
-  }
-
-  return max_value;
-}
-
 std::vector<Scalar> vector_negate(const std::vector<Scalar>& v)
 {
     int n = v.size();
@@ -50,12 +36,10 @@ std::vector<int> index_subset(size_t set_size, const std::vector<int>& subset_in
 int compute_map_range(const std::vector<int>& map)
 {
     // get range of map
-    int domain = map.size(); 
+    int domain = map.size();
     int range = 0;
-    for (int i = 0; i < domain; ++i)
-    {
-        if (range < (map[i] + 1))
-        {
+    for (int i = 0; i < domain; ++i) {
+        if (range < (map[i] + 1)) {
             range = map[i] + 1;
         }
     }
@@ -66,13 +50,12 @@ int compute_map_range(const std::vector<int>& map)
 std::vector<int> invert_map(const std::vector<int>& map)
 {
     // get range of map
-    int domain = map.size(); 
+    int domain = map.size();
     int range = compute_map_range(map);
 
     // invert map
     std::vector<int> inverse_map(range, -1);
-    for (int i = 0; i < domain; ++i)
-    {
+    for (int i = 0; i < domain; ++i) {
         inverse_map[map[i]] = i;
     }
 
@@ -84,7 +67,7 @@ std::vector<int> generate_permutation(int n)
     // generate permuation for the given size
     std::vector<int> permutation;
     Penner::arange(n, permutation);
-    auto rng = std::default_random_engine {};
+    auto rng = std::default_random_engine{};
     std::shuffle(permutation.begin(), permutation.end(), rng);
     return permutation;
 }
@@ -105,8 +88,7 @@ bool is_invariant_under_permutation(const std::vector<int>& map, const std::vect
 
     // check if applying the permutation changes the image of any element under the map
     int n = map.size();
-    for (int i = 0 ; i < n; ++i)
-    {
+    for (int i = 0; i < n; ++i) {
         if (perm[i] < 0) return false;
         if (perm[i] >= n) return false;
         if (map[perm[i]] != map[i]) return false;

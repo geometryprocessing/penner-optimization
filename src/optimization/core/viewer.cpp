@@ -446,10 +446,8 @@ void view_mesh_topology(
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
-    if (mesh_handle == "") {
-        polyscope::registerSurfaceMesh(mesh_handle, V, F);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
-    }
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("component", components);
     if (show) polyscope::show();
 #else

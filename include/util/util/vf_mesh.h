@@ -109,4 +109,24 @@ std::vector<bool> compute_boundary_vertices(const Eigen::MatrixXi& F, int num_ve
 Eigen::MatrixXd
 inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double inflation_distance = 1e-8);
 
+/**
+ * @brief Generate a matrix mapping vertex pairs to halfedges.
+ * 
+ * @param F: list of faces of the mesh
+ * @param he_to_corner: map from halfedge indices to face corners
+ * @return VV to halfedge matrix
+ */
+Eigen::SparseMatrix<int> generate_VV_to_halfedge_map(
+    const Eigen::MatrixXi& F,
+    const std::vector<std::pair<int, int>>& he_to_corner);
+
+/**
+ * @brief Generate a matrix mapping vertex pairs to the face containing the halfedge.
+ * 
+ * @param F: list of faces of the mesh
+ * @return VV to face matrix
+ */
+Eigen::SparseMatrix<int> generate_VV_to_face_map(const Eigen::MatrixXi& F);
+
+
 } // namespace Penner

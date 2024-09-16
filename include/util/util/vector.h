@@ -108,6 +108,23 @@ void convert_std_to_eigen_matrix(
     }
 }
 
+template <typename Scalar, std::size_t Dimension>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+convert_std_to_eigen_matrix(const std::vector<std::array<Scalar, Dimension>>& lol_matrix)
+{
+    int num_rows = lol_matrix.size();
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix(num_rows, Dimension);
+    for (int i = 0; i < num_rows; ++i)
+    {
+        for (std::size_t j = 0; j < Dimension; ++j)
+        {
+            eigen_matrix(i, j) = lol_matrix[i][j];
+        }
+    }
+
+    return eigen_matrix;
+}
+
 /// Convert Eigen dense vector to sparse.
 ///
 /// @param[in] vector_dense: input dense vector

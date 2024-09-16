@@ -44,6 +44,16 @@ void view_quad_mesh(
     std::string mesh_handle="",
     bool show=true);
 
+/**
+ * @brief View a parametrization with seamless error colormaps.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param uv: uv vertices
+ * @param F_uv: uv faces
+ * @param mesh_handle: (optional) name for surface mesh
+ * @param show: (optional) if true, open viewer
+ */
 void view_seamless_parameterization(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,

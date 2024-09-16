@@ -393,8 +393,14 @@ void build_face(
     std::array<int, 3>& uv_vertices,
     std::array<std::vector<int>, 3>& edge_uv_points)
 {
-    // Build a VF mesh for the subdivided faces
+    // check for valid subfaces
     int num_subfaces = subfaces.size();
+    if (num_subfaces == 0) {
+        spdlog::warn("Attempted to build trivial face");
+        return;
+    }
+
+    // Build a VF mesh for the subdivided faces
     Eigen::MatrixXi F_face(num_subfaces, 3);
     Eigen::MatrixXi F_uv_face(num_subfaces, 3);
     for (int fi = 0; fi < num_subfaces; ++fi) {
@@ -537,6 +543,25 @@ void build_faces(
     }
 }
 
+std::vector<std::vector<int>> build_F_to_Fn(const std::vector<int>& Fn_to_F)
+{
+    // Get the number of faces
+    int num_new_faces = Fn_to_F.size();
+    int num_faces = 0;
+    for (int i = 0; i < num_new_faces; ++i) {
+        num_faces = std::max(num_faces, Fn_to_F[i] + 1);
+    }
+
+    // Get the map from faces to list of new faces
+    std::vector<std::vector<int>> F_to_Fn(num_faces, std::vector<int>(0));
+    for (int i = 0; i < num_new_faces; ++i) {
+        int fi = Fn_to_F[i];
+        F_to_Fn[fi].push_back(i);
+    }
+
+    return F_to_Fn;
+}
+
 void RefinementMesh::build_connectivity(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_uv,
@@ -551,21 +576,9 @@ void RefinementMesh::build_connectivity(
         spdlog::error("uv face connectivity has {} components", num_components);
     }
 
-    // Make lists of new faces per original face
-    int num_new_faces = Fn_to_F.size();
-
-    // Get the number of faces
-    int num_faces = 0;
-    for (int i = 0; i < num_new_faces; ++i) {
-        num_faces = std::max(num_faces, Fn_to_F[i] + 1);
-    }
-
-    // Get the map from faces to list of new faces
-    std::vector<std::vector<int>> F_to_Fn(num_faces, std::vector<int>(0));
-    for (int i = 0; i < num_new_faces; ++i) {
-        int fi = Fn_to_F[i];
-        F_to_Fn[fi].push_back(i);
-    }
+    // get map from faces to list of subfaces
+    std::vector<std::vector<int>> F_to_Fn = build_F_to_Fn(Fn_to_F);
+    int num_faces = F_to_Fn.size();
 
     // For each original face, get the overlay vertices corresponding to the face
     Eigen::MatrixXi F_orig, F_uv_orig;

@@ -1,42 +1,42 @@
 /*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
-*  `Metric Optimization in Penner Coordinates`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Ryan Capouellez, Denis Zorin,                                                 *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+ *  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
+ *  `Metric Optimization in Penner Coordinates`           *
+ *  v1.0                                                                          *
+ *                                                                                *
+ *  The MIT License                                                               *
+ *                                                                                *
+ *  Permission is hereby granted, free of charge, to any person obtaining a       *
+ *  copy of this software and associated documentation files (the "Software"),    *
+ *  to deal in the Software without restriction, including without limitation     *
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
+ *  and/or sell copies of the Software, and to permit persons to whom the         *
+ *  Software is furnished to do so, subject to the following conditions:          *
+ *                                                                                *
+ *  The above copyright notice and this permission notice shall be included in    *
+ *  all copies or substantial portions of the Software.                           *
+ *                                                                                *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
+ *  IN THE SOFTWARE.                                                              *
+ *                                                                                *
+ *  Author(s):                                                                    *
+ *  Ryan Capouellez, Denis Zorin,                                                 *
+ *  Courant Institute of Mathematical Sciences, New York University, USA          *
+ *                                          *                                     *
+ *********************************************************************************/
 #include "util/vf_mesh.h"
 
 #include "util/vector.h"
 
-#include <igl/facet_components.h>
 #include <igl/boundary_facets.h>
+#include <igl/facet_components.h>
+#include <igl/per_vertex_normals.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/unique.h>
-#include <igl/per_vertex_normals.h>
 
 namespace Penner {
 
@@ -117,10 +117,8 @@ void cut_mesh_along_parametrization_seams(
     }
 }
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> generate_seams(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXi& FT)
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi>
+generate_seams(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const Eigen::MatrixXi& FT)
 {
     // get boundary edges of the uv map
     Eigen::MatrixXi uv_edges;
@@ -130,10 +128,9 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> generate_seams(
     // get 3D vertices on seam
     int num_seam_edges = J.size();
     Eigen::MatrixXi edges(num_seam_edges, 2);
-    for (int i = 0; i < num_seam_edges; ++i)
-    {
-        edges(i, 0) = F(J[i], (K[i] + 1)%3);
-        edges(i, 1) = F(J[i], (K[i] + 2)%3);
+    for (int i = 0; i < num_seam_edges; ++i) {
+        edges(i, 0) = F(J[i], (K[i] + 1) % 3);
+        edges(i, 1) = F(J[i], (K[i] + 2) % 3);
     }
 
     // reindex to remove redundant
@@ -173,8 +170,7 @@ std::vector<bool> compute_boundary_vertices(const Eigen::MatrixXi& F, int num_ve
     // Make list of boundary vertices into boolean mask
     std::vector<bool> is_boundary_vertex(num_vertices, false);
     int num_bd_vertices = bd_vertices.size();
-    for (int i = 0; i < num_bd_vertices; ++i)
-    {
+    for (int i = 0; i < num_bd_vertices; ++i) {
         int vi = bd_vertices[i];
         is_boundary_vertex[vi] = true;
     }
@@ -182,7 +178,8 @@ std::vector<bool> compute_boundary_vertices(const Eigen::MatrixXi& F, int num_ve
     return is_boundary_vertex;
 }
 
-Eigen::MatrixXd inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double inflation_distance)
+Eigen::MatrixXd
+inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double inflation_distance)
 {
     // Get vertex normals
     Eigen::MatrixXd N;
@@ -191,8 +188,7 @@ Eigen::MatrixXd inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F,
     // Displace mesh vertices along normal
     int num_vertices = V.rows();
     Eigen::MatrixXd V_inflated(num_vertices, 3);
-    for (int vi = 0; vi < num_vertices; ++vi)
-    {
+    for (int vi = 0; vi < num_vertices; ++vi) {
         // Add displacement along the vertex normal (if the normal is well defined)
         Eigen::RowVector3d ni = Eigen::RowVector3d::Zero();
         if (!(isnan(N(vi, 0)) || isnan(N(vi, 1)) || isnan(N(vi, 2)))) {
@@ -204,4 +200,52 @@ Eigen::MatrixXd inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F,
     return V_inflated;
 }
 
+// compute map from vertex-vertex edges to halfedges for mesh
+Eigen::SparseMatrix<int> generate_VV_to_halfedge_map(
+    const Eigen::MatrixXi& F,
+    const std::vector<std::pair<int, int>>& he_to_corner)
+{
+    int num_vertices = F.maxCoeff() + 1;
+    Eigen::SparseMatrix<int> vv2he(num_vertices, num_vertices);
+
+    // build sparse matrix
+    typedef Eigen::Triplet<int> Trip;
+    std::vector<Trip> trips;
+    int num_halfedges = he_to_corner.size();
+    for (int hjk = 0; hjk < num_halfedges; ++hjk) {
+        const auto& corner = he_to_corner[hjk];
+        int fijk = corner.first;
+        int i = corner.second;
+        int j = (i + 1) % 3;
+        int k = (j + 1) % 3;
+        int vj = F(fijk, j);
+        int vk = F(fijk, k);
+        trips.push_back(Trip(vj, vk, hjk + 1));
+    }
+    vv2he.setFromTriplets(trips.begin(), trips.end());
+
+    return vv2he;
+}
+
+Eigen::SparseMatrix<int> generate_VV_to_face_map(const Eigen::MatrixXi& F)
+{
+    int num_vertices = F.maxCoeff() + 1;
+    Eigen::SparseMatrix<int> vv2f(num_vertices, num_vertices);
+
+    // build sparse matrix
+    typedef Eigen::Triplet<int> Trip;
+    std::vector<Trip> trips;
+    int num_faces = F.rows();
+    for (int fijk = 0; fijk < num_faces; ++fijk) {
+        for (int i = 0; i < 3; ++i) {
+            int j = (i + 1) % 3;
+            int vi = F(fijk, i);
+            int vj = F(fijk, j);
+            trips.push_back(Trip(vi, vj, fijk + 1));
+        }
+    }
+    vv2f.setFromTriplets(trips.begin(), trips.end());
+
+    return vv2f;
+}
 } // namespace Penner
