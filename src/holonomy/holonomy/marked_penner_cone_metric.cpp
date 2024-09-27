@@ -327,6 +327,8 @@ std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_con
     alg_params.error_eps = proj_params->error_eps;
     alg_params.do_reduction = proj_params->do_reduction;
     alg_params.output_dir = proj_params->output_dir;
+    spdlog::info("Doing projection");
+    spdlog::info("Output to {}", alg_params.output_dir);
 
     // Optimize metric angles
     MatrixX identity = id_matrix(n_reduced_coordinates());

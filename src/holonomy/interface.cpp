@@ -1,21 +1,21 @@
 #include "holonomy/interface.h"
 
-#include "util/boundary.h"
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
 #include "holonomy/core/intrinsic_field.h"
 #include "holonomy/core/quality.h"
 #include "holonomy/holonomy/cones.h"
-#include "holonomy/holonomy/rotation_form.h"
 #include "holonomy/holonomy/holonomy.h"
+#include "holonomy/holonomy/rotation_form.h"
 #include "holonomy/similarity/energy.h"
+#include "util/boundary.h"
 
 #include "optimization/core/cone_metric.h"
 #include "optimization/core/constraint.h"
 #include "optimization/parameterization/interpolation.h"
+#include "optimization/parameterization/refinement.h"
 #include "util/io.h"
 #include "util/vector.h"
-#include "optimization/parameterization/refinement.h"
 
 
 #include <igl/facet_components.h>
@@ -32,10 +32,8 @@
 namespace Penner {
 namespace Holonomy {
 
-std::vector<int> extend_vtx_reindex(
-    const Mesh<Scalar>& m,
-    const std::vector<int>& vtx_reindex
-) {
+std::vector<int> extend_vtx_reindex(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex)
+{
     return vector_compose(vtx_reindex, m.v_rep);
 }
 
@@ -75,15 +73,15 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     // Use halfedge mesh method
     MarkedPennerConeMetric marked_metric =
         generate_marked_metric_from_mesh(m, rotation_form, marked_metric_params);
-    if (marked_metric_params.remove_symmetry)
-    {
+    if (marked_metric_params.remove_symmetry) {
         vtx_reindex = extend_vtx_reindex(m, vtx_reindex);
     }
 
     return std::make_tuple(marked_metric, vtx_reindex);
 }
 
-VectorX generate_penner_coordinates(const Mesh<Scalar>& m) {
+VectorX generate_penner_coordinates(const Mesh<Scalar>& m)
+{
     // Make copy of mesh delaunay
     Mesh<Scalar> m_copy = m;
     VectorX scale_factors;
@@ -100,8 +98,7 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m) {
 
     // Get flip sequence
     const auto& flip_sequence = del_stats.flip_seq;
-    for (auto iter = flip_sequence.rbegin(); iter != flip_sequence.rend();
-        ++iter) {
+    for (auto iter = flip_sequence.rbegin(); iter != flip_sequence.rend(); ++iter) {
         int flip_index = *iter;
         if (flip_index < 0) {
             flip_index = -flip_index - 1;
@@ -124,78 +121,75 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m) {
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
-    MarkedMetricParameters marked_metric_params)
+    MarkedMetricParameters marked_metric_params,
+    std::vector<int> marked_halfedges)
 {
     // (optionally) generate dual loops on the surface
     // If the mesh is a trivial torus, don't add constraints
     int num_basis_loops = 0;
-    if (!(marked_metric_params.remove_loop_constraints) && (!is_trivial_torus(m))) {
-        spdlog::info("Adding holonomy constraints");
-        HomologyBasisGenerator holonomy_basis_generator(m, 0, marked_metric_params.weighting);
-        BoundaryBasisGenerator boundary_basis_generator(m);
-        int num_homology_basis_loops = holonomy_basis_generator.n_homology_basis_loops();
-        int num_basis_boundaries = boundary_basis_generator.n_basis_boundaries();
-        spdlog::info(
-            "Adding {} homology and {} boundary constraints",
-            num_homology_basis_loops,
-            num_basis_boundaries);
+    if (marked_metric_params.remove_loop_constraints) return;
+    if ((marked_metric_params.remove_trivial_torus) && (is_trivial_torus(m))) return;
 
-        // Optionally remove some basis loops
-        if (marked_metric_params.max_loop_constraints >= 0) {
-            num_homology_basis_loops =
-                std::min<int>(num_homology_basis_loops, marked_metric_params.max_loop_constraints);
+    spdlog::info("Adding holonomy constraints");
+    HomologyBasisGenerator holonomy_basis_generator(m, 0, marked_metric_params.weighting);
+    BoundaryBasisGenerator boundary_basis_generator(m);
+    if (!marked_halfedges.empty()){
+        boundary_basis_generator.avoid_marked_halfedges(marked_halfedges);
+    }
+
+    int num_homology_basis_loops = holonomy_basis_generator.n_homology_basis_loops();
+    int num_basis_boundaries = boundary_basis_generator.n_basis_boundaries();
+    spdlog::info(
+        "Adding {} homology and {} boundary constraints",
+        num_homology_basis_loops,
+        num_basis_boundaries);
+
+    // Optionally remove some basis loops
+    if (marked_metric_params.max_loop_constraints >= 0) {
+        num_homology_basis_loops =
+            std::min<int>(num_homology_basis_loops, marked_metric_params.max_loop_constraints);
+    }
+
+    // Optionally remove some boundary loops
+    if (marked_metric_params.max_boundary_constraints >= 0) {
+        num_basis_boundaries =
+            std::min<int>(num_basis_boundaries, marked_metric_params.max_boundary_constraints);
+    }
+
+    // Initialize basis list loop and lambda to add loops
+    basis_loops.reserve(num_basis_loops);
+    bool use_connectivity = true;
+    auto add_basis_loop = [&](const std::vector<int>& basis_loop) {
+        // increment count
+        num_basis_loops++;
+
+        // Use custom data structure for dual loop tracking
+        if (use_connectivity) {
+            basis_loops.push_back(std::make_unique<DualLoopConnectivity>(
+                DualLoopConnectivity(build_dual_path_from_face_sequence(m, basis_loop))));
         }
-
-        // Optionally remove some boundary loops
-        if (marked_metric_params.max_boundary_constraints >= 0) {
-            num_basis_boundaries =
-                std::min<int>(num_basis_boundaries, marked_metric_params.max_boundary_constraints);
+        // Use simpler list representation
+        else {
+            basis_loops.push_back(std::make_unique<DualLoopList>(
+                DualLoopList(build_dual_path_from_face_sequence(m, basis_loop))));
         }
+    };
 
-        // Initialize basis list loop and lambda to add loops
-        basis_loops.reserve(num_basis_loops);
-        bool use_connectivity = true;
-        auto add_basis_loop = [&](const std::vector<int>& basis_loop) {
-            // increment count
-            num_basis_loops++;
+    // Add homology basis loops
+    for (int i = 0; i < num_homology_basis_loops; ++i) {
+        add_basis_loop(holonomy_basis_generator.construct_homology_basis_loop(i));
+    }
 
-            // Use custom data structure for dual loop tracking
-            if (use_connectivity) {
-                basis_loops.push_back(std::make_unique<DualLoopConnectivity>(
-                    DualLoopConnectivity(build_dual_path_from_face_sequence(m, basis_loop))));
-            }
-            // Use simpler list representation
-            else {
-                basis_loops.push_back(std::make_unique<DualLoopList>(
-                    DualLoopList(build_dual_path_from_face_sequence(m, basis_loop))));
-            }
-        };
+    // Add boundary basis loops
+    for (int i = 0; i < num_basis_boundaries; ++i) {
+        // TODO Think if need
+        // add_basis_loop(boundary_basis_generator.construct_boundary_basis_loop(i));
 
-        // Add homology basis loops
-        for (int i = 0; i < num_homology_basis_loops; ++i) {
-            add_basis_loop(holonomy_basis_generator.construct_homology_basis_loop(i));
-        }
-
-        // Add boundary basis loops
-        for (int i = 0; i < num_basis_boundaries; ++i) {
-            // TODO Think if need
-            //add_basis_loop(boundary_basis_generator.construct_boundary_basis_loop(i));
-
-            add_basis_loop(boundary_basis_generator.construct_boundary_path_basis_loop(i));
-        }
+        add_basis_loop(boundary_basis_generator.construct_boundary_path_basis_loop(i));
     }
 }
 
-MarkedPennerConeMetric generate_marked_metric_from_mesh(
-    const Mesh<Scalar>& _m,
-    const VectorX& rotation_form,
-    MarkedMetricParameters marked_metric_params)
-{
-    // Optionally remove symmetry structure
-    // TODO: Need to remake cone angles with half values
-    Mesh<Scalar> m = _m;
-    int num_halfedges = m.n_halfedges();
-
+Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
     // Build initial metric and target metric from edge lengths
     VectorX scale_factors;
     scale_factors.setZero(m.n_ind_vertices());
@@ -204,12 +198,15 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
 
     // Get initial log length coordinates
     VectorX log_length_coords = interpolation_mesh.get_halfedge_metric_coordinates();
-    Optimization::DiscreteMetric discrete_metric(m, log_length_coords);
+    return Optimization::DiscreteMetric(m, log_length_coords);
+}
 
-    // compute basis loops
-    std::vector<std::unique_ptr<DualLoop>> basis_loops;
-    generate_basis_loops(m, basis_loops, marked_metric_params);
 
+std::vector<Scalar> compute_kappa(
+    const Optimization::DiscreteMetric& discrete_metric,
+    const VectorX& rotation_form,
+    const std::vector<std::unique_ptr<DualLoop>>& basis_loops)
+{
     // Compute the corner angles
     VectorX he2angle, he2cot;
     Optimization::corner_angles(discrete_metric, he2angle, he2cot);
@@ -219,63 +216,83 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     std::vector<Scalar> kappa(num_basis_loops);
     for (int i = 0; i < num_basis_loops; ++i) {
         // Compute field rotation and metric holonomy
-        Scalar rotation = compute_dual_loop_rotation(m, rotation_form, *basis_loops[i]);
-        Scalar holonomy = compute_dual_loop_holonomy(m, he2angle, *basis_loops[i]);
+        Scalar rotation = compute_dual_loop_rotation(discrete_metric, rotation_form, *basis_loops[i]);
+        Scalar holonomy = compute_dual_loop_holonomy(discrete_metric, he2angle, *basis_loops[i]);
 
         // Constraint is the difference of the holonomy and rotation
         kappa[i] = holonomy - rotation;
         spdlog::debug("Holonomy constraint {} is {}", i, kappa[i]);
     }
 
-    // optionally make interior vertices free
-    if (marked_metric_params.free_interior)
-    {
-        m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), true);
-        auto bd_vertices = find_boundary_vertices(m);
-        for (int vi : bd_vertices)
-        {
-            m.fixed_dof[m.v_rep[vi]] = false;
-        }
+    return kappa;
+}
 
-        // handle trivial interior case
-        int num_bd_vertices =  bd_vertices.size();
-        if (num_bd_vertices == m.n_ind_vertices())
-        {
-            m.fixed_dof[0] = true;
+void make_free_interior(Mesh<Scalar>& m) {
+    m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), true);
+    auto bd_vertices = find_boundary_vertices(m);
+    for (int vi : bd_vertices) {
+        m.fixed_dof[m.v_rep[vi]] = false;
+    }
+
+    // handle trivial interior case
+    int num_bd_vertices = bd_vertices.size();
+    if (num_bd_vertices == m.n_ind_vertices()) {
+        m.fixed_dof[0] = true;
+    }
+}
+
+void remove_symmetry(const Mesh<Scalar>& _m, Mesh<Scalar>& m) {
+    m.Th_hat = std::vector<Scalar>(m.n_vertices(), 0.);
+    m.fixed_dof = std::vector<bool>(m.n_vertices(), false);
+    arange(m.n_vertices(), m.v_rep);
+    int num_halfedges = m.n_halfedges();
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        m.type[hij] = 0;
+        // m.R[hij] = 0;
+
+        // split interior cones
+        m.Th_hat[m.v_rep[m.to[hij]]] = _m.Th_hat[_m.v_rep[_m.to[hij]]] / 2.;
+        if (_m.type[hij] == 2) {
+            m.fixed_dof[m.v_rep[m.to[hij]]] = true;
+        } else {
+            m.fixed_dof[m.v_rep[m.to[hij]]] = _m.fixed_dof[_m.v_rep[_m.to[hij]]];
         }
     }
 
-    // optionally remove symmetry
-    if (marked_metric_params.remove_symmetry) {
-        m.Th_hat = std::vector<Scalar>(m.n_vertices(), 0.);
-        m.fixed_dof = std::vector<bool>(m.n_vertices(), false);
-        arange(m.n_vertices(), m.v_rep);
-        for (int hij = 0; hij < num_halfedges; ++hij) {
-            m.type[hij] = 0;
-            //m.R[hij] = 0;
-
-            // split interior cones
-            m.Th_hat[m.v_rep[m.to[hij]]] = _m.Th_hat[_m.v_rep[_m.to[hij]]] / 2.;
-            if (_m.type[hij] == 2)
-            {
-                m.fixed_dof[m.v_rep[m.to[hij]]] = true;
-            } else {
-                m.fixed_dof[m.v_rep[m.to[hij]]] = _m.fixed_dof[_m.v_rep[_m.to[hij]]];
-            }
-        }
-
-        std::vector<int> bd_vertices = find_boundary_vertices(_m);
-        for (int vi : bd_vertices)
-        {
-            m.Th_hat[m.v_rep[vi]] = _m.Th_hat[_m.v_rep[vi]];
-            m.fixed_dof[m.v_rep[vi]] = _m.fixed_dof[_m.v_rep[vi]];
-        }
+    std::vector<int> bd_vertices = find_boundary_vertices(_m);
+    for (int vi : bd_vertices) {
+        m.Th_hat[m.v_rep[vi]] = _m.Th_hat[_m.v_rep[vi]];
+        m.fixed_dof[m.v_rep[vi]] = _m.fixed_dof[_m.v_rep[vi]];
     }
+}
 
+MarkedPennerConeMetric generate_marked_metric_from_mesh(
+    const Mesh<Scalar>& _m,
+    const VectorX& rotation_form,
+    MarkedMetricParameters marked_metric_params,
+    std::vector<int> marked_halfedges)
+{
+    // Optionally remove symmetry structure
+    // TODO: Need to remake cone angles with half values
+    Mesh<Scalar> m = _m;
 
-    // Build initial metric coordinates    
+    // Get initial log length coordinates
+    Optimization::DiscreteMetric discrete_metric = generate_discrete_metric(m);
+    VectorX log_length_coords = discrete_metric.get_metric_coordinates();
+
+    // compute basis loops
+    std::vector<std::unique_ptr<DualLoop>> basis_loops;
+    generate_basis_loops(m, basis_loops, marked_metric_params, marked_halfedges);
+    std::vector<Scalar> kappa = compute_kappa(discrete_metric, rotation_form, basis_loops);
+
+    // optional modifications
+    if (marked_metric_params.free_interior) make_free_interior(m);
+    if (marked_metric_params.remove_symmetry) remove_symmetry(_m, m);
+
+    // Build initial metric coordinates
     VectorX metric_coords;
     if (marked_metric_params.use_initial_zero) {
+        int num_halfedges = m.n_halfedges();
         metric_coords = VectorX::Zero(num_halfedges);
     } else if (marked_metric_params.use_log_length) {
         metric_coords = log_length_coords;
@@ -283,12 +300,10 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
         metric_coords = generate_penner_coordinates(m);
     }
 
-
     return MarkedPennerConeMetric(m, metric_coords, basis_loops, kappa);
 }
 
-std::tuple<Mesh<Scalar>, std::vector<int>>
-generate_mesh(
+std::tuple<Mesh<Scalar>, std::vector<int>> generate_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
@@ -348,7 +363,8 @@ infer_marked_metric(
         FieldParameters field_params;
         rotation_form = generate_intrinsic_rotation_form(m, field_params);
     } else {
-        rotation_form = generate_rotation_form_from_cross_field(m, vtx_reindex_mesh, V, F, frame_field);
+        rotation_form =
+            generate_rotation_form_from_cross_field(m, vtx_reindex_mesh, V, F, frame_field);
     }
     bool has_boundary = bnd_loops.size() >= 1;
     std::vector<Scalar> Th_hat =
@@ -357,8 +373,7 @@ infer_marked_metric(
     // Generate marked mesh
     auto [marked_metric, vtx_reindex] =
         generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params);
-    if (marked_metric_params.remove_symmetry)
-    {
+    if (marked_metric_params.remove_symmetry) {
         vtx_reindex = extend_vtx_reindex(m, vtx_reindex);
     }
 
@@ -376,28 +391,23 @@ std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
     std::vector<Scalar> Th_hat = std::vector<Scalar>(V.rows(), 2 * M_PI);
     bool fix_boundary = false;
     bool use_discrete_metric = true;
-    std::unique_ptr<DifferentiableConeMetric> cone_metric =
-        Optimization::generate_initial_mesh(
-            V,
-            F,
-            V,
-            F,
-            Th_hat,
-            vtx_reindex,
-            free_cones,
-            fix_boundary,
-            use_discrete_metric);
+    std::unique_ptr<DifferentiableConeMetric> cone_metric = Optimization::generate_initial_mesh(
+        V,
+        F,
+        V,
+        F,
+        Th_hat,
+        vtx_reindex,
+        free_cones,
+        fix_boundary,
+        use_discrete_metric);
 
     // compute rotation form
     VectorX rotation_form = generate_intrinsic_rotation_form(*cone_metric, field_params);
 
     // generate cones from the rotation form
     bool has_bd = (cone_metric->type[0] != 0);
-    Th_hat = generate_cones_from_rotation_form(
-        *cone_metric,
-        vtx_reindex,
-        rotation_form,
-        has_bd);
+    Th_hat = generate_cones_from_rotation_form(*cone_metric, vtx_reindex, rotation_form, has_bd);
 
     return std::make_tuple(rotation_form, Th_hat);
 }

@@ -133,16 +133,16 @@ void view_rotation_form(
 #endif
 }
 
-Scalar uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
+Scalar compute_uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
     Eigen::Vector2d difference_vector = uv_1 - uv_0;
     Scalar length_sq = difference_vector.dot(difference_vector);
     return length_sq;
 }
 
-Scalar uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
+Scalar compute_uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
-    return sqrt(uv_length_squared(uv_0, uv_1));
+    return sqrt(compute_uv_length_squared(uv_0, uv_1));
 }
 
 Scalar uv_cos_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
@@ -155,7 +155,7 @@ Scalar uv_cos_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
     return (dot_01 / norm);
 }
 
-std::tuple<VectorX, VectorX, VectorX> compute_seamless_error(
+std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv)
@@ -168,6 +168,7 @@ std::tuple<VectorX, VectorX, VectorX> compute_seamless_error(
     // Iterate over edges to check the length inconsistencies
     VectorX uv_length_error(F.size());
     VectorX uv_angle_error(F.size());
+    VectorX uv_length(F.size());
     VectorX uv_angle(F.size());
     for (Eigen::Index e = 0; e < EF.rows(); ++e) {
         // Get face corners corresponding to the current edge
@@ -191,8 +192,8 @@ std::tuple<VectorX, VectorX, VectorX> compute_seamless_error(
         Eigen::Vector2d uv_01 = uv.row(v0p);
         Eigen::Vector2d uv_10 = uv.row(v1n);
         Eigen::Vector2d uv_11 = uv.row(v1p);
-        Scalar l0 = uv_length(uv_00, uv_01);
-        Scalar l1 = uv_length(uv_10, uv_11);
+        Scalar l0 = compute_uv_length(uv_00, uv_01);
+        Scalar l1 = compute_uv_length(uv_10, uv_11);
         Scalar cos_angle = uv_cos_angle(uv_01 - uv_00, uv_11 - uv_10);
         Scalar length_error = abs(l0 - l1);
         Scalar angle_error = min(abs(cos_angle), abs(abs(cos_angle) - 1));
@@ -204,11 +205,13 @@ std::tuple<VectorX, VectorX, VectorX> compute_seamless_error(
         uv_length_error(3 * f1 + i1) = length_error;
         uv_angle_error(3 * f0 + i0) = angle_error;
         uv_angle_error(3 * f1 + i1) = angle_error;
+        uv_length(3 * f0 + i0) = 2. * log(l0);
+        uv_length(3 * f1 + i1) = 2. * log(l1);
         uv_angle(3 * f0 + i0) = cos_angle;
         uv_angle(3 * f1 + i1) = cos_angle;
     }
 
-    return std::make_tuple(uv_length_error, uv_angle_error, uv_angle);
+    return std::make_tuple(uv_length_error, uv_angle_error, uv_length, uv_angle);
 }
 
 // TODO MAke separate layout method
@@ -308,7 +311,7 @@ void view_seamless_parameterization(
     // Cut mesh along seams
     Eigen::MatrixXd V_cut;
     cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
-    auto [uv_length_error, uv_angle_error, uv_angle] = compute_seamless_error(F, uv, FT);
+    auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = compute_seamless_error(F, uv, FT);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
 
@@ -330,6 +333,10 @@ void view_seamless_parameterization(
         ->addHalfedgeScalarQuantity(
             "uv angle error",
             convert_scalar_to_double_vector(uv_angle_error));
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "uv length",
+            convert_scalar_to_double_vector(uv_length));
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv angle",

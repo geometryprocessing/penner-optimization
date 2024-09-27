@@ -40,21 +40,46 @@ VectorX Kappa(const MarkedPennerConeMetric& marked_metric, const VectorX& alpha)
     return Kappa(marked_metric, homology_basis_loops, alpha);
 }
 
+MatrixX build_free_vertex_system(const Mesh<Scalar>& m)
+{
+    // build map to free vertices
+    std::vector<int> v_map;
+    int num_free_vertices;
+    Optimization::build_free_vertex_map(m, v_map, num_free_vertices);
+
+    // make map into a matrix
+    int num_vertices = v_map.size();
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(num_vertices);
+    for (int i = 0; i < num_vertices; i++) {
+        int vi = v_map[i];
+        if (vi < 0) continue;
+        tripletList.push_back(T(vi, i, 1.));
+    }
+
+    // Create the matrix from the triplets
+    MatrixX vertex_system;
+    vertex_system.resize(num_free_vertices, num_vertices);
+    vertex_system.reserve(tripletList.size());
+    vertex_system.setFromTriplets(tripletList.begin(), tripletList.end());
+    return vertex_system;
+}
+
 // Add vertex angle constraints
 // TODO Allow for additional fixed degrees of freedom
 void add_vertex_constraints(
     const MarkedPennerConeMetric& marked_metric,
-    const std::vector<int> v_map,
+    const MatrixX& angle_constraint_system,
     const VectorX& angles,
     VectorX& constraint,
     int offset)
 {
-    int n_v = marked_metric.n_ind_vertices();
+    int n_constraints = angle_constraint_system.rows();
     VectorX t = Theta(marked_metric, angles);
-    for (int i = 0; i < n_v; i++) {
-        if (v_map[i] < 0) continue;
-        constraint[offset + v_map[i]] = marked_metric.Th_hat[i] - t(i);
-    }
+    VectorX t_hat;
+    convert_std_to_eigen_vector(marked_metric.Th_hat, t_hat);
+    constraint.segment(offset, n_constraints) = angle_constraint_system * (t_hat - t);
 }
 
 void add_basis_loop_constraints(
@@ -122,10 +147,11 @@ VectorX compute_vertex_constraint(
     // Use all vertices
     std::vector<int> v_map = marked_metric.v_rep;
     int n_v = marked_metric.n_ind_vertices();
+    MatrixX angle_constraint_system = id_matrix(n_v);
 
     // Build the constraint
     VectorX constraint = VectorX::Zero(n_v);
-    add_vertex_constraints(marked_metric, v_map, angles, constraint, 0);
+    add_vertex_constraints(marked_metric, angle_constraint_system, angles, constraint, 0);
 
     return constraint;
 }
@@ -135,42 +161,20 @@ VectorX compute_metric_constraint(
     const VectorX& angles,
     bool only_free_vertices)
 {
+    MatrixX angle_constraint_system;
+    if (only_free_vertices) {
+        angle_constraint_system = build_free_vertex_system(marked_metric);
+    } else {
+        angle_constraint_system = id_matrix(marked_metric.n_ind_vertices());
+    }
+    int n_v = angle_constraint_system.rows();
     int n_s = marked_metric.n_homology_basis_loops();
 
-    std::vector<int> v_map;
-    int n_v;
-    if (only_free_vertices) {
-        Optimization::build_free_vertex_map(marked_metric, v_map, n_v);
-    } else {
-        v_map = marked_metric.v_rep;
-        n_v = marked_metric.n_ind_vertices();
-    }
 
     // Build the constraint
     VectorX constraint = VectorX::Zero(n_v + n_s);
-    add_vertex_constraints(marked_metric, v_map, angles, constraint, 0);
+    add_vertex_constraints(marked_metric, angle_constraint_system, angles, constraint, 0);
     add_basis_loop_constraints(marked_metric, angles, constraint, n_v);
-
-    return constraint;
-}
-
-VectorX _compute_metric_constraint(
-    const MarkedPennerConeMetric& marked_metric,
-    const VectorX& angles)
-{
-    int n_s = marked_metric.n_homology_basis_loops();
-
-    std::vector<int> v_map;
-    int n_v;
-    Optimization::build_free_vertex_map(marked_metric, v_map, n_v);
-    spdlog::debug("{} vertex constraints", n_v);
-
-    // Build the constraint
-    std::vector<int> dependent_edges = compute_dependent_edges(marked_metric);
-    VectorX constraint = VectorX::Zero(n_v + n_s + dependent_edges.size());
-    add_vertex_constraints(marked_metric, v_map, angles, constraint, 0);
-    add_basis_loop_constraints(marked_metric, angles, constraint, n_v);
-    add_symmetry_constraints(marked_metric, dependent_edges, constraint, n_v + n_s);
 
     return constraint;
 }
@@ -203,24 +207,14 @@ MatrixX compute_metric_corner_angle_jacobian(
     return marked_metric.change_metric_to_reduced_coordinates(tripletList, num_halfedges);
 }
 
-// Compute the linear map from corner angles to vertex and dual loop holonomy constraints
-MatrixX compute_holonomy_matrix(
+MatrixX compute_loop_holonomy_matrix(
     const Mesh<Scalar>& m,
-    const std::vector<int>& v_map,
-    const std::vector<std::unique_ptr<DualLoop>>& dual_loops,
-    int num_vertex_forms)
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops)
 {
     int num_halfedges = m.n_halfedges();
     typedef Eigen::Triplet<Scalar> T;
     std::vector<T> tripletList;
     tripletList.reserve(2 * num_halfedges);
-
-    // Add vertex constraints
-    for (int h = 0; h < num_halfedges; ++h) {
-        int v = v_map[m.v_rep[m.to[m.n[h]]]];
-        if (v < 0) continue;
-        tripletList.push_back(T(v, h, 1.0));
-    }
 
     // Add dual loop holonomy constraints
     int num_loops = dual_loops.size();
@@ -232,22 +226,66 @@ MatrixX compute_holonomy_matrix(
             // Negative angle if the segment subtends an angle to the right
             if (h_end == m.n[h_start]) {
                 int h_opp = m.n[h_end]; // halfedge opposite subtended angle
-                tripletList.push_back(T(num_vertex_forms + i, h_opp, -1.0));
+                tripletList.push_back(T(i, h_opp, -1.0));
             }
             // Positive angle if the segment subtends an angle to the left
             else if (h_start == m.n[h_end]) {
                 int h_opp = m.n[h_start]; // halfedge opposite subtended angle
-                tripletList.push_back(T(num_vertex_forms + i, h_opp, 1.0));
+                tripletList.push_back(T(i, h_opp, 1.0));
             }
         }
     }
 
     // Create the matrix from the triplets
     MatrixX holonomy_matrix;
-    holonomy_matrix.resize(num_vertex_forms + num_loops, num_halfedges);
+    holonomy_matrix.resize(num_loops, num_halfedges);
     holonomy_matrix.reserve(tripletList.size());
     holonomy_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
     return holonomy_matrix;
+}
+
+MatrixX compute_vertex_holonomy_matrix(const Mesh<Scalar>& m)
+{
+    int num_ind_vertiecs = m.n_ind_vertices();
+    int num_halfedges = m.n_halfedges();
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(num_ind_vertiecs);
+
+    // Add vertex holonomy
+    for (int h = 0; h < num_halfedges; ++h) {
+        int v = m.v_rep[m.to[m.n[h]]];
+        tripletList.push_back(T(v, h, 1.0));
+    }
+
+    // Create the matrix from the triplets
+    MatrixX holonomy_matrix;
+    holonomy_matrix.resize(num_ind_vertiecs, num_halfedges);
+    holonomy_matrix.reserve(tripletList.size());
+    holonomy_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    return holonomy_matrix;
+}
+
+// Compute the linear map from corner angles to vertex and dual loop holonomy constraints
+MatrixX compute_holonomy_matrix(
+    const Mesh<Scalar>& m,
+    const MatrixX& angle_constraint_system,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops)
+{
+    MatrixX J_vertex_holonomy = angle_constraint_system * compute_vertex_holonomy_matrix(m);
+    MatrixX J_loop_holonomy = compute_loop_holonomy_matrix(m, dual_loops);
+
+    // Assemble matrix from two components
+    int r0 = J_vertex_holonomy.rows();
+    int r1 = J_loop_holonomy.rows();
+    int c = J_vertex_holonomy.cols();
+    assert(c == J_loop_holonomy.cols());
+    MatrixX J_transpose(c, r0 + r1);
+    J_transpose.leftCols(r0) = J_vertex_holonomy.transpose();
+    J_transpose.rightCols(r1) = J_loop_holonomy.transpose();
+
+    // TODO Remove double transpose
+    return J_transpose.transpose();
 }
 
 MatrixX compute_metric_constraint_jacobian(
@@ -256,13 +294,11 @@ MatrixX compute_metric_constraint_jacobian(
     bool only_free_vertices)
 {
     // Get vertex representation
-    std::vector<int> v_map;
-    int num_vertex_forms;
+    MatrixX angle_constraint_system;
     if (only_free_vertices) {
-        Optimization::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
+        angle_constraint_system = build_free_vertex_system(marked_metric);
     } else {
-        v_map = marked_metric.v_rep;
-        num_vertex_forms = marked_metric.n_ind_vertices();
+        angle_constraint_system = id_matrix(marked_metric.n_ind_vertices());
     }
 
     // Get corner angle derivatives with respect to metric coordinates
@@ -271,7 +307,7 @@ MatrixX compute_metric_constraint_jacobian(
     // Get matrix summing up corner angles to form holonomy matrix
     const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
     MatrixX holonomy_matrix =
-        compute_holonomy_matrix(marked_metric, v_map, homology_basis_loops, num_vertex_forms);
+        compute_holonomy_matrix(marked_metric, angle_constraint_system, homology_basis_loops);
 
     // Build holonomy constraint jacobian
     return holonomy_matrix * J_corner_angle_metric;
@@ -303,43 +339,6 @@ MatrixX compute_symmetry_constraint_jacobian(
     symmetry_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
     //spdlog::info("Matrix {}", symmetry_matrix);
     return symmetry_matrix;
-}
-
-MatrixX _compute_metric_constraint_jacobian(
-    const MarkedPennerConeMetric& marked_metric,
-    const VectorX& cotangents)
-{
-    // Get vertex representation
-    int num_vertex_forms;
-    std::vector<int> v_map;
-    Optimization::build_free_vertex_map(marked_metric, v_map, num_vertex_forms);
-
-    // Get corner angle derivatives with respect to metric coordinates
-    MatrixX J_corner_angle_metric = compute_metric_corner_angle_jacobian(marked_metric, cotangents);
-
-    // Get matrix summing up corner angles to form holonomy matrix
-    const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
-    MatrixX holonomy_matrix =
-        compute_holonomy_matrix(marked_metric, v_map, homology_basis_loops, num_vertex_forms);
-
-    // Build holonomy constraint jacobian
-    MatrixX J_holonomy_constraint = holonomy_matrix * J_corner_angle_metric;
-
-    // Build symmetry constraint jacobian
-    std::vector<int> dependent_edges = compute_dependent_edges(marked_metric);
-    MatrixX J_symmetry_constraint =
-        compute_symmetry_constraint_jacobian(marked_metric, dependent_edges);
-
-    // Assemble matrix from two components
-    int r0 = J_holonomy_constraint.rows();
-    int r1 = J_symmetry_constraint.rows();
-    int c = J_holonomy_constraint.cols();
-    assert(c == J_symmetry_constraint.cols());
-    MatrixX J_transpose(c, r0 + r1);
-    J_transpose.leftCols(r0) = J_holonomy_constraint.transpose();
-    J_transpose.rightCols(r1) = J_symmetry_constraint.transpose();
-
-    return J_transpose.transpose();
 }
 
 // Helper function to compute metric constraint assuming a discrete metric
