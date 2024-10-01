@@ -54,6 +54,7 @@ void init_holonomy_pybind(pybind11::module& m)
         .def_readwrite("use_log_length", &MarkedMetricParameters::use_log_length)
         .def_readwrite("use_initial_zero", &MarkedMetricParameters::use_initial_zero)
         .def_readwrite("remove_loop_constraints", &MarkedMetricParameters::remove_loop_constraints)
+        .def_readwrite("remove_trivial_torus", &MarkedMetricParameters::remove_trivial_torus)
         .def_readwrite("free_interior", &MarkedMetricParameters::free_interior)
         .def_readwrite("weighting", &MarkedMetricParameters::weighting);
 
