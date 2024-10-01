@@ -50,6 +50,8 @@ target_link_libraries(PennerOptimizationLib PUBLIC
 target_compile_definitions(PennerOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
-target_compile_options(PennerOptimizationLib PRIVATE
-  -Wall -Wpedantic -Wextra -Werror
-)
+if ((NOT USE_MULTIPRECISION) AND (DEBUG_WARNINGS))
+    target_compile_options(PennerOptimizationLib PRIVATE
+      -Wall -Wpedantic -Wextra -Werror
+    )
+endif()
