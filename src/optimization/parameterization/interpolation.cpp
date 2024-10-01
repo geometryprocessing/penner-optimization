@@ -63,7 +63,7 @@ void interpolate_penner_coordinates(
     interpolation_mesh = InterpolationMesh(mesh, trivial_scale_factors, is_hyperbolic);
 
     // Convert the surface to a hyperbolic surface with Penner coordiantes
-    bool undo_flips = false;
+    bool undo_flips = true;
     if (undo_flips) {
         spdlog::trace("Converting surface to hyperbolic surface");
         std::vector<int> euclidean_flip_sequence, hyperbolic_flip_sequence;

@@ -25,6 +25,7 @@ struct MarkedMetricParameters
     Weighting weighting = Weighting::minimal_homotopy; // weighting for tree-cotree
     bool remove_symmetry = false; // remove symmetry structure from doubled mesh
     bool free_interior = false; // remove interior cone constraints
+    bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
 };
 
 /**
@@ -122,7 +123,8 @@ std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refine
 MarkedPennerConeMetric generate_marked_metric_from_mesh(
     const Mesh<Scalar>& m,
     const VectorX& rotation_form,
-    MarkedMetricParameters marked_mesh_params = MarkedMetricParameters());
+    MarkedMetricParameters marked_mesh_params = MarkedMetricParameters(),
+    std::vector<int> marked_halfedges = {});
 
 /**
  * @brief Generate a similarity metric from a VF mesh, cones, and rotation form.

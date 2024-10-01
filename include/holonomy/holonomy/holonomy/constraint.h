@@ -66,9 +66,8 @@ MatrixX compute_metric_constraint_jacobian(
 
 MatrixX compute_holonomy_matrix(
     const Mesh<Scalar>& m,
-    const std::vector<int>& v_map,
-    const std::vector<std::unique_ptr<DualLoop>>& dual_loops,
-    int num_vertex_forms);
+    const MatrixX& angle_constraint_system,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
     
 /**
  * @brief Compute the holonomy constraints and the jacobian with respect to metric coordinates.
@@ -89,16 +88,22 @@ void compute_metric_constraint_with_jacobian(
 
 void add_vertex_constraints(
     const MarkedPennerConeMetric& marked_metric,
-    const std::vector<int> v_map,
+    const MatrixX& angle_constraint_system,
     const VectorX& angles,
     VectorX& constraint,
     int offset = 0);
+
+MatrixX build_free_vertex_system(const Mesh<Scalar>& m);
 
 void add_basis_loop_constraints(
     const MarkedPennerConeMetric& marked_metric,
     const VectorX& angles,
     VectorX& constraint,
     int offset = 0);
+
+MatrixX compute_metric_corner_angle_jacobian(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& cotangents);
     
 } // namespace Holonomy
 } // namespace Penner

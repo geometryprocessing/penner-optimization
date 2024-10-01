@@ -1,17 +1,18 @@
 # Script to generate a table summarizing various energies and other metrics from output
 # parameterizations from uv coordinates
 
+import os, sys
+script_dir = os.path.dirname(__file__)
+module_dir = os.path.join(script_dir, '..', 'py')
+sys.path.append(module_dir)
+
 import optimize_impl.energies as energies
 import script_util
 import igl
 import pandas as pd
 import penner
 import numpy as np
-import os
-import sys
-script_dir = os.path.dirname(__file__)
-module_dir = os.path.join(script_dir, '..', 'py')
-sys.path.append(module_dir)
+import multiprocessing
 
 
 def add_error_table_arguments(parser):
@@ -30,20 +31,97 @@ def add_error_table_arguments(parser):
     )
 
 
+def run_optimization_analysis(input_dir, uv_dir, fname, suffix=""):
+    analysis_dict = {}
+    
+    analyses = [
+        'uv_length_error',
+        'min_overlay_area',
+        'max_overlay_area',
+        'min_uv_area',
+        'max_uv_area',
+        'num_faces',
+        'num_overlay_faces',
+        'is_manifold',
+        'num_components',
+        'max_sym_dir',
+        'max_quadratic_sym_dir',
+    ]
+
+    # get output directory for mesh
+    dot_index = fname.rfind(".")
+    m = fname[:dot_index]
+    if (suffix == ""):
+        name = m
+    else:
+        name = m + '_' + suffix
+
+    try:
+        # Load input mesh information
+        input_path = os.path.join(input_dir, m+'.obj')
+        v3d_orig, f_orig = igl.read_triangle_mesh(input_path)
+
+        # Get final output mesh
+        uv_path = os.path.join(uv_dir, m + "_output", name + ".obj")
+        v3d, uv, _, f, fuv, _ = igl.read_obj(uv_path)
+
+        # embed uv
+        uv_embed = np.zeros((len(uv), 3))
+        uv_embed[:, :2] = uv[:, :2]
+    except:
+        return {}
+
+    for analysis in analyses:
+        try:
+            if analysis == 'num_faces':
+                analysis_dict[analysis] = len(f_orig)
+
+            if analysis == 'num_overlay_faces':
+                analysis_dict[analysis] = len(f)
+
+            if analysis == 'is_manifold':
+                analysis_dict[analysis] = igl.is_edge_manifold(f)
+
+            if analysis == 'num_components':
+                analysis_dict[analysis] = np.max(igl.face_components(fuv)) + 1
+
+            if analysis == 'uv_length_error':
+                analysis_dict[analysis] = penner.compute_uv_length_error(f, uv, fuv)
+
+            if analysis == 'min_overlay_area':
+                mesh_areas = 0.5 * igl.doublearea(v3d, f)
+                analysis_dict[analysis] = np.min(mesh_areas)
+
+            if analysis == 'max_overlay_area':
+                mesh_areas = 0.5 * igl.doublearea(v3d, f)
+                analysis_dict[analysis] = np.max(mesh_areas)
+
+            if analysis == 'min_uv_area':
+                uv_embed = np.zeros((len(uv), 3))
+                uv_embed[:, :2] = uv[:, :2]
+                uv_areas = 0.5 * igl.doublearea(uv_embed, fuv)
+                analysis_dict[analysis] = np.min(uv_areas)
+
+            if analysis == 'max_uv_area':
+                uv_areas = 0.5 * igl.doublearea(uv_embed, fuv)
+                analysis_dict[analysis] = np.max(uv_areas)
+
+            if analysis == 'max_sym_dir':
+                sym_dirichlet_energy = energies.sym_dirichlet_vf(
+                    v3d, f, uv_embed, fuv) - 4
+                analysis_dict[analysis] = np.max(sym_dirichlet_energy)
+
+            if analysis == 'max_quadratic_sym_dir':
+                quad_sym_dir_energy = energies.quadratic_sym_dirichlet_vf(
+                    v3d, f, uv_embed, fuv)
+                analysis_dict[analysis] = np.max(quad_sym_dir_energy)
+
+        except:
+            analysis_dict[analysis].append(-1)
+
+    return analysis_dict
+
 def error_table(args):
-    error_dict = {}
-    models = []
-    error_dict['uv_length_error'] = []
-    error_dict['min_overlay_area'] = []
-    error_dict['max_overlay_area'] = []
-    error_dict['min_uv_area'] = []
-    error_dict['max_uv_area'] = []
-    error_dict['num_faces'] = []
-    error_dict['num_overlay_faces'] = []
-    error_dict['is_manifold'] = []
-    error_dict['num_components'] = []
-    error_dict['max_sym_dir'] = []
-    error_dict['max_quadratic_sym_dir'] = []
 
     # Create output directory for the mesh
     output_dir = args['output_dir']
@@ -54,79 +132,24 @@ def error_table(args):
     logger = script_util.get_logger(log_path)
     logger.info("Building error table")
 
+    # get list of models
+    models = []
     for fname in args['fname']:
         dot_index = fname.rfind(".")
         m = fname[:dot_index]
         models.append(m)
 
-        try:
-            logger.info("Processing mesh {}".format(m))
-            if (args['suffix'] == ""):
-                name = m
-            else:
-                name = m + '_'+args['suffix']
-
-            # Load input mesh information
-            try:
-                input_dir = args['input_dir']
-                input_path = os.path.join(input_dir, m+'.obj')
-                logger.info("Loading initial mesh at {}".format(input_path))
-                v3d_orig, f_orig = igl.read_triangle_mesh(input_path)
-            except:
-                logger.error("Could not load initial mesh")
-                return
-
-            # Get final output mesh
-            try:
-                uv_dir = args['uv_dir']
-                uv_path = os.path.join(uv_dir, m + "_output", name + ".obj")
-                logger.info("Loading uv coordinates at {}".format(uv_path))
-                v3d, uv, _, f, fuv, _ = igl.read_obj(uv_path)
-            except:
-                logger.error("Could not load uvs for {}".format(name))
-
-            # Get topology information
-            logger.info("Getting count information")
-            error_dict['num_faces'].append(len(f_orig))
-            error_dict['num_overlay_faces'].append(len(f))
-
-            logger.info("Getting topology information")
-            error_dict['is_manifold'].append(igl.is_edge_manifold(f))
-            error_dict['num_components'].append(-1)
-            #    np.max(igl.face_components(fuv)) + 1)
-
-            # Get areas
-            logger.info("Computing areas")
-            uv_embed = np.zeros((len(uv), 3))
-            uv_embed[:, :2] = uv[:, :2]
-            mesh_areas = 0.5 * igl.doublearea(v3d, f)
-            uv_areas = 0.5 * igl.doublearea(uv_embed, fuv)
-            error_dict['uv_length_error'].append(
-                penner.compute_uv_length_error(f, uv, fuv))
-            error_dict['min_overlay_area'].append(np.min(mesh_areas))
-            error_dict['max_overlay_area'].append(np.max(mesh_areas))
-            error_dict['min_uv_area'].append(np.min(uv_areas))
-            error_dict['max_uv_area'].append(np.max(uv_areas))
-
-            # Get energies
-            logger.info("Computing distortion energies")
-            sym_dirichlet_energy = energies.sym_dirichlet_vf(
-                v3d, f, uv_embed, fuv) - 4
-            quad_sym_dir_energy = energies.quadratic_sym_dirichlet_vf(
-                v3d, f, uv_embed, fuv)
-            error_dict['max_sym_dir'].append(np.max(sym_dirichlet_energy))
-            error_dict['max_quadratic_sym_dir'].append(
-                np.max(quad_sym_dir_energy))
-        except:
-            logger.error("Missing output for {}".format(m))
-            for key in error_dict:
-                error_dict[key].append(-1)
+    # run analysis
+    pool_args = [(args['input_dir'], args['uv_dir'], m, args['suffix']) for m in args['fname']]
+    with multiprocessing.Pool(processes=32) as pool:
+      all_analyses = pool.starmap(run_optimization_analysis, pool_args, chunksize=1)
 
     # Save dataframe to file
-    energies_df = pd.DataFrame(error_dict, index=models)
+    analysis_df = pd.DataFrame(all_analyses, index=models)
     csv_path = os.path.join(
-        args['output_dir'], 'errors_' + args['suffix'] + '.csv')
-    energies_df.to_csv(csv_path)
+        args['output_dir'], 'analysis_' + args['suffix'] + '.csv')
+    logger.info(f"Saving analysis table to {csv_path}")
+    analysis_df.to_csv(csv_path)
 
 
 if __name__ == "__main__":

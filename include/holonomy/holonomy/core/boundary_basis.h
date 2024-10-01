@@ -46,6 +46,15 @@ public:
      */
     std::vector<int> construct_boundary_path_basis_loop(int index) const;
 
+    /**
+     * @brief Modify basis loops to avoid marked halfedges on the boundary
+     * 
+     * @param is_marked_halfedge: list of marked halfedges
+     * @return true if the basis loops were perturbed to avoid the marked edges
+     * @return false otherwise
+     */
+    bool avoid_marked_halfedges(const std::vector<int>& marked_halfedges);
+
 private:
     Mesh<Scalar> m_mesh;
     std::vector<int> m_he2e;
