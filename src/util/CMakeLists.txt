@@ -14,7 +14,6 @@ add_library(PennerUtilLib
 )
 target_include_directories(PennerUtilLib PUBLIC ../../include/util)
 target_link_libraries(PennerUtilLib PUBLIC
-  Eigen3::Eigen
   igl::core
   igl::predicates
   spdlog::spdlog
