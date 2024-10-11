@@ -136,6 +136,7 @@ std::vector<bool> pullback_cut_to_overlay(
  */
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
 get_consistent_layout(
+    const Mesh<Scalar>& _m,
     OverlayMesh<Scalar>& m_o,
     const std::vector<Scalar>& u_vec,
     std::vector<int> singularities,
@@ -158,6 +159,7 @@ std::
         std::vector<std::pair<int, int>> // endpoints_o
         >
     consistent_overlay_mesh_to_VL(
+        const Mesh<Scalar>& _m,
         OverlayMesh<Scalar>& mo,
         const std::vector<int>& vtx_reindex,
         const std::vector<bool>& is_bd,

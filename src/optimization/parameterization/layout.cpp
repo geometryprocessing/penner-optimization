@@ -723,8 +723,39 @@ void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::
     }
 }
 
+void view_halfedge_mesh_type(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec,
+    const std::vector<char>& type)
+{
+    Eigen::VectorXd u, v;
+    convert_std_to_eigen_vector(u_vec, u);
+    convert_std_to_eigen_vector(v_vec, v);
+    Eigen::MatrixXd uv(u.size(), 3);
+    uv.col(0) = u;
+    uv.col(1) = v;
+    Eigen::MatrixXi F(m.n_faces(), 3);
+    for (int f = 0; f < m.n_faces(); ++f) {
+        int hij = m.h[f];
+        int hjk = m.n[hij];
+        int hki = m.n[hjk];
+        F(f, 0) = hij;
+        F(f, 1) = hjk;
+        F(f, 2) = hki;
+    }
+#if ENABLE_VISUALIZATION
+    spdlog::info("Viewing layout");
+    polyscope::init();
+    polyscope::registerSurfaceMesh2D("layout", uv, F)
+        ->addVertexScalarQuantity("type", type);
+    polyscope::show();
+#endif
+}
+
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
 get_consistent_layout(
+    const Mesh<Scalar>& _m,
     OverlayMesh<Scalar>& m_o,
     const std::vector<Scalar>& u_vec,
     std::vector<int> singularities,
@@ -802,11 +833,11 @@ get_consistent_layout(
     int num_m_halfedges = m.n.size();
     for (int hi = 0; hi < num_m_halfedges; ++hi) {
         if (m_o.edge_type[hi] == CURRENT_EDGE) {
-            continue;
+            m.type[hi] = 4;
         } else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
-            m.type[hi] = mc_type[m_o.origin_of_origin[hi]];
+            m.type[hi] = _m.type[m_o.origin_of_origin[hi]];
         } else if (m_o.edge_type[hi] == ORIGINAL_EDGE) {
-            m.type[hi] = mc_type[m_o.origin[hi]];
+            m.type[hi] = _m.type[m_o.origin[hi]];
         }
     }
     m.type_input = m.type;
@@ -815,6 +846,7 @@ get_consistent_layout(
     m.R = std::vector<int>(m.n.size(), 0);
     m.v_rep = range(0, m.out.size());
     m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
+    m.type.resize(m.n.size(), 4);
     OverlayMesh<Scalar> m_o_tri(m);
     for (int i = m_o.n_halfedges(); i < m_o_tri.n_halfedges(); i++) {
         m_o_tri.edge_type[i] = CURRENT_EDGE; // make sure do not use the new diagonal
@@ -863,6 +895,7 @@ get_consistent_layout(
     std::vector<Scalar> _v_o = std::get<1>(overlay_layout_res);
     is_cut_o = std::get<2>(overlay_layout_res);
     if (view_layouts) {
+        //view_halfedge_mesh_type(m, _u_o, _v_o, m.type);
         view_halfedge_mesh_layout(m, _u_o, _v_o);
     }
 
@@ -894,6 +927,7 @@ std::
         std::vector<std::pair<int, int>> // endpoints_o
         >
     consistent_overlay_mesh_to_VL(
+        const Mesh<Scalar>& _m,
         OverlayMesh<Scalar>& mo,
         const std::vector<int>& vtx_reindex,
         const std::vector<bool>& is_bd,
@@ -926,7 +960,7 @@ std::
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
-    auto layout_res = get_consistent_layout(mo, u, cones, is_cut_orig, is_cut);
+    auto layout_res = get_consistent_layout(_m, mo, u, cones, is_cut_orig, is_cut);
     auto u_o = std::get<0>(layout_res);
     auto v_o = std::get<1>(layout_res);
     auto is_cut_h = std::get<2>(layout_res);

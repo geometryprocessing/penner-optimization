@@ -308,6 +308,7 @@ std::
     // auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec,
     // vtx_reindex_mutable, endpoints, -1); FIXME
     return consistent_overlay_mesh_to_VL(
+        m,
         m_o,
         vtx_reindex,
         is_bd,
@@ -368,6 +369,7 @@ std::
     std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
     //std::vector<int> vtx_reindex_mutable = vtx_reindex;
     auto layout_res = consistent_overlay_mesh_to_VL(
+        m,
         m_o,
         vtx_reindex,
         is_bd,

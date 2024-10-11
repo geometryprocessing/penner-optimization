@@ -177,6 +177,7 @@ std::
     spdlog::trace("Getting layout");
     std::vector<Scalar> u(m.n_ind_vertices(), 0.0);
     return Optimization::consistent_overlay_mesh_to_VL(
+        m,
         m_o,
         vtx_reindex,
         is_bd,
