@@ -267,7 +267,7 @@ std::
     // Compute interpolation overlay mesh
     Eigen::MatrixXd V_overlay;
     InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
-    spdlog::trace("Interpolating penner coordinates");
+    spdlog::info("Interpolating penner coordinates for mesh with {} halfedges", m.n_halfedges());
     interpolate_penner_coordinates(
         m,
         metric_coords_scaled,

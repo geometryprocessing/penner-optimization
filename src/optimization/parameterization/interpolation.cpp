@@ -42,6 +42,18 @@
 namespace Penner {
 namespace Optimization {
 
+bool is_vector_equal(const std::vector<int>& v, const std::vector<int>& w)
+{
+    if (v.size() != w.size()) return false;
+    int size = v.size();
+    for (int i = 0; i < size; ++i)
+    {
+        if (v[i] != w[i]) return false;
+    }
+
+    return true;
+}
+
 void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,
@@ -85,7 +97,7 @@ void interpolate_penner_coordinates(
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_DEBUG(
+        SPDLOG_INFO(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
@@ -120,6 +132,10 @@ void interpolate_penner_coordinates(
         reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
         reverse_interpolation_mesh.get_mesh().type = initial_type;
         reverse_interpolation_mesh.get_mesh().R = initial_R;
+        if (!is_vector_equal(mesh.n, reverse_interpolation_mesh.get_mesh().n))
+        {
+            spdlog::error("inconsistent reverse mesh before making euclidean");
+        }
 
         // Undo the reparametrization
         VectorX inverse_halfedge_translations = -halfedge_translations;
@@ -134,6 +150,11 @@ void interpolate_penner_coordinates(
         reverse_interpolation_mesh.reverse_flip_sequence(euclidean_flip_sequence);
         // reverse_interpolation_mesh.check_bc_values();
         // reverse_interpolation_mesh.force_convert_to_hyperbolic_surface();
+
+        if (!is_vector_equal(mesh.n, reverse_interpolation_mesh.get_mesh().n))
+        {
+            spdlog::error("inconsistent reverse mesh");
+        }
     } else {
         // Get initial reflection structure
         Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
@@ -227,6 +248,8 @@ void interpolate_vertex_positions(
     // Get the vertex map between the forward and reverse maps
     OverlayMesh<Scalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
     OverlayMesh<Scalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
+    spdlog::info("overlay has {} halfedges", overlay_mesh.n_halfedges());
+    spdlog::info("reverse overlay has {} halfedges", reverse_overlay_mesh.n_halfedges());
     std::vector<int> v_map =
         ConformalIdealDelaunay<Scalar>::GetVertexMap(overlay_mesh, reverse_overlay_mesh);
 
@@ -454,6 +477,8 @@ void InterpolationMesh::convert_to_hyperbolic_surface(
          ++iter) {
         int halfedge_index = *iter;
         flip_clockwise(halfedge_index);
+        hyperbolic_flip_sequence.push_back(halfedge_index);
+        hyperbolic_flip_sequence.push_back(halfedge_index);
         hyperbolic_flip_sequence.push_back(halfedge_index);
     }
     m_overlay_mesh.garbage_collection();
