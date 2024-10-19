@@ -50,6 +50,7 @@ def constrain_similarity_one(args, fname):
         field_params = penner.FieldParameters()
         field_params.min_angle = np.pi
         rotation_form, Th_hat = penner.generate_intrinsic_rotation_form(V, F, field_params)
+        Th_hat = np.array(Th_hat)
     else:
         try:
             Th_hat = np.loadtxt(os.path.join(args['input_dir'], name + "_Th_hat"), dtype=float)
@@ -58,24 +59,26 @@ def constrain_similarity_one(args, fname):
             logger.info("Could not open rotation form")
             return
 
-    # save form to output file
-    output_path = os.path.join(output_dir, name + '_Th_hat')
-    np.savetxt(output_path, Th_hat)
-    output_path = os.path.join(output_dir, name + '_kappa_hat')
-    np.savetxt(output_path, rotation_form)
-
     # Generate initial similarity metric
     free_cones = []
     marked_metric_params = penner.MarkedMetricParameters()
     marked_metric_params.use_initial_zero = args['use_initial_zero']
     marked_metric_params.remove_loop_constraints = args['remove_holonomy_constraints']
     marked_metric_params.free_interior = args['free_interior']
-    marked_metric, _ = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
+    marked_metric, vtx_reindex = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
 
     # optionally fix cones
     if args['do_fix_cones']:
         logger.info("Fixing cones")
         penner.fix_cones(marked_metric, args['min_cone_index'])
+
+    # save form to output file
+    Th_hat[vtx_reindex] = np.array(marked_metric.Th_hat)
+    output_path = os.path.join(output_dir, name + '_Th_hat')
+    np.savetxt(output_path, Th_hat)
+    output_path = os.path.join(output_dir, name + '_kappa_hat')
+    np.savetxt(output_path, rotation_form)
+
 
     # Optionally refine initial metric to avoid spanning triangles
     if (args['refine']):

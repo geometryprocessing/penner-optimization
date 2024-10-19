@@ -117,7 +117,7 @@ def run_optimization_analysis(input_dir, uv_dir, fname, suffix=""):
                 analysis_dict[analysis] = np.max(quad_sym_dir_energy)
 
         except:
-            analysis_dict[analysis].append(-1)
+            analysis_dict[analysis] = -1
 
     return analysis_dict
 

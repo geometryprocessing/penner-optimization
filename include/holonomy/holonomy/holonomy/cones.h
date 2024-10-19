@@ -66,7 +66,7 @@ bool validate_cones(const Mesh<Scalar>& m);
  */
 void fix_cones(Mesh<Scalar>& m, int min_cone_index=1);
 
-void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=true);
+void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=true, int offset=0);
 
 std::tuple<int, int> get_constraint_outliers(
     MarkedPennerConeMetric& marked_metric,

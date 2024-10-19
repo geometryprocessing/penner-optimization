@@ -304,14 +304,15 @@ int get_flat_vertex(const Mesh<Scalar>& m, bool only_interior)
     return -1;
 }
 
-void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
+void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior, int offset)
 {
     bool is_symmetric = (m.type[0] != 0);
     Scalar angle_delta = (is_symmetric) ? M_PI : (M_PI / 2.);
 
     int num_vertices = m.n_vertices();
-    for (int vi = 0; vi < num_vertices; ++vi)
+    for (int i = 0; i < num_vertices; ++i)
     {
+        int vi = (i + offset) % num_vertices;
         // check if vertex is valid
         int Vi = m.v_rep[vi];
         if (!float_equal(m.Th_hat[Vi], 4. * angle_delta)) continue;
@@ -336,8 +337,8 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
         if (!float_equal(m.Th_hat[Vj], 4. * angle_delta)) continue;
 
         // add cones
-        spdlog::debug("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);
-        spdlog::debug("Adding positive cone at {} with angle {}", Vj, m.Th_hat[Vj]);
+        spdlog::info("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);
+        spdlog::info("Adding positive cone at {} with angle {}", Vj, m.Th_hat[Vj]);
         m.Th_hat[m.v_rep[vi]] -= angle_delta;
         m.Th_hat[m.v_rep[vj]] += angle_delta;
         return;
@@ -416,7 +417,8 @@ void fix_cones(Mesh<Scalar>& m, int min_cone_index)
 
     // Add another cone pair to torus with a cone pair
     if (is_torus_with_cone_pair(m)) {
-        add_random_cone_pair(m);
+        add_random_cone_pair(m, true, m.n_vertices() / 4);
+        add_random_cone_pair(m, true, m.n_vertices() / 2);
     }
 }
 
