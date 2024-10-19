@@ -961,7 +961,9 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     for (int fi = 0; fi < num_faces; ++fi) {
         if (face_var_id[fi] != -1) {
             theta[fi] += x[face_var_id[fi]];
-            theta[m.f[m.R[m.h[fi]]]] -= x[face_var_id[fi]];
+            if (m.type[m.h[fi]] != 0) {
+                theta[m.f[m.R[m.h[fi]]]] -= x[face_var_id[fi]];
+            }
         }
     }
 
