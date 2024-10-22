@@ -62,5 +62,14 @@ void view_seamless_parameterization(
     std::string mesh_handle="",
     bool show=true);
 
+
+void view_homology_basis(
+    const MarkedPennerConeMetric& marked_metric,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    int num_homology_basis_loops=-1,
+    std::string mesh_handle="",
+    bool show=true);
+    
 } // namespace Holonomy
 } // namespace Penner

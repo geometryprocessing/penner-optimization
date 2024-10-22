@@ -248,4 +248,31 @@ Eigen::SparseMatrix<int> generate_VV_to_face_map(const Eigen::MatrixXi& F)
 
     return vv2f;
 }
+
+VectorX compute_cone_angles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT)
+{
+    // compute uv corner angles
+    Eigen::MatrixXd corner_angles;
+    igl::internal_angles(uv, FT, corner_angles);
+
+    // sum up corner angles
+    int num_vertices = V.rows();
+    int num_faces = F.rows();
+    VectorX cone_angles = VectorX::Zero(num_vertices);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int vi = F(fijk, i);
+            cone_angles[vi] += corner_angles(fijk, i);
+        }
+    }
+
+    return cone_angles;
+}
+
 } // namespace Penner

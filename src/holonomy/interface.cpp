@@ -127,8 +127,16 @@ void generate_basis_loops(
     // (optionally) generate dual loops on the surface
     // If the mesh is a trivial torus, don't add constraints
     int num_basis_loops = 0;
+    if (is_trivial_torus(m))
+    {
+        spdlog::warn("Trivial torus seen");
+    }
     if (marked_metric_params.remove_loop_constraints) return;
     if ((marked_metric_params.remove_trivial_torus) && (is_trivial_torus(m))) return;
+    if (is_trivial_torus(m))
+    {
+        spdlog::warn("Adding constraints for trivial torus");
+    }
 
     spdlog::info("Adding holonomy constraints");
     HomologyBasisGenerator holonomy_basis_generator(m, 0, marked_metric_params.weighting);

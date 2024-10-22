@@ -15,6 +15,7 @@
 #include "util/vector.h"
 #include "util/vf_mesh.h"
 #include "holonomy/holonomy/constraint.h"
+#include "optimization/core/viewer.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/curve_network.h"
@@ -315,6 +316,19 @@ void view_seamless_parameterization(
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
 
+    // Generate cones
+    VectorX cone_angles = compute_cone_angles(V, F, uv, FT);
+    std::vector<Scalar> cone_angles_vec;
+    convert_eigen_to_std_vector(cone_angles, cone_angles_vec);
+    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, cone_angles_vec);
+    VectorX cone_error(cone_values.size());
+    for (int i = 0; i < cone_values.size(); ++i)
+    {
+        cone_error[i] = abs(pos_fmod(abs(cone_values[i]) + (M_PI / 4.), (M_PI / 2.)) - (M_PI / 4.));
+    }
+    spdlog::info("maximum cone error is {}", cone_error.maxCoeff());
+
+
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
 
@@ -342,6 +356,18 @@ void view_seamless_parameterization(
             "uv angle",
             convert_scalar_to_double_vector(uv_angle));
 
+    polyscope::registerPointCloud(mesh_handle + " uv_cones", cone_positions);
+    polyscope::getPointCloud(mesh_handle + " uv_cones")
+        ->addScalarQuantity("index", cone_values)
+        ->setColorMap("coolwarm")
+        ->setMapRange({-M_PI, M_PI})
+        ->setEnabled(true);
+    polyscope::getPointCloud(mesh_handle + " uv_cones")
+        ->addScalarQuantity("cone error", cone_error)
+        ->setColorMap("reds")
+        ->setMapRange({0, 1e-2})
+        ->setEnabled(true);
+
     if (show) polyscope::show();
 #else
     if (show) {
@@ -349,6 +375,65 @@ void view_seamless_parameterization(
         int num_faces = F.rows();
         spdlog::info("Viewer disabled for mesh (|V|={}, |F|={})", num_vertices, num_faces);
     }
+#endif
+}
+
+void view_homology_basis(
+    const MarkedPennerConeMetric& marked_metric,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    int num_homology_basis_loops,
+    std::string mesh_handle,
+    bool show)
+{
+    int num_vertices = V.rows();
+    if (show) {
+        spdlog::info(
+            "Viewing {} loops on mesh {} with {} vertices",
+            num_homology_basis_loops,
+            mesh_handle,
+            num_vertices);
+    }
+    auto [F_mesh, F_halfedge] = generate_mesh_faces(marked_metric, vtx_reindex);
+
+#ifdef ENABLE_VISUALIZATION
+    if (num_homology_basis_loops < 0) {
+        num_homology_basis_loops = marked_metric.n_homology_basis_loops();
+    } else {
+        num_homology_basis_loops =
+            std::min(marked_metric.n_homology_basis_loops(), num_homology_basis_loops);
+    }
+    polyscope::init();
+    if (mesh_handle == "") {
+        mesh_handle = "homology_basis_mesh";
+        polyscope::registerSurfaceMesh(mesh_handle, V, F_mesh);
+        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
+    }
+    int num_faces = marked_metric.n_faces();
+    Eigen::VectorXd is_any_dual_loop_face;
+    is_any_dual_loop_face.setZero(num_faces);
+    for (int i = 0; i < marked_metric.n_homology_basis_loops(); ++i) {
+        const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
+        std::vector<int> dual_loop_faces =
+            homology_basis_loops[i]->generate_face_sequence(marked_metric);
+
+        Eigen::VectorXd is_dual_loop_face;
+        is_dual_loop_face.setZero(num_faces);
+        for (const auto& dual_loop_face : dual_loop_faces) {
+            is_dual_loop_face(dual_loop_face) = 1.0;
+            is_any_dual_loop_face(dual_loop_face) = 1.0;
+        }
+        if (i < num_homology_basis_loops)
+        {
+            polyscope::getSurfaceMesh(mesh_handle)
+                ->addFaceScalarQuantity("dual_loop_" + std::to_string(i), is_dual_loop_face);
+        }
+    }
+
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity("all dual loops", is_any_dual_loop_face);
+
+    if (show) polyscope::show();
 #endif
 }
 

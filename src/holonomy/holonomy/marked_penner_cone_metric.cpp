@@ -378,54 +378,6 @@ void MarkedPennerConeMetric::write_status_log(std::ostream& stream, bool write_h
     stream << std::endl;
 }
 
-void view_homology_basis(
-    const MarkedPennerConeMetric& marked_metric,
-    const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXd& V,
-    int num_homology_basis_loops,
-    std::string mesh_handle,
-    bool show)
-{
-    int num_vertices = V.rows();
-    if (show) {
-        spdlog::info(
-            "Viewing {} loops on mesh {} with {} vertices",
-            num_homology_basis_loops,
-            mesh_handle,
-            num_vertices);
-    }
-    auto [F_mesh, F_halfedge] = generate_mesh_faces(marked_metric, vtx_reindex);
-
-#ifdef ENABLE_VISUALIZATION
-    if (num_homology_basis_loops < 0) {
-        num_homology_basis_loops = marked_metric.n_homology_basis_loops();
-    } else {
-        num_homology_basis_loops =
-            std::min(marked_metric.n_homology_basis_loops(), num_homology_basis_loops);
-    }
-    polyscope::init();
-    if (mesh_handle == "") {
-        mesh_handle = "homology_basis_mesh";
-        polyscope::registerSurfaceMesh(mesh_handle, V, F_mesh);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
-    }
-    for (int i = 0; i < num_homology_basis_loops; ++i) {
-        const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
-        std::vector<int> dual_loop_faces =
-            homology_basis_loops[i]->generate_face_sequence(marked_metric);
-
-        int num_faces = marked_metric.n_faces();
-        Eigen::VectorXd is_dual_loop_face;
-        is_dual_loop_face.setZero(num_faces);
-        for (const auto& dual_loop_face : dual_loop_faces) {
-            is_dual_loop_face(dual_loop_face) = 1.0;
-        }
-        polyscope::getSurfaceMesh(mesh_handle)
-            ->addFaceScalarQuantity("dual_loop_" + std::to_string(i), is_dual_loop_face);
-    }
-    if (show) polyscope::show();
-#endif
-}
 
 } // namespace Holonomy
 } // namespace Penner

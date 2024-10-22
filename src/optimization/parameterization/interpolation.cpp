@@ -97,7 +97,7 @@ void interpolate_penner_coordinates(
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_INFO(
+        SPDLOG_TRACE(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
@@ -248,8 +248,11 @@ void interpolate_vertex_positions(
     // Get the vertex map between the forward and reverse maps
     OverlayMesh<Scalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
     OverlayMesh<Scalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
-    spdlog::info("overlay has {} halfedges", overlay_mesh.n_halfedges());
-    spdlog::info("reverse overlay has {} halfedges", reverse_overlay_mesh.n_halfedges());
+    if (overlay_mesh.n_halfedges() != reverse_overlay_mesh.n_halfedges())
+    {
+        spdlog::error("overlay has {} halfedges", overlay_mesh.n_halfedges());
+        spdlog::error("reverse overlay has {} halfedges", reverse_overlay_mesh.n_halfedges());
+    }
     std::vector<int> v_map =
         ConformalIdealDelaunay<Scalar>::GetVertexMap(overlay_mesh, reverse_overlay_mesh);
 

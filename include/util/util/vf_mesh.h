@@ -128,5 +128,10 @@ Eigen::SparseMatrix<int> generate_VV_to_halfedge_map(
  */
 Eigen::SparseMatrix<int> generate_VV_to_face_map(const Eigen::MatrixXi& F);
 
+VectorX compute_cone_angles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT);
 
 } // namespace Penner
