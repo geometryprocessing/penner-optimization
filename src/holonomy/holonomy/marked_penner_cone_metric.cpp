@@ -144,7 +144,7 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(const MarkedPennerConeMetric& mar
     assert(is_valid_mesh(marked_metric));
 }
 
-void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
+void MarkedPennerConeMetric::copy_connectivity(const MarkedPennerConeMetric& m)
 {
     n = m.n;
     to = m.to;
@@ -164,6 +164,10 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
 
     he2e = m.he2e;
     e2he = m.e2he;
+}
+
+void MarkedPennerConeMetric::copy_metric(const MarkedPennerConeMetric& m)
+{
     m_is_discrete_metric = m.m_is_discrete_metric;
     m_flip_seq = m.m_flip_seq;
     m_identification = m.m_identification;
@@ -172,7 +176,10 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
     m_projection = m.m_projection;
     m_need_jacobian = m.m_need_jacobian;
     m_transition_jacobian_lol = m.m_transition_jacobian_lol;
+}
 
+void MarkedPennerConeMetric::copy_holonomy(const MarkedPennerConeMetric& m)
+{
     kappa_hat = m.kappa_hat;
     m_dual_loop_manager = m.m_dual_loop_manager;
     int num_basis_loops = m.get_homology_basis_loops().size();
@@ -182,6 +189,14 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
         m_homology_basis_loops.push_back(m.get_homology_basis_loops()[i]->clone());
     }
 }
+
+void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
+{
+    copy_connectivity(m);
+    copy_metric(m);
+    copy_holonomy(m);
+}
+
 
 void MarkedPennerConeMetric::reset_connectivity(const MarkedPennerConeMetric& m)
 {
