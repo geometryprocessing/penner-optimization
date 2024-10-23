@@ -154,6 +154,9 @@ protected:
     DualLoopManager m_dual_loop_manager;
     void reset_connectivity(const MarkedPennerConeMetric& m);
     void reset_markings(const MarkedPennerConeMetric& m);
+    void copy_connectivity(const MarkedPennerConeMetric& m);
+    void copy_metric(const MarkedPennerConeMetric& m);
+    void copy_holonomy(const MarkedPennerConeMetric& m);
 };
 
 
