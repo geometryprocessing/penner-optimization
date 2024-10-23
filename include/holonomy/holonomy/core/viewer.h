@@ -70,6 +70,11 @@ void view_homology_basis(
     int num_homology_basis_loops=-1,
     std::string mesh_handle="",
     bool show=true);
+
+std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv);
     
 } // namespace Holonomy
 } // namespace Penner
