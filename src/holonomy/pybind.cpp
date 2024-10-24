@@ -66,6 +66,7 @@ void init_holonomy_pybind(pybind11::module& m)
         .def_readwrite("kappa_hat", &MarkedPennerConeMetric::kappa_hat)
         .def("flip_ccw", &MarkedPennerConeMetric::flip_ccw)
         .def("undo_flips", &MarkedPennerConeMetric::undo_flips)
+        .def("change_metric", &MarkedPennerConeMetric::change_metric)
         .def("clone_cone_metric", &MarkedPennerConeMetric::clone_cone_metric)
         .def("make_discrete_metric", &MarkedPennerConeMetric::make_discrete_metric)
         .def("get_flip_sequence", &MarkedPennerConeMetric::get_flip_sequence)
@@ -116,6 +117,10 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def(
         "generate_VF_mesh_from_similarity_metric",
         &generate_VF_mesh_from_similarity_metric,
+        default_call_guard);
+    m.def(
+        "generate_penner_coordinates",
+        &generate_penner_coordinates,
         default_call_guard);
 
 }
