@@ -167,10 +167,10 @@ std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     igl::edge_flaps(F, uE, EMAP, EF, EI);
 
     // Iterate over edges to check the length inconsistencies
-    VectorX uv_length_error(F.size());
-    VectorX uv_angle_error(F.size());
-    VectorX uv_length(F.size());
-    VectorX uv_angle(F.size());
+    VectorX uv_length_error = VectorX::Zero(F.size());
+    VectorX uv_angle_error = VectorX::Zero(F.size());
+    VectorX uv_length = VectorX::Zero(F.size());
+    VectorX uv_angle = VectorX::Zero(F.size());
     for (Eigen::Index e = 0; e < EF.rows(); ++e) {
         // Get face corners corresponding to the current edge
         int f0 = EF(e, 0);
@@ -313,8 +313,13 @@ void view_seamless_parameterization(
     Eigen::MatrixXd V_cut;
     cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
     auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = compute_seamless_error(F, uv, FT);
+    VectorX area, uv_area;
+    igl::doublearea(V_cut, FT, area);
+    igl::doublearea(uv, FT, uv_area);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
+    spdlog::info("Min embedding area: {}", area.minCoeff());
+    spdlog::info("Min uv area: {}", uv_area.minCoeff());
 
     // Generate cones
     VectorX cone_angles = compute_cone_angles(V, F, uv, FT);
@@ -339,6 +344,14 @@ void view_seamless_parameterization(
         ->setStyle(polyscope::ParamVizStyle::GRID)
         ->setGridColors(std::make_pair(DARK_TEAL, TEAL))
         ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "area",
+            convert_scalar_to_double_vector(area));
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "uv area",
+            convert_scalar_to_double_vector(uv_area));
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv length error",

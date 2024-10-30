@@ -88,6 +88,10 @@ std::vector<Scalar> generate_cones_from_rotation_form(
     }
     assert(validate_cones_from_rotation_form(m, rotation_form, Th_hat));
 
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        Th_hat[vi] = round(Th_hat[vi] / (M_PI / 2.)) * (M_PI / 2.);
+    }
+
     return Th_hat;
 }
 

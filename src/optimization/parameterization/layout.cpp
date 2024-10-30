@@ -102,10 +102,10 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     igl::doublearea(V, F, areas);
     Scalar min_area = areas.minCoeff() / 2.0;
     Scalar max_area = areas.maxCoeff() / 2.0;
-    spdlog::debug("Minimum face area: {}", min_area);
-    spdlog::debug("Maximum face area: {}", max_area);
+    spdlog::info("Minimum VF face area: {}", min_area);
+    spdlog::info("Maximum VF face area: {}", max_area);
 
-    return (!float_equal(min_area, 0.0));
+    return (min_area >= 0);
 }
 
 Scalar uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
@@ -179,21 +179,182 @@ bool check_uv(
     // Check length consistency
     Scalar uv_length_error = compute_uv_length_error(F, uv, F_uv);
     if (!float_equal(uv_length_error, 0.0, 1e-6)) {
-        spdlog::warn("Inconsistent uv length error {} across edges", uv_length_error);
-    }
-
-    // Check mesh face areas
-    if (!check_areas(V, F)) {
-        spdlog::debug("Mesh face area is zero");
+        spdlog::warn("Inconsistent uv length error {} across VF edges", uv_length_error);
     }
 
     // Check uv face areas
     if (!check_areas(uv, F_uv)) {
-        spdlog::debug("Mesh layout face area is zero");
+        spdlog::error("Triangle is flipped in VF");
+        is_valid = false;
     }
 
     // Return true if no issues found
     return is_valid;
+}
+
+Scalar signed_area(
+    const Eigen::Vector2d& A,
+    const Eigen::Vector2d& B,
+    const Eigen::Vector2d& C)
+{
+    Eigen::Matrix<double, 3, 3> tet;
+    tet.row(0) << A(0), A(1), 1.;
+    tet.row(1) << B(0), B(1), 1.;
+    tet.row(2) << C(0), C(1), 1.;
+
+    return tet.determinant();
+}
+
+int prev_halfedge(
+    const OverlayMesh<Scalar>& m,
+    int hij)
+{
+    int hli = hij;
+    while (m.n[hli] != hij)
+    {
+        hli = m.n[hli];
+    }
+
+    return hli;
+}
+
+Scalar triangle_area(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    const std::vector<Scalar>& v,
+    int hij)
+{
+    int hjk = m.n[hij];
+    int hli = prev_halfedge(m, hij);
+    Eigen::Vector2d A = {u[hli], v[hli]};
+    Eigen::Vector2d B = {u[hij], v[hij]};
+    Eigen::Vector2d C = {u[hjk], v[hjk]};
+    return signed_area(A, B, C);
+}
+
+bool check_areas(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    const std::vector<Scalar>& v)
+{
+    int num_halfedges = m.n_halfedges();
+    Scalar min_area = triangle_area(m, u, v, 0);
+    Scalar max_area = min_area;
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        Scalar area_hijk = triangle_area(m, u, v, hij);
+        min_area = min(area_hijk, min_area);
+        max_area = max(area_hijk, max_area);
+    }
+    spdlog::info("minimum overlay triangle face area: {}", min_area);
+    spdlog::info("maximum overlay triangle face area: {}", max_area);
+
+    return (min_area >= 0);
+}
+
+Scalar compute_uv_length_error(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    const std::vector<Scalar>& v)
+{
+    int num_halfedges = m.n_halfedges();
+    Scalar max_uv_length_error = 0.;
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        // get other halfedges in the face for vertex computation
+        int hki = prev_halfedge(m, hij);
+        int hji = m.opp[hij];
+        int hlj = prev_halfedge(m, hji);
+
+        // get uv vertices on the edge
+        Eigen::Vector2d uv0i = {u[hki], v[hki]};
+        Eigen::Vector2d uv0j = {u[hij], v[hij]};
+        Eigen::Vector2d uv1i = {u[hji], v[hji]};
+        Eigen::Vector2d uv1j = {u[hlj], v[hlj]};
+
+        // compute the length of each halfedge
+        Scalar l0 = uv_length(uv0i, uv0j);
+        Scalar l1 = uv_length(uv1i, uv1j);
+
+        // determine if the max length inconsistency has increased
+        if (abs(l0 - l1) > 1e-8)
+        {
+            spdlog::info("uv length consistency error for edge {}, {} is {} - {}", hij, hji, l0, l1);
+        }
+        max_uv_length_error = max(max_uv_length_error, abs(l0 - l1));
+    }
+
+    // return the max uv length error
+    return max_uv_length_error;
+}
+
+bool check_uv(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    const std::vector<Scalar>& v,
+    const std::vector<bool>& is_cut)
+{
+    int num_halfedges = m.n_halfedges();
+    bool is_valid = true;
+
+    // Check faces agree in number
+    if ((u.size() != num_halfedges) || (v.size() != num_halfedges)) {
+        spdlog::error("uv coordinates not in correspondence with mesh halfedges");
+        is_valid = false;
+    }
+
+    // Check length consistency
+    Scalar uv_length_error = compute_uv_length_error(m, u, v);
+    if (!float_equal(uv_length_error, 0.0, 1e-6)) {
+        spdlog::warn("Inconsistent uv length error {} across edges", uv_length_error);
+    }
+
+    // Check uv face areas
+    if (!check_areas(m, u, v)) {
+        spdlog::error("Triangle is flipped in overlay");
+        is_valid = false;
+    }
+
+    // Return true if no issues found
+    return is_valid;
+}
+
+bool check_uv_consistency(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u0,
+    const std::vector<Scalar>& v0,
+    const std::vector<Scalar>& u1,
+    const std::vector<Scalar>& v1)
+{
+    int num_halfedges = m.n_halfedges();
+    std::vector<Scalar> u_error(num_halfedges);
+    std::vector<Scalar> v_error(num_halfedges);
+    Scalar max_consistency_error = 0.;
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        // get next halfedge
+        int hjk = m.n[hij];
+
+        // get uv vertices on the edge
+        Eigen::Vector2d uv0j = {u0[hij], v0[hij]};
+        Eigen::Vector2d uv0k = {u0[hjk], v0[hjk]};
+        Eigen::Vector2d uv1j = {u1[hij], v1[hij]};
+        Eigen::Vector2d uv1k = {u1[hjk], v1[hjk]};
+
+        // compute the length of the halfedge in each metric
+        Scalar l0 = uv_length(uv0j, uv0k);
+        Scalar l1 = uv_length(uv1j, uv1k);
+
+        if (abs(l0 - l1) > 1e-8)
+        {
+            spdlog::info("uv length consistency error for {} with previous halfedge {} is {} - {}", hjk, hij, l0, l1);
+            spdlog::info("local face is {}, {}, {}, {}, ...", hij, hjk, m.n[hjk], m.n[m.n[hjk]]);
+        }
+        max_consistency_error = max(max_consistency_error, abs(l0 - l1));
+    }
+    spdlog::info("max consistency error is {}", max_consistency_error);
+
+    return (max_consistency_error < 1e-8);
 }
 
 void extract_embedded_mesh(
@@ -373,7 +534,6 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
         for (int i = 0; i < m.n_halfedges(); i++) {
             if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = i;
-                is_cut_h_gen[i] = true; // boundary edge should be cut
             }
         }
     }
@@ -385,14 +545,14 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     for (size_t i = 0; i < done.size(); i++) {
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
-            done[i] = true;
+            //done[i] = true;
         }
     }
 
     // Set edge type 2 as cut
     for (size_t i = 0; i < is_cut_h.size(); i++) {
         if (m.type[i] == 2) {
-            is_cut_h_gen[i] = true;
+            //is_cut_h_gen[i] = true;
         }
     }
 
@@ -443,8 +603,8 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     // TODO Move to separate validity check function
     int num_done = std::count(done.begin(), done.end(), true);
     int num_cut = std::count(is_cut_h_gen.begin(), is_cut_h_gen.end(), true);
-    spdlog::trace("{}/{} faces seen", num_done, m.n_faces());
-    spdlog::trace("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
+    spdlog::info("{}/{} faces seen", num_done, m.n_faces());
+    spdlog::info("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
     auto is_found_vertex = std::vector<bool>(m.n_vertices(), false);
     for (int hi = 0; hi < m.n_halfedges(); ++hi) {
         int vi = m.to[hi];
@@ -453,7 +613,7 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
         }
     }
     int num_found_vertices = std::count(is_found_vertex.begin(), is_found_vertex.end(), true);
-    spdlog::trace("{}/{} vertices seen", num_found_vertices, m.n_vertices());
+    spdlog::info("{}/{} vertices seen", num_found_vertices, m.n_vertices());
 
     //Eigen::MatrixXi F, F_uv;
     //compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
@@ -518,7 +678,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
             // TODO
-            // done[i] = true;
+            //done[i] = true;
         }
     }
     // set edge type 2 as cut
@@ -566,6 +726,11 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         Eigen::Matrix<Scalar, 1, 2> pn = p1 +
                                          (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 +
                                          perp(p2 - p1) * 2 * area_from_len(1.0, l1 / l0, l2 / l0);
+#ifdef CHECK_VALIDITY
+        if (!float_equal((p1 - p2).norm(), m.l[h])) spdlog::error("inconsistent length");
+        if (!float_equal((pn - p2).norm(), m.l[hn])) spdlog::error("inconsistent length");
+        if (!float_equal((pn - p1).norm(), m.l[hp])) spdlog::error("inconsistent length");
+#endif
         _u[hn] = pn[0];
         _v[hn] = pn[1];
         int hno = m.opp[hn];
@@ -628,6 +793,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
 
                     Q.push(h);
                     done[fi] = true;
+                    spdlog::info("restarting layout from {}", h);
                     break;
                 }
             }
@@ -795,6 +961,12 @@ get_consistent_layout(
     auto _v_c = std::get<1>(layout_res);
     auto is_cut_c = std::get<2>(layout_res);
 
+#ifdef CHECK_VALIDITY
+    if (!check_uv(mc, _u_c, _v_c, is_cut_c)) {
+        spdlog::error("Inconsistent uvs in cut mesh");
+    }
+#endif
+
     // Interpolate layout to the overlay mesh
     Eigen::Matrix<Scalar, -1, 1> u_eig;
     u_eig.resize(u_vec.size());
@@ -805,6 +977,12 @@ get_consistent_layout(
     auto u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
     auto v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
     spdlog::trace("Interpolate on overlay mesh done.");
+
+#ifdef CHECK_VALIDITY
+    if (!check_uv(m_o, u_o, v_o, is_cut_c)) {
+        spdlog::error("Inconsistent uvs in overlay");
+    }
+#endif
 
     // Build a new mesh directly from the triangulated overlay mesh
     Mesh<Scalar> m;
@@ -853,17 +1031,13 @@ get_consistent_layout(
     }
     bool view_layouts = false;
     if (view_layouts) {
-        view_halfedge_mesh_layout(m, u_o, v_o);
+        //view_halfedge_mesh_layout(m, u_o, v_o);
     }
 
     // Pullback cut on the original mesh to the overlay
     bool is_original_cut = !(is_cut_orig.empty());
     std::vector<bool> is_cut_poly;
-    if (is_original_cut) {
-        is_cut_poly = pullback_cut_to_overlay(m_o, is_cut_orig, true);
-    } else {
-        is_cut_poly = pullback_cut_to_overlay(m_o, is_cut, false);
-    }
+    is_cut_poly = pullback_cut_to_overlay(m_o, is_cut_orig, is_original_cut);
 
     // Check validity (not needed)
     //Eigen::MatrixXi F_poly, F_uv_poly;
@@ -899,8 +1073,16 @@ get_consistent_layout(
         view_halfedge_mesh_layout(m, _u_o, _v_o);
     }
 
+#ifdef CHECK_VALIDITY
+    if (!check_uv(m, _u_o, _v_o, is_cut_o)) {
+        spdlog::error("inconsistent uvs in triangulated overlay with {} haledges", m.n_halfedges());
+    }
+#endif
+
     // Restrict back to original overlay
     // WARNING: Assumes triangulation halfedges added to the end
+    // WARNING: triangulation halfedges may be cut, but they are adjacent to flat vertices
+    // and should be consistent if the input cut is accurate
     _u_o.resize(m_o.n.size());
     _v_o.resize(m_o.n.size());
     is_cut_o.resize(m_o.n.size());
@@ -910,6 +1092,16 @@ get_consistent_layout(
     if (do_trim) {
         trim_open_branch(m_o, f_labels, singularities, is_cut_o);
     }
+
+#ifdef CHECK_VALIDITY
+    // Check for validity
+    if (!check_uv(m_o, _u_o, _v_o, is_cut_o)) {
+        spdlog::error("inconsistent uvs in overlay with {} haledges", m_o.n_halfedges());
+    }
+    if (!check_uv_consistency(m_o, _u_o, _v_o, u_o, v_o)) {
+        spdlog::error("second overlay layout inconsistent for {} halfedges", m_o.n_halfedges());
+    }
+#endif
 
     return std::make_tuple(_u_o, _v_o, is_cut_c, is_cut_o);
 }
@@ -956,7 +1148,7 @@ std::
 
     SPDLOG_TRACE("Cone angles: {}", formatted_vector(m.Th_hat, "\n", 16));
     spdlog::trace("#bd_vt: {}", bd.size());
-    spdlog::info("#cones: {}", cones.size());
+    spdlog::trace("#cones: {}", cones.size());
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
@@ -1025,10 +1217,12 @@ std::
     uv_o.col(0) = u_o_col;
     uv_o.col(1) = v_o_col;
 
+#ifdef CHECK_VALIDITY
     // Check for validity
     if (!check_uv(V_o, F_o, uv_o, FT_o)) {
-        spdlog::error("Inconsistent uvs");
+        spdlog::error("Inconsistent uvs in VF");
     }
+#endif
 
     return std::make_tuple(mo, V_o, F_o, uv_o, FT_o, is_cut_h, is_cut_o, Fn_to_F, endpoints_out);
 }

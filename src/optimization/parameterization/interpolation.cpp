@@ -248,6 +248,10 @@ void interpolate_vertex_positions(
     // Get the vertex map between the forward and reverse maps
     OverlayMesh<Scalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
     OverlayMesh<Scalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
+    if ((overlay_mesh.bypass_overlay) || (reverse_overlay_mesh.bypass_overlay))
+    {
+        spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
+    }
     if (overlay_mesh.n_halfedges() != reverse_overlay_mesh.n_halfedges())
     {
         spdlog::error("overlay has {} halfedges", overlay_mesh.n_halfedges());
