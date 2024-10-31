@@ -102,8 +102,8 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     igl::doublearea(V, F, areas);
     Scalar min_area = areas.minCoeff() / 2.0;
     Scalar max_area = areas.maxCoeff() / 2.0;
-    spdlog::info("Minimum VF face area: {}", min_area);
-    spdlog::info("Maximum VF face area: {}", max_area);
+    spdlog::debug("Minimum VF face area: {}", min_area);
+    spdlog::debug("Maximum VF face area: {}", max_area);
 
     return (min_area >= 0);
 }
@@ -246,8 +246,8 @@ bool check_areas(
         min_area = min(area_hijk, min_area);
         max_area = max(area_hijk, max_area);
     }
-    spdlog::info("minimum overlay triangle face area: {}", min_area);
-    spdlog::info("maximum overlay triangle face area: {}", max_area);
+    spdlog::debug("minimum overlay triangle face area: {}", min_area);
+    spdlog::debug("maximum overlay triangle face area: {}", max_area);
 
     return (min_area >= 0);
 }
@@ -280,7 +280,7 @@ Scalar compute_uv_length_error(
         // determine if the max length inconsistency has increased
         if (abs(l0 - l1) > 1e-8)
         {
-            spdlog::info("uv length consistency error for edge {}, {} is {} - {}", hij, hji, l0, l1);
+            spdlog::warn("uv length consistency error for edge {}, {} is {} - {}", hij, hji, l0, l1);
         }
         max_uv_length_error = max(max_uv_length_error, abs(l0 - l1));
     }
@@ -348,12 +348,12 @@ bool check_uv_consistency(
 
         if (abs(l0 - l1) > 1e-8)
         {
-            spdlog::info("uv length consistency error for {} with previous halfedge {} is {} - {}", hjk, hij, l0, l1);
-            spdlog::info("local face is {}, {}, {}, {}, ...", hij, hjk, m.n[hjk], m.n[m.n[hjk]]);
+            spdlog::warn("uv length consistency error for {} with previous halfedge {} is {} - {}", hjk, hij, l0, l1);
+            spdlog::warn("local face is {}, {}, {}, {}, ...", hij, hjk, m.n[hjk], m.n[m.n[hjk]]);
         }
         max_consistency_error = max(max_consistency_error, abs(l0 - l1));
     }
-    spdlog::info("max consistency error is {}", max_consistency_error);
+    spdlog::debug("max consistency error is {}", max_consistency_error);
 
     return (max_consistency_error < 1e-8);
 }
@@ -607,8 +607,8 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     // TODO Move to separate validity check function
     int num_done = std::count(done.begin(), done.end(), true);
     int num_cut = std::count(is_cut_h_gen.begin(), is_cut_h_gen.end(), true);
-    spdlog::info("{}/{} faces seen", num_done, m.n_faces());
-    spdlog::info("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
+    spdlog::debug("{}/{} faces seen", num_done, m.n_faces());
+    spdlog::debug("{}/{} halfedges cut", num_cut, is_cut_h_gen.size());
     auto is_found_vertex = std::vector<bool>(m.n_vertices(), false);
     for (int hi = 0; hi < m.n_halfedges(); ++hi) {
         int vi = m.to[hi];
@@ -617,7 +617,7 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
         }
     }
     int num_found_vertices = std::count(is_found_vertex.begin(), is_found_vertex.end(), true);
-    spdlog::info("{}/{} vertices seen", num_found_vertices, m.n_vertices());
+    spdlog::debug("{}/{} vertices seen", num_found_vertices, m.n_vertices());
 
     //Eigen::MatrixXi F, F_uv;
     //compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
@@ -657,7 +657,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
             if (m.type[i] == 0) break;
             if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = m.n[m.n[i]];
-                spdlog::info("Using edge {} as layout start", h);
+                spdlog::debug("Using edge {} as layout start", h);
                 break;
             }
         }
