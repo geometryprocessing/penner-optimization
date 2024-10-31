@@ -261,9 +261,10 @@ Scalar compute_uv_length_error(
     Scalar max_uv_length_error = 0.;
     for (int hij = 0; hij < num_halfedges; ++hij)
     {
+        int hji = m.opp[hij];
+
         // get other halfedges in the face for vertex computation
         int hki = prev_halfedge(m, hij);
-        int hji = m.opp[hij];
         int hlj = prev_halfedge(m, hji);
 
         // get uv vertices on the edge
@@ -545,14 +546,17 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     for (size_t i = 0; i < done.size(); i++) {
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
-            //done[i] = true;
+            done[i] = true;
+            is_cut_h_gen[hh] = true;
+            is_cut_h_gen[m.opp[hh]] = true;
         }
     }
 
     // Set edge type 2 as cut
     for (size_t i = 0; i < is_cut_h.size(); i++) {
         if (m.type[i] == 2) {
-            //is_cut_h_gen[i] = true;
+            is_cut_h_gen[i] = true;
+            is_cut_h_gen[m.opp[i]] = true;
         }
     }
 
@@ -623,7 +627,7 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     //}
 
     return is_cut_h_gen;
-};
+}
 
 // FIXME Remove once fix halfedge origin
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(
@@ -653,7 +657,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
             if (m.type[i] == 0) break;
             if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = m.n[m.n[i]];
-                spdlog::debug("Using edge {} as layout start", h);
+                spdlog::info("Using edge {} as layout start", h);
                 break;
             }
         }
@@ -676,7 +680,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     // discard part 2
     for (int i = 0; i < m.n_faces(); i++) {
         int hh = m.h[i];
-        if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
+        if (m.type[hh] == 2 || m.type[m.n[hh]] == 2 || m.type[m.n[m.n[hh]]] == 2) {
             // TODO
             //done[i] = true;
         }
@@ -685,7 +689,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     for (int i = 0; i < num_halfedges; i++) {
         if (m.type[i] == 2) {
             // TODO
-            // is_cut_h[i] = true;
+            //is_cut_h[i] = true;
         }
     }
 
@@ -727,9 +731,9 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
                                          (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 +
                                          perp(p2 - p1) * 2 * area_from_len(1.0, l1 / l0, l2 / l0);
 #ifdef CHECK_VALIDITY
-        if (!float_equal((p1 - p2).norm(), m.l[h])) spdlog::error("inconsistent length");
-        if (!float_equal((pn - p2).norm(), m.l[hn])) spdlog::error("inconsistent length");
-        if (!float_equal((pn - p1).norm(), m.l[hp])) spdlog::error("inconsistent length");
+        if (!float_equal((p1 - p2).norm(), m.l[h])) spdlog::error("inconsistent lengths {}, {}", (p1 - p2).norm(), m.l[h]);
+        if (!float_equal((pn - p2).norm(), m.l[hn])) spdlog::error("inconsistent lengths {}, {}", (pn - p2).norm(), m.l[hn]);
+        if (!float_equal((pn - p1).norm(), m.l[hp])) spdlog::error("inconsistent lengths {}, {}", (pn - p1).norm(), m.l[hp]);
 #endif
         _u[hn] = pn[0];
         _v[hn] = pn[1];
@@ -793,7 +797,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
 
                     Q.push(h);
                     done[fi] = true;
-                    spdlog::info("restarting layout from {}", h);
+                    spdlog::debug("restarting layout from {}", h);
                     break;
                 }
             }
@@ -830,15 +834,34 @@ std::vector<bool> pullback_original_cut_to_overlay(
     const std::vector<bool>& is_cut_h)
 {
     int num_halfedges = m_o.n_halfedges();
+    const auto& mc = m_o.cmesh();
+    int num_current_halfedges = mc.n_halfedges();
     std::vector<bool> is_cut_o = std::vector<bool>(num_halfedges, false);
+    std::vector<std::vector<int>> origin_halfedge_list(num_current_halfedges);
     for (int hi = 0; hi < num_halfedges; ++hi) {
         // Don't cut edges not in the original mesh
         if (m_o.edge_type[hi] == CURRENT_EDGE) {
             continue;
         } else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
-            is_cut_o[hi] = is_cut_h[m_o.origin_of_origin[hi]];
+            int _h = m_o.origin_of_origin[hi];
+            is_cut_o[hi] = is_cut_h[_h];
+            origin_halfedge_list[_h].push_back(hi);
         } else if (m_o.edge_type[hi] == ORIGINAL_EDGE) {
-            is_cut_o[hi] = is_cut_h[m_o.origin[hi]];
+            int _h = m_o.origin[hi];
+            is_cut_o[hi] = is_cut_h[_h];
+            origin_halfedge_list[_h].push_back(hi);
+        }
+    }
+
+    for (int hij = 0; hij < num_current_halfedges; ++hij)
+    {
+        if (mc.opp[hij] < hij) continue;
+        int list_size = origin_halfedge_list[hij].size();
+        for (int i = 0; i < list_size - 1; ++i)
+        {
+            int _h = origin_halfedge_list[hij][i];
+            is_cut_o[_h] = true;
+            is_cut_o[m_o.opp[_h]] = true;
         }
     }
 
