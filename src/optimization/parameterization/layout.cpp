@@ -839,7 +839,41 @@ get_consistent_layout(
     }
     m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
 
-    if (use_uniform_bc)
+    // determine if coordinates are degenerate
+    bool is_bc_degenerate;
+    for (int i = 0; i < mc.n_halfedges(); i++)
+    {
+        if ((mc.type[mc.e(i)] == 3) || (mc.type[mc.e(i)] == 4))
+        {
+            continue; // skip edges crossing boundary
+        }
+
+        int h_prev = m_o.first_segment[i];
+        int h_last = m_o.last_segment(i);
+        if (h_prev == h_last) continue;
+
+        int h = m_o.next_segment(h_prev);
+        do {
+            if (m_o.seg_bcs[h_prev][0] < 1e-12)
+            {
+                spdlog::info("Degenerate barycentric coordinates found");
+                is_bc_degenerate = true;
+                break;
+            }
+            if (float_equal(m_o.seg_bcs[h_prev][0], m_o.seg_bcs[h][0]))
+            {
+                spdlog::info("Degenerate barycentric coordinates found");
+                is_bc_degenerate = true;
+                break;
+            }
+            h = m_o.next_segment(h);
+        }
+        while (h != h_last);
+
+        if (is_bc_degenerate) break;
+    }
+
+    if ((use_uniform_bc) || (is_bc_degenerate))
     {
         for (int i = 0; i < mc.n_halfedges(); i++)
         {
