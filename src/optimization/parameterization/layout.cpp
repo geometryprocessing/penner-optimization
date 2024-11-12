@@ -40,6 +40,7 @@
 #include "optimization/parameterization/interpolation.h"
 #include "optimization/core/viewer.h"
 #include "optimization/core/projection.h"
+#include "optimization/core/constraint.h"
 #include "optimization/parameterization/refinement.h"
 #include "optimization/parameterization/translation.h"
 #include "util/vector.h"
@@ -108,6 +109,7 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     return (min_area >= 0);
 }
 
+// compute the squared length of an edge between two vertices
 Scalar uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
     Eigen::Vector2d difference_vector = uv_1 - uv_0;
@@ -115,6 +117,7 @@ Scalar uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_
     return length_sq;
 }
 
+// compute the length of an edge between two vertices
 Scalar uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
     return sqrt(uv_length_squared(uv_0, uv_1));
@@ -192,6 +195,7 @@ bool check_uv(
     return is_valid;
 }
 
+// signed area of a triangle ABC
 Scalar signed_area(
     const Eigen::Vector2d& A,
     const Eigen::Vector2d& B,
@@ -205,6 +209,7 @@ Scalar signed_area(
     return tet.determinant();
 }
 
+// find the previous halfedge of a halfedge in a mesh
 int prev_halfedge(
     const OverlayMesh<Scalar>& m,
     int hij)
@@ -218,6 +223,7 @@ int prev_halfedge(
     return hli;
 }
 
+// compute the area of the triangle with vertices ijk
 Scalar triangle_area(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -232,6 +238,7 @@ Scalar triangle_area(
     return signed_area(A, B, C);
 }
 
+// check that the signed area of the layout triangles are all positive
 bool check_areas(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -252,6 +259,7 @@ bool check_areas(
     return (min_area >= 0);
 }
 
+// check that the difference of lengths of opposite halfedges
 Scalar compute_uv_length_error(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -289,6 +297,7 @@ Scalar compute_uv_length_error(
     return max_uv_length_error;
 }
 
+// check the edge consistency and signed area of a mesh layout
 bool check_uv(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -320,6 +329,7 @@ bool check_uv(
     return is_valid;
 }
 
+// check that two different layouts of a mesh have consistent lengths
 bool check_uv_consistency(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u0,
@@ -358,169 +368,6 @@ bool check_uv_consistency(
     return (max_consistency_error < 1e-8);
 }
 
-void extract_embedded_mesh(
-    const Mesh<Scalar>& m,
-    const std::vector<int>& vtx_reindex,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXi& corner_to_halfedge)
-{
-    // Get number of vertices and faces for the embedded mesh
-    int num_faces = m.n_faces();
-    int num_embedded_faces = 0;
-    for (int f = 0; f < num_faces; ++f) {
-        // Skip face if it is in the doubled mesh
-        int hij = m.h[f];
-        // TODO Hack for closed overlay meshes. A better solution would be to have
-        // a separate method for overlay meshes
-        if ((!m.type.empty()) && (m.type[hij] == 2)) continue;
-
-        // Count embedded faces
-        num_embedded_faces++;
-    }
-
-    // Build faces and halfedge lengths
-    std::vector<std::array<int, 3>> F_vec, corner_to_halfedge_vec;
-    F_vec.reserve(num_embedded_faces);
-    corner_to_halfedge_vec.reserve(num_embedded_faces);
-    for (int f = 0; f < num_faces; ++f) {
-        // Get halfedges of face
-        int hli = m.h[f];
-        int hij = m.n[hli];
-        int hjk = m.n[hij];
-
-        // TODO Hack for closed overlay meshes. A better solution would be to have
-        // a separate method for overlay meshes
-        if ((!m.type.empty()) && (m.type[hij] == 2)) continue;
-
-        // Get vertices of the fist face
-        int vi = m.to[hli];
-        int vj = m.to[hij];
-        int vk = m.to[hjk];
-
-        // Triangle case (l == k)
-        if (m.n[hjk] == hli) {
-            // Build vertex embedding for the face
-            F_vec.push_back({vtx_reindex[vi], vtx_reindex[vj], vtx_reindex[vk]});
-
-            // Build halfedge index map for the face
-            corner_to_halfedge_vec.push_back({hjk, hli, hij});
-        }
-        // Polygon case
-        else {
-            // Build vertex embedding for the first face
-            F_vec.push_back({vtx_reindex[vi], vtx_reindex[vj], vtx_reindex[vk]});
-
-            // Build halfedge index map for the first face
-            corner_to_halfedge_vec.push_back({hjk, -1, hij});
-
-            int hkp = m.n[hjk];
-            while (m.n[hkp] != hli) {
-                // Get vertices of the interior face
-                int vk = m.to[hjk];
-                int vp = m.to[hkp];
-
-                // Build vertex embedding for the interior face for halfedge hkp
-                F_vec.push_back({vtx_reindex[vi], vtx_reindex[vk], vtx_reindex[vp]});
-
-                // Build halfedge index map for the interior face for halfedge hkp
-                corner_to_halfedge_vec.push_back({hkp, -1, -1});
-
-                // Increment halfedges
-                hkp = m.n[hkp];
-                hjk = m.n[hjk];
-            }
-
-            // Get vertices of the final face (p == l)
-            int vk = m.to[hjk];
-            int vp = m.to[hkp];
-
-            // Build vertex embedding for the final face
-            F_vec.push_back({vtx_reindex[vi], vtx_reindex[vk], vtx_reindex[vp]});
-
-            // Build halfedge index map for the final face
-            corner_to_halfedge_vec.push_back({hkp, hli, -1});
-        }
-    }
-
-    // Copy lists of lists to matrices
-    int num_triangles = F_vec.size();
-    F.resize(num_triangles, 3);
-    corner_to_halfedge.resize(num_triangles, 3);
-    for (int fi = 0; fi < num_triangles; ++fi) {
-        for (int j = 0; j < 3; ++j) {
-            F(fi, j) = F_vec[fi][j];
-            corner_to_halfedge(fi, j) = corner_to_halfedge_vec[fi][j];
-        }
-    }
-}
-
-void compute_layout_faces(
-    int origin_size,
-    const OverlayMesh<Scalar>& m,
-    const std::vector<bool>& is_cut_o,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXi& F_uv)
-{
-    int num_halfedges = m.n.size();
-    std::vector<int> h_group(m.n.size(), -1);
-    std::vector<int> to_map(origin_size, -1);
-    std::vector<int> to_group(origin_size, -1);
-    std::vector<int> which_to_group(m.out.size(), -1);
-    for (int i = 0; i < origin_size; i++) {
-        to_group[i] = i;
-        which_to_group[i] = i;
-    }
-    for (int i = 0; i < num_halfedges; i++) {
-        if (h_group[i] != -1) continue;
-        if (which_to_group[m.to[i]] == -1) {
-            which_to_group[m.to[i]] = to_group.size();
-            to_group.push_back(m.to[i]);
-        }
-        if (m.to[i] < origin_size && to_map[m.to[i]] == -1) {
-            h_group[i] = m.to[i];
-            to_map[m.to[i]] = i;
-        } else {
-            h_group[i] = to_map.size();
-            to_map.push_back(i);
-        }
-        int cur = m.n[i];
-        while (is_cut_o[cur] == false && m.opp[cur] != i) {
-            cur = m.opp[cur];
-            h_group[cur] = h_group[i];
-            cur = m.n[cur];
-        }
-        cur = m.opp[i];
-        while (is_cut_o[cur] == false && m.prev[cur] != i) {
-            cur = m.prev[cur];
-            h_group[cur] = h_group[i];
-            cur = m.opp[cur];
-        }
-    }
-
-    std::vector<std::vector<int>> F_out;
-    std::vector<std::vector<int>> FT_out;
-    int num_faces = m.h.size();
-    for (int i = 0; i < num_faces; i++) {
-        int h0 = m.h[i];
-        int hc = m.n[h0];
-        std::vector<int> hf;
-        hf.push_back(h0);
-        while (hc != h0) {
-            hf.push_back(hc);
-            hc = m.n[hc];
-        }
-        for (size_t j = 0; j < hf.size() - 2; j++) {
-            FT_out.push_back(std::vector<int>{h_group[h0], h_group[hf[j + 1]], h_group[hf[j + 2]]});
-            F_out.push_back(std::vector<int>{
-                which_to_group[m.to[h0]],
-                which_to_group[m.to[hf[j + 1]]],
-                which_to_group[m.to[hf[j + 2]]]});
-        }
-    }
-
-    convert_std_to_eigen_matrix(F_out, F);
-    convert_std_to_eigen_matrix(FT_out, F_uv);
-}
 
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h)
@@ -547,16 +394,13 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
         int hh = m.h[i];
         if (m.type[hh] == 2 && m.type[m.n[hh]] == 2 && m.type[m.n[m.n[hh]]] == 2) {
             done[i] = true;
-            is_cut_h_gen[hh] = true;
-            is_cut_h_gen[m.opp[hh]] = true;
-        }
-    }
 
-    // Set edge type 2 as cut
-    for (size_t i = 0; i < is_cut_h.size(); i++) {
-        if (m.type[i] == 2) {
-            is_cut_h_gen[i] = true;
-            is_cut_h_gen[m.opp[i]] = true;
+            // mark edges of face as cut
+            for (int _h : { hh, m.n[hh], m.n[m.n[hh]]} )
+            {
+                is_cut_h_gen[_h] = true;
+                is_cut_h_gen[m.opp[_h]] = true;
+            }
         }
     }
 
@@ -618,13 +462,6 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     }
     int num_found_vertices = std::count(is_found_vertex.begin(), is_found_vertex.end(), true);
     spdlog::debug("{}/{} vertices seen", num_found_vertices, m.n_vertices());
-
-    //Eigen::MatrixXi F, F_uv;
-    //compute_layout_faces(m.n_vertices(), m, is_cut_h_gen, F, F_uv);
-    //int num_components = count_components(F_uv);
-    //if (num_components != 1) {
-    //    spdlog::error("Layout connectivity has {} components", num_components);
-    //}
 
     return is_cut_h_gen;
 }
@@ -949,7 +786,8 @@ get_consistent_layout(
     const std::vector<Scalar>& u_vec,
     std::vector<int> singularities,
     const std::vector<bool>& is_cut_orig,
-    const std::vector<bool>& is_cut)
+    const std::vector<bool>& is_cut,
+    bool use_uniform_bc)
 {
     // Get original overlay face labels
     auto f_labels = get_overlay_face_labels(m_o);
@@ -983,12 +821,15 @@ get_consistent_layout(
     auto _u_c = std::get<0>(layout_res);
     auto _v_c = std::get<1>(layout_res);
     auto is_cut_c = std::get<2>(layout_res);
+    mc.type = mc_type;
 
 #ifdef CHECK_VALIDITY
     if (!check_uv(mc, _u_c, _v_c, is_cut_c)) {
         spdlog::error("Inconsistent uvs in cut mesh");
     }
 #endif
+
+    std::vector<Scalar> u_o, v_o, u_unif, v_unif;
 
     // Interpolate layout to the overlay mesh
     Eigen::Matrix<Scalar, -1, 1> u_eig;
@@ -997,8 +838,77 @@ get_consistent_layout(
         u_eig(i) = u_vec[i];
     }
     m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
-    auto u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
-    auto v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
+
+    if (use_uniform_bc)
+    {
+        for (int i = 0; i < mc.n_halfedges(); i++)
+        {
+            if ((mc.type[mc.e(i)] == 3) || (mc.type[mc.e(i)] == 4))
+            {
+                continue; // skip edges crossing boundary
+            }
+
+            int h = m_o.first_segment[i];
+            int h_last = m_o.last_segment(i);
+            int num_crossings = 0;
+            while (h != h_last)
+            {
+                ++num_crossings;
+                h = m_o.next_segment(h);
+            }
+
+            h = m_o.first_segment[i];
+            for (int j = 0; j < num_crossings; ++j)
+            {
+                if (m_o.vertex_type[m_o.to[h]] == ORIGINAL_VERTEX)
+                {
+                    spdlog::error("Changing bc of original vertex");
+                }
+                spdlog::trace("Initial coordiantes are {}, {}", m_o.seg_bcs[h][0], m_o.seg_bcs[h][1]);
+                m_o.seg_bcs[h][0] = (num_crossings - j) / (num_crossings + 1.);
+                m_o.seg_bcs[h][1] = (j + 1.) / (num_crossings + 1.);
+                spdlog::trace("Setting coordiantes to {}, {}", m_o.seg_bcs[h][0], m_o.seg_bcs[h][1]);
+                h = m_o.next_segment(h);
+            }
+        }
+    }
+
+    // check alignment
+    for (int hij = 0; hij < mc.n_halfedges(); ++hij)
+    {
+      if (m_o.first_segment[hij] == m_o.last_segment(hij))
+        continue;
+      int hji = mc.opp[hij];
+
+      // get the vertices on the _h side
+      std::vector<Scalar> lambdas;
+      int current_seg = m_o.first_segment[hij];
+      while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
+      {
+        std::vector<Scalar> tmp = m_o.seg_bcs[current_seg];
+        lambdas.push_back(tmp[1]);
+        current_seg = m_o.next_segment(current_seg);
+      }
+      // check the vertices on the _hopp side
+
+      current_seg = m_o.first_segment[hji];
+      int cnt = lambdas.size() - 1;
+      while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
+      {
+        std::vector<Scalar> tmp = m_o.seg_bcs[current_seg];
+        if (abs(lambdas[cnt] - tmp[0]) > 1e-10)
+        {
+          spdlog::error("alignment problem: {}, {}", lambdas[cnt], tmp[0]);
+        }
+        cnt--;
+        current_seg = m_o.next_segment(current_seg);
+      }
+    }
+
+    u_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _u_c);
+    v_o = m_o.interpolate_along_c_bc(mc.n, mc.f, _v_c);
+    //u_o = m_o.interpolate_along_c(_u_c);
+    //v_o = m_o.interpolate_along_c(_v_c);
     spdlog::trace("Interpolate on overlay mesh done.");
 
 #ifdef CHECK_VALIDITY
@@ -1033,6 +943,9 @@ get_consistent_layout(
     m.type = std::vector<char>(m.n.size(), 0);
     int num_m_halfedges = m.n.size();
     for (int hi = 0; hi < num_m_halfedges; ++hi) {
+        if (!float_equal(m.l[hi], m.l[m.opp[hi]])) {
+            spdlog::error("inconsistent edge lengths");
+        }
         if (m_o.edge_type[hi] == CURRENT_EDGE) {
             m.type[hi] = 4;
         } else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
@@ -1055,6 +968,19 @@ get_consistent_layout(
     bool view_layouts = false;
     if (view_layouts) {
         //view_halfedge_mesh_layout(m, u_o, v_o);
+    }
+
+    bool check_angles = false;
+    if (check_angles)
+    {
+        VectorX he2angle, he2cot;
+        corner_angles(m, he2angle, he2cot);
+        VectorX vertex_angles(m.n_vertices());
+        for (int h = 0; h < m.n_halfedges(); ++h) {
+            int v = m.to[h];
+            vertex_angles[v] += he2angle[m.n[m.n[h]]] / (M_PI / 2.);
+        }
+        spdlog::info("Vertex angles: {}", vertex_angles.transpose());
     }
 
     // Pullback cut on the original mesh to the overlay
@@ -1150,7 +1076,8 @@ std::
         std::vector<std::vector<Scalar>>& V_overlay,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
-        const std::vector<bool>& is_cut)
+        const std::vector<bool>& is_cut,
+        bool use_uniform_bc)
 {
     const auto& m = mo.cmesh();
 
@@ -1175,7 +1102,7 @@ std::
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
-    auto layout_res = get_consistent_layout(_m, mo, u, cones, is_cut_orig, is_cut);
+    auto layout_res = get_consistent_layout(_m, mo, u, cones, is_cut_orig, is_cut, use_uniform_bc);
     auto u_o = std::get<0>(layout_res);
     auto v_o = std::get<1>(layout_res);
     auto is_cut_h = std::get<2>(layout_res);
@@ -1250,19 +1177,77 @@ std::
     return std::make_tuple(mo, V_o, F_o, uv_o, FT_o, is_cut_h, is_cut_o, Fn_to_F, endpoints_out);
 }
 
-#ifdef PYBIND
-std::
-    tuple<
-        Eigen::MatrixXi, // F
-        Eigen::MatrixXi // corner_to_halfedge
-        >
-    extract_embedded_mesh_pybind(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex)
+[[deprecated]]
+void compute_layout_faces(
+    int origin_size,
+    const OverlayMesh<Scalar>& m,
+    const std::vector<bool>& is_cut_o,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXi& F_uv)
 {
-    Eigen::MatrixXi F;
-    Eigen::MatrixXi corner_to_halfedge;
-    extract_embedded_mesh(m, vtx_reindex, F, corner_to_halfedge);
-    return std::make_tuple(F, corner_to_halfedge);
+    int num_halfedges = m.n.size();
+    std::vector<int> h_group(m.n.size(), -1);
+    std::vector<int> to_map(origin_size, -1);
+    std::vector<int> to_group(origin_size, -1);
+    std::vector<int> which_to_group(m.out.size(), -1);
+    for (int i = 0; i < origin_size; i++) {
+        to_group[i] = i;
+        which_to_group[i] = i;
+    }
+    for (int i = 0; i < num_halfedges; i++) {
+        if (h_group[i] != -1) continue;
+        if (which_to_group[m.to[i]] == -1) {
+            which_to_group[m.to[i]] = to_group.size();
+            to_group.push_back(m.to[i]);
+        }
+        if (m.to[i] < origin_size && to_map[m.to[i]] == -1) {
+            h_group[i] = m.to[i];
+            to_map[m.to[i]] = i;
+        } else {
+            h_group[i] = to_map.size();
+            to_map.push_back(i);
+        }
+        int cur = m.n[i];
+        while (is_cut_o[cur] == false && m.opp[cur] != i) {
+            cur = m.opp[cur];
+            h_group[cur] = h_group[i];
+            cur = m.n[cur];
+        }
+        cur = m.opp[i];
+        while (is_cut_o[cur] == false && m.prev[cur] != i) {
+            cur = m.prev[cur];
+            h_group[cur] = h_group[i];
+            cur = m.opp[cur];
+        }
+    }
+
+    std::vector<std::vector<int>> F_out;
+    std::vector<std::vector<int>> FT_out;
+    int num_faces = m.h.size();
+    for (int i = 0; i < num_faces; i++) {
+        int h0 = m.h[i];
+        int hc = m.n[h0];
+        std::vector<int> hf;
+        hf.push_back(h0);
+        while (hc != h0) {
+            hf.push_back(hc);
+            hc = m.n[hc];
+        }
+        for (size_t j = 0; j < hf.size() - 2; j++) {
+            FT_out.push_back(std::vector<int>{h_group[h0], h_group[hf[j + 1]], h_group[hf[j + 2]]});
+            F_out.push_back(std::vector<int>{
+                which_to_group[m.to[h0]],
+                which_to_group[m.to[hf[j + 1]]],
+                which_to_group[m.to[hf[j + 2]]]});
+        }
+    }
+
+    convert_std_to_eigen_matrix(F_out, F);
+    convert_std_to_eigen_matrix(FT_out, F_uv);
 }
+
+
+#ifdef PYBIND
 
 #endif
 

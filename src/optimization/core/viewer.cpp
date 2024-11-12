@@ -5,6 +5,7 @@
 
 #include <igl/boundary_facets.h>
 #include <igl/doublearea.h>
+#include <igl/internal_angles.h>
 #include <igl/edge_flaps.h>
 #include <igl/facet_components.h>
 #include <igl/local_basis.h>
@@ -401,6 +402,26 @@ void view_cones(
 #endif
 }
 
+
+VectorX compute_corner_angles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F
+) {
+    Eigen::MatrixXd angles;
+    igl::internal_angles(V, F, angles);
+    VectorX he2angle(3 * F.rows());
+    for (int fijk = 0; fijk < F.rows(); ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int hij = 3 * fijk + (i + 1) % 3;
+            he2angle[hij] = angles(fijk, i);
+        }
+    }
+
+    return he2angle;
+}
+
 void view_mesh_quality(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -414,7 +435,7 @@ void view_mesh_quality(
 
     Eigen::VectorXd double_area;
     igl::doublearea(V, F, double_area);
-
+    Eigen::VectorXd he2angle = compute_corner_angles(V, F);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -424,6 +445,7 @@ void view_mesh_quality(
         polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     }
     polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("double_area", double_area);
+    polyscope::getSurfaceMesh(mesh_handle)->addHalfedgeScalarQuantity("angles", he2angle);
     if (show) polyscope::show();
 #endif
 }
@@ -458,6 +480,47 @@ void view_mesh_topology(
     }
 #endif
 }
+
+void view_mesh_uv_topology(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& F_uv,
+    std::string mesh_handle,
+    bool show)
+{
+    // Get components and boundary
+    Eigen::MatrixXi bd;
+    Eigen::VectorXi components, J, K;
+    igl::boundary_facets(F_uv, bd, J, K);
+    igl::facet_components(F_uv, components);
+    Eigen::VectorXi is_bd = Eigen::VectorXi::Zero(F_uv.size());
+    for (int i = 0; i < J.size(); ++i)
+    {
+        int f = J[i];
+        int k = (K[i] + 1) % 3;
+        is_bd(3 * f + k) = 1;
+    }
+
+    if (mesh_handle == "") {
+        mesh_handle = "topology_analysis_mesh";
+    }
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
+    polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("component", components);
+    polyscope::getSurfaceMesh(mesh_handle)->addHalfedgeScalarQuantity("bd", is_bd);
+    if (show) polyscope::show();
+#else
+    if (show) {
+        int num_vertices = V.rows();
+        int num_faces = F.rows();
+        spdlog::info("Viewer disabled for mesh (|V|={}, |F|={})", num_vertices, num_faces);
+    }
+#endif
+}
+
 
 void view_parameterization(
     const Eigen::MatrixXd& V,
@@ -500,6 +563,7 @@ void view_triangulation(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const std::vector<int>& fn_to_f,
+    const std::vector<std::pair<int, int>>& endpoints,
     std::string mesh_handle,
     bool show)
 {
@@ -508,15 +572,28 @@ void view_triangulation(
     }
     spdlog::info("Viewing triangulation for map with {} faces", fn_to_f.size());
 
+    int num_vertices = endpoints.size();
+    Eigen::VectorXi first_endpoint(num_vertices);
+    Eigen::VectorXi second_endpoint(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        first_endpoint[vi] = endpoints[vi].first;
+        second_endpoint[vi] = endpoints[vi].second;
+    }
+
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
 
     // add mesh with permuted face map
     polyscope::registerSurfaceMesh(mesh_handle, V, F);
     polyscope::getSurfaceMesh(mesh_handle)
-        ->addFaceScalarQuantity("face_map", fn_to_f)
+        ->addFaceScalarQuantity("face_map", shuffle_map_image(fn_to_f))
         ->setColorMap("spectral")
         ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity("first endpoint", first_endpoint);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity("second endpoint", second_endpoint);
 
     if (show) polyscope::show();
 #else

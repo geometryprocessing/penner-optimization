@@ -316,6 +316,8 @@ void view_seamless_parameterization(
     VectorX area, uv_area;
     igl::doublearea(V_cut, FT, area);
     igl::doublearea(uv, FT, uv_area);
+    VectorX corner_angles = Optimization::compute_corner_angles(V_cut, FT);
+    VectorX uv_corner_angles = Optimization::compute_corner_angles(uv, FT);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
     spdlog::info("Min embedding area: {}", area.minCoeff());
@@ -368,6 +370,14 @@ void view_seamless_parameterization(
         ->addHalfedgeScalarQuantity(
             "uv angle",
             convert_scalar_to_double_vector(uv_angle));
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "corner angle",
+            convert_scalar_to_double_vector(corner_angles));
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "uv corner angle",
+            convert_scalar_to_double_vector(uv_corner_angles));
 
     polyscope::registerPointCloud(mesh_handle + " uv_cones", cone_positions);
     polyscope::getPointCloud(mesh_handle + " uv_cones")

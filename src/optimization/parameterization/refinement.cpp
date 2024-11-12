@@ -572,9 +572,6 @@ void RefinementMesh::build_connectivity(
 
     // Check if uv faces are a single component
     int num_components = count_components(F_uv);
-    if (num_components != 1) {
-        spdlog::error("uv face connectivity has {} components", num_components);
-    }
 
     // get map from faces to list of subfaces
     std::vector<std::vector<int>> F_to_Fn = build_F_to_Fn(Fn_to_F);
@@ -615,7 +612,8 @@ void RefinementMesh::build_connectivity(
 
     // Check if uv faces are a single component
     int num_orig_components = count_components(F_uv_orig);
-    if (num_orig_components != 1) {
+    if (num_orig_components != num_components) {
+        spdlog::error("uv face connectivity has {} components", num_components);
         spdlog::error("uv original face connectivity has {} components", num_orig_components);
     }
 
@@ -634,7 +632,6 @@ void RefinementMesh::build_connectivity(
 
     // Reindex the to arrays
     int num_halfedges = C.n.size();
-    ;
     to.resize(num_halfedges);
     uv_to.resize(num_halfedges);
     h_v_points.resize(num_halfedges);

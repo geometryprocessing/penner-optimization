@@ -52,11 +52,11 @@ OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_me
 /// @param[in] mo: mesh to make tufted
 void make_tufted_overlay(OverlayMesh<Scalar>& mo);
 
-/// Given a VF mesh, check that the face areas are nonzero
+/// Given a VF mesh, check that the signed face areas are nonnegative
 ///
-/// @param[in] V: mesh vertices in 2D or 3D
+/// @param[in] V: mesh vertices in 2D
 /// @param[in] F: mesh faces
-/// @return true iff the face areas are all nonzero
+/// @return true iff the face areas are all nonnegative
 bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
 /// Given a VF mesh with uv coordinates, get the maximum error of the uv lengths
@@ -74,8 +74,7 @@ Scalar compute_uv_length_error(
 /// Given a VF mesh with uv coordinates, check that it satisfies fundamental uv
 /// consistency constraints:
 ///     - uv lengths match up across cuts
-///     - mesh face areas are nonzero
-///     - uv face areas are nonzero
+///     - uv face areas are nonnegative
 ///
 /// @param[in] V: mesh vertices in 3D
 /// @param[in] F: mesh faces
@@ -88,28 +87,14 @@ bool check_uv(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv);
 
-/// Build a VF mesh for the embedded mesh in the doubled mesh and also extract
-/// the mapping from VF mesh corners to opposite halfedge index
-///
-/// @param[in] m: input mesh
-/// @param[in] vtx_reindex: reindexing for the vertices wrt the mesh indexing
-/// @param[out] F: mesh faces
-/// @param[out] corner_to_halfedge: mesh corner to opposite halfedge indexing
-void extract_embedded_mesh(
-    const Mesh<Scalar>& m,
-    const std::vector<int>& vtx_reindex,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXi& corner_to_halfedge);
-
-/// Given a metric defined by original edge lengths and scale factor u, do a bfs on dual graph of mesh or
-/// using given cuts to singularities defined in is_cut_h to compute a full layout cut graph
+/// Given a halfedge mesh, do a bfs on dual graph of mesh to produce a cut
 ///
 /// Note that this only lays out the connected component containing the start halfedge.
 ///
-/// @param m, mesh data structure
-/// @param is_cut_h, (optional) pre-defined cuts to be included
-/// @param start_h, the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
-/// @return is_cut_h #h vector, mark whether the current halfedge is part of cut graph
+/// @param m: mesh data structure
+/// @param is_cut_h: (optional) pre-defined cuts to be included
+/// @param start_h: the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
+/// @return #h vector, mark whether the current halfedge is part of cut graph
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h = -1);
 
@@ -132,6 +117,7 @@ std::vector<bool> pullback_cut_to_overlay(
  * @param m_o, overlay mesh
  * @param u_vec, per-vertex scale factor
  * @param singularities, list of singularity vertex ids
+ * @param use_uniform_bc, (optional) use uniform edge barycentric coordinates where possible
  * @return u_o, v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
  */
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
@@ -141,7 +127,8 @@ get_consistent_layout(
     const std::vector<Scalar>& u_vec,
     std::vector<int> singularities,
     const std::vector<bool>& is_cut_orig,
-    const std::vector<bool>& is_cut);
+    const std::vector<bool>& is_cut,
+    bool use_uniform_bc=false);
 
 
 // TODO: Document this technical function
@@ -167,15 +154,10 @@ std::
         std::vector<std::vector<Scalar>>& V_overlay,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
-        const std::vector<bool>& is_cut);
+        const std::vector<bool>& is_cut,
+        bool use_uniform_bc=false);
 
 #ifdef PYBIND
-std::
-    tuple<
-        Eigen::MatrixXi, // F
-        Eigen::MatrixXi // corner_to_halfedge
-        >
-    extract_embedded_mesh_pybind(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex);
 #endif
 
 

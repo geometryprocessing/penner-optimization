@@ -63,6 +63,13 @@ void view_mesh_topology(
     std::string mesh_handle="",
     bool show=true);
 
+void view_mesh_uv_topology(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& F_uv,
+    std::string mesh_handle="",
+    bool show=true);
+
 void view_parameterization(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -95,6 +102,7 @@ void view_triangulation(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const std::vector<int>& fn_to_f,
+    const std::vector<std::pair<int, int>>& endpoints,
     std::string mesh_handle="",
     bool show=true);
 
@@ -127,6 +135,11 @@ void view_independent_vertex_function(
     const VectorX& vertex_function,
     std::string mesh_handle="",
     bool show=true);
+
+VectorX compute_corner_angles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F
+);
 
 } // namespace Holonomy
 } // namespace Penner
