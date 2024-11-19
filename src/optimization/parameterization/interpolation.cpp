@@ -33,6 +33,7 @@
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "util/embedding.h"
+#include "util/vector.h"
 #include "optimization/core/projection.h"
 #include "optimization/core/reparametrization.h"
 #include "optimization/parameterization/translation.h"
@@ -54,12 +55,13 @@ bool is_vector_equal(const std::vector<int>& v, const std::vector<int>& w)
     return true;
 }
 
+template <typename OverlayScalar>
 void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,
     const VectorX& scale_factors,
-    InterpolationMesh& interpolation_mesh,
-    InterpolationMesh& reverse_interpolation_mesh)
+    InterpolationMesh<OverlayScalar>& interpolation_mesh,
+    InterpolationMesh<OverlayScalar>& reverse_interpolation_mesh)
 {
     // Check scale factor size
     if (scale_factors.size() != mesh.n_ind_vertices()) {
@@ -72,7 +74,7 @@ void interpolate_penner_coordinates(
     VectorX trivial_scale_factors;
     trivial_scale_factors.setZero(mesh.n_ind_vertices());
     bool is_hyperbolic = false;
-    interpolation_mesh = InterpolationMesh(mesh, trivial_scale_factors, is_hyperbolic);
+    interpolation_mesh = InterpolationMesh<OverlayScalar>(mesh, trivial_scale_factors, is_hyperbolic);
 
     // Convert the surface to a hyperbolic surface with Penner coordiantes
     bool undo_flips = true;
@@ -82,7 +84,7 @@ void interpolate_penner_coordinates(
         interpolation_mesh.convert_to_hyperbolic_surface(
             euclidean_flip_sequence,
             hyperbolic_flip_sequence);
-        Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
+        Mesh<OverlayScalar>& mc = interpolation_mesh.get_mesh();
         std::vector<char> initial_type = mc.type;
         std::vector<int> initial_R = mc.R;
 
@@ -93,7 +95,7 @@ void interpolate_penner_coordinates(
         // Compute translations for reparametrization
         VectorX halfedge_translations;
         compute_as_symmetric_as_possible_translations(
-            mc,
+            change_mesh_type<OverlayScalar, Scalar>(mc),
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
@@ -123,10 +125,12 @@ void interpolate_penner_coordinates(
 
         // Build a clean overlay mesh with the final metric
         spdlog::trace("Building reverse interpolation mesh");
-        Mesh<Scalar> m_layout = interpolation_mesh.get_mesh();
+        Mesh<OverlayScalar> m_layout = interpolation_mesh.get_mesh();
         is_hyperbolic = true;
-        reverse_interpolation_mesh =
-            InterpolationMesh(m_layout, trivial_scale_factors, is_hyperbolic);
+        reverse_interpolation_mesh = InterpolationMesh<OverlayScalar>(
+            change_mesh_type<OverlayScalar, Scalar>(m_layout),
+            trivial_scale_factors,
+            is_hyperbolic);
 
         // Undo the flips to make the hyperbolic surface with new metric Delaunay
         reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
@@ -157,7 +161,7 @@ void interpolate_penner_coordinates(
         }
     } else {
         // Get initial reflection structure
-        Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
+        Mesh<OverlayScalar>& mc = interpolation_mesh.get_mesh();
         std::vector<char> initial_type = mc.type;
         std::vector<int> initial_R = mc.R;
 
@@ -175,8 +179,8 @@ void interpolate_penner_coordinates(
         spdlog::trace("Getting flipped metric coordinates");
         VectorX trivial_halfedge_translations;
         trivial_halfedge_translations.setZero(halfedge_metric_coords.size());
-        InterpolationMesh metric_interpolation_mesh =
-            InterpolationMesh(mesh, trivial_scale_factors, true);
+        InterpolationMesh<OverlayScalar> metric_interpolation_mesh =
+            InterpolationMesh<OverlayScalar>(mesh, trivial_scale_factors, true);
         metric_interpolation_mesh.change_hyperbolic_surface_metric(
             halfedge_metric_coords,
             trivial_scale_factors,
@@ -188,7 +192,7 @@ void interpolate_penner_coordinates(
         // Compute translations for reparametrization
         VectorX halfedge_translations;
         compute_as_symmetric_as_possible_translations(
-            mc,
+            change_mesh_type<OverlayScalar, Scalar>(mc),
             flipped_halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
@@ -212,10 +216,12 @@ void interpolate_penner_coordinates(
 
         // Build a clean overlay mesh with the final metric
         spdlog::trace("Building reverse interpolation mesh");
-        Mesh<Scalar> m_layout = interpolation_mesh.get_mesh();
+        Mesh<OverlayScalar> m_layout = interpolation_mesh.get_mesh();
         is_hyperbolic = true;
-        reverse_interpolation_mesh =
-            InterpolationMesh(m_layout, trivial_scale_factors, is_hyperbolic);
+        reverse_interpolation_mesh = InterpolationMesh<OverlayScalar>(
+            change_mesh_type<OverlayScalar, Scalar>(m_layout),
+            trivial_scale_factors,
+            is_hyperbolic);
 
         // Undo the flips to make the hyperbolic surface with new metric Delaunay
         reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
@@ -238,16 +244,17 @@ void interpolate_penner_coordinates(
     }
 }
 
+template <typename OverlayScalar>
 void interpolate_vertex_positions(
     const Eigen::MatrixXd& V,
     const std::vector<int> vtx_reindex,
-    const InterpolationMesh& interpolation_mesh,
-    const InterpolationMesh& reverse_interpolation_mesh,
+    const InterpolationMesh<OverlayScalar>& interpolation_mesh,
+    const InterpolationMesh<OverlayScalar>& reverse_interpolation_mesh,
     Eigen::MatrixXd& V_overlay)
 {
     // Get the vertex map between the forward and reverse maps
-    OverlayMesh<Scalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
-    OverlayMesh<Scalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
+    OverlayMesh<OverlayScalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
+    OverlayMesh<OverlayScalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
     if ((overlay_mesh.bypass_overlay) || (reverse_overlay_mesh.bypass_overlay))
     {
         spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
@@ -258,23 +265,23 @@ void interpolate_vertex_positions(
         spdlog::error("reverse overlay has {} halfedges", reverse_overlay_mesh.n_halfedges());
     }
     std::vector<int> v_map =
-        ConformalIdealDelaunay<Scalar>::GetVertexMap(overlay_mesh, reverse_overlay_mesh);
+        ConformalIdealDelaunay<OverlayScalar>::GetVertexMap(overlay_mesh, reverse_overlay_mesh);
 
     // Reindex the original vertex positions
-    Mesh<Scalar>& mesh = overlay_mesh.cmesh();
-    std::vector<std::vector<Scalar>> V_reindex(3);
+    Mesh<OverlayScalar>& mesh = overlay_mesh.cmesh();
+    std::vector<std::vector<OverlayScalar>> V_reindex(3);
     for (int i = 0; i < 3; i++) {
         V_reindex[i].resize(mesh.out.size(), 0);
         for (int j = 0; j < V.rows(); j++) {
-            V_reindex[i][j] = V(vtx_reindex[j], i);
+            V_reindex[i][j] = OverlayScalar(V(vtx_reindex[j], i));
         }
     }
 
     // Interpolate vertex positions along the original edges
-    Mesh<Scalar>& reverse_mesh = reverse_overlay_mesh.cmesh();
-    std::vector<std::vector<Scalar>> V_overlay_rev(3);
+    Mesh<OverlayScalar>& reverse_mesh = reverse_overlay_mesh.cmesh();
+    std::vector<std::vector<OverlayScalar>> V_overlay_rev(3);
     for (int j = 0; j < 3; j++) {
-        V_overlay_rev[j] = reverse_overlay_mesh.interpolate_along_o_bc<Scalar>(
+        V_overlay_rev[j] = reverse_overlay_mesh.interpolate_along_o_bc(
             reverse_mesh.opp,
             reverse_mesh.to,
             V_reindex[j]);
@@ -290,7 +297,8 @@ void interpolate_vertex_positions(
 }
 
 // Utility function to build an overlay mesh from a VF mesh
-OverlayMesh<Scalar> build_overlay_mesh(
+template <typename OverlayScalar>
+OverlayMesh<OverlayScalar> build_overlay_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
@@ -298,29 +306,41 @@ OverlayMesh<Scalar> build_overlay_mesh(
     const std::vector<Scalar>& Theta_hat)
 {
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    Mesh<Scalar> m =
-        FV_to_double(V, F, uv, F_uv, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
-    return OverlayMesh<Scalar>(m);
+    Mesh<OverlayScalar> m =
+        FV_to_double<OverlayScalar>(
+            V,
+            F,
+            uv,
+            F_uv,
+            convert_vector_type<Scalar, OverlayScalar>(Theta_hat),
+            vtx_reindex,
+            indep_vtx,
+            dep_vtx,
+            v_rep,
+            bnd_loops);
+    return OverlayMesh<OverlayScalar>(m);
 }
 
-InterpolationMesh::InterpolationMesh()
-    : m_overlay_mesh(OverlayMesh<Scalar>(Mesh<Scalar>()))
+template <typename OverlayScalar>
+InterpolationMesh<OverlayScalar>::InterpolationMesh()
+    : m_overlay_mesh(OverlayMesh<OverlayScalar>(Mesh<OverlayScalar>()))
 {
     // Mark the mesh as a invalid Euclidean mesh
     m_is_hyperbolic = false;
     m_is_valid = false;
 }
 
-InterpolationMesh::InterpolationMesh(
+template <typename OverlayScalar>
+InterpolationMesh<OverlayScalar>::InterpolationMesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv,
     const std::vector<Scalar>& Theta_hat)
-    : m_overlay_mesh(build_overlay_mesh(V, F, uv, F_uv, Theta_hat))
+    : m_overlay_mesh(build_overlay_mesh<OverlayScalar>(V, F, uv, F_uv, Theta_hat))
 {
     // Build the (trivial) conformal scale factors and scaling matrix
-    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
     m_scale_factors.setZero(mc.n_ind_vertices());
 
     // Mark the mesh as a valid Euclidean mesh
@@ -328,30 +348,33 @@ InterpolationMesh::InterpolationMesh(
     m_is_valid = true;
 }
 
-InterpolationMesh::InterpolationMesh(
+template <typename OverlayScalar>
+InterpolationMesh<OverlayScalar>::InterpolationMesh(
     const Mesh<Scalar>& mesh,
     const VectorX& scale_factors,
     bool is_hyperbolic)
-    : m_overlay_mesh(mesh)
-    , m_scale_factors(scale_factors)
+    : m_overlay_mesh(change_mesh_type<Scalar, OverlayScalar>(mesh))
+    , m_scale_factors(convert_vector_type<Scalar, OverlayScalar>(scale_factors))
 {
     // Mark the mesh as a valid Hyperbolic mesh
     m_is_hyperbolic = is_hyperbolic;
     m_is_valid = true;
 }
 
-void InterpolationMesh::add_points(
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::add_points(
     const std::vector<int>& pt_fids,
-    const std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs)
+    const std::vector<Eigen::Matrix<OverlayScalar, 3, 1>>& pt_bcs)
 {
     m_overlay_mesh.init_pts(pt_fids, pt_bcs);
 }
 
-void InterpolationMesh::get_points(
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::get_points(
     std::vector<int>& pt_fids,
-    std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs)
+    std::vector<Eigen::Matrix<OverlayScalar, 3, 1>>& pt_bcs)
 {
-    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
 
     // Map to scaled triangles if the surface is hyperbolic
     if (is_hyperbolic()) {
@@ -372,7 +395,8 @@ void InterpolationMesh::get_points(
     }
 }
 
-void InterpolationMesh::convert_to_delaunay_hyperbolic_surface(std::vector<int>& flip_sequence)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::convert_to_delaunay_hyperbolic_surface(std::vector<int>& flip_sequence)
 {
     spdlog::trace("Converting to Delaunay Hyperbolic surface");
     if (!m_is_valid) {
@@ -387,7 +411,7 @@ void InterpolationMesh::convert_to_delaunay_hyperbolic_surface(std::vector<int>&
     // Convert original metric barycentric coordinates to reference triangle if the
     // mesh is currently Euclidean
     if (is_euclidean()) {
-        Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+        Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
         m_overlay_mesh.bc_original_to_eq(mc.n, mc.to, mc.l);
         original_to_equilateral(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.l);
     }
@@ -397,7 +421,8 @@ void InterpolationMesh::convert_to_delaunay_hyperbolic_surface(std::vector<int>&
     m_is_valid = is_valid_interpolation_mesh();
 }
 
-void InterpolationMesh::convert_to_delaunay_euclidean_surface(std::vector<int>& flip_sequence)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::convert_to_delaunay_euclidean_surface(std::vector<int>& flip_sequence)
 {
     spdlog::trace("Converting to Delaunay Euclidean surface");
     if (!m_is_valid) {
@@ -412,7 +437,7 @@ void InterpolationMesh::convert_to_delaunay_euclidean_surface(std::vector<int>& 
     // Convert reference triangle barycentric coordinates to the metric if the mesh
     // is currently Hyperbolic
     if (is_hyperbolic()) {
-        Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+        Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
 
         // Remap vertices to representatives and reparametrize the surface
         std::vector<int> to_rep(mc.n_halfedges());
@@ -428,7 +453,8 @@ void InterpolationMesh::convert_to_delaunay_euclidean_surface(std::vector<int>& 
     // m_is_valid = is_valid_interpolation_mesh(); TODO Euclidean case
 }
 
-void InterpolationMesh::convert_to_hyperbolic_surface(
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::convert_to_hyperbolic_surface(
     std::vector<int>& euclidean_flip_sequence,
     std::vector<int>& hyperbolic_flip_sequence)
 {
@@ -465,7 +491,7 @@ void InterpolationMesh::convert_to_hyperbolic_surface(
 
     // Convert original metric barycentric coordinates to reference triangle
     spdlog::trace("Remapping interpolated points");
-    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
     m_overlay_mesh.bc_original_to_eq(mc.n, mc.to, mc.l);
     original_to_equilateral(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.l);
     // check_bc_values();
@@ -531,7 +557,8 @@ void InterpolationMesh::convert_to_hyperbolic_surface(
     // check_bc_values();
 }
 
-void InterpolationMesh::force_convert_to_euclidean_surface()
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::force_convert_to_euclidean_surface()
 {
     spdlog::trace("Forcing conversion to Euclidean surface");
     if (!m_is_valid) {
@@ -543,7 +570,7 @@ void InterpolationMesh::force_convert_to_euclidean_surface()
     // is currently Hyperbolic
     if (is_hyperbolic()) {
         m_overlay_mesh.garbage_collection();
-        Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+        Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
 
         // Check scale factor size
         if (m_scale_factors.size() != mc.n_ind_vertices()) {
@@ -565,7 +592,8 @@ void InterpolationMesh::force_convert_to_euclidean_surface()
     // m_is_valid = is_valid_interpolation_mesh(); TODO Euclidean case
 }
 
-void InterpolationMesh::force_convert_to_hyperbolic_surface()
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::force_convert_to_hyperbolic_surface()
 {
     spdlog::trace("Forcing conversion to Hyperbolic surface");
     if (!m_is_valid) {
@@ -576,7 +604,7 @@ void InterpolationMesh::force_convert_to_hyperbolic_surface()
     // Convert reference triangle barycentric coordinates to the metric if the mesh
     // is currently Hyperbolic
     if (is_euclidean()) {
-        Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+        Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
         m_overlay_mesh.bc_original_to_eq(mc.n, mc.to, mc.l);
         original_to_equilateral(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.l);
     }
@@ -586,7 +614,8 @@ void InterpolationMesh::force_convert_to_hyperbolic_surface()
     m_is_valid = is_valid_interpolation_mesh();
 }
 
-void InterpolationMesh::change_hyperbolic_surface_metric(
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::change_hyperbolic_surface_metric(
     const VectorX& halfedge_metric_coords,
     const VectorX& scale_factors,
     const VectorX& halfedge_translations)
@@ -608,14 +637,14 @@ void InterpolationMesh::change_hyperbolic_surface_metric(
     }
 
     // Change lengths to target values
-    Mesh<Scalar>& mc = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar>& mc = m_overlay_mesh.cmesh();
     spdlog::trace("Changing mesh edge lengths");
     for (int h = 0; h < halfedge_metric_coords.size(); ++h) {
         mc.l[h] = exp(halfedge_metric_coords[h] / 2.0);
     }
 
     // Update scale factors
-    m_scale_factors = scale_factors;
+    m_scale_factors = convert_vector_type<Scalar, OverlayScalar>(scale_factors);
 
     // Translate barycentric coordinates on edges to rectify the shear
     spdlog::trace("Reparametrizing interpolation points");
@@ -626,7 +655,8 @@ void InterpolationMesh::change_hyperbolic_surface_metric(
     m_is_valid = is_valid_interpolation_mesh();
 }
 
-void InterpolationMesh::make_delaunay(std::vector<int>& flip_sequence)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::make_delaunay(std::vector<int>& flip_sequence)
 {
     spdlog::trace("Making mesh Delaunay");
     if (!m_is_valid) {
@@ -642,8 +672,8 @@ void InterpolationMesh::make_delaunay(std::vector<int>& flip_sequence)
         spdlog::trace("Making mesh Delaunay with Euclidean flips");
     }
     DelaunayStats del_stats;
-    SolveStats<Scalar> solve_stats;
-    ConformalIdealDelaunay<Scalar>::MakeDelaunay(
+    SolveStats<OverlayScalar> solve_stats;
+    ConformalIdealDelaunay<OverlayScalar>::MakeDelaunay(
         m_overlay_mesh,
         m_scale_factors,
         del_stats,
@@ -665,7 +695,8 @@ void InterpolationMesh::make_delaunay(std::vector<int>& flip_sequence)
 }
 
 
-void InterpolationMesh::flip_ccw(int flip_index)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::flip_ccw(int flip_index)
 {
     // Get halfedge index from flip index
     int halfedge_index = get_flip_halfedge_index(flip_index);
@@ -677,7 +708,8 @@ void InterpolationMesh::flip_ccw(int flip_index)
     m_overlay_mesh.flip_ccw(halfedge_index, use_ptolemy_flip);
 }
 
-void InterpolationMesh::flip_clockwise(int flip_index)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::flip_clockwise(int flip_index)
 {
     // Equivalent to flipping clockwise thrice
     for (size_t i = 0; i < 3; ++i) {
@@ -685,7 +717,8 @@ void InterpolationMesh::flip_clockwise(int flip_index)
     }
 }
 
-void InterpolationMesh::follow_flip_sequence(const std::vector<int>& flip_sequence)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::follow_flip_sequence(const std::vector<int>& flip_sequence)
 {
     spdlog::trace("Following flip sequence of {} flips", flip_sequence.size());
     if (!m_is_valid) {
@@ -706,7 +739,8 @@ void InterpolationMesh::follow_flip_sequence(const std::vector<int>& flip_sequen
     }
 }
 
-void InterpolationMesh::reverse_flip_sequence(const std::vector<int>& flip_sequence)
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::reverse_flip_sequence(const std::vector<int>& flip_sequence)
 {
     spdlog::trace("Reversing flip sequence of {} flips", flip_sequence.size());
     if (!m_is_valid) {
@@ -727,7 +761,8 @@ void InterpolationMesh::reverse_flip_sequence(const std::vector<int>& flip_seque
     }
 }
 
-OverlayMesh<Scalar> InterpolationMesh::get_tufted_overlay_mesh(
+template <typename OverlayScalar>
+OverlayMesh<OverlayScalar> InterpolationMesh<OverlayScalar>::get_tufted_overlay_mesh(
     int num_vertices,
     const std::vector<int>& indep_vtx,
     const std::vector<int>& dep_vtx,
@@ -737,7 +772,7 @@ OverlayMesh<Scalar> InterpolationMesh::get_tufted_overlay_mesh(
         spdlog::error("Invalid interpolation mesh");
     }
 
-    OverlayMesh<Scalar> tufted_overlay_mesh = m_overlay_mesh;
+    OverlayMesh<OverlayScalar> tufted_overlay_mesh = m_overlay_mesh;
     if (bnd_loops.size() != 0) {
         auto mc = tufted_overlay_mesh.cmesh();
         create_tufted_cover(mc.type, mc.R, indep_vtx, dep_vtx, mc.v_rep, mc.out, mc.to);
@@ -746,7 +781,8 @@ OverlayMesh<Scalar> InterpolationMesh::get_tufted_overlay_mesh(
     return tufted_overlay_mesh;
 }
 
-VectorX InterpolationMesh::get_halfedge_metric_coordinates()
+template <typename OverlayScalar>
+VectorX InterpolationMesh<OverlayScalar>::get_halfedge_metric_coordinates()
 {
     if (!m_is_valid) {
         spdlog::error("Invalid interpolation mesh");
@@ -757,13 +793,14 @@ VectorX InterpolationMesh::get_halfedge_metric_coordinates()
     int num_halfedges = cmesh.n_halfedges();
     VectorX halfedge_metric_coords(num_halfedges);
     for (int h = 0; h < num_halfedges; ++h) {
-        halfedge_metric_coords[h] = 2.0 * log(cmesh.l[h]);
+        halfedge_metric_coords[h] = 2.0 * (Scalar)(log(cmesh.l[h]));
     }
 
     return halfedge_metric_coords;
 }
 
-VectorX InterpolationMesh::get_metric_coordinates()
+template <typename OverlayScalar>
+VectorX InterpolationMesh<OverlayScalar>::get_metric_coordinates()
 {
     if (!m_is_valid) {
         spdlog::error("Invalid interpolation mesh");
@@ -775,20 +812,21 @@ VectorX InterpolationMesh::get_metric_coordinates()
     // Build edge maps
     std::vector<int> he2e;
     std::vector<int> e2he;
-    build_edge_maps(cmesh, he2e, e2he);
+    build_edge_maps(cmesh.opp, he2e, e2he);
 
     // Restrict coordinates
     int num_edges = e2he.size();
     VectorX metric_coords(num_edges);
     for (int e = 0; e < num_edges; ++e) {
         int h = e2he[e];
-        metric_coords[e] = 2.0 * log(cmesh.l[h]);
+        metric_coords[e] = 2.0 * (Scalar)(log(cmesh.l[h]));
     }
 
     return metric_coords;
 }
 
-VectorX InterpolationMesh::get_reduced_metric_coordinates()
+template <typename OverlayScalar>
+VectorX InterpolationMesh<OverlayScalar>::get_reduced_metric_coordinates()
 {
     if (!m_is_valid) {
         spdlog::error("Invalid interpolation mesh");
@@ -800,7 +838,7 @@ VectorX InterpolationMesh::get_reduced_metric_coordinates()
     // Build edge maps
     std::vector<int> he2e;
     std::vector<int> e2he;
-    build_edge_maps(cmesh, he2e, e2he);
+    build_edge_maps(cmesh.opp, he2e, e2he);
 
     // Get reflection projection and embedding
     std::vector<int> proj;
@@ -813,29 +851,33 @@ VectorX InterpolationMesh::get_reduced_metric_coordinates()
     for (int E = 0; E < num_reduced_edges; ++E) {
         int e = embed[E];
         int h = e2he[e];
-        reduced_metric_coords[e] = 2.0 * log(cmesh.l[h]);
+        reduced_metric_coords[e] = 2.0 * (Scalar)(log(cmesh.l[h]));
     }
 
     return reduced_metric_coords;
 }
 
-bool InterpolationMesh::is_euclidean() const
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::is_euclidean() const
 {
     return !(is_hyperbolic());
 }
 
-bool InterpolationMesh::is_hyperbolic() const
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::is_hyperbolic() const
 {
     return m_is_hyperbolic;
 }
 
-int InterpolationMesh::num_mesh_halfedges() const
+template <typename OverlayScalar>
+int InterpolationMesh<OverlayScalar>::num_mesh_halfedges() const
 {
     return m_overlay_mesh._m.n_halfedges();
 }
 
 // Remove sign convention used to distinguish Euclidean and Ptolemy flips
-int InterpolationMesh::get_flip_halfedge_index(int flip_index) const
+template <typename OverlayScalar>
+int InterpolationMesh<OverlayScalar>::get_flip_halfedge_index(int flip_index) const
 {
     if (flip_index >= 0) {
         return flip_index;
@@ -844,12 +886,13 @@ int InterpolationMesh::get_flip_halfedge_index(int flip_index) const
     }
 }
 
-void InterpolationMesh::check_bc_values()
+template <typename OverlayScalar>
+void InterpolationMesh<OverlayScalar>::check_bc_values()
 {
     for (size_t h = 0; h < m_overlay_mesh.seg_bcs.size(); h++) {
         if (m_overlay_mesh.edge_type[m_overlay_mesh.e(h)] == ORIGINAL_EDGE) continue;
-        if (float_equal(m_overlay_mesh.seg_bcs[h][0], 0.0)) continue;
-        if (float_equal(m_overlay_mesh.seg_bcs[h][1], 0.0)) continue;
+        if (float_equal(m_overlay_mesh.seg_bcs[h][0], OverlayScalar(0.))) continue;
+        if (float_equal(m_overlay_mesh.seg_bcs[h][1], OverlayScalar(0.))) continue;
         spdlog::trace(
             "Boundary conditions are {} and {}",
             m_overlay_mesh.seg_bcs[h][0],
@@ -858,13 +901,14 @@ void InterpolationMesh::check_bc_values()
 }
 
 
-bool InterpolationMesh::is_valid_interpolation_mesh()
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::is_valid_interpolation_mesh()
 {
     spdlog::trace("Checking validity");
     // TODO Add separate variable for halfedge and edge coordinates
     return true;
 
-    Mesh<Scalar> mesh = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar> mesh = m_overlay_mesh.cmesh();
 
     // TODO The below only make sense for edge coordinates (not halfedge coordinates)
 
@@ -883,10 +927,11 @@ bool InterpolationMesh::is_valid_interpolation_mesh()
     return true;
 }
 
-bool InterpolationMesh::is_trivial_symmetric_mesh()
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::is_trivial_symmetric_mesh()
 {
     spdlog::trace("Checking for triviality of the symmetry");
-    Mesh<Scalar> mc = m_overlay_mesh.cmesh();
+    Mesh<OverlayScalar> mc = m_overlay_mesh.cmesh();
     for (int h = 0; h < num_mesh_halfedges(); ++h) {
         if (mc.type[h] > 2) {
             spdlog::error(
@@ -900,14 +945,16 @@ bool InterpolationMesh::is_trivial_symmetric_mesh()
     return true;
 }
 
-bool InterpolationMesh::is_valid_halfedge_index(int halfedge_index)
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::is_valid_halfedge_index(int halfedge_index)
 {
     return ((halfedge_index >= 0) && (halfedge_index < m_overlay_mesh.cmesh().n_halfedges()));
 }
 
 // Check if a vector describes valid halfedge lengths
 // TODO
-bool InterpolationMesh::are_valid_halfedge_lengths(const VectorX& halfedge_lengths)
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::are_valid_halfedge_lengths(const VectorX& halfedge_lengths)
 {
     auto cmesh = m_overlay_mesh.cmesh();
 
@@ -945,7 +992,8 @@ bool InterpolationMesh::are_valid_halfedge_lengths(const VectorX& halfedge_lengt
 
 // Check if a vector describes valid halfedge translations
 // TODO
-bool InterpolationMesh::are_valid_halfedge_translations(const VectorX& halfedge_translations) const
+template <typename OverlayScalar>
+bool InterpolationMesh<OverlayScalar>::are_valid_halfedge_translations(const VectorX& halfedge_translations) const
 {
     if (halfedge_translations.size() != num_mesh_halfedges()) {
         spdlog::error(
@@ -958,7 +1006,8 @@ bool InterpolationMesh::are_valid_halfedge_translations(const VectorX& halfedge_
     return true;
 }
 
-bool overlay_has_all_original_halfedges(OverlayMesh<Scalar>& mo)
+template <typename OverlayScalar>
+bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo)
 {
     std::vector<bool> has_original_halfedge(mo.cmesh().n_halfedges(), false);
     for (int hi = 0; hi < mo.n_halfedges(); ++hi) {
@@ -974,6 +1023,36 @@ bool overlay_has_all_original_halfedges(OverlayMesh<Scalar>& mo)
 
     return (num_missing_original_halfedges == 0);
 }
+
+template class InterpolationMesh<Scalar>;
+template void interpolate_penner_coordinates<Scalar>(
+    const Mesh<Scalar>& mesh,
+    const VectorX& halfedge_metric_coords,
+    const VectorX& scale_factors,
+    InterpolationMesh<Scalar>& interpolation_mesh,
+    InterpolationMesh<Scalar>& reverse_interpolation_mesh);
+template void interpolate_vertex_positions<Scalar>(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    const InterpolationMesh<Scalar>& interpolation_mesh,
+    const InterpolationMesh<Scalar>& reverse_interpolation_mesh,
+    Eigen::MatrixXd& V_overlay);
+
+#ifdef WITH_MPFR
+template class InterpolationMesh<mpfr::mpreal>;
+template void interpolate_penner_coordinates<mpfr::mpreal>(
+    const Mesh<Scalar>& mesh,
+    const VectorX& halfedge_metric_coords,
+    const VectorX& scale_factors,
+    InterpolationMesh<mpfr::mpreal>& interpolation_mesh,
+    InterpolationMesh<mpfr::mpreal>& reverse_interpolation_mesh);
+template void interpolate_vertex_positions<mpfr::mpreal>(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    const InterpolationMesh<mpfr::mpreal>& interpolation_mesh,
+    const InterpolationMesh<mpfr::mpreal>& reverse_interpolation_mesh,
+    Eigen::MatrixXd& V_overlay);
+#endif
 
 } // namespace Optimization
 } // namespace Penner

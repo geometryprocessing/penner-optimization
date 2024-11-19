@@ -18,7 +18,7 @@ bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form)
         int hji = m.opp[hij];
         Scalar xij = one_form[hij];
         Scalar xji = one_form[hji];
-        if (!float_equal(xij + xji, 0)) {
+        if (!float_equal(xij + xji, 0.)) {
             spdlog::error("Edge pair ({}, {}) have form values ({}, {})", hij, hji, xij, xji);
 
             return false;
@@ -32,7 +32,7 @@ bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form)
         int hji = m.R[hij];
         Scalar xij = one_form[hij];
         Scalar xji = one_form[hji];
-        if (!float_equal(xij + xji, 0)) {
+        if (!float_equal(xij + xji, 0.)) {
             spdlog::error("Edge pair ({}, {}) have form values ({}, {})", hij, hji, xij, xji);
 
             return false;
@@ -61,7 +61,7 @@ bool is_closed_one_form(const Mesh<Scalar>& m, const VectorX& one_form)
         Scalar xki = one_form[hki];
         Scalar sum = xij + xjk + xki;
 
-        if (!float_equal(sum, 0)) {
+        if (!float_equal(sum, 0.)) {
             spdlog::info("Face 1-form sum is {}", sum);
             return false;
         }

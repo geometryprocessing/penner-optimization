@@ -108,6 +108,26 @@ void convert_std_to_eigen_matrix(
     }
 }
 
+template <typename VectorScalar, typename MatrixScalar, std::size_t Dimension>
+void convert_std_to_eigen_matrix(
+    const std::vector<std::array<VectorScalar, Dimension>>& matrix_vec,
+    Eigen::Matrix<MatrixScalar, Eigen::Dynamic, Eigen::Dynamic>& matrix)
+{
+    matrix.setZero(0, 0);
+    if (matrix_vec.empty()) return;
+
+    // Get dimensions of matrix
+    int rows = matrix_vec.size();
+    matrix.resize(rows, Dimension);
+
+    // Copy matrix by row
+    for (int i = 0; i < rows; ++i) {
+        for (std::size_t j = 0; j < Dimension; ++j) {
+            matrix(i, j) = MatrixScalar(matrix_vec[i][j]);
+        }
+    }
+}
+
 template <typename Scalar, std::size_t Dimension>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 convert_std_to_eigen_matrix(const std::vector<std::array<Scalar, Dimension>>& lol_matrix)
@@ -150,6 +170,31 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> convert_scalar_to_double_vector(
 /// @return vector of vector of scalars cast to doubles
 std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> convert_scalar_to_double_vector(
     const std::vector<VectorX>& vector_scalar);
+
+template <typename OldScalar, typename NewScalar>
+Eigen::Matrix<NewScalar, Eigen::Dynamic, 1> convert_vector_type(
+    const Eigen::Matrix<OldScalar, Eigen::Dynamic, 1>& vector)
+{
+    int num_entries = vector.size();
+    Eigen::Matrix<NewScalar, Eigen::Dynamic, 1> vector_converted(num_entries);
+    for (int i = 0; i < num_entries; ++i) {
+        vector_converted[i] = (NewScalar)(vector[i]);
+    }
+
+    return vector_converted;
+}
+
+template <typename OldScalar, typename NewScalar>
+std::vector<NewScalar> convert_vector_type(const std::vector<OldScalar>& vector)
+{
+    int num_entries = vector.size();
+    std::vector<NewScalar> vector_converted(num_entries);
+    for (int i = 0; i < num_entries; ++i) {
+        vector_converted[i] = (NewScalar)(vector[i]);
+    }
+
+    return vector_converted;
+}
 
 /// Fill a vector with some value.
 ///

@@ -13,8 +13,8 @@ void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const SimilarityPennerConeMetric& initial_marked_metric,
     SimilarityPennerConeMetric& marked_metric,
-    Optimization::InterpolationMesh& interpolation_mesh,
-    Optimization::InterpolationMesh& reverse_interpolation_mesh)
+    Optimization::InterpolationMesh<Scalar>& interpolation_mesh,
+    Optimization::InterpolationMesh<Scalar>& reverse_interpolation_mesh)
 {
     marked_metric = initial_marked_metric;
 
@@ -23,7 +23,7 @@ void interpolate_penner_coordinates(
     trivial_scale_factors.setZero(mesh.n_ind_vertices());
     bool is_hyperbolic = false;
     interpolation_mesh =
-        Optimization::InterpolationMesh(mesh, trivial_scale_factors, is_hyperbolic);
+        Optimization::InterpolationMesh<Scalar>(mesh, trivial_scale_factors, is_hyperbolic);
 
     // Get initial reflection structure
     Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
@@ -73,7 +73,7 @@ void interpolate_penner_coordinates(
     Mesh<Scalar> m_layout = interpolation_mesh.get_mesh();
     is_hyperbolic = true;
     reverse_interpolation_mesh =
-        Optimization::InterpolationMesh(m_layout, trivial_scale_factors, is_hyperbolic);
+        Optimization::InterpolationMesh<Scalar>(m_layout, trivial_scale_factors, is_hyperbolic);
 
     // Undo the flips to make the hyperbolic surface with new metric Delaunay
     reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
@@ -130,7 +130,7 @@ std::
     // Compute interpolation overlay mesh
     // TODO: Use consistent interpolation code from the Penner codebase
     Eigen::MatrixXd V_overlay;
-    Optimization::InterpolationMesh interpolation_mesh, reverse_interpolation_mesh;
+    Optimization::InterpolationMesh<Scalar> interpolation_mesh, reverse_interpolation_mesh;
     SimilarityPennerConeMetric similarity_metric = initial_similarity_metric;
     spdlog::trace("Interpolating penner coordinates");
     interpolate_penner_coordinates(

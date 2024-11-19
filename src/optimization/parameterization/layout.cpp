@@ -53,6 +53,7 @@
 namespace Penner {
 namespace Optimization {
 
+template <typename OverlayScalar>
 OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
 {
     // Get edge maps
@@ -79,7 +80,8 @@ OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_me
     return mo;
 }
 
-void make_tufted_overlay(OverlayMesh<Scalar>& mo)
+template <typename OverlayScalar>
+void make_tufted_overlay(OverlayMesh<OverlayScalar>& mo)
 {
     auto& m = mo._m;
     if (m.type[0] == 0) return; // nothing to do for closed mesh
@@ -101,8 +103,8 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
     Eigen::VectorXd areas;
     igl::doublearea(V, F, areas);
-    Scalar min_area = areas.minCoeff() / 2.0;
-    Scalar max_area = areas.maxCoeff() / 2.0;
+    double min_area = areas.minCoeff() / 2.0;
+    double max_area = areas.maxCoeff() / 2.0;
     spdlog::debug("Minimum VF face area: {}", min_area);
     spdlog::debug("Maximum VF face area: {}", max_area);
 
@@ -110,20 +112,20 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 }
 
 // compute the squared length of an edge between two vertices
-Scalar uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
+double uv_length_squared(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
     Eigen::Vector2d difference_vector = uv_1 - uv_0;
-    Scalar length_sq = difference_vector.dot(difference_vector);
+    double length_sq = difference_vector.dot(difference_vector);
     return length_sq;
 }
 
 // compute the length of an edge between two vertices
-Scalar uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
+double uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
 {
     return sqrt(uv_length_squared(uv_0, uv_1));
 }
 
-Scalar compute_uv_length_error(
+double compute_uv_length_error(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv)
@@ -134,7 +136,7 @@ Scalar compute_uv_length_error(
     igl::edge_flaps(F, uE, EMAP, EF, EI);
 
     // Iterate over edges to check the length inconsistencies
-    Scalar max_uv_length_error = 0.0;
+    double max_uv_length_error = 0.0;
     for (Eigen::Index e = 0; e < EF.rows(); ++e) {
         // Get face corners corresponding to the current edge
         int f0 = EF(e, 0);
@@ -153,8 +155,8 @@ Scalar compute_uv_length_error(
         int v1p = F_uv(f1, (i1 + 2) % 3); // next vertex
 
         // Compute the length of each halfedge corresponding to the corner in the cut mesh
-        Scalar l0 = uv_length(uv.row(v0n), uv.row(v0p));
-        Scalar l1 = uv_length(uv.row(v1n), uv.row(v1p));
+        double l0 = uv_length(uv.row(v0n), uv.row(v0p));
+        double l1 = uv_length(uv.row(v1n), uv.row(v1p));
 
         // Determine if the max length inconsistency has increased
         max_uv_length_error = max(max_uv_length_error, abs(l0 - l1));
@@ -180,7 +182,7 @@ bool check_uv(
     }
 
     // Check length consistency
-    Scalar uv_length_error = compute_uv_length_error(F, uv, F_uv);
+    double uv_length_error = compute_uv_length_error(F, uv, F_uv);
     if (!float_equal(uv_length_error, 0.0, 1e-6)) {
         spdlog::warn("Inconsistent uv length error {} across VF edges", uv_length_error);
     }
@@ -196,7 +198,7 @@ bool check_uv(
 }
 
 // signed area of a triangle ABC
-Scalar signed_area(
+double signed_area(
     const Eigen::Vector2d& A,
     const Eigen::Vector2d& B,
     const Eigen::Vector2d& C)
@@ -210,6 +212,7 @@ Scalar signed_area(
 }
 
 // find the previous halfedge of a halfedge in a mesh
+template <typename Scalar>
 int prev_halfedge(
     const OverlayMesh<Scalar>& m,
     int hij)
@@ -224,6 +227,7 @@ int prev_halfedge(
 }
 
 // compute the area of the triangle with vertices ijk
+template <typename Scalar>
 Scalar triangle_area(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -239,6 +243,7 @@ Scalar triangle_area(
 }
 
 // check that the signed area of the layout triangles are all positive
+template <typename Scalar>
 bool check_areas(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -260,6 +265,7 @@ bool check_areas(
 }
 
 // check that the difference of lengths of opposite halfedges
+template <typename Scalar>
 Scalar compute_uv_length_error(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -298,6 +304,7 @@ Scalar compute_uv_length_error(
 }
 
 // check the edge consistency and signed area of a mesh layout
+template <typename Scalar>
 bool check_uv(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -330,6 +337,7 @@ bool check_uv(
 }
 
 // check that two different layouts of a mesh have consistent lengths
+template <typename Scalar>
 bool check_uv_consistency(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u0,
@@ -467,6 +475,7 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
 }
 
 // FIXME Remove once fix halfedge origin
+template <typename Scalar>
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(
     Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
@@ -645,6 +654,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
 };
 
 // Pull back cut on the current mesh to the overlay
+template <typename Scalar>
 std::vector<bool> pullback_current_cut_to_overlay(
     OverlayMesh<Scalar>& m_o,
     const std::vector<bool>& is_cut_h)
@@ -666,6 +676,7 @@ std::vector<bool> pullback_current_cut_to_overlay(
     return is_cut_o;
 }
 
+template <typename Scalar>
 std::vector<bool> pullback_original_cut_to_overlay(
     OverlayMesh<Scalar>& m_o,
     const std::vector<bool>& is_cut_h)
@@ -705,6 +716,7 @@ std::vector<bool> pullback_original_cut_to_overlay(
     return is_cut_o;
 }
 
+template <typename Scalar>
 std::vector<bool> pullback_cut_to_overlay(
     OverlayMesh<Scalar>& m_o,
     const std::vector<bool>& is_cut_h,
@@ -718,6 +730,7 @@ std::vector<bool> pullback_cut_to_overlay(
 }
 
 // Helper function to determine if any faces in a triangle mesh are flipped
+template <typename Scalar>
 void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::vector<Scalar>& v)
 {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> uv(u.size(), 2);
@@ -749,6 +762,7 @@ void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::
     }
 }
 
+template <typename Scalar>
 void view_halfedge_mesh_type(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u_vec,
@@ -779,10 +793,33 @@ void view_halfedge_mesh_type(
 #endif
 }
 
+void check_angles(const Mesh<Scalar>& m)
+{
+    VectorX he2angle, he2cot;
+    corner_angles(m, he2angle, he2cot);
+    VectorX vertex_angles(m.n_vertices());
+    for (int h = 0; h < m.n_halfedges(); ++h) {
+        int v = m.to[h];
+        vertex_angles[v] += he2angle[m.n[m.n[h]]] / (M_PI / 2.);
+    }
+    spdlog::info("Vertex angles: {}", vertex_angles.transpose());
+}
+
+/**
+ * @brief Given overlay mesh with associated flat metric compute the layout
+ *
+ * @tparam Scalar double/mpfr::mpreal
+ * @param m_o, overlay mesh
+ * @param u_vec, per-vertex scale factor
+ * @param singularities, list of singularity vertex ids
+ * @param use_uniform_bc, (optional) use uniform edge barycentric coordinates where possible
+ * @return u_o, v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
+ */
+template <typename Scalar>
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
 get_consistent_layout(
-    const Mesh<Scalar>& _m,
     OverlayMesh<Scalar>& m_o,
+    const std::vector<char>& type,
     const std::vector<Scalar>& u_vec,
     std::vector<int> singularities,
     const std::vector<bool>& is_cut_orig,
@@ -983,9 +1020,9 @@ get_consistent_layout(
         if (m_o.edge_type[hi] == CURRENT_EDGE) {
             m.type[hi] = 4;
         } else if (m_o.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
-            m.type[hi] = _m.type[m_o.origin_of_origin[hi]];
+            m.type[hi] = type[m_o.origin_of_origin[hi]];
         } else if (m_o.edge_type[hi] == ORIGINAL_EDGE) {
-            m.type[hi] = _m.type[m_o.origin[hi]];
+            m.type[hi] = type[m_o.origin[hi]];
         }
     }
     m.type_input = m.type;
@@ -1002,19 +1039,6 @@ get_consistent_layout(
     bool view_layouts = false;
     if (view_layouts) {
         //view_halfedge_mesh_layout(m, u_o, v_o);
-    }
-
-    bool check_angles = false;
-    if (check_angles)
-    {
-        VectorX he2angle, he2cot;
-        corner_angles(m, he2angle, he2cot);
-        VectorX vertex_angles(m.n_vertices());
-        for (int h = 0; h < m.n_halfedges(); ++h) {
-            int v = m.to[h];
-            vertex_angles[v] += he2angle[m.n[m.n[h]]] / (M_PI / 2.);
-        }
-        spdlog::info("Vertex angles: {}", vertex_angles.transpose());
     }
 
     // Pullback cut on the original mesh to the overlay
@@ -1053,7 +1077,7 @@ get_consistent_layout(
     is_cut_o = std::get<2>(overlay_layout_res);
     if (view_layouts) {
         //view_halfedge_mesh_type(m, _u_o, _v_o, m.type);
-        view_halfedge_mesh_layout(m, _u_o, _v_o);
+        //view_halfedge_mesh_layout(m, _u_o, _v_o);
     }
 
 #ifdef CHECK_VALIDITY
@@ -1089,9 +1113,10 @@ get_consistent_layout(
     return std::make_tuple(_u_o, _v_o, is_cut_c, is_cut_o);
 }
 
+template <typename OverlayScalar>
 std::
     tuple<
-        OverlayMesh<Scalar>, // m_o
+        OverlayMesh<OverlayScalar>, // m_o
         Eigen::MatrixXd, // V_o
         Eigen::MatrixXi, // F_o
         Eigen::MatrixXd, // uv_o
@@ -1103,11 +1128,11 @@ std::
         >
     consistent_overlay_mesh_to_VL(
         const Mesh<Scalar>& _m,
-        OverlayMesh<Scalar>& mo,
+        OverlayMesh<OverlayScalar>& mo,
         const std::vector<int>& vtx_reindex,
         const std::vector<bool>& is_bd,
         std::vector<Scalar>& u,
-        std::vector<std::vector<Scalar>>& V_overlay,
+        std::vector<std::vector<OverlayScalar>>& V_overlay,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
@@ -1136,7 +1161,14 @@ std::
     spdlog::trace("mc.out size: {}", mo.cmesh().out.size());
 
     // get layout
-    auto layout_res = get_consistent_layout(_m, mo, u, cones, is_cut_orig, is_cut, use_uniform_bc);
+    auto layout_res = get_consistent_layout<OverlayScalar>(
+        mo,
+        _m.type,
+        convert_vector_type<Scalar, OverlayScalar>(u),
+        cones,
+        is_cut_orig,
+        is_cut,
+        use_uniform_bc);
     auto u_o = std::get<0>(layout_res);
     auto v_o = std::get<1>(layout_res);
     auto is_cut_h = std::get<2>(layout_res);
@@ -1157,7 +1189,7 @@ std::
     for (size_t i = 0; i < v3d[0].size(); i++) {
         v3d_out[i].resize(3);
         for (int j = 0; j < 3; j++) {
-            v3d_out[i][j] = v3d[j][i];
+            v3d_out[i][j] = Scalar(v3d[j][i]);
         }
     }
 
@@ -1283,6 +1315,62 @@ void compute_layout_faces(
 
 #ifdef PYBIND
 
+#endif
+
+template void make_tufted_overlay<Scalar>(OverlayMesh<Scalar>& mo);
+template
+std::
+    tuple<
+        OverlayMesh<Scalar>, // m_o
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool>, // is_cut_h
+        std::vector<bool>, // is_cut_o
+        std::vector<int>, // Fn_to_F
+        std::vector<std::pair<int, int>> // endpoints_o
+        >
+    consistent_overlay_mesh_to_VL<Scalar>(
+        const Mesh<Scalar>& _m,
+        OverlayMesh<Scalar>& mo,
+        const std::vector<int>& vtx_reindex,
+        const std::vector<bool>& is_bd,
+        std::vector<Scalar>& u,
+        std::vector<std::vector<Scalar>>& V_overlay,
+        std::vector<std::pair<int, int>>& endpoints,
+        const std::vector<bool>& is_cut_orig,
+        const std::vector<bool>& is_cut,
+        bool use_uniform_bc);
+
+#ifdef WITH_MPFR
+
+template void make_tufted_overlay<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
+
+template
+std::
+    tuple<
+        OverlayMesh<mpfr::mpreal>, // m_o
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<bool>, // is_cut_h
+        std::vector<bool>, // is_cut_o
+        std::vector<int>, // Fn_to_F
+        std::vector<std::pair<int, int>> // endpoints_o
+        >
+    consistent_overlay_mesh_to_VL<mpfr::mpreal>(
+        const Mesh<Scalar>& _m,
+        OverlayMesh<mpfr::mpreal>& mo,
+        const std::vector<int>& vtx_reindex,
+        const std::vector<bool>& is_bd,
+        std::vector<Scalar>& u,
+        std::vector<std::vector<mpfr::mpreal>>& V_overlay,
+        std::vector<std::pair<int, int>>& endpoints,
+        const std::vector<bool>& is_cut_orig,
+        const std::vector<bool>& is_cut,
+        bool use_uniform_bc);
 #endif
 
 } // namespace Optimization

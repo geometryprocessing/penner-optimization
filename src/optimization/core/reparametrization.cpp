@@ -38,7 +38,8 @@
 namespace Penner {
 namespace Optimization {
 
-void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
+template <typename OverlayScalar>
+void bc_reparametrize_eq(OverlayMesh<OverlayScalar>& m_o, const VectorX& tau)
 {
     int num_halfedges = m_o.seg_bcs.size();
     spdlog::trace("Reparametrizing {} halfedges", num_halfedges);
@@ -52,11 +53,11 @@ void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
 
         // Get origin halfedge and translation for the halfedge
         int _hij = m_o.origin[h];
-        Scalar tij = tau[_hij];
+        OverlayScalar tij(tau[_hij]);
 
         // Compute the coordinate for the image of the midpoint
-        Scalar Dij = exp(tij);
-        Scalar dij = exp(-tij);
+        OverlayScalar Dij = exp(tij);
+        OverlayScalar dij = exp(-tij);
 
         // Compute new barycentric coordinates
         if (Dij > 1e10) {
@@ -71,7 +72,7 @@ void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
         }
         m_o.seg_bcs[h][0] *= Dij;
         m_o.seg_bcs[h][1] *= dij;
-        Scalar sum = m_o.seg_bcs[h][0] + m_o.seg_bcs[h][1];
+        OverlayScalar sum = m_o.seg_bcs[h][0] + m_o.seg_bcs[h][1];
         if (sum < 1e-10) {
             spdlog::warn("Barycentric coordinate sum {} is numerically unstable", sum);
         }
@@ -80,8 +81,9 @@ void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau)
     }
 }
 
+template <typename OverlayScalar>
 void reparametrize_equilateral(
-    std::vector<Pt<Scalar>>& pts,
+    std::vector<Pt<OverlayScalar>>& pts,
     const std::vector<int>& n,
     const std::vector<int>& h,
     const VectorX& tau)
@@ -93,12 +95,12 @@ void reparametrize_equilateral(
         int hij = h[fid];
         int hjk = n[hij];
         int hki = n[hjk];
-        Scalar tij = tau[hij];
-        Scalar tjk = tau[hjk];
-        Scalar tki = tau[hki];
-        Scalar Si = exp((-tij - tki) / 2.0);
-        Scalar Sj = exp((-tij + tjk) / 2.0);
-        Scalar Sk = exp((tjk + tki) / 2.0);
+        OverlayScalar tij(tau[hij]);
+        OverlayScalar tjk(tau[hjk]);
+        OverlayScalar tki(tau[hki]);
+        OverlayScalar Si = exp((-tij - tki) / 2.0);
+        OverlayScalar Sj = exp((-tij + tjk) / 2.0);
+        OverlayScalar Sk = exp((tjk + tki) / 2.0);
         pts[i].bc(0) *= Si;
         pts[i].bc(1) *= Sj;
         pts[i].bc(2) *= Sk;
@@ -107,6 +109,22 @@ void reparametrize_equilateral(
 }
 
 #ifdef PYBIND
+#endif
+
+template void bc_reparametrize_eq<Scalar>(OverlayMesh<Scalar>& m_o, const VectorX& tau);
+template void reparametrize_equilateral(
+    std::vector<Pt<Scalar>>& pts,
+    const std::vector<int>& n,
+    const std::vector<int>& h,
+    const VectorX& tau);
+
+#ifdef WITH_MPFR
+template void bc_reparametrize_eq<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& m_o, const VectorX& tau);
+template void reparametrize_equilateral(
+    std::vector<Pt<mpfr::mpreal>>& pts,
+    const std::vector<int>& n,
+    const std::vector<int>& h,
+    const VectorX& tau);
 #endif
 
 } // namespace Optimization

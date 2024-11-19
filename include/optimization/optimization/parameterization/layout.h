@@ -45,12 +45,14 @@ namespace Optimization {
 /// @param[in] m: mesh to add overlay to
 /// @param[in] reduced_metric_coords: reduced metric coordinates for overlay mesh
 /// @return: overlay mesh with new metric coordinates
-OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
+template <typename OverlayScalar>
+OverlayMesh<OverlayScalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
 
 /// @brief: Make an overlay mesh into a tufted double cover
 ///
 /// @param[in] mo: mesh to make tufted
-void make_tufted_overlay(OverlayMesh<Scalar>& mo);
+template <typename OverlayScalar>
+void make_tufted_overlay(OverlayMesh<OverlayScalar>& mo);
 
 /// Given a VF mesh, check that the signed face areas are nonnegative
 ///
@@ -66,7 +68,7 @@ bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 /// @param[in] uv: mesh uv coordinates in 2D
 /// @param[in] F_uv: mesh uv faces
 /// @return maximum uv length error across cuts
-Scalar compute_uv_length_error(
+double compute_uv_length_error(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv);
@@ -105,37 +107,19 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
 /// @param[in] is_cut_h: cuts on the original or current mesh
 /// @param[in] is_original_cut: if true, use cut mask on the original mesh
 /// @return cuts on the overlay mesh
+template <typename Scalar>
 std::vector<bool> pullback_cut_to_overlay(
     OverlayMesh<Scalar>& m_o,
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
 
-/**
- * @brief Given overlay mesh with associated flat metric compute the layout
- *
- * @tparam Scalar double/mpfr::mpreal
- * @param m_o, overlay mesh
- * @param u_vec, per-vertex scale factor
- * @param singularities, list of singularity vertex ids
- * @param use_uniform_bc, (optional) use uniform edge barycentric coordinates where possible
- * @return u_o, v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
- */
-std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>, std::vector<bool>>
-get_consistent_layout(
-    const Mesh<Scalar>& _m,
-    OverlayMesh<Scalar>& m_o,
-    const std::vector<Scalar>& u_vec,
-    std::vector<int> singularities,
-    const std::vector<bool>& is_cut_orig,
-    const std::vector<bool>& is_cut,
-    bool use_uniform_bc=false);
-
 
 // TODO: Document this technical function
 // Exposed for usage in other libraries
+template <typename OverlayScalar>
 std::
     tuple<
-        OverlayMesh<Scalar>, // m_o
+        OverlayMesh<OverlayScalar>, // m_o
         Eigen::MatrixXd, // V_o
         Eigen::MatrixXi, // F_o
         Eigen::MatrixXd, // uv_o
@@ -147,11 +131,11 @@ std::
         >
     consistent_overlay_mesh_to_VL(
         const Mesh<Scalar>& _m,
-        OverlayMesh<Scalar>& mo,
+        OverlayMesh<OverlayScalar>& mo,
         const std::vector<int>& vtx_reindex,
         const std::vector<bool>& is_bd,
         std::vector<Scalar>& u,
-        std::vector<std::vector<Scalar>>& V_overlay,
+        std::vector<std::vector<OverlayScalar>>& V_overlay,
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,

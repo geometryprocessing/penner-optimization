@@ -202,7 +202,7 @@ Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
     VectorX scale_factors;
     scale_factors.setZero(m.n_ind_vertices());
     bool is_hyperbolic = false;
-    Optimization::InterpolationMesh interpolation_mesh(m, scale_factors, is_hyperbolic);
+    Optimization::InterpolationMesh<Scalar> interpolation_mesh(m, scale_factors, is_hyperbolic);
 
     // Get initial log length coordinates
     VectorX log_length_coords = interpolation_mesh.get_halfedge_metric_coordinates();

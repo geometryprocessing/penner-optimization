@@ -15,6 +15,12 @@ public:
         const std::vector<int>& vtx_reindex,
         const Eigen::MatrixXd& V);
 
+    std::tuple<Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
+    get_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXi& F) const;
+
     Scalar min_angle = 0.;
 
 private:

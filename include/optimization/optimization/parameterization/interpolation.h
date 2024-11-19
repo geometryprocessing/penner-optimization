@@ -44,6 +44,7 @@ namespace Optimization {
 /// ensure invalid operations are prevented from occurring. This is important
 /// for interpolation as the barycentric coordinates introduce state and
 /// require initialization to go between hyperbolic and Euclidean representations.
+template <typename OverlayScalar>
 class InterpolationMesh
 {
 public:
@@ -83,13 +84,13 @@ public:
     /// @param[in] pt_bcs: input point barycentric coordinates
     void add_points(
         const std::vector<int>& pt_fids,
-        const std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs);
+        const std::vector<Eigen::Matrix<OverlayScalar, 3, 1>>& pt_bcs);
 
     /// Get interpolated points on the surface.
     ///
     /// @param[in] pt_fids: output point face ids
     /// @param[in] pt_bcs: output point barycentric coordinates
-    void get_points(std::vector<int>& pt_fids, std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs);
+    void get_points(std::vector<int>& pt_fids, std::vector<Eigen::Matrix<OverlayScalar, 3, 1>>& pt_bcs);
 
     /// Convert the mesh to a hyperbolic surface with ideal Delaunay triangulation.
     ///
@@ -204,12 +205,12 @@ public:
     /// Get the underlying mesh of the surface.
     ///
     /// @return mesh
-    Mesh<Scalar>& get_mesh() { return m_overlay_mesh.cmesh(); }
+    Mesh<OverlayScalar>& get_mesh() { return m_overlay_mesh.cmesh(); }
 
     /// Get the overlay mesh of the surface.
     ///
     /// @return overlay mesh
-    OverlayMesh<Scalar> const& get_overlay_mesh() const { return m_overlay_mesh; }
+    OverlayMesh<OverlayScalar> const& get_overlay_mesh() const { return m_overlay_mesh; }
 
     /// Get a tufted cover overlay mesh of the surface.
     ///
@@ -218,7 +219,7 @@ public:
     /// @param[in] dep_vtx: dependent vertex indices
     /// @param[in] bnd_loops: boundary loops of the mesh
     /// @return tufted cover overlay mesh
-    OverlayMesh<Scalar> get_tufted_overlay_mesh(
+    OverlayMesh<OverlayScalar> get_tufted_overlay_mesh(
         int num_vertices,
         const std::vector<int>& indep_vtx,
         const std::vector<int>& dep_vtx,
@@ -257,8 +258,8 @@ private:
 
     bool are_valid_halfedge_translations(const VectorX& halfedge_translations) const;
 
-    OverlayMesh<Scalar> m_overlay_mesh;
-    VectorX m_scale_factors;
+    OverlayMesh<OverlayScalar> m_overlay_mesh;
+    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> m_scale_factors;
     bool m_is_hyperbolic;
     bool m_is_valid;
 };
@@ -273,12 +274,13 @@ private:
 /// @param[in] scale_factors: scale factors for the new metric
 /// @param[out] interpolation_mesh: hyperbolic mesh with new metric and interpolated original triangulation
 /// @param[out] reverse_interpolation_mesh: euclidean mesh with original metric and interpolated original triangulation
+template <typename OverlayScalar>
 void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,
     const VectorX& scale_factors,
-    InterpolationMesh& interpolation_mesh,
-    InterpolationMesh& reverse_interpolation_mesh);
+    InterpolationMesh<OverlayScalar>& interpolation_mesh,
+    InterpolationMesh<OverlayScalar>& reverse_interpolation_mesh);
 
 /// Interpolate vertex positions from the original surface to the surface with the given Penner coordinates
 /// on the current triangulation.
@@ -288,14 +290,16 @@ void interpolate_penner_coordinates(
 /// @param[in] interpolation_mesh: mesh with new metric and interpolated original triangulation
 /// @param[in] reverse_interpolation_mesh: mesh with original metric and interpolated original triangulation
 /// @param[out] V_overlay: vertices of the overlay mesh
+template <typename OverlayScalar>
 void interpolate_vertex_positions(
     const Eigen::MatrixXd& V,
     const std::vector<int> vtx_reindex,
-    const InterpolationMesh& interpolation_mesh,
-    const InterpolationMesh& reverse_interpolation_mesh,
+    const InterpolationMesh<OverlayScalar>& interpolation_mesh,
+    const InterpolationMesh<OverlayScalar>& reverse_interpolation_mesh,
     Eigen::MatrixXd& V_overlay);
 
-bool overlay_has_all_original_halfedges(OverlayMesh<Scalar>& mo);
+template <typename OverlayScalar>
+bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo);
 
 } // namespace Optimization
 } // namespace Penner

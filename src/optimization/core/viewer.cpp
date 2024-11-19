@@ -435,7 +435,7 @@ void view_mesh_quality(
 
     Eigen::VectorXd double_area;
     igl::doublearea(V, F, double_area);
-    Eigen::VectorXd he2angle = compute_corner_angles(V, F);
+    Eigen::VectorXd he2angle = convert_scalar_to_double_vector(compute_corner_angles(V, F));
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();

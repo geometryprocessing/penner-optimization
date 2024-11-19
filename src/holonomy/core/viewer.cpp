@@ -386,7 +386,7 @@ void view_seamless_parameterization(
         ->setMapRange({-M_PI, M_PI})
         ->setEnabled(true);
     polyscope::getPointCloud(mesh_handle + " uv_cones")
-        ->addScalarQuantity("cone error", cone_error)
+        ->addScalarQuantity("cone error", convert_scalar_to_double_vector(cone_error))
         ->setColorMap("reds")
         ->setMapRange({0, 1e-2})
         ->setEnabled(true);

@@ -114,7 +114,8 @@ VectorX solve_psd_system(const MatrixX& A, const VectorX& b)
 VectorX solve_linear_system(const MatrixX& A, const VectorX& b)
 {
 #ifdef WITH_MPFR
-    Eigen::SparseQR<MatrixX, Eigen::COLAMDOrdering<int>> solver;
+    //Eigen::SparseQR<MatrixX, Eigen::COLAMDOrdering<int>> solver;
+    Eigen::SparseLU<MatrixX> solver;
 #else
     Eigen::SparseLU<MatrixX> solver;
 #endif

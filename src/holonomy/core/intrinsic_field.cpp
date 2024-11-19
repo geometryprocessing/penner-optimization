@@ -1198,5 +1198,48 @@ polyscope::show();
     return compute_rotation_form(m);
 }
 
+std::tuple<Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
+IntrinsicNRosyField::get_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F) const
+{
+    int num_faces = F.rows();
+    Eigen::VectorXi reference_corner(num_faces);
+    Eigen::VectorXd face_angle(num_faces);
+    Eigen::MatrixXd corner_kappa(num_faces, 3);
+    Eigen::MatrixXi corner_period_jump(num_faces, 3);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        // get reference halfedge
+        int hij = face_reference_halfedge[fijk];
+
+        // get local vertex index opposite reference halfedge
+        int vk = vtx_reindex[m.v_rep[m.to[m.n[hij]]]];
+        int k = 0;
+        while (F(fijk, k) != vk)
+        {
+            k = (k + 1) % 3;
+        }
+
+        // record face angles
+        reference_corner[fijk] = k;
+        face_angle[fijk] = (double)(theta[fijk]);
+
+        // get period jumps and rotations across edges
+        for (int i = 0; i < 3; ++i)
+        {
+            corner_kappa(fijk, k) = kappa[hij];
+            corner_period_jump(fijk, k) = period_jump[hij];
+
+            // increment local index and halfedge
+            k = (k + 1) % 3;
+            hij = m.n[hij];
+        }
+    }
+
+    return std::make_tuple(reference_corner, face_angle, corner_kappa, corner_period_jump);
+}
+
 } // namespace Holonomy
 } // namespace Penner

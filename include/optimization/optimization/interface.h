@@ -126,9 +126,11 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> is_cut = {},
         bool do_best_fit_scaling = false);
+        
+template <typename OverlayScalar>
 std::
     tuple<
-        OverlayMesh<Scalar>, // m_o
+        OverlayMesh<OverlayScalar>, // m_o
         Eigen::MatrixXd, // V_o
         Eigen::MatrixXi, // F_o
         Eigen::MatrixXd, // uv_o

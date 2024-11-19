@@ -232,7 +232,7 @@ void init_classes_pybind(pybind11::module& m)
     pybind11::class_<LogScaleEnergy, EnergyFunctor>(m, "LogScaleEnergy")
         .def(pybind11::init<const DifferentiableConeMetric&>());
 
-    pybind11::class_<InterpolationMesh>(m, "InterpolationMesh")
+    pybind11::class_<InterpolationMesh<Scalar>>(m, "InterpolationMesh")
         .def(pybind11::init<
              const Eigen::MatrixXd&, // V
              const Eigen::MatrixXi&, // F
@@ -242,7 +242,7 @@ void init_classes_pybind(pybind11::module& m)
              >())
         .def(
             "get_overlay_mesh",
-            &InterpolationMesh::get_overlay_mesh,
+            &InterpolationMesh<Scalar>::get_overlay_mesh,
             pybind11::return_value_policy::copy);
 
     pybind11::
@@ -431,13 +431,13 @@ void init_parameterization_pybind(pybind11::module& m)
 {
     m.def(
         "add_overlay",
-        &add_overlay,
+        &add_overlay<Scalar>,
         "Make mesh into overlay mesh",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(
         "make_tufted_overlay",
-        &make_tufted_overlay,
+        &make_tufted_overlay<Scalar>,
         "Make overlay mesh a tufted cover",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());

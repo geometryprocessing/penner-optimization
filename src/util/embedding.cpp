@@ -88,9 +88,9 @@ ReductionMaps::ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths)
     }
 }
 
-void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he)
+void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::vector<int>& e2he)
 {
-    int num_halfedges = m.opp.size();
+    int num_halfedges = opp.size();
     int num_edges = num_halfedges / 2;
     he2e.resize(num_halfedges);
     e2he.clear();
@@ -99,7 +99,7 @@ void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<
     // First build map from edges to the lower index halfedges, which is a
     // bijection
     for (int h = 0; h < num_halfedges; ++h) {
-        if (h < m.opp[h]) {
+        if (h < opp[h]) {
             e2he.push_back(h);
         }
     }
@@ -108,47 +108,13 @@ void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<
     for (int e = 0; e < num_edges; ++e) {
         int h = e2he[e];
         he2e[h] = e;
-        he2e[m.opp[h]] = e;
+        he2e[opp[h]] = e;
     }
 }
 
-void build_refl_proj(
-    const Mesh<Scalar>& m,
-    const std::vector<int>& he2e,
-    const std::vector<int>& e2he,
-    std::vector<int>& proj,
-    std::vector<int>& embed)
+void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he)
 {
-    // Resize arrays
-    proj.resize(e2he.size());
-    embed.clear();
-    embed.reserve(e2he.size());
-
-    // Build injective map from edges that are not type 2 to double mesh
-    int num_edges = e2he.size();
-    for (int e = 0; e < num_edges; ++e) {
-        int h0 = m.h0(e2he[e]);
-        int h1 = m.h1(e2he[e]);
-        if ((m.type[h0] != 2) || (m.type[h1] != 2)) {
-            embed.push_back(e);
-        }
-    }
-
-    // Construct map from double mesh to the embedded mesh
-    // Map reflection of edges in the image of the embedding to the original edge
-    int num_embedded_edges = embed.size();
-    for (int E = 0; E < num_embedded_edges; ++E) {
-        int e = embed[E];
-        int Re = he2e[m.R[e2he[e]]];
-        proj[Re] = E;
-    }
-
-    // Map embedded edge to itself. Note that if E is identified with e = embed[E]
-    // then this implies proj[E] = E and the map is a projection.
-    for (int E = 0; E < num_embedded_edges; ++E) {
-        int e = embed[E];
-        proj[e] = E;
-    }
+    build_edge_maps(m.opp, he2e, e2he);
 }
 
 void build_refl_he_proj(
