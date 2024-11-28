@@ -1025,6 +1025,7 @@ bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo)
 }
 
 template class InterpolationMesh<Scalar>;
+template bool overlay_has_all_original_halfedges<Scalar>(OverlayMesh<Scalar>& mo);
 template void interpolate_penner_coordinates<Scalar>(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,
@@ -1040,6 +1041,7 @@ template void interpolate_vertex_positions<Scalar>(
 
 #ifdef WITH_MPFR
 template class InterpolationMesh<mpfr::mpreal>;
+template bool overlay_has_all_original_halfedges<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
 template void interpolate_penner_coordinates<mpfr::mpreal>(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,

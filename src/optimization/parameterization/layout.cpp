@@ -54,7 +54,7 @@ namespace Penner {
 namespace Optimization {
 
 template <typename OverlayScalar>
-OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
+OverlayMesh<OverlayScalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
 {
     // Get edge maps
     std::vector<int> he2e;
@@ -67,15 +67,15 @@ OverlayMesh<Scalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_me
     build_refl_proj(m, he2e, e2he, proj, embed);
 
     // Build overlay mesh from mesh m
-    Mesh<Scalar> m_l = m;
+    Mesh<OverlayScalar> m_l = change_mesh_type<Scalar, OverlayScalar>(m);
 
     // Convert mesh Penner coordinates to a halfedge length array l for m
     int num_halfedges = he2e.size();
     for (int h = 0; h < num_halfedges; ++h) {
-        m_l.l[h] = exp(reduced_metric_coords[proj[he2e[h]]] / 2.0);
+        m_l.l[h] = OverlayScalar(exp(reduced_metric_coords[proj[he2e[h]]] / 2.0));
     }
 
-    OverlayMesh<Scalar> mo(m_l);
+    OverlayMesh<OverlayScalar> mo(m_l);
 
     return mo;
 }
@@ -1318,6 +1318,7 @@ void compute_layout_faces(
 #endif
 
 template void make_tufted_overlay<Scalar>(OverlayMesh<Scalar>& mo);
+template OverlayMesh<Scalar> add_overlay<Scalar>(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
 template
 std::
     tuple<
@@ -1346,6 +1347,7 @@ std::
 #ifdef WITH_MPFR
 
 template void make_tufted_overlay<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
+template OverlayMesh<mpfr::mpreal> add_overlay<mpfr::mpreal>(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
 
 template
 std::
