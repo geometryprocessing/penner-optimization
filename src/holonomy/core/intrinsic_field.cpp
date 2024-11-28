@@ -203,6 +203,10 @@ void IntrinsicNRosyField::initialize_local_frames(const Mesh<Scalar>& m)
     is_face_fixed = std::vector<bool>(num_faces, false);
     is_face_fixed[0] = true;
 
+}
+
+void IntrinsicNRosyField::initialize_kappa(const Mesh<Scalar>& m)
+{
     // Compute corner angles
     Optimization::corner_angles(m, he2angle, he2cot);
 
@@ -217,6 +221,34 @@ void IntrinsicNRosyField::initialize_local_frames(const Mesh<Scalar>& m)
         // compute oriented angles between frames across edge eij
         kappa[hij] = compute_angle_between_frames(m, he2angle, hij);
         kappa[hji] = -kappa[hij];
+    }
+}
+
+void IntrinsicNRosyField::initialize_priority_kappa(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex)
+{
+    // Compute corner angles
+    Optimization::corner_angles(m, he2angle, he2cot);
+
+    // Compute the angle between reference halfedges across faces
+    int num_halfedges = m.n_halfedges();
+    kappa.setZero(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        // Only process each edge once
+        int hji = m.opp[hij];
+        if (vtx_reindex[m.v_rep[m.to[hij]]] > vtx_reindex[m.v_rep[m.to[hji]]]) continue;
+
+        // compute oriented angles between frames across edge eij
+        kappa[hij] = compute_angle_between_frames(m, he2angle, hij);
+        if (kappa[hij] <= -M_PI)
+        {
+            kappa[hij] += 2. * M_PI;
+        }
+        kappa[hji] = -kappa[hij];
+        if (!(-M_PI < kappa[hij]  && kappa[hij]  <= M_PI)) {
+            spdlog::error("{} out of range (-pi, pi])", kappa[hij]);
+        }
     }
 }
 
@@ -265,11 +297,62 @@ void IntrinsicNRosyField::initialize_double_local_frames(const Mesh<Scalar>& m)
             is_face_fixed[m.f[h]] = true;
         }
     }
+}
 
+void IntrinsicNRosyField::set_reference_halfedge(
+    const Mesh<Scalar>& m,  
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const std::vector<int>& face_reindex,
+    const Eigen::VectorXi& reference_corner)
+{
+    // For each face, select a reference halfedge, ensuring consistency of doubled reference
+    int num_faces = m.n_faces();
+    for (int f = 0; f < num_faces; ++f) {
+        // get reference halfedge
+        int hij = m.h[f];
+
+        // only process original faces
+        if (m.type[hij] == 2) continue;
+
+        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
+        while (vj != F(face_reindex[f], 1)) {
+            hij = m.n[hij];
+        }
+
+        // cycle both k and hij until the reference corner is found
+        int k = 2;
+        while (reference_corner[face_reindex[f]] != k)
+        {
+            hij = m.n[hij];
+            k = (k + 1) % 3;
+        }
+
+        // Just use face to halfedge map for faces in original mesh
+        face_reference_halfedge[f] = hij;
+        if (m.type[hij] != 0)
+        {
+            int Rf = m.f[m.R[hij]]; // get reflection of the face
+            face_reference_halfedge[Rf] = m.R[hij];
+        }
+    }
+
+    // update kappa
+    if (m.type[0] != 0)
+    {
+        initialize_double_kappa(m);
+    } else {
+        initialize_kappa(m);
+    }
+}
+
+void IntrinsicNRosyField::initialize_double_kappa(const Mesh<Scalar>& m)
+{
     // Compute corner angles
     Optimization::corner_angles(m, he2angle, he2cot);
 
     // Compute the angle between reference halfedges across faces
+    int num_halfedges = m.n_halfedges();
     kappa.setZero(num_halfedges);
     for (int hij = 0; hij < num_halfedges; ++hij) {
         // Only process each edge once
@@ -282,6 +365,35 @@ void IntrinsicNRosyField::initialize_double_local_frames(const Mesh<Scalar>& m)
         kappa[hji] = -kappa[hij];
         kappa[m.R[hij]] = -kappa[hij];
         kappa[m.opp[m.R[hij]]] = kappa[hij];
+    }
+}
+
+void IntrinsicNRosyField::initialize_double_priority_kappa(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex)
+{
+    // Compute corner angles
+    Optimization::corner_angles(m, he2angle, he2cot);
+
+    // Compute the angle between reference halfedges across faces
+    int num_halfedges = m.n_halfedges();
+    kappa.setZero(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        // Only process each edge once
+        int hji = m.opp[hij];
+        if (vtx_reindex[m.v_rep[m.to[hij]]] > vtx_reindex[m.v_rep[m.to[hji]]]) continue;
+        if ((m.type[hij] == 2) && (m.type[hji] == 2)) continue;
+
+        // compute oriented angles between frames across edge eij and reflected edge
+        kappa[hij] = compute_angle_between_frames(m, he2angle, hij);
+        if (kappa[hij] <= -M_PI)
+        {
+            kappa[hij] += 2. * M_PI;
+        }
+        kappa[hji] = -kappa[hij];
+        kappa[m.R[hij]] = -kappa[hij];
+        kappa[m.opp[m.R[hij]]] = kappa[hij];
+        if (!(-M_PI < kappa[hij]  && kappa[hij]  <= M_PI)) {
+            spdlog::error("{} out of range (-pi, pi])", kappa[hij]);
+        }
     }
 }
 
@@ -1021,8 +1133,13 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         int f1 = m.f[hji];
         rotation_form[hij] =
             theta[f0] - theta[f1] + kappa[hij] + period_value[hij] * period_jump[hij];
+        //if ((m.type[hij] == 1) && (m.type[hji] == 2)) rotation_form[hij] = 0;
+        //if ((m.type[hij] == 2) && (m.type[hji] == 1)) rotation_form[hij] = 0;
+        //if (rotation_form[hij] > 6.) rotation_form[hij] -= (2. * M_PI);
+        //if (rotation_form[hij] < -6.) rotation_form[hij] += (2. * M_PI);
         rotation_form[hji] = -rotation_form[hij];
     }
+    assert(is_valid_one_form(m, rotation_form));
 
     std::vector<Scalar> Th_hat = generate_cones_from_rotation_form_FIXME(m, rotation_form);
 
@@ -1114,43 +1231,34 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     return rotation_form;
 }
 
-VectorX IntrinsicNRosyField::run(const Mesh<Scalar>& m)
+void IntrinsicNRosyField::initialize(const Mesh<Scalar>& m)
 {
     // Initialize mixed integer system
     if (m.type[0] == 0) {
         initialize_local_frames(m);
+        initialize_kappa(m);
         initialize_period_jump(m);
         initialize_mixed_integer_system(m);
     } else {
         initialize_double_local_frames(m);
+        initialize_double_kappa(m);
         initialize_double_period_jump(m);
         initialize_double_mixed_integer_system(m);
     }
+}
 
-    // Solve
+VectorX IntrinsicNRosyField::run(const Mesh<Scalar>& m)
+{
+    initialize(m);
     solve(m);
     return compute_rotation_form(m);
 }
 
-VectorX IntrinsicNRosyField::run_with_viewer(
+void IntrinsicNRosyField::view(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXd& V)
+    const Eigen::MatrixXd& V) const
 {
-    // Initialize mixed integer system
-    if (m.type[0] == 0) {
-        initialize_local_frames(m);
-        initialize_period_jump(m);
-        initialize_mixed_integer_system(m);
-    } else {
-        initialize_double_local_frames(m);
-        initialize_double_period_jump(m);
-        initialize_double_mixed_integer_system(m);
-    }
-
-    // Solve
-    solve(m);
-
     // Initialize viewer
     auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
     Optimization::view_dual_graph(V, m, vtx_reindex, is_period_jump_fixed);
@@ -1194,51 +1302,140 @@ polyscope::getSurfaceMesh(mesh_handle)
     ->setEnabled(true);
 polyscope::show();
 #endif
+}
+
+VectorX IntrinsicNRosyField::run_with_viewer(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V)
+{
+    initialize(m);
+    solve(m);
+    view(m, vtx_reindex, V);
 
     return compute_rotation_form(m);
 }
 
-std::tuple<Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
-IntrinsicNRosyField::get_field(
+void IntrinsicNRosyField::get_field(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXi& F) const
+    const Eigen::MatrixXi& F,
+    const std::vector<int>& face_reindex,
+    Eigen::VectorXi& reference_corner,
+    Eigen::VectorXd& face_angle,
+    Eigen::MatrixXd& corner_kappa,
+    Eigen::MatrixXi& corner_period_jump) const
 {
-    int num_faces = F.rows();
-    Eigen::VectorXi reference_corner(num_faces);
-    Eigen::VectorXd face_angle(num_faces);
-    Eigen::MatrixXd corner_kappa(num_faces, 3);
-    Eigen::MatrixXi corner_period_jump(num_faces, 3);
+    int num_faces = m.n_faces();
     for (int fijk = 0; fijk < num_faces; ++fijk)
     {
         // get reference halfedge
         int hij = face_reference_halfedge[fijk];
 
+        // only process original faces
+        if (m.type[hij] == 2) continue;
+
         // get local vertex index opposite reference halfedge
         int vk = vtx_reindex[m.v_rep[m.to[m.n[hij]]]];
         int k = 0;
-        while (F(fijk, k) != vk)
+        while (F(face_reindex[fijk], k) != vk)
         {
             k = (k + 1) % 3;
         }
 
         // record face angles
-        reference_corner[fijk] = k;
-        face_angle[fijk] = (double)(theta[fijk]);
+        reference_corner[face_reindex[fijk]] = k;
+        face_angle[face_reindex[fijk]] = (double)(theta[fijk]);
 
         // get period jumps and rotations across edges
         for (int i = 0; i < 3; ++i)
         {
-            corner_kappa(fijk, k) = kappa[hij];
-            corner_period_jump(fijk, k) = period_jump[hij];
+            corner_kappa(face_reindex[fijk], k) = kappa[hij];
+            corner_period_jump(face_reindex[fijk], k) = period_jump[hij];
 
             // increment local index and halfedge
             k = (k + 1) % 3;
             hij = m.n[hij];
         }
     }
+}
 
-    return std::make_tuple(reference_corner, face_angle, corner_kappa, corner_period_jump);
+void IntrinsicNRosyField::get_fixed_faces(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& face_reindex,
+    std::vector<bool>& is_fixed) const
+{
+    int num_faces = m.n_faces();
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        // get reference halfedge
+        int hij = face_reference_halfedge[fijk];
+
+        // only process original faces
+        if (m.type[hij] == 2) continue;
+
+        is_fixed[face_reindex[fijk]] = is_face_fixed[fijk];
+    }
+}
+
+void IntrinsicNRosyField::set_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const std::vector<int>& face_reindex,
+    const Eigen::VectorXd& face_theta,
+    const Eigen::MatrixXd& corner_kappa,
+    const Eigen::MatrixXi& corner_period_jump)
+{
+    int num_faces = m.n_faces();
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        // get reference halfedge
+        int hij = m.h[fijk];
+
+        // only process original faces
+        if (m.type[hij] == 2) continue;
+
+        // get local vertex index opposite reference halfedge
+        int vk = vtx_reindex[m.v_rep[m.to[m.n[hij]]]];
+        int k = 0;
+        while (F(face_reindex[fijk], k) != vk)
+        {
+            k = (k + 1) % 3;
+        }
+
+        // record face angles
+        theta[fijk] = Scalar(face_theta[face_reindex[fijk]]);
+
+        // get period jumps and rotations across edges
+        for (int i = 0; i < 3; ++i)
+        {
+            kappa[hij] = corner_kappa(face_reindex[fijk], k);
+            period_jump[hij] = corner_period_jump(face_reindex[fijk], k);
+
+            // increment local index and halfedge
+            k = (k + 1) % 3;
+            hij = m.n[hij];
+        }
+
+        // skip doubling on closed mesh
+        if (m.type[hij] == 0) continue;
+
+        // invert theta on reflected face
+        int fjik = m.f[m.R[hij]];
+        theta[fjik] = M_PI - theta[fijk];
+
+        // invert kappa and period jumps on reflected edges
+        for (int i = 0; i < 3; ++i)
+        {
+            kappa[m.R[hij]] = -kappa[hij];
+            period_jump[m.R[hij]] = -period_jump[hij];
+
+            // increment local index and halfedge
+            k = (k + 1) % 3;
+            hij = m.n[hij];
+        }
+    }
 }
 
 } // namespace Holonomy

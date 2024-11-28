@@ -289,6 +289,8 @@ private:
 /**
  * @brief Reconstruct the original mesh from an overlay mesh with halfedge
  * 
+ * Halfedges are indexed by opposite corner, and -1 corresponds to an inserted edge.
+ * 
  * @param F: overlay mesh faces
  * @param F_uv: overlay mesh parametric domain faces
  * @param F_to_Fn: list of overlay subfaces of the original mesh faces
@@ -297,6 +299,7 @@ private:
  * @param corner_v_points: list of halfedge vertices opposite a corner
  * @param F_uv_orig: reconstructed original mesh parametric domain faces
  * @param corner_uv_points: list of halfedge uv vertices opposite a corner
+ * @param halfedge_map: map from refined halfedges to parent halfedges 
  */
 void build_faces(
     const Eigen::MatrixXi& F,
@@ -306,7 +309,8 @@ void build_faces(
     Eigen::MatrixXi& F_orig,
     std::vector<std::array<std::vector<int>, 3>>& corner_v_points,
     Eigen::MatrixXi& F_uv_orig,
-    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points);
+    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points,
+    Eigen::MatrixXi& halfedge_map);
 
 /**
  * @brief Construct list of subfaces from the overlay to original face map

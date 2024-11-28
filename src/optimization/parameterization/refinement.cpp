@@ -391,7 +391,8 @@ void build_face(
     std::array<int, 3>& vertices,
     std::array<std::vector<int>, 3>& edge_v_points,
     std::array<int, 3>& uv_vertices,
-    std::array<std::vector<int>, 3>& edge_uv_points)
+    std::array<std::vector<int>, 3>& edge_uv_points,
+    std::vector<std::array<int, 3>>& halfedge_corners)
 {
     // check for valid subfaces
     int num_subfaces = subfaces.size();
@@ -399,6 +400,7 @@ void build_face(
         spdlog::warn("Attempted to build trivial face");
         return;
     }
+    halfedge_corners = std::vector<std::array<int, 3>>(num_subfaces, {-1, -1, -1});
 
     // Build a VF mesh for the subdivided faces
     Eigen::MatrixXi F_face(num_subfaces, 3);
@@ -459,12 +461,12 @@ void build_face(
         return;
     }
 
-    // Build a map from boundary vertices to corners
-    std::vector<std::pair<int, int>> loop_to_corner(num_boundary_vertices);
+    // Build a map from boundary vertices to corners of boundary faces
+    std::vector<std::pair<int, int>> loop_to_corner(num_boundary_vertices, {-1, -1});
     for (int fi = 0; fi < num_subfaces; ++fi) {
         for (int j = 0; j < 3; ++j) {
             for (int k = 0; k < num_boundary_vertices; ++k) {
-                if (F_face(fi, j) == loop[k]) {
+                if ((F_face(fi, j) == loop[k]) && (F_face(fi, (j + 1) % 3) == loop[(k + 1) % num_boundary_vertices])) {
                     loop_to_corner[k] = std::make_pair(fi, j);
                 }
             }
@@ -479,31 +481,40 @@ void build_face(
     }
 
     // The edge opposite corner 0 begins ccw from corner 1
-    int edge = 0;
-    int i = (vertex_indices[1] + 1) % num_boundary_vertices;
+    int edge = 1;
+    int i = vertex_indices[0];
 
     // Cycle around the boundary to find the other boundary edge vertices
-    while (i != vertex_indices[1]) {
-        // Increment the edge if one of the corner vertices is found
-        if ((i == vertex_indices[0]) || (i == vertex_indices[1]) || (i == vertex_indices[2])) {
-            ++edge;
-            i = (i + 1) % num_boundary_vertices;
-            continue;
-        }
-
-        // Add the 3D vertex to the corresponding edge
-        int vi = loop[i];
-        edge_v_points[edge].push_back(vi);
-
-        // Add the uv vertex to the corresponding edge
+    do {
         int fi = loop_to_corner[i].first;
         int j = loop_to_corner[i].second;
-        int uvi = F_uv_face(fi, j);
-        edge_uv_points[edge].push_back(uvi);
+        if ((fi < 0) || (j < 0))
+        {
+            spdlog::error("Could not find corner for loop index");
+            break;
+        }
+
+        // Increment the edge if one of the corner vertices is found
+        if ((i == vertex_indices[0]) || (i == vertex_indices[1]) || (i == vertex_indices[2])) {
+            edge = (edge + 1) % 3;
+        }
+        else {
+            // Add the 3D vertex to the corresponding edge
+            int vi = loop[i];
+            edge_v_points[edge].push_back(vi);
+
+            // Add the uv vertex to the corresponding edge
+            int uvi = F_uv_face(fi, j);
+            edge_uv_points[edge].push_back(uvi);
+        }
+
+        // record the halfedge corner corresponding to the boundary edge
+        halfedge_corners[fi][(j + 2) % 3] = edge;
 
         // Increment the cyclic index
         i = (i + 1) % num_boundary_vertices;
     }
+    while (i != vertex_indices[0]);
 }
 
 void build_faces(
@@ -514,17 +525,20 @@ void build_faces(
     Eigen::MatrixXi& F_orig,
     std::vector<std::array<std::vector<int>, 3>>& corner_v_points,
     Eigen::MatrixXi& F_uv_orig,
-    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points)
+    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points,
+    Eigen::MatrixXi& halfedge_map)
 {
     int num_faces = F_to_Fn.size();
     F_orig.resize(num_faces, 3);
     corner_v_points.resize(num_faces);
     F_uv_orig.resize(num_faces, 3);
     corner_uv_points.resize(num_faces);
+    halfedge_map.resize(F.rows(), 3);
     for (int fi = 0; fi < num_faces; ++fi) {
         // Build face
         std::array<int, 3> vertices;
         std::array<int, 3> uv_vertices;
+        std::vector<std::array<int, 3>> halfedge_corners;
         build_face(
             F,
             F_uv,
@@ -533,12 +547,22 @@ void build_faces(
             vertices,
             corner_v_points[fi],
             uv_vertices,
-            corner_uv_points[fi]);
+            corner_uv_points[fi],
+            halfedge_corners);
 
         // Copy vertices to face matrices
         for (int j = 0; j < 3; ++j) {
             F_orig(fi, j) = vertices[j];
             F_uv_orig(fi, j) = uv_vertices[j];
+        }
+
+        // copy halfedge map for subfaces
+        int num_subfaces = F_to_Fn[fi].size();
+        for (int k = 0; k < num_subfaces; ++k) {
+            int fik = F_to_Fn[fi][k];
+            for (int j = 0; j < 3; ++j) {
+                halfedge_map(fik, j) = halfedge_corners[k][j];
+            }
         }
     }
 }
@@ -578,9 +602,9 @@ void RefinementMesh::build_connectivity(
     int num_faces = F_to_Fn.size();
 
     // For each original face, get the overlay vertices corresponding to the face
-    Eigen::MatrixXi F_orig, F_uv_orig;
+    Eigen::MatrixXi F_orig, F_uv_orig, halfedge_map;
     std::vector<std::array<std::vector<int>, 3>> corner_v_points, corner_uv_points;
-    build_faces(F, F_uv, F_to_Fn, endpoints, F_orig, corner_v_points, F_uv_orig, corner_uv_points);
+    build_faces(F, F_uv, F_to_Fn, endpoints, F_orig, corner_v_points, F_uv_orig, corner_uv_points, halfedge_map);
 
     // Record the original overlay triangulations
     m_overlay_face_triangles.resize(num_faces);

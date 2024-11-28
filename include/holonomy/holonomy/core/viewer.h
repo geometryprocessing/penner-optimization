@@ -75,6 +75,6 @@ std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv);
-    
+
 } // namespace Holonomy
 } // namespace Penner
