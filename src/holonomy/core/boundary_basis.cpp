@@ -50,7 +50,7 @@ bool BoundaryBasisGenerator::avoid_marked_halfedges(const std::vector<int>& mark
 
         if (is_marked_halfedge[m_root_boundary_handle])
         {
-            spdlog::error("Could not find unmarked root");
+            spdlog::error("Could not find unmarked root on boundary of size {}", component.size());
             return false;
         }
     }
@@ -73,7 +73,7 @@ bool BoundaryBasisGenerator::avoid_marked_halfedges(const std::vector<int>& mark
 
             if (is_marked_halfedge[m_basis_boundary_handles[i]])
             {
-                spdlog::error("Could not find unmarked basis boundary edge for component {}", i);
+                spdlog::error("Could not find unmarked basis boundary edge for component {} of size {}", i, component.size());
                 return false;
             }
         }

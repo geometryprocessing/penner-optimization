@@ -328,7 +328,8 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     for (int i = 0; i < num_cones; ++i) {
         int vi = cone_indices[i];
         cone_positions.row(i) = V.row(vtx_reindex[vi]);
-        cone_values[i] = (double)(m.Th_hat[vi]) - (2 * M_PI);
+        Scalar cone_angle = (is_closed) ? m.Th_hat[vi] : m.Th_hat[vi] / 2.;
+        cone_values[i] = (double)(cone_angle) - (2 * M_PI);
     }
 
     return std::make_tuple(cone_positions, cone_values);
@@ -587,7 +588,10 @@ void view_triangulation(
     // add mesh with permuted face map
     polyscope::registerSurfaceMesh(mesh_handle, V, F);
     polyscope::getSurfaceMesh(mesh_handle)
-        ->addFaceScalarQuantity("face_map", shuffle_map_image(fn_to_f))
+        ->addFaceScalarQuantity("face_map", fn_to_f)
+        ->setColorMap("spectral");
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity("shuffle_face_map", shuffle_map_image(fn_to_f))
         ->setColorMap("spectral")
         ->setEnabled(true);
     polyscope::getSurfaceMesh(mesh_handle)

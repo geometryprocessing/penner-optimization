@@ -15,13 +15,49 @@ public:
         const std::vector<int>& vtx_reindex,
         const Eigen::MatrixXd& V);
 
-    std::tuple<Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
-    get_field(
+    void get_field(
         const Mesh<Scalar>& m,
         const std::vector<int>& vtx_reindex,
-        const Eigen::MatrixXi& F) const;
+        const Eigen::MatrixXi& F,
+        const std::vector<int>& face_reindex,
+        Eigen::VectorXi& reference_corner,
+        Eigen::VectorXd& face_angle,
+        Eigen::MatrixXd& corner_kappa,
+        Eigen::MatrixXi& corner_period_jump) const;
+
+    void get_fixed_faces(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        std::vector<bool>& is_fixed) const;
+
+
+    void set_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXi& F, 
+        const std::vector<int>& face_reindex,
+        const Eigen::VectorXd& face_theta,
+        const Eigen::MatrixXd& corner_kappa,
+        const Eigen::MatrixXi& corner_period_jump);
 
     Scalar min_angle = 0.;
+
+    void initialize(const Mesh<Scalar>& m);
+    VectorX compute_rotation_form(const Mesh<Scalar>& m);
+    void set_reference_halfedge(
+        const Mesh<Scalar>& m,  
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXi& F, 
+        const std::vector<int>& face_reindex,
+        const Eigen::VectorXi& reference_corner);
+void view(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V) const;
+void initialize_priority_kappa(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex);
+void initialize_double_priority_kappa(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex);
 
 private:
     // Local frames
@@ -53,15 +89,16 @@ private:
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
+    void initialize_kappa(const Mesh<Scalar>& m);
     void initialize_period_jump(const Mesh<Scalar>& m);
     void initialize_mixed_integer_system(const Mesh<Scalar>& m);
 
     void initialize_double_local_frames(const Mesh<Scalar>& m);
+    void initialize_double_kappa(const Mesh<Scalar>& m);
     void initialize_double_period_jump(const Mesh<Scalar>& m);
     void initialize_double_mixed_integer_system(const Mesh<Scalar>& m);
-
     void solve(const Mesh<Scalar>& m);
-    VectorX compute_rotation_form(const Mesh<Scalar>& m);
+
 };
 
 } // namespace Holonomy
