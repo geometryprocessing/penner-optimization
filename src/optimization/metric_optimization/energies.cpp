@@ -584,7 +584,7 @@ Scalar root_mean_square_relative_error(const VectorX& x, const VectorX& x0)
 
     Scalar error = 0.0;
     for (int i = 0; i < num_var; ++i) {
-        Scalar rel_err = (!float_equal(x0[i], 0.0)) ? (x[i] - x0[i]) / x0[i] : 1e10;
+        Scalar rel_err = (!float_equal<Scalar>(x0[i], 0.0)) ? (x[i] - x0[i]) / x0[i] : 1e10;
         error += (rel_err * rel_err);
     }
 

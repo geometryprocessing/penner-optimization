@@ -413,6 +413,7 @@ std::
         bool use_uniform_bc);
 
 #ifdef WITH_MPFR
+#ifndef MULTIPRECISION
 
 template
 std::
@@ -436,6 +437,7 @@ std::
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
         bool use_uniform_bc);
+#endif
 #endif
   
 

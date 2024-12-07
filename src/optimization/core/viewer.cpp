@@ -291,7 +291,7 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     std::vector<int> cone_indices;
     cone_indices.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (float_equal(Th_hat[vi], 2 * M_PI)) continue;
+        if (float_equal<Scalar>(Th_hat[vi], 2 * M_PI)) continue;
         cone_indices.push_back(vi);
     }
 
@@ -317,8 +317,8 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     std::vector<int> cone_indices;
     cone_indices.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if ((is_closed) && (float_equal(m.Th_hat[vi], 2 * M_PI))) continue;
-        if ((!is_closed) && (float_equal(m.Th_hat[vi], 4 * M_PI))) continue;
+        if ((is_closed) && (float_equal<Scalar>(m.Th_hat[vi], 2 * M_PI))) continue;
+        if ((!is_closed) && (float_equal<Scalar>(m.Th_hat[vi], 4 * M_PI))) continue;
         cone_indices.push_back(vi);
     }
 
@@ -344,7 +344,7 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_closed_cone_vertices(
     std::vector<int> cone_indices;
     cone_indices.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (float_equal(Th_hat[vi], 2 * M_PI)) continue;
+        if (float_equal<Scalar>(Th_hat[vi], 2 * M_PI)) continue;
         cone_indices.push_back(vi);
     }
 
