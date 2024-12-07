@@ -8,7 +8,9 @@ namespace Holonomy {
 class IntrinsicNRosyField
 {
 public:
-    IntrinsicNRosyField() {};
+    IntrinsicNRosyField() {
+        use_trivial_boundary = false;
+    };
     VectorX run(const Mesh<Scalar>& m);
     VectorX run_with_viewer(
         const Mesh<Scalar>& m,
@@ -43,6 +45,7 @@ public:
     Scalar min_angle = 0.;
 
     void initialize(const Mesh<Scalar>& m);
+    void compute_principal_matchings(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -59,6 +62,7 @@ void initialize_priority_kappa(
     const std::vector<int>& vtx_reindex);
 void initialize_double_priority_kappa(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex);
 
+    bool use_trivial_boundary;
 private:
     // Local frames
     VectorX theta; // per-face angle from local frame to face vector

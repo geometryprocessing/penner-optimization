@@ -1147,8 +1147,9 @@ std::
             bd.push_back(i);
         }
     }
+    Scalar flat_angle = (m.type[0] != 0) ? (4. * M_PI) : (2. * M_PI);
     for (size_t i = 0; i < m.Th_hat.size(); i++) {
-        if ((!is_bd[i]) && abs(m.Th_hat[i] - 2 * M_PI) > 1e-12) {
+        if ((!is_bd[i]) && abs(m.Th_hat[i] - flat_angle) > 1e-12) {
             cones.push_back(i);
         }
     }
@@ -1344,6 +1345,7 @@ std::
         bool use_uniform_bc);
 
 #ifdef WITH_MPFR
+#ifndef MULTIPRECISION
 
 template void make_tufted_overlay<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
 
@@ -1372,6 +1374,8 @@ std::
         const std::vector<bool>& is_cut,
         bool use_uniform_bc);
 #endif
+#endif
+
 
 } // namespace Optimization
 } // namespace Penner

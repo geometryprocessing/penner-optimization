@@ -119,12 +119,15 @@ template void reparametrize_equilateral(
     const VectorX& tau);
 
 #ifdef WITH_MPFR
+#ifndef MULTIPRECISION
+
 template void bc_reparametrize_eq<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& m_o, const VectorX& tau);
 template void reparametrize_equilateral(
     std::vector<Pt<mpfr::mpreal>>& pts,
     const std::vector<int>& n,
     const std::vector<int>& h,
     const VectorX& tau);
+#endif
 #endif
 
 } // namespace Optimization

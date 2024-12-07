@@ -1039,6 +1039,7 @@ template void interpolate_vertex_positions<Scalar>(
     Eigen::MatrixXd& V_overlay);
 
 #ifdef WITH_MPFR
+#ifndef MULTIPRECISION
 template class InterpolationMesh<mpfr::mpreal>;
 template void interpolate_penner_coordinates<mpfr::mpreal>(
     const Mesh<Scalar>& mesh,
@@ -1052,6 +1053,7 @@ template void interpolate_vertex_positions<mpfr::mpreal>(
     const InterpolationMesh<mpfr::mpreal>& interpolation_mesh,
     const InterpolationMesh<mpfr::mpreal>& reverse_interpolation_mesh,
     Eigen::MatrixXd& V_overlay);
+#endif
 #endif
 
 } // namespace Optimization

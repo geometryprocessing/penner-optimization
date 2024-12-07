@@ -1122,6 +1122,21 @@ std::vector<Scalar> generate_cones_from_rotation_form_FIXME(
     return Th_hat;
 }
 
+void IntrinsicNRosyField::compute_principal_matchings(const Mesh<Scalar>& m)
+{
+    int num_halfedges = m.n_halfedges();
+    VectorX rotation_form(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        if (hij < m.opp[hij]) continue;
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        Scalar delta_theta = theta[f0] - theta[f1] + kappa[hij];
+        period_jump[hij] = -round(delta_theta / period_value[hij]);
+        period_jump[hji] = -period_jump[hij];
+    }
+}
+
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
 {
     int num_halfedges = m.n_halfedges();
@@ -1133,8 +1148,10 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         int f1 = m.f[hji];
         rotation_form[hij] =
             theta[f0] - theta[f1] + kappa[hij] + period_value[hij] * period_jump[hij];
-        //if ((m.type[hij] == 1) && (m.type[hji] == 2)) rotation_form[hij] = 0;
-        //if ((m.type[hij] == 2) && (m.type[hji] == 1)) rotation_form[hij] = 0;
+        if (use_trivial_boundary) {
+            if ((m.type[hij] == 1) && (m.type[hji] == 2)) rotation_form[hij] = 0;
+            if ((m.type[hij] == 2) && (m.type[hji] == 1)) rotation_form[hij] = 0;
+        }
         //if (rotation_form[hij] > 6.) rotation_form[hij] -= (2. * M_PI);
         //if (rotation_form[hij] < -6.) rotation_form[hij] += (2. * M_PI);
         rotation_form[hji] = -rotation_form[hij];
@@ -1174,6 +1191,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
         int h_start = m.out[vi];
         int hij = h_start;
         int vj;
+        bool has_boundary = false;
         do {
             vj = m.v_rep[m.to[hij]];
 
@@ -1184,9 +1202,18 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
                 max_angle = Th_hat[vj];
                 spdlog::info("Max angle {} at {}", max_angle, vj);
             }
+            if ((m.type[hij] == 1) && (m.type[m.opp[hij]] == 2))
+            {
+                spdlog::info("boundary edge found");
+                has_boundary = true;
+            }
             
             hij = m.opp[m.n[m.n[hij]]];
         } while (hij != h_start);
+
+        // skip boundary edges
+        // TODO: Make option
+        if (has_boundary) continue;
 
         // push curvature to adjacent cone if candidate found
         if (h_opt != -1)
@@ -1264,12 +1291,24 @@ void IntrinsicNRosyField::view(
     Optimization::view_dual_graph(V, m, vtx_reindex, is_period_jump_fixed);
     VectorX kappa_mesh = generate_FV_halfedge_data(F_halfedge, kappa);
     VectorX period_jump_scaled(period_jump.size());
-    for (int i = 0; i < period_jump.size(); ++i)
+    int num_halfedges = m.n_halfedges();
+    VectorX rotation_form(num_halfedges);
+    VectorX reference_rotation_form(num_halfedges);
+    for (int hij = 0; hij < period_jump.size(); ++hij)
     {
-        period_jump_scaled[i] = period_value[i] * period_jump[i];
+        period_jump_scaled[hij] = period_value[hij] * period_jump[hij];
+
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        rotation_form[hij] =
+            theta[f0] - theta[f1] + kappa[hij] + period_value[hij] * period_jump[hij];
+        reference_rotation_form[hij] = theta[f0] - theta[f1] + kappa[hij];
     }
     VectorX period_jump_mesh = generate_FV_halfedge_data(F_halfedge, period_jump_scaled);
     VectorX period_value_mesh = generate_FV_halfedge_data(F_halfedge, period_value);
+    VectorX rotation_form_mesh = generate_FV_halfedge_data(F_halfedge, rotation_form);
+    VectorX ref_rotation_form_mesh = generate_FV_halfedge_data(F_halfedge, reference_rotation_form);
 #ifdef ENABLE_VISUALIZATION
 polyscope::init();
 std::string mesh_handle = "intrinsic_field_mesh";
@@ -1292,6 +1331,18 @@ polyscope::getSurfaceMesh(mesh_handle)
     ->addHalfedgeScalarQuantity(
         "period value",
         convert_scalar_to_double_vector(period_value_mesh))
+    ->setColorMap("coolwarm")
+    ->setEnabled(false);
+polyscope::getSurfaceMesh(mesh_handle)
+    ->addHalfedgeScalarQuantity(
+        "rotation form",
+        convert_scalar_to_double_vector(rotation_form_mesh))
+    ->setColorMap("coolwarm")
+    ->setEnabled(false);
+polyscope::getSurfaceMesh(mesh_handle)
+    ->addHalfedgeScalarQuantity(
+        "reference rotation form",
+        convert_scalar_to_double_vector(ref_rotation_form_mesh))
     ->setColorMap("coolwarm")
     ->setEnabled(false);
 polyscope::getSurfaceMesh(mesh_handle)
@@ -1350,7 +1401,7 @@ void IntrinsicNRosyField::get_field(
         // get period jumps and rotations across edges
         for (int i = 0; i < 3; ++i)
         {
-            corner_kappa(face_reindex[fijk], k) = kappa[hij];
+            corner_kappa(face_reindex[fijk], k) = (double)(kappa[hij]);
             corner_period_jump(face_reindex[fijk], k) = period_jump[hij];
 
             // increment local index and halfedge

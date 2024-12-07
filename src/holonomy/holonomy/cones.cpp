@@ -41,7 +41,7 @@ bool validate_cones_from_rotation_form(
 
         // Special treatment for vertices in interior of doubled mesh
         if ((is_symmetric) && (!is_boundary_vertex[vi])) {
-            if (!float_equal(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
                 spdlog::warn(
                     "Inconsistent interior cones {} and {}",
                     Th_hat[m.v_rep[vi]] / 2.,
@@ -51,7 +51,7 @@ bool validate_cones_from_rotation_form(
         }
         // General case
         else {
-            if (!float_equal(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
                 spdlog::warn(
                     "Inconsistent cones {} and {}",
                     Th_hat[m.v_rep[vi]],
@@ -300,7 +300,7 @@ int get_flat_vertex(const Mesh<Scalar>& m, bool only_interior)
         }
         if (only_interior) continue;
 
-        if ((m.type[h] == 1) && (m.R[m.opp[h]] == h) && float_equal(m.Th_hat[vi], 2. * M_PI)) {
+        if ((m.type[h] == 1) && (m.R[m.opp[h]] == h) && float_equal<Scalar>(m.Th_hat[vi], 2. * M_PI)) {
             return vi;
         }
     }
@@ -446,7 +446,7 @@ void remove_trivial_boundaries(
             h = m.opp[h];
 
             int vi = vtx_reindex[m.v_rep[m.to[h]]];
-            if (!float_equal(Th_hat[vi], M_PI)) {
+            if (!float_equal<Scalar>(Th_hat[vi], M_PI)) {
                 is_trivial = false;
                 break;
             }
