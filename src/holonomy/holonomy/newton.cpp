@@ -556,6 +556,13 @@ void OptimizeHolonomyNewton::perform_line_search(
 // Determine if the optimization has converged or maximum time/iteration is reached
 bool OptimizeHolonomyNewton::is_converged()
 {
+    Scalar prev_constraint_max = constraint_max;
+    constraint_max = constraint.cwiseAbs().maxCoeff();
+    if (constraint_max == prev_constraint_max) {
+        spdlog::info("Stopping optimization as error {} did not decrease", prev_constraint_max);
+        return true;
+    }
+
     if (constraint.cwiseAbs().maxCoeff() < alg_params.error_eps) {
         spdlog::info("Stopping optimization as max error {} reached", alg_params.error_eps);
         return true;
@@ -611,13 +618,15 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
     spdlog::info("itr(0) lm({}) max_error({}))", lambda, log.max_error);
 
     int itr = 0;
+    constraint_max = -1.;
     while (true) {
         // Check termination conditions
         if (is_converged()) break;
 
-        // Increment iteration
+        // Increment iteration and lambda
         itr++;
         log.num_iter = itr;
+        update_lambda();
 
         // Compute Newton descent direction
         update_descent_direction(*marked_metric, metric_basis_matrix);
@@ -636,9 +645,6 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
         write_log_entries();
         checkpoint_metric(*marked_metric);
         spdlog::info("itr({}) lm({}) max_error({}))", itr, lambda, log.max_error);
-
-        // Update lambda
-        update_lambda();
     }
 
     // Close logging

@@ -170,6 +170,7 @@ protected:
 
     // Algorithm data
     Scalar lambda;
+    Scalar constraint_max;
     NewtonParameters alg_params;
 
     // Logging data
