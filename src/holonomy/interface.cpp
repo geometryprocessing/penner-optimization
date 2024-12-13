@@ -138,7 +138,7 @@ void generate_basis_loops(
         spdlog::warn("Adding constraints for trivial torus");
     }
 
-    spdlog::info("Adding holonomy constraints");
+    spdlog::debug("Adding holonomy constraints");
     HomologyBasisGenerator holonomy_basis_generator(m, 0, marked_metric_params.weighting);
     BoundaryBasisGenerator boundary_basis_generator(m);
     if (!marked_halfedges.empty()){
@@ -147,7 +147,7 @@ void generate_basis_loops(
 
     int num_homology_basis_loops = holonomy_basis_generator.n_homology_basis_loops();
     int num_basis_boundaries = boundary_basis_generator.n_basis_boundaries();
-    spdlog::info(
+    spdlog::debug(
         "Adding {} homology and {} boundary constraints",
         num_homology_basis_loops,
         num_basis_boundaries);
@@ -211,7 +211,7 @@ Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
 
 
 std::vector<Scalar> compute_kappa(
-    const Optimization::DiscreteMetric& discrete_metric,
+    const Mesh<Scalar>& discrete_metric,
     const VectorX& rotation_form,
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops)
 {

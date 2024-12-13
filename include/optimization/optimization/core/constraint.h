@@ -36,6 +36,15 @@
 namespace Penner {
 namespace Optimization {
 
+/**
+ * @brief Compute vertex holonomy angles for a mesh with given angles
+ *
+ * @param[in] m: mesh topology
+ * @param[in] alpha: per-halfedge angles for the mesh
+ * @return vector of vertex holonomy angles
+ */
+VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha);
+
 /// Check the triangle inequality for every triangle in the mesh with respect to the
 /// halfedge metric coordinates
 ///
@@ -104,6 +113,14 @@ void build_free_vertex_rep(const Mesh<Scalar>& m, std::vector<int>& v_rep, int& 
 /// @param[in] cone_metric: mesh with differentiable metric
 /// @return maximum difference of the vertex angles from the target angles
 Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric);
+
+/**
+ * @brief Compute the cone angles of the mesh
+ * 
+ * @param cone_metric: mesh with differentiable metric
+ * @return cone angles
+ */
+VectorX compute_cone_angles(const DifferentiableConeMetric& cone_metric);
 
 /// TODO Optionally add halfedge coordinate Jacobians
 

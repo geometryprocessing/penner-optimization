@@ -7,18 +7,6 @@
 namespace Penner {
 namespace Holonomy {
 
-VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha)
-{
-    // Sum up angles around vertices
-    VectorX t(m.n_ind_vertices());
-    t.setZero();
-    for (int h = 0; h < m.n_halfedges(); h++) {
-        t[m.v_rep[m.to[m.n[h]]]] += alpha[h];
-    }
-    SPDLOG_DEBUG("Cone angles with mean {} and norm {}", t.mean(), t.norm());
-    return t;
-}
-
 VectorX Kappa(
     const Mesh<Scalar>& m,
     const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,

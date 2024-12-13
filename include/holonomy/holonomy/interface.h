@@ -198,5 +198,10 @@ std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
     const Eigen::MatrixXi& F,
     const FieldParameters& field_params);
 
+std::vector<Scalar> compute_kappa(
+    const Mesh<Scalar>& discrete_metric,
+    const VectorX& rotation_form,
+    const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
+
 } // namespace Holonomy
 } // namespace Penner

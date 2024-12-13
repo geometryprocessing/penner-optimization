@@ -6,14 +6,6 @@
 
 namespace Penner {
 namespace Holonomy {
-/**
- * @brief Compute vertex holonomy angles for a mesh with given angles
- *
- * @param[in] m: mesh topology
- * @param[in] alpha: per-halfedge angles for the mesh
- * @return vector of vertex holonomy angles
- */
-VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha);
 
 /**
  * @brief Compute dual loop holonomy angles for a mesh with given angles
