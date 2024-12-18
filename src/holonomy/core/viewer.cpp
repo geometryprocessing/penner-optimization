@@ -215,34 +215,6 @@ std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     return std::make_tuple(uv_length_error, uv_angle_error, uv_length, uv_angle);
 }
 
-// TODO MAke separate layout method
-
-void view_quad_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    std::string mesh_handle,
-    bool show)
-{
-    if (mesh_handle == "") {
-        mesh_handle = "quad mesh";
-    }
-
-#ifdef ENABLE_VISUALIZATION
-    polyscope::init();
-
-    // Add cut mesh with
-    polyscope::registerSurfaceMesh(mesh_handle, V, F);
-
-    if (show) polyscope::show();
-#else
-    if (show) {
-        int num_vertices = V.rows();
-        int num_faces = F.rows();
-        spdlog::info("Viewer disabled for mesh (|V|={}, |F|={})", num_vertices, num_faces);
-    }
-#endif
-}
-
 void view_constraint_error(
     const MarkedPennerConeMetric& marked_metric,
     const std::vector<int>& vtx_reindex,

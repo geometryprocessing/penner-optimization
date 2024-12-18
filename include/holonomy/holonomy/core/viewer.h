@@ -38,12 +38,6 @@ void view_constraint_error(
     std::string mesh_handle="",
     bool show=true);
 
-void view_quad_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    std::string mesh_handle="",
-    bool show=true);
-
 /**
  * @brief View a parametrization with seamless error colormaps.
  * 
