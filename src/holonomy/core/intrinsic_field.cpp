@@ -1041,6 +1041,7 @@ public:
     , values(m.n_halfedges(), 0)
     , to(vector_compose(m.v_rep, m.to))
     , opp(m.opp)
+    , is_double(m.type[0] > 0)
     {
         int num_halfedges = m.n_halfedges();
         int num_vertices = m.n_ind_vertices();
@@ -1068,7 +1069,7 @@ public:
         for (int h : cone_period_jumps[vj])
         {
             if ((h != hij) && (!is_rounded[h])) return false;
-            cone += 2 * values[h];
+            cone += (is_double) ? (2 * values[h]) : values[h];
         }
 
         return (cone == 0);
@@ -1125,6 +1126,7 @@ private:
     std::vector<std::vector<int>> cone_period_jumps;
     std::vector<int> to;
     std::vector<int> opp;
+    bool is_double;
 
 };
 
@@ -1422,8 +1424,11 @@ std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m)
         if (halfedge_var_id[hij] == -1) continue;
         is_variable[hij] = true;
         is_variable[m.opp[hij]] = true;
-        is_variable[m.R[hij]] = true;
-        is_variable[m.opp[m.R[hij]]] = true;
+        if (m.type[hij] > 0)
+        {
+            is_variable[m.R[hij]] = true;
+            is_variable[m.opp[m.R[hij]]] = true;
+        }
     }
 
     int num_vertices = m.n_ind_vertices();
