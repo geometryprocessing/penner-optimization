@@ -4,6 +4,7 @@
 #include <CoMISo/Solver/ConstrainedSolver.hh>
 #include <CoMISo/Solver/GMM_Tools.hh>
 #include <CoMISo/Solver/MISolver.hh>
+#include <CoMISo/Utils/StopWatch.hh>
 
 #include <igl/boundary_facets.h>
 
@@ -1026,6 +1027,268 @@ void IntrinsicNRosyField::initialize_double_mixed_integer_system(const Mesh<Scal
     // TODO: Soft constraints
 }
 
+class Rounder {
+public:
+    Rounder(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& _var2he,
+        const std::vector<int>& _halfedge_var_id,
+        const std::vector<int>& _base_cones)
+    : var2he(_var2he)
+    , halfedge_var_id(_halfedge_var_id)
+    , base_cones(_base_cones)
+    , is_rounded(m.n_halfedges(), false)
+    , values(m.n_halfedges(), 0)
+    , to(vector_compose(m.v_rep, m.to))
+    , opp(m.opp)
+    {
+        int num_halfedges = m.n_halfedges();
+        int num_vertices = m.n_ind_vertices();
+        cone_period_jumps = std::vector<std::vector<int>>(num_vertices, std::vector<int>());
+        for (int hij = 0; hij < num_halfedges; ++hij)
+        {
+            // only add variable period jumps
+            if (halfedge_var_id[hij] == -1) continue;
+
+            // add halfedge to tip
+            int vj = m.v_rep[m.to[hij]];
+            cone_period_jumps[vj].push_back(hij);
+
+            // add opposite halfedge to base
+            int hji = m.opp[hij];
+            int vi = m.v_rep[m.to[hji]];
+            cone_period_jumps[vi].push_back(hji);
+        }
+    }
+
+    bool is_zero_cone(int hij)
+    {
+        int vj = to[hij];
+        int cone = base_cones[vj];
+        for (int h : cone_period_jumps[vj])
+        {
+            if ((h != hij) && (!is_rounded[h])) return false;
+            cone += 2 * values[h];
+        }
+
+        return (cone == 0);
+    }
+
+    int test_round(int id, double x)
+    {
+        int hij = var2he[id];
+        int rounded_value = ((x)<0?int((x)-0.5):int((x)+0.5));
+        int hji = opp[hij];
+        values[hij] = rounded_value;
+        values[hji] = -rounded_value;
+        bool is_tip_cone = is_zero_cone(hij);
+        bool is_base_cone = is_zero_cone(hji);
+        
+        if ((is_tip_cone) && (is_base_cone))
+        {
+            spdlog::error("Cone at both tip and base of period jump halfedge");
+            return rounded_value;
+        }
+        if (is_tip_cone)
+        {
+            spdlog::trace("Cone at tip of period jump halfedge");
+            return rounded_value + 1;
+        }
+        if (is_base_cone)
+        {
+            spdlog::trace("Cone at base of period jump halfedge");
+            return rounded_value - 1;
+        }
+
+        return rounded_value;
+
+    }
+
+    int commit_round(int id, double x)
+    {
+        int rounded_value = test_round(id, x);
+        int hij = var2he[id];
+        int hji = opp[hij];
+        values[hij] = rounded_value;
+        values[hji] = -rounded_value;
+        is_rounded[hij] = true;
+        is_rounded[hji] = true;
+        return rounded_value;
+    }
+
+private:
+    std::vector<int> var2he;
+    std::vector<int> halfedge_var_id;
+    std::vector<int> base_cones;
+    std::vector<bool> is_rounded;
+    std::vector<int> values;
+    std::vector<std::vector<int>> cone_period_jumps;
+    std::vector<int> to;
+    std::vector<int> opp;
+
+};
+
+class ConeMISolver : public COMISO::MISolver
+{
+public:
+    ConeMISolver() {};
+    void solve_cone_rounding( 
+        CSCMatrix& _A, 
+        Vecd&      _x, 
+        Vecd&      _rhs, 
+        Veci&      _to_round,
+        Rounder& rounder) {
+            // StopWatch
+            COMISO::StopWatch sw;
+            double time_search_next_integer = 0;
+
+            // some statistics
+            n_local_ = 0;
+            n_cg_    = 0;
+            n_full_  = 0;
+
+            // reset cholmod step flag
+            cholmod_step_done_ = false;
+
+            Veci to_round(_to_round);
+            // copy to round vector and make it unique
+            std::sort(to_round.begin(), to_round.end());
+            Veci::iterator last_unique;
+            last_unique = std::unique(to_round.begin(), to_round.end());
+            int r = last_unique - to_round.begin();
+            to_round.resize( r);
+
+            // initalize old indices
+            Veci old_idx(_rhs.size());
+            for(unsigned int i=0; i<old_idx.size(); ++i)
+                old_idx[i] = i;
+
+            if( initial_full_solution_)
+            {
+                if( noisy_ > 2) std::cerr << "initial full solution" << std::endl;
+                direct_solver_.calc_system_gmm(_A);
+                direct_solver_.solve(_x, _rhs);
+
+                cholmod_step_done_ = true;
+
+                ++n_full_;
+            }
+
+            // neighbors for local optimization
+            Vecui neigh_i;
+
+            // Vector for reduced solution
+            Vecd xr(_x);
+
+            // loop until solution computed
+            for(unsigned int i=0; i<to_round.size(); ++i)
+            {
+                if( noisy_ > 0)
+                {
+                std::cerr << "Integer DOF's left: " << to_round.size()-(i+1) << " ";
+                if( noisy_ > 1)
+                    std::cerr << "residuum_norm: " << COMISO_GMM::residuum_norm( _A, xr, _rhs) << std::endl;
+                }
+
+                // position in round vector
+                std::vector<int> tr_best;
+
+                sw.start();
+
+                RoundingSet rset;
+                rset.set_threshold(multiple_rounding_threshold_);
+
+                // find index yielding smallest rounding error
+                for(unsigned int j=0; j<to_round.size(); ++j)
+                {
+                if( to_round[j] != -1)
+                {
+                int cur_idx = to_round[j];
+                double rnd_error = fabs( rounder.test_round(old_idx[cur_idx], xr[cur_idx]) - xr[cur_idx]);
+
+                rset.add(j, rnd_error);
+                }
+                }
+
+                rset.get_ids( tr_best);
+
+                time_search_next_integer += sw.stop();
+            
+                // nothing more to do?
+                if( tr_best.empty() )
+                break;
+
+                if( noisy_ > 5)
+                std::cerr << "round " << tr_best.size() << " variables simultaneously\n";
+
+                // clear neigh for local update
+                neigh_i.clear();
+
+                for(unsigned int j = 0; j<tr_best.size(); ++j)
+                {
+                int i_cur = to_round[tr_best[j]];
+
+                // store rounded value
+                double rnd_x = rounder.commit_round(old_idx[i_cur], xr[i_cur]);
+                _x[ old_idx[i_cur] ] = rnd_x;
+
+                // compute neighbors
+                Col col = gmm::mat_const_col(_A, i_cur);
+                ColIter it  = gmm::vect_const_begin( col);
+                ColIter ite = gmm::vect_const_end  ( col);
+                for(; it!=ite; ++it)
+                if(it.index() != (unsigned int)i_cur)
+                neigh_i.push_back(it.index());
+
+                // eliminate var
+                COMISO_GMM::fix_var_csc_symmetric( i_cur, rnd_x, _A, xr, _rhs);
+                to_round[tr_best[j]] = -1;
+                }
+
+                // 3-stage update of solution w.r.t. roundings
+                // local GS / CG / SparseCholesky
+                update_solution( _A, xr, _rhs, neigh_i);
+            }
+
+            // final full solution?
+            if( final_full_solution_)
+            {
+                if( noisy_ > 2) std::cerr << "final full solution" << std::endl;
+
+                if( gmm::mat_ncols( _A) > 0)
+                {
+                if(cholmod_step_done_)
+                direct_solver_.update_system_gmm(_A);
+                else
+                direct_solver_.calc_system_gmm(_A);
+
+                direct_solver_.solve( xr, _rhs);
+                ++n_full_;
+                }
+            }
+
+            // store solution values to result vector
+            for(unsigned int i=0; i<old_idx.size(); ++i)
+            {
+                _x[ old_idx[i] ] = xr[i];
+            }
+
+            // output statistics
+            if( stats_)
+            {
+                std::cerr << "\t" << __FUNCTION__ << " *** Statistics of MiSo Solver ***\n";
+                std::cerr << "\t\t Number of CG    iterations  = " << n_cg_ << std::endl;
+                std::cerr << "\t\t Number of LOCAL iterations  = " << n_local_ << std::endl;
+                std::cerr << "\t\t Number of FULL  iterations  = " << n_full_ << std::endl;
+                std::cerr << "\t\t Number of ROUNDING          = " << _to_round.size() << std::endl;
+                std::cerr << "\t\t time searching next integer = " << time_search_next_integer / 1000.0 <<"s\n";
+                std::cerr << std::endl;
+        }
+
+    }
+
+};
+
 void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
 {
     int n = A.rows();
@@ -1051,9 +1314,12 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
 
     // Set variables to round
     var_edges.clear();
-    for (int var_id : halfedge_var_id) {
+    std::vector<int> var2he(x.size(), -1);
+    for (int hij = 0; hij < m.n_halfedges(); ++hij) {
+        int var_id = halfedge_var_id[hij];
         if (var_id != -1) {
             var_edges.push_back(var_id);
+            var2he[var_id] = hij;
         }
     }
 
@@ -1065,8 +1331,16 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     }
 
     // Solve system
-    COMISO::ConstrainedSolver cs;
-    cs.solve(gmm_C, gmm_A, x, gmm_b, var_edges, 0.0, false, true);
+    //COMISO::ConstrainedSolver cs;
+    //cs.solve(gmm_C, gmm_A, x, gmm_b, var_edges, 0.0, false, true);
+    gmm::csc_matrix< double > Acsc;
+    gmm::copy( gmm_A, Acsc);
+    std::vector<int> base_cones = generate_base_cones(m);
+    Rounder rounder(m, var2he, halfedge_var_id, base_cones);
+    ConeMISolver cs;
+    cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
+    //COMISO::MISolver cs;
+    //cs.solve(Acsc, x, gmm_b, var_edges);
 
     // Copy the face angles
     int num_faces = m.n_faces();
@@ -1135,6 +1409,40 @@ void IntrinsicNRosyField::compute_principal_matchings(const Mesh<Scalar>& m)
         period_jump[hij] = -round(delta_theta / period_value[hij]);
         period_jump[hji] = -period_jump[hij];
     }
+}
+
+std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m) const
+{
+    // Compute the corner angles
+    VectorX he2angle, he2cot;
+    Optimization::corner_angles(m, he2angle, he2cot);
+
+    std::vector<int> is_variable(m.n_halfedges(), false);
+    for (int hij = 0; hij < m.n_halfedges(); hij++) {
+        if (halfedge_var_id[hij] == -1) continue;
+        is_variable[hij] = true;
+        is_variable[m.opp[hij]] = true;
+        is_variable[m.R[hij]] = true;
+        is_variable[m.opp[m.R[hij]]] = true;
+    }
+
+    int num_vertices = m.n_ind_vertices();
+    std::vector<Scalar> Th_hat(num_vertices, 0);
+    for (int hij = 0; hij < m.n_halfedges(); hij++) {
+        Th_hat[m.v_rep[m.to[m.n[hij]]]] += he2angle[hij];
+        Th_hat[m.v_rep[m.to[hij]]] += kappa[hij];
+        if (is_variable[hij]) continue;
+
+        Th_hat[m.v_rep[m.to[hij]]] += period_value[hij] * period_jump[hij];
+    }
+
+    std::vector<int> base_cones(num_vertices, 0);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+    }
+
+    return base_cones;
 }
 
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
@@ -1305,6 +1613,7 @@ void IntrinsicNRosyField::view(
             theta[f0] - theta[f1] + kappa[hij] + period_value[hij] * period_jump[hij];
         reference_rotation_form[hij] = theta[f0] - theta[f1] + kappa[hij];
     }
+    std::vector<int> base_cones = generate_base_cones(m);
     VectorX period_jump_mesh = generate_FV_halfedge_data(F_halfedge, period_jump_scaled);
     VectorX period_value_mesh = generate_FV_halfedge_data(F_halfedge, period_value);
     VectorX rotation_form_mesh = generate_FV_halfedge_data(F_halfedge, rotation_form);
@@ -1325,6 +1634,10 @@ polyscope::getSurfaceMesh(mesh_handle)
     ->addHalfedgeScalarQuantity(
         "period jump",
         convert_scalar_to_double_vector(period_jump_mesh))
+    ->setColorMap("coolwarm")
+    ->setEnabled(false);
+polyscope::getSurfaceMesh(mesh_handle)
+    ->addVertexScalarQuantity("base_cones", base_cones)
     ->setColorMap("coolwarm")
     ->setEnabled(false);
 polyscope::getSurfaceMesh(mesh_handle)

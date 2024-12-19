@@ -91,6 +91,7 @@ private:
 
     Scalar compute_angle_to_reference(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
+    std::vector<int> generate_base_cones(const Mesh<Scalar>& m) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
     void initialize_kappa(const Mesh<Scalar>& m);
