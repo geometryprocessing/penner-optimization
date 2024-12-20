@@ -16,7 +16,8 @@ def generate_histogram(
     height=5,
     use_percentage=True,
     log=False,
-    bins=21
+    bins=21,
+    logy=False
 ):
     # Set width and height of figure
     matplotlib.rcParams['figure.figsize'] = (width, height)
@@ -39,6 +40,8 @@ def generate_histogram(
     # Optionally use log scale
     if log:
         hist.set_xscale('log')
+    if logy:
+        hist.set_yscale('log')
 
     # Save figure to file
     fig.savefig(output_path, bbox_inches='tight')
