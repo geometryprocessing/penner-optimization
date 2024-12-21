@@ -32,6 +32,10 @@ public:
         const std::vector<int>& vtx_reindex,
         std::vector<bool>& is_fixed) const;
 
+    void set_min_cones(const std::vector<int>& _min_cones)
+    {
+        min_cones = _min_cones;
+    }
 
     void set_field(
         const Mesh<Scalar>& m,
@@ -88,6 +92,7 @@ private:
     MatrixX A;
     VectorX b;
     Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> C;
+    std::vector<int> min_cones;
 
     Scalar compute_angle_to_reference(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;

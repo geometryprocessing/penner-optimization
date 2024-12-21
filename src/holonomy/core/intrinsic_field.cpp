@@ -1033,10 +1033,12 @@ public:
         const Mesh<Scalar>& m,
         const std::vector<int>& _var2he,
         const std::vector<int>& _halfedge_var_id,
-        const std::vector<int>& _base_cones)
+        const std::vector<int>& _base_cones,
+        const std::vector<int>& _min_cones)
     : var2he(_var2he)
     , halfedge_var_id(_halfedge_var_id)
     , base_cones(_base_cones)
+    , min_cones(_min_cones)
     , is_rounded(m.n_halfedges(), false)
     , values(m.n_halfedges(), 0)
     , to(vector_compose(m.v_rep, m.to))
@@ -1072,7 +1074,7 @@ public:
             cone += (is_double) ? (2 * values[h]) : values[h];
         }
 
-        return (cone == 0);
+        return (cone < min_cones[vj]);
     }
 
     int test_round(int id, double x)
@@ -1121,6 +1123,7 @@ private:
     std::vector<int> var2he;
     std::vector<int> halfedge_var_id;
     std::vector<int> base_cones;
+    std::vector<int> min_cones;
     std::vector<bool> is_rounded;
     std::vector<int> values;
     std::vector<std::vector<int>> cone_period_jumps;
@@ -1291,6 +1294,25 @@ public:
 
 };
 
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
+{
+    int num_vertices = m.n_ind_vertices();
+    if (m.type[0] == 0)
+    {
+        return std::vector<int>(num_vertices, 0);
+    }
+
+    std::vector<int> min_cones(num_vertices, 4);
+    for (int hij = 0; hij < m.n_halfedges(); hij++) {
+        if (m.opp[m.R[hij]] == hij)
+        {
+            min_cones[m.v_rep[m.to[hij]]] = 2;
+        }
+    }
+
+    return min_cones;
+}
+
 void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
 {
     int n = A.rows();
@@ -1338,7 +1360,11 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     gmm::csc_matrix< double > Acsc;
     gmm::copy( gmm_A, Acsc);
     std::vector<int> base_cones = generate_base_cones(m);
-    Rounder rounder(m, var2he, halfedge_var_id, base_cones);
+    if (min_cones.empty())
+    {
+        min_cones = generate_min_cones(m);
+    }
+    Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
     ConeMISolver cs;
     cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
     //COMISO::MISolver cs;
