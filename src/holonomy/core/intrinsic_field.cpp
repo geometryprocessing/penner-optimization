@@ -7,6 +7,8 @@
 #include <CoMISo/Utils/StopWatch.hh>
 
 #include <igl/boundary_facets.h>
+#include <igl/principal_curvature.h>
+#include <igl/average_onto_faces.h>
 
 #include "holonomy/core/field.h"
 #include "util/spanning_tree.h"
@@ -26,6 +28,117 @@
 namespace Penner {
 namespace Holonomy {
 
+Eigen::MatrixXd transfer_vertex_direction_to_corner(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& vertex_direction,
+    int corner_index
+)
+{
+    int num_faces = F.rows();
+    int dim = vertex_direction.cols();
+    Eigen::MatrixXd face_direction(num_faces, dim);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        int vi = F(fijk, corner_index);
+        face_direction.row(fijk) = vertex_direction.row(vi);
+    }
+
+    return face_direction;
+}
+
+/*
+VectorX average_corner_angles(const std::array<VectorX, 3>& corner_angles)
+{
+    int num_faces = corner_angles[0].size();
+    VectorX theta(num_faces);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        Scalar theta_sum = 0.;
+        for (int i = 0; i < 3; ++ i)
+        {
+            theta_sum += corner_angles[fijk][i];
+        }
+        while (theta_sum < 0)
+        {
+            theta_sum += 2 * M_PI.;
+        }
+        theta_sum = pos_fmod(theta_sum, M_PI / 2.);
+        face_theta[i] = theta_sum / 2.
+    }
+
+    return theta;
+}
+*/
+
+Eigen::Vector3d average_line_field(const Eigen::Vector3d& d0, const Eigen::Vector3d& d1, const Eigen::Vector3d& d2)
+{
+    //start with first vector (implicitly fixing sign)
+    Eigen::Vector3d d = d0;
+
+    // add second vector with sign corrected to d0
+    if ((d0 - d1).norm() < (d0 + d1).norm())
+    {
+        d += d1;
+    } else {
+        d -= d1;
+    }
+
+    // add third vector with sign corrected to d0
+    if ((d0 - d2).norm() < (d0 + d2).norm())
+    {
+        d += d2;
+    } else {
+        d -= d2;
+    }
+
+    return d / 3.;
+}
+
+Eigen::MatrixXd average_line_field(const std::array<Eigen::MatrixXd, 3>& corner_directions)
+{
+    int num_faces = corner_directions[0].rows();
+    Eigen::MatrixXd face_direction(num_faces, 3);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        face_direction.row(fijk) = average_line_field(corner_directions[0].row(fijk), corner_directions[1].row(fijk), corner_directions[2].row(fijk));
+    }
+
+    return face_direction;
+}
+
+
+Eigen::MatrixXd average_line_field_onto_faces(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& vertex_direction)
+{
+    std::array<Eigen::MatrixXd, 3> corner_directions;
+    for (int i = 0; i < 3; ++i)
+    {
+        corner_directions[i] = transfer_vertex_direction_to_corner(F, vertex_direction, i);
+    }
+
+    return average_line_field(corner_directions);
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+compute_facet_principal_curvature(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F)
+{
+    // find principal curvature
+      // Compute curvature directions via quadric fitting
+    Eigen::MatrixXd PD1,PD2;
+    Eigen::VectorXd PV1,PV2;
+    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2);
+    Eigen::VectorXd face_max_curvature, face_min_curvature;
+    igl::average_onto_faces(F, PV1, face_max_curvature);
+    igl::average_onto_faces(F, PV2, face_min_curvature);
+    Eigen::MatrixXd face_max_direction = average_line_field_onto_faces(F, PD1);
+    Eigen::MatrixXd face_min_direction = average_line_field_onto_faces(F, PD2);
+
+    return std::make_tuple(face_max_direction, face_min_direction, face_max_curvature, face_min_curvature);
+}
+
 // compute the cone angles at vertices
 VectorX compute_cone_angles(const Mesh<Scalar>& m, const VectorX& alpha)
 {
@@ -38,15 +151,15 @@ VectorX compute_cone_angles(const Mesh<Scalar>& m, const VectorX& alpha)
     return t;
 }
 
-// build a bfs forest with faces adjacent to the boundaries as the roots
-std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m)
+// build a bfs forest with given roots
+std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m, const std::vector<int> roots)
 {
     int num_faces = m.n_faces();
     int num_halfedges = m.n_halfedges();
     std::vector<bool> is_processed_face(num_faces, false);
     std::vector<int> halfedge_from_face(num_faces, -1);
 
-    // Split mesh along boundary by marking all doubled faces as processed
+    // Remove interior double edges, but leave boundary edges
     for (int h = 0; h < num_halfedges; ++h) {
         if ((m.type[h] == 2) || (m.type[m.opp[h]] == 2)) {
             is_processed_face[m.f[h]] = true;
@@ -55,12 +168,10 @@ std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m)
 
     // Initialize queue with boundary faces to process
     std::deque<int> faces_to_process;
-    for (int h = 0; h < num_halfedges; ++h) {
-        if ((m.type[h] == 2) || (m.type[m.opp[h]] == 2)) {
-            int fi = m.f[h];
-            is_processed_face[fi] = true;
-            faces_to_process.push_back(fi);
-        }
+    for (int fi : roots)
+    {
+        is_processed_face[fi] = true;
+        faces_to_process.push_back(fi);
     }
 
     // Perform Prim or Dijkstra algorithm
@@ -300,6 +411,34 @@ void IntrinsicNRosyField::initialize_double_local_frames(const Mesh<Scalar>& m)
     }
 }
 
+void IntrinsicNRosyField::set_fixed_directions(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& target_theta,
+    const std::vector<bool>& is_fixed)
+{
+    // For each face, select a reference halfedge, ensuring consistency of doubled reference
+    int num_faces = m.n_faces();
+    for (int f = 0; f < num_faces; ++f) {
+        int h = m.h[f];
+        if (m.type[h] == 2) continue; // skip double faces
+        if (is_face_fixed[f]) continue; // don't overwrite faces
+        if (!is_fixed[f]) continue; // skip faces not fixed by input target
+
+        theta[f] = target_theta[f];
+        is_face_fixed[f] = true;
+        if (m.type[h] > 0) {
+            int Rf = m.f[m.R[h]]; // get reflection of the face
+            theta[Rf] = M_PI - target_theta[f];
+            is_face_fixed[Rf] = true;
+        }
+    }
+
+    // reset period jumps and system
+    initialize_double_period_jump(m);
+    initialize_double_mixed_integer_system(m);
+}
+
+
 void IntrinsicNRosyField::set_reference_halfedge(
     const Mesh<Scalar>& m,  
     const std::vector<int>& vtx_reindex,
@@ -420,6 +559,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     // TODO: Handle multiple fixed faces and boundary constraints
 }
 
+/*
 void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
 {
     // Get edge maps
@@ -481,6 +621,60 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
     //            break;
     //        }
     //    }
+    }
+
+    // set the period jump (necessary for jumps between fixed faces)
+    period_jump.setZero(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        int hji = m.opp[hij];
+        if (hij < hji) continue; // only process each edge once
+        if ((m.type[hij] == 2) && (m.type[m.opp[hij]] == 2)) continue;
+        
+        int fi = m.f[hij];
+        int fj = m.f[hij];
+        period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        period_jump[hji] = -period_jump[hij];
+        period_jump[m.R[hij]] = -period_jump[hij];
+        period_jump[m.opp[m.R[hij]]] = period_jump[hij];
+    }
+
+    // TODO: Handle multiple fixed faces and boundary constraints
+}
+*/
+
+void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
+{
+    // Get edge maps
+    build_edge_maps(m, he2e, e2he);
+
+    // Initialize period jumps of value pi/2 to 0
+    int num_halfedges = m.n_halfedges();
+    period_value = VectorX::Constant(num_halfedges, M_PI / 2.);
+
+    // Change period value for boundary edges to pi
+    for (int h = 0; h < num_halfedges; ++h) {
+        if (m.opp[m.R[h]] == h) {
+            period_value[h] = M_PI; 
+        }
+    }
+
+    // Mark edges in dual spanning tree and double as fixed
+    std::vector<int> fixed_faces;
+    convert_boolean_array_to_index_vector(is_face_fixed, fixed_faces); 
+    std::vector<int> halfedges_from_face;
+    halfedges_from_face = build_double_dual_bfs_forest(m, fixed_faces);
+    is_period_jump_fixed = std::vector<bool>(num_halfedges, false);
+    for (int h : halfedges_from_face) {
+        if (h < 0) continue;
+        for (int h_rel : { h, m.opp[h], m.R[h], m.opp[m.R[h]] }) {
+            is_period_jump_fixed[h_rel] = true;
+        }
+    }
+    for (int h = 0; h < num_halfedges; ++h) {
+        if ((m.opp[m.R[h]] == h) && (m.type[h] == 1)) {
+            is_period_jump_fixed[h] = true;
+            is_period_jump_fixed[m.opp[h]] = true;
+        }
     }
 
     // set the period jump (necessary for jumps between fixed faces)

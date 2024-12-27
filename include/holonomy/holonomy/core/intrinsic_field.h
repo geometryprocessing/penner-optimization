@@ -5,6 +5,11 @@
 namespace Penner {
 namespace Holonomy {
 
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+compute_facet_principal_curvature(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F);
+
 class IntrinsicNRosyField
 {
 public:
@@ -16,6 +21,11 @@ public:
         const Mesh<Scalar>& m,
         const std::vector<int>& vtx_reindex,
         const Eigen::MatrixXd& V);
+
+    void set_fixed_directions(
+        const Mesh<Scalar>& m,
+        const std::vector<Scalar>& target_theta,
+        const std::vector<bool>& is_fixed);
 
     void get_field(
         const Mesh<Scalar>& m,
@@ -49,6 +59,7 @@ public:
     Scalar min_angle = 0.;
 
     void initialize(const Mesh<Scalar>& m);
+    void solve(const Mesh<Scalar>& m);
     void compute_principal_matchings(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
@@ -107,7 +118,6 @@ private:
     void initialize_double_kappa(const Mesh<Scalar>& m);
     void initialize_double_period_jump(const Mesh<Scalar>& m);
     void initialize_double_mixed_integer_system(const Mesh<Scalar>& m);
-    void solve(const Mesh<Scalar>& m);
 
 };
 
