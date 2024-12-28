@@ -237,7 +237,8 @@ compute_facet_principal_curvature(
       // Compute curvature directions via quadric fitting
     Eigen::MatrixXd PD1,PD2;
     Eigen::VectorXd PV1,PV2;
-    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2,radius,(radius!=1));
+    std::vector<int> bad_vertices;
+    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2,bad_vertices,radius,(radius!=1));
     Eigen::VectorXd face_max_curvature, face_min_curvature;
     igl::average_onto_faces(F, PV1, face_max_curvature);
     igl::average_onto_faces(F, PV2, face_min_curvature);
