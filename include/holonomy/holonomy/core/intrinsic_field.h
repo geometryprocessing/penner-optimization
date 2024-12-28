@@ -8,7 +8,8 @@ namespace Holonomy {
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 compute_facet_principal_curvature(
     const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F);
+    const Eigen::MatrixXi& F,
+    int radius=5);
 
 class IntrinsicNRosyField
 {
@@ -108,6 +109,7 @@ private:
     Scalar compute_angle_to_reference(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     std::vector<int> generate_base_cones(const Mesh<Scalar>& m) const;
+    std::vector<int> generate_kappa_cones(const Mesh<Scalar>& m) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
     void initialize_kappa(const Mesh<Scalar>& m);
@@ -120,6 +122,8 @@ private:
     void initialize_double_mixed_integer_system(const Mesh<Scalar>& m);
 
 };
+
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m);
 
 } // namespace Holonomy
 } // namespace Penner

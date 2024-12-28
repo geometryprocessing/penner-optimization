@@ -28,6 +28,113 @@
 namespace Penner {
 namespace Holonomy {
 
+class Rounder {
+public:
+    Rounder(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& _var2he,
+        const std::vector<int>& _halfedge_var_id,
+        const std::vector<int>& _base_cones,
+        const std::vector<int>& _min_cones)
+    : var2he(_var2he)
+    , halfedge_var_id(_halfedge_var_id)
+    , base_cones(_base_cones)
+    , min_cones(_min_cones)
+    , is_rounded(m.n_halfedges(), false)
+    , values(m.n_halfedges(), 0)
+    , to(vector_compose(m.v_rep, m.to))
+    , opp(m.opp)
+    , is_double(m.type[0] > 0)
+    {
+        int num_halfedges = m.n_halfedges();
+        int num_vertices = m.n_ind_vertices();
+        cone_period_jumps = std::vector<std::vector<int>>(num_vertices, std::vector<int>());
+        for (int hij = 0; hij < num_halfedges; ++hij)
+        {
+            // only add variable period jumps
+            if (halfedge_var_id[hij] == -1) continue;
+
+            // add halfedge to tip
+            int vj = m.v_rep[m.to[hij]];
+            cone_period_jumps[vj].push_back(hij);
+
+            // add opposite halfedge to base
+            int hji = m.opp[hij];
+            int vi = m.v_rep[m.to[hji]];
+            cone_period_jumps[vi].push_back(hji);
+        }
+    }
+
+    bool is_zero_cone(int hij)
+    {
+        int vj = to[hij];
+        int cone = base_cones[vj];
+        for (int h : cone_period_jumps[vj])
+        {
+            if ((h != hij) && (!is_rounded[h])) return false;
+            cone += (is_double) ? (2 * values[h]) : values[h];
+        }
+
+        return (cone < min_cones[vj]);
+    }
+
+    int test_round(int id, double x)
+    {
+        int hij = var2he[id];
+        //int rounded_value = ((x)<0?int((x)-0.5):int((x)+0.5));
+        int rounded_value = round(x);
+        int hji = opp[hij];
+        values[hij] = rounded_value;
+        values[hji] = -rounded_value;
+        bool is_tip_cone = is_zero_cone(hij);
+        bool is_base_cone = is_zero_cone(hji);
+        
+        if ((is_tip_cone) && (is_base_cone))
+        {
+            spdlog::error("Cone at both tip and base of period jump halfedge");
+            return rounded_value;
+        }
+        if (is_tip_cone)
+        {
+            spdlog::trace("Cone at tip of period jump halfedge");
+            return rounded_value + 1;
+        }
+        if (is_base_cone)
+        {
+            spdlog::trace("Cone at base of period jump halfedge");
+            return rounded_value - 1;
+        }
+
+        return rounded_value;
+
+    }
+
+    int commit_round(int id, double x)
+    {
+        int rounded_value = test_round(id, x);
+        int hij = var2he[id];
+        int hji = opp[hij];
+        values[hij] = rounded_value;
+        values[hji] = -rounded_value;
+        is_rounded[hij] = true;
+        is_rounded[hji] = true;
+        return rounded_value;
+    }
+
+private:
+    std::vector<int> var2he;
+    std::vector<int> halfedge_var_id;
+    std::vector<int> base_cones;
+    std::vector<int> min_cones;
+    std::vector<bool> is_rounded;
+    std::vector<int> values;
+    std::vector<std::vector<int>> cone_period_jumps;
+    std::vector<int> to;
+    std::vector<int> opp;
+    bool is_double;
+
+};
+
 Eigen::MatrixXd transfer_vertex_direction_to_corner(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& vertex_direction,
@@ -123,13 +230,14 @@ Eigen::MatrixXd average_line_field_onto_faces(
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 compute_facet_principal_curvature(
     const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F)
+    const Eigen::MatrixXi& F,
+    int radius)
 {
     // find principal curvature
       // Compute curvature directions via quadric fitting
     Eigen::MatrixXd PD1,PD2;
     Eigen::VectorXd PV1,PV2;
-    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2);
+    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2,radius,(radius!=1));
     Eigen::VectorXd face_max_curvature, face_min_curvature;
     igl::average_onto_faces(F, PV1, face_max_curvature);
     igl::average_onto_faces(F, PV2, face_min_curvature);
@@ -659,8 +767,10 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
     }
 
     // Mark edges in dual spanning tree and double as fixed
+    constrain_bd = false;
     std::vector<int> fixed_faces;
     convert_boolean_array_to_index_vector(is_face_fixed, fixed_faces); 
+    spdlog::info("{}/{} faces fixed", fixed_faces.size(), is_face_fixed.size());
     std::vector<int> halfedges_from_face;
     halfedges_from_face = build_double_dual_bfs_forest(m, fixed_faces);
     is_period_jump_fixed = std::vector<bool>(num_halfedges, false);
@@ -677,8 +787,19 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
         }
     }
 
-    // set the period jump (necessary for jumps between fixed faces)
+    // initialize rounder 
     period_jump.setZero(num_halfedges);
+    std::vector<int> base_cones = generate_kappa_cones(m);
+    if (min_cones.empty())
+    {
+        min_cones = generate_min_cones(m);
+    }
+    std::vector<int> var2he_temp, halfedge_var_id_temp;
+    arange(num_halfedges, var2he_temp);
+    arange(num_halfedges, halfedge_var_id_temp);
+    Rounder rounder(m, var2he_temp, halfedge_var_id_temp, base_cones, min_cones);
+
+    // set the period jump (necessary for jumps between fixed faces)
     for (int hij = 0; hij < num_halfedges; ++hij) {
         int hji = m.opp[hij];
         if (hij < hji) continue; // only process each edge once
@@ -686,7 +807,8 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
         
         int fi = m.f[hij];
         int fj = m.f[hij];
-        period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        //period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        period_jump[hij] = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
         period_jump[hji] = -period_jump[hij];
         period_jump[m.R[hij]] = -period_jump[hij];
         period_jump[m.opp[m.R[hij]]] = period_jump[hij];
@@ -1221,111 +1343,6 @@ void IntrinsicNRosyField::initialize_double_mixed_integer_system(const Mesh<Scal
     // TODO: Soft constraints
 }
 
-class Rounder {
-public:
-    Rounder(
-        const Mesh<Scalar>& m,
-        const std::vector<int>& _var2he,
-        const std::vector<int>& _halfedge_var_id,
-        const std::vector<int>& _base_cones,
-        const std::vector<int>& _min_cones)
-    : var2he(_var2he)
-    , halfedge_var_id(_halfedge_var_id)
-    , base_cones(_base_cones)
-    , min_cones(_min_cones)
-    , is_rounded(m.n_halfedges(), false)
-    , values(m.n_halfedges(), 0)
-    , to(vector_compose(m.v_rep, m.to))
-    , opp(m.opp)
-    , is_double(m.type[0] > 0)
-    {
-        int num_halfedges = m.n_halfedges();
-        int num_vertices = m.n_ind_vertices();
-        cone_period_jumps = std::vector<std::vector<int>>(num_vertices, std::vector<int>());
-        for (int hij = 0; hij < num_halfedges; ++hij)
-        {
-            // only add variable period jumps
-            if (halfedge_var_id[hij] == -1) continue;
-
-            // add halfedge to tip
-            int vj = m.v_rep[m.to[hij]];
-            cone_period_jumps[vj].push_back(hij);
-
-            // add opposite halfedge to base
-            int hji = m.opp[hij];
-            int vi = m.v_rep[m.to[hji]];
-            cone_period_jumps[vi].push_back(hji);
-        }
-    }
-
-    bool is_zero_cone(int hij)
-    {
-        int vj = to[hij];
-        int cone = base_cones[vj];
-        for (int h : cone_period_jumps[vj])
-        {
-            if ((h != hij) && (!is_rounded[h])) return false;
-            cone += (is_double) ? (2 * values[h]) : values[h];
-        }
-
-        return (cone < min_cones[vj]);
-    }
-
-    int test_round(int id, double x)
-    {
-        int hij = var2he[id];
-        int rounded_value = ((x)<0?int((x)-0.5):int((x)+0.5));
-        int hji = opp[hij];
-        values[hij] = rounded_value;
-        values[hji] = -rounded_value;
-        bool is_tip_cone = is_zero_cone(hij);
-        bool is_base_cone = is_zero_cone(hji);
-        
-        if ((is_tip_cone) && (is_base_cone))
-        {
-            spdlog::error("Cone at both tip and base of period jump halfedge");
-            return rounded_value;
-        }
-        if (is_tip_cone)
-        {
-            spdlog::trace("Cone at tip of period jump halfedge");
-            return rounded_value + 1;
-        }
-        if (is_base_cone)
-        {
-            spdlog::trace("Cone at base of period jump halfedge");
-            return rounded_value - 1;
-        }
-
-        return rounded_value;
-
-    }
-
-    int commit_round(int id, double x)
-    {
-        int rounded_value = test_round(id, x);
-        int hij = var2he[id];
-        int hji = opp[hij];
-        values[hij] = rounded_value;
-        values[hji] = -rounded_value;
-        is_rounded[hij] = true;
-        is_rounded[hji] = true;
-        return rounded_value;
-    }
-
-private:
-    std::vector<int> var2he;
-    std::vector<int> halfedge_var_id;
-    std::vector<int> base_cones;
-    std::vector<int> min_cones;
-    std::vector<bool> is_rounded;
-    std::vector<int> values;
-    std::vector<std::vector<int>> cone_period_jumps;
-    std::vector<int> to;
-    std::vector<int> opp;
-    bool is_double;
-
-};
 
 class ConeMISolver : public COMISO::MISolver
 {
@@ -1510,11 +1527,9 @@ std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
 void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
 {
     int n = A.rows();
-    int c = C.rows();
 
     gmm::col_matrix<gmm::wsvector<double>> gmm_A(n, n);
     std::vector<double> gmm_b(n);
-    gmm::row_matrix<gmm::wsvector<double>> gmm_C(c, n+1);
     std::vector<int> var_edges;
     std::vector<double> x(n);
 
@@ -1542,11 +1557,13 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     }
 
     // Empty constraints
-    for (int i = 0; i < C.rows(); ++i) {
-        for (int j = 0; j < C.cols(); ++j) {
-            gmm_C(i, j) += (double)(C(i, j));
-        }
-    }
+    //int c = C.rows();
+    //gmm::row_matrix<gmm::wsvector<double>> gmm_C(c, n+1);
+    //for (int i = 0; i < C.rows(); ++i) {
+    //    for (int j = 0; j < C.cols(); ++j) {
+    //        gmm_C(i, j) += (double)(C(i, j));
+    //    }
+    //}
 
     // Solve system
     //COMISO::ConstrainedSolver cs;
@@ -1659,6 +1676,28 @@ std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m)
         if (is_variable[hij]) continue;
 
         Th_hat[m.v_rep[m.to[hij]]] += period_value[hij] * period_jump[hij];
+    }
+
+    std::vector<int> base_cones(num_vertices, 0);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+    }
+
+    return base_cones;
+}
+
+std::vector<int> IntrinsicNRosyField::generate_kappa_cones(const Mesh<Scalar>& m) const
+{
+    // Compute the corner angles
+    VectorX he2angle, he2cot;
+    Optimization::corner_angles(m, he2angle, he2cot);
+
+    int num_vertices = m.n_ind_vertices();
+    std::vector<Scalar> Th_hat(num_vertices, 0);
+    for (int hij = 0; hij < m.n_halfedges(); hij++) {
+        Th_hat[m.v_rep[m.to[m.n[hij]]]] += he2angle[hij];
+        Th_hat[m.v_rep[m.to[hij]]] += kappa[hij];
     }
 
     std::vector<int> base_cones(num_vertices, 0);
