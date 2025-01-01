@@ -305,7 +305,7 @@ void view_seamless_parameterization(
     {
         cone_error[i] = abs(pos_fmod(abs(cone_values[i]) + (M_PI / 4.), (M_PI / 2.)) - (M_PI / 4.));
     }
-    spdlog::info("maximum cone error is {}", cone_error.maxCoeff());
+    if (cone_values.size() > 0) spdlog::info("maximum cone error is {}", cone_error.maxCoeff());
 
 
 #ifdef ENABLE_VISUALIZATION

@@ -155,7 +155,10 @@ void write_vector(const VectorType& v, const std::string& output_filename, int p
 ///
 /// @param[in] matrix: matrix to serialize
 /// @param[in] filename: file to write the matrix to
-void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename);
+/// @param[in] separator: (optional) separator for columns
+void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, std::string separator=",");
+
+Eigen::MatrixXd read_matrix(const std::string& filename);
 
 /// Write a sparse matrix to file in i,j,v format.
 ///

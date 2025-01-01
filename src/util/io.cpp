@@ -68,7 +68,7 @@ void log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name)
     spdlog::get(log_name)->trace("Mesh halfedge to face map: {}", formatted_vector(m.f));
 }
 
-void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename)
+void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, std::string separator)
 {
     if (matrix.cols() == 0) {
         return;
@@ -85,7 +85,7 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename)
         output_file << std::fixed << std::setprecision(17) << v;
         for (Eigen::Index j = 1; j < matrix.cols(); ++j) {
             Scalar v = matrix(i, j);
-            output_file << std::fixed << std::setprecision(17) << "," << v;
+            output_file << std::fixed << std::setprecision(17) << separator << v;
         }
 
         // Add newline to end of row
@@ -94,6 +94,30 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename)
 
     // Close file
     output_file.close();
+}
+
+ Eigen::MatrixXd read_matrix(const std::string& filename)
+{
+    Eigen::MatrixXd matrix;
+
+    // Open file
+    std::ifstream input_file(filename);
+    if (!input_file) return {};
+
+    // Read file
+    std::vector<std::array<Scalar, 3>> matrix_vec = {};
+    std::string line;
+    while (std::getline(input_file, line)) {
+        std::istringstream iss(line);
+        Scalar v1, v2, v3;
+        iss >> v1 >> v2 >> v3;
+        matrix_vec.push_back({v1, v2, v3});
+    }
+
+    // Close file
+    input_file.close();
+
+    return convert_std_to_eigen_matrix(matrix_vec);
 }
 
 void write_sparse_matrix(const MatrixX& matrix, const std::string& filename, std::string format)
