@@ -543,8 +543,13 @@ void IntrinsicNRosyField::set_fixed_directions(
     }
 
     // reset period jumps and system
-    initialize_double_period_jump(m);
-    initialize_double_mixed_integer_system(m);
+    if (m.type[0] == 0) {
+        initialize_period_jump(m);
+        initialize_mixed_integer_system(m);
+    } else {
+        initialize_double_period_jump(m);
+        initialize_double_mixed_integer_system(m);
+    }
 }
 
 
@@ -664,6 +669,45 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
             is_period_jump_fixed[h] = true;
         }
     }
+
+    // Mark edges in dual spanning tree and double as fixed
+    std::vector<int> fixed_faces;
+    convert_boolean_array_to_index_vector(is_face_fixed, fixed_faces); 
+    spdlog::info("{}/{} faces fixed", fixed_faces.size(), is_face_fixed.size());
+    std::vector<int> halfedges_from_face;
+    halfedges_from_face = build_double_dual_bfs_forest(m, fixed_faces);
+    is_period_jump_fixed = std::vector<bool>(num_halfedges, false);
+    for (int h : halfedges_from_face) {
+        if (h < 0) continue;
+        for (int h_rel : { h, m.opp[h] }) {
+            is_period_jump_fixed[h_rel] = true;
+        }
+    }
+
+    // initialize rounder 
+    period_jump.setZero(num_halfedges);
+    std::vector<int> base_cones = generate_kappa_cones(m);
+    if (min_cones.empty())
+    {
+        min_cones = generate_min_cones(m);
+    }
+    std::vector<int> var2he_temp, halfedge_var_id_temp;
+    arange(num_halfedges, var2he_temp);
+    arange(num_halfedges, halfedge_var_id_temp);
+    Rounder rounder(m, var2he_temp, halfedge_var_id_temp, base_cones, min_cones);
+
+    // set the period jump (necessary for jumps between fixed faces)
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        int hji = m.opp[hij];
+        if (hij < hji) continue; // only process each edge once
+        
+        int fi = m.f[hij];
+        int fj = m.f[hij];
+        //period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        period_jump[hij] = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
+        period_jump[hji] = -period_jump[hij];
+    }
+
 
     // TODO: Handle multiple fixed faces and boundary constraints
 }
