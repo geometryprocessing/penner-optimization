@@ -141,6 +141,11 @@ std::
         const std::vector<bool>& is_cut,
         bool use_uniform_bc=false);
 
+    double signed_area(
+        const Eigen::Vector2d& A,
+        const Eigen::Vector2d& B,
+        const Eigen::Vector2d& C);
+
 #ifdef PYBIND
 #endif
 

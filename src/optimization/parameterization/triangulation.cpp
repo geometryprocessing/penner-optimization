@@ -77,7 +77,7 @@ bool is_inverted_triangle(const std::array<Eigen::VectorXd, 3>& vertices)
 
     // Triangle is flipped iff the determinant is negative
     Scalar det = tri_homogenous_coords.determinant();
-    return (det < 0.0);
+    return (det <= 0.0);
 }
 
 

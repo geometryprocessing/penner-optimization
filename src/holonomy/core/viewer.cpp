@@ -269,6 +269,54 @@ void view_constraint_error(
 #endif
 }
 
+void view_parameterization_quality(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    std::string mesh_handle,
+    bool show)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "uv_quality";
+    }
+
+    VectorX uv_area;
+    igl::doublearea(uv, FT, uv_area);
+    int num_faces = F.rows();
+    std::vector<Eigen::Vector3d> degenerate_tris = {};
+    for (int f = 0; f < num_faces; ++f)
+    {
+        if (uv_area[f] < 1e-10)
+        {
+            for (int i : {0, 1, 2})
+            {
+                degenerate_tris.push_back(V.row(F(f, i)));
+            }
+        }
+    }
+    
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+
+    // Add cut mesh with
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "uv area",
+            convert_scalar_to_double_vector(uv_area));
+    polyscope::registerPointCloud(mesh_handle+"_points", degenerate_tris);
+
+    if (show) polyscope::show();
+#else
+    if (show) {
+        int num_vertices = V.rows();
+        int num_faces = F.rows();
+        spdlog::info("Viewer disabled for mesh (|V|={}, |F|={})", num_vertices, num_faces);
+    }
+#endif
+}
+
 void view_seamless_parameterization(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,

@@ -876,6 +876,8 @@ get_consistent_layout(
     }
     m_o.bc_eq_to_scaled(mc.n, mc.to, mc.l, u_eig);
 
+    /*
+    TODO: move to separate function and make optional
     // determine if coordinates are degenerate
     bool is_bc_degenerate;
     for (int i = 0; i < mc.n_halfedges(); i++)
@@ -893,13 +895,13 @@ get_consistent_layout(
         do {
             if (m_o.seg_bcs[h_prev][0] < 1e-12)
             {
-                spdlog::info("Degenerate barycentric coordinates found");
+                spdlog::trace("Degenerate barycentric coordinates found");
                 is_bc_degenerate = true;
                 break;
             }
             if (float_equal(m_o.seg_bcs[h_prev][0], m_o.seg_bcs[h][0]))
             {
-                spdlog::info("Degenerate barycentric coordinates found");
+                spdlog::trace("Degenerate barycentric coordinates found");
                 is_bc_degenerate = true;
                 break;
             }
@@ -943,6 +945,7 @@ get_consistent_layout(
             }
         }
     }
+    */
 
     // check alignment
     for (int hij = 0; hij < mc.n_halfedges(); ++hij)
