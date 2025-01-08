@@ -146,6 +146,13 @@ std::
         const Eigen::Vector2d& B,
         const Eigen::Vector2d& C);
 
+template <typename Scalar>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+compute_layout_VF(OverlayMesh<Scalar>& m_o);
+
 #ifdef PYBIND
 #endif
 

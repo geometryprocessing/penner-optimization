@@ -805,6 +805,49 @@ void check_angles(const Mesh<Scalar>& m)
     spdlog::info("Vertex angles: {}", vertex_angles.transpose());
 }
 
+template <typename Scalar>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+compute_layout_VF(OverlayMesh<Scalar>& m_o){
+    // Compute layout of the underlying flipped mesh
+    auto mc = m_o.cmesh();
+    m_o.garbage_collection();
+    auto mc_type = mc.type;
+    mc.type = std::vector<char>(mc.n_halfedges(), 0);
+    std::vector<bool> _is_cut_place_holder = {};
+    std::vector<Scalar> u_vec(mc.n_ind_vertices(), 0.0);
+    auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder);
+    auto _u_c = std::get<0>(layout_res);
+    auto _v_c = std::get<1>(layout_res);
+    mc.type = mc_type;
+
+    int num_vertices = mc.n_ind_vertices();
+    int num_halfedges = mc.n_halfedges();
+    int num_faces = mc.n_faces();
+    Eigen::MatrixXi F_c(num_faces, 3);
+    Eigen::MatrixXd uv_c(num_halfedges, 2);
+    Eigen::MatrixXi FT_c(num_faces, 3);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        int hij = mc.h[fijk];
+        for (int i = 0; i < 3; ++i)
+        {
+            F_c(fijk, i) = mc.v_rep[mc.to[hij]];
+            FT_c(fijk, i) = hij;
+            hij = mc.n[hij];
+        }
+    }
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        uv_c(hij, 0) = (double)(_u_c[hij]);
+        uv_c(hij, 1) = (double)(_v_c[hij]);
+    }
+
+    return std::make_tuple(F_c, uv_c, FT_c);
+}
+
 /**
  * @brief Given overlay mesh with associated flat metric compute the layout
  *
@@ -1348,6 +1391,13 @@ std::
         const std::vector<bool>& is_cut,
         bool use_uniform_bc);
 
+template 
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+compute_layout_VF(OverlayMesh<Scalar>& m_o);
+
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 
@@ -1378,6 +1428,12 @@ std::
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
         bool use_uniform_bc);
+template 
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+compute_layout_VF(OverlayMesh<mpfr::mpreal>& m_o);
 #endif
 #endif
 

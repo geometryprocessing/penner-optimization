@@ -653,22 +653,19 @@ void IntrinsicNRosyField::initialize_double_priority_kappa(const Mesh<Scalar>& m
 
 void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
 {
-    // Get edge maps
-    build_edge_maps(m, he2e, e2he);
-
-    // Build dual spanning tree
     int num_halfedges = m.n_halfedges();
-    DualTree dual_tree(m, std::vector<Scalar>(num_halfedges, 0.0));
 
     // Initialize period jumps of value pi/2 to 0 and mark dual tree edges as fixed
-    period_jump.setZero(num_halfedges);
-    period_value = VectorX::Constant(num_halfedges, M_PI / 2.);
-    is_period_jump_fixed = std::vector<bool>(num_halfedges, false);
-    for (int h = 0; h < num_halfedges; ++h) {
-        if (dual_tree.is_edge_in_tree(he2e[h])) {
-            is_period_jump_fixed[h] = true;
-        }
-    }
+    //build_edge_maps(m, he2e, e2he);
+    //DualTree dual_tree(m, std::vector<Scalar>(num_halfedges, 0.0));
+    //period_jump.setZero(num_halfedges);
+    //period_value = VectorX::Constant(num_halfedges, M_PI / 2.);
+    //is_period_jump_fixed = std::vector<bool>(num_halfedges, false);
+    //for (int h = 0; h < num_halfedges; ++h) {
+    //    if (dual_tree.is_edge_in_tree(he2e[h])) {
+    //        is_period_jump_fixed[h] = true;
+    //    }
+    //}
 
     // Mark edges in dual spanning tree and double as fixed
     std::vector<int> fixed_faces;
