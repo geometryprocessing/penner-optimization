@@ -1421,6 +1421,12 @@ std::tuple<
     Eigen::MatrixXi>
 compute_layout_VF(OverlayMesh<Scalar>& m_o);
 
+template 
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec);
+
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 
@@ -1458,6 +1464,12 @@ std::tuple<
     Eigen::MatrixXd,
     Eigen::MatrixXi>
 compute_layout_VF(OverlayMesh<mpfr::mpreal>& m_o);
+
+template
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+    const Mesh<mpfr::mpreal>& m,
+    const std::vector<mpfr::mpreal>& u_vec,
+    const std::vector<mpfr::mpreal>& v_vec);
 #endif
 #endif
 
