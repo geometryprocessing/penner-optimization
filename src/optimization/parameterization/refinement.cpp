@@ -78,6 +78,11 @@ RefinementMesh::RefinementMesh(
     }
 #endif
 
+    // set area threshold using uv
+    Eigen::VectorXd doublearea;
+    igl::doublearea(V, F, doublearea);
+    area_threshold = doublearea.minCoeff() / 4.;
+
     // Build initial topology with refinement data
     build_vertex_points(V, uv);
     build_connectivity(F, F_uv, Fn_to_F, endpoints);
@@ -205,19 +210,19 @@ RefinementMesh::FaceIterator RefinementMesh::get_face_iterator(Index face_index)
     return FaceIterator(*this, face_index);
 }
 
-Eigen::VectorXd RefinementMesh::get_vertex(RefinementMesh::Index vertex_index) const
+Eigen::Vector3d RefinementMesh::get_vertex(RefinementMesh::Index vertex_index) const
 {
     return m_V.row(vertex_index).transpose();
 }
 
-Eigen::VectorXd RefinementMesh::get_uv_vertex(RefinementMesh::Index vertex_index) const
+Eigen::Vector2d RefinementMesh::get_uv_vertex(RefinementMesh::Index vertex_index) const
 {
     return m_uv.row(vertex_index).transpose();
 }
 
 void RefinementMesh::get_face_vertices(
     RefinementMesh::Index face_index,
-    std::vector<Eigen::VectorXd>& vertices) const
+    std::vector<Eigen::Vector3d>& vertices) const
 {
     vertices.clear();
     for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter) {
@@ -229,7 +234,7 @@ void RefinementMesh::get_face_vertices(
 
 void RefinementMesh::get_face_uv_vertices(
     RefinementMesh::Index face_index,
-    std::vector<Eigen::VectorXd>& uv_vertices) const
+    std::vector<Eigen::Vector2d>& uv_vertices) const
 {
     uv_vertices.clear();
     for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter) {
@@ -721,7 +726,7 @@ void RefinementMesh::refine_mesh()
         // Skip boundary loops
         if (is_bnd_loop[fijk]) continue;
 
-        std::array<Eigen::VectorXd, 3> triangle;
+        std::array<Eigen::Vector2d, 3> triangle;
         Index hij = h[fijk];
         for (int l = 0; l < 3; ++l) {
             // Get vertex at tip of halfedge
@@ -739,7 +744,7 @@ void RefinementMesh::refine_mesh()
         }
 
         // Check if the face is inverted
-        if (is_inverted_triangle(triangle)) {
+        if (is_inverted_triangle(triangle, area_threshold)) {
             spdlog::trace(
                 "Inverted face {}, {}, {}",
                 triangle[0],
@@ -1053,7 +1058,8 @@ bool RefinementMesh::is_self_overlapping_face(RefinementMesh::Index face_index) 
     if (is_bnd_loop[face_index]) return true;
 
     // Get vertices of the face
-    std::vector<Eigen::VectorXd> uv_vertices, vertices;
+    std::vector<Eigen::Vector2d> uv_vertices;
+    std::vector<Eigen::Vector3d> vertices;
     get_face_uv_vertices(face_index, uv_vertices);
     get_face_vertices(face_index, vertices);
 
@@ -1071,7 +1077,8 @@ bool RefinementMesh::is_self_overlapping_face(RefinementMesh::Index face_index) 
         vertices,
         is_self_overlapping_subpolygon,
         splitting_vertices,
-        min_face_areas);
+        min_face_areas,
+        area_threshold);
 }
 
 bool RefinementMesh::triangulate_face(
@@ -1086,8 +1093,8 @@ bool RefinementMesh::triangulate_face(
     // Get uv vertices of the face
     std::vector<int> vertex_indices;
     std::vector<int> uv_vertex_indices;
-    std::vector<Eigen::VectorXd> vertices;
-    std::vector<Eigen::VectorXd> uv_vertices;
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector2d> uv_vertices;
     for (auto iter = get_face_iterator(face_index); !iter.done(); ++iter) {
         Index hij = *iter;
         Index vj = to[hij];
@@ -1120,7 +1127,8 @@ bool RefinementMesh::triangulate_face(
         vertices,
         is_self_overlapping_subpolygon,
         splitting_vertices,
-        min_face_areas);
+        min_face_areas,
+        area_threshold);
 
     // Return false if the face is not self overlapping
     if (!is_self_overlapping) {

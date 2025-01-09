@@ -181,25 +181,25 @@ public:
     ///
     /// @param[in] vertex_index: index of the vertex in the mesh
     /// @return vertex position
-    Eigen::VectorXd get_vertex(Index vertex_index) const;
+    Eigen::Vector3d get_vertex(Index vertex_index) const;
 
     /// Get the parametric domain coordinates of a vertex
     ///
     /// @param[in] vertex_index: index of the vertex in the mesh
     /// @return parametric domain coordinates of the vertex
-    Eigen::VectorXd get_uv_vertex(Index vertex_index) const;
+    Eigen::Vector2d get_uv_vertex(Index vertex_index) const;
 
     /// Get the positions in space of the vertices of a face
     ///
     /// @param[in] face_index: index of the face in the mesh
     /// @return list of face vertex positions
-    void get_face_vertices(Index face_index, std::vector<Eigen::VectorXd>& vertices) const;
+    void get_face_vertices(Index face_index, std::vector<Eigen::Vector3d>& vertices) const;
 
     /// Get the parametric domain coordinates of the vertices of a face
     ///
     /// @param[in] face_index: index of the face in the mesh
     /// @return list of face vertex parametric coordinates
-    void get_face_uv_vertices(Index face_index, std::vector<Eigen::VectorXd>& uv_vertices) const;
+    void get_face_uv_vertices(Index face_index, std::vector<Eigen::Vector2d>& uv_vertices) const;
 
     /// Clear the data of the mesh
     void clear();
@@ -250,6 +250,9 @@ private:
     // Original connectivity
     std::vector<std::vector<std::array<int, 3>>> m_overlay_face_triangles;
     std::vector<std::vector<std::array<int, 3>>> m_overlay_uv_face_triangles;
+
+    // parameters    
+    double area_threshold;
 
     // Constructor helper functions
 

@@ -38,6 +38,7 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+#include <igl/predicates/predicates.h>
 #include <set>
 #include <stack>
 #include "optimization/core/area.h"
@@ -56,7 +57,8 @@
 namespace Penner {
 namespace Optimization {
 
-Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
+template <typename Vector>
+Scalar compute_face_area(const std::array<Vector, 3>& vertices)
 {
     // Get edge lengths for triangle
     Scalar li = (vertices[1] - vertices[0]).norm();
@@ -67,8 +69,16 @@ Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
     return sqrt(max(squared_area(li, lj, lk), Scalar(0.)));
 }
 
-bool is_inverted_triangle(const std::array<Eigen::VectorXd, 3>& vertices)
+Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
 {
+    return compute_face_area<Eigen::VectorXd>(vertices);
+}
+
+bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold)
+{
+    // check robust predicate
+    if (igl::predicates::orient2d(vertices[0], vertices[1], vertices[2]) != igl::predicates::Orientation::POSITIVE) return true;
+
     // Build matrix of triangle homogenous coordinates
     Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
     tri_homogenous_coords.col(0) << vertices[0][0], vertices[0][1], 1.0;
@@ -77,16 +87,17 @@ bool is_inverted_triangle(const std::array<Eigen::VectorXd, 3>& vertices)
 
     // Triangle is flipped iff the determinant is negative
     Scalar det = tri_homogenous_coords.determinant();
-    return (det <= 0.0);
+    return (det <= threshold);
 }
 
 
 bool is_self_overlapping_polygon(
-    const std::vector<Eigen::VectorXd>& uv_vertices,
-    const std::vector<Eigen::VectorXd>& vertices,
+    const std::vector<Eigen::Vector2d>& uv_vertices,
+    const std::vector<Eigen::Vector3d>& vertices,
     std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
     std::vector<std::vector<int>>& splitting_vertices,
-    std::vector<std::vector<Scalar>>& min_face_areas)
+    std::vector<std::vector<Scalar>>& min_face_areas,
+    double threshold)
 {
     is_self_overlapping_subpolygon.clear();
     splitting_vertices.clear();
@@ -131,12 +142,12 @@ bool is_self_overlapping_polygon(
             // Look for a splitting vertex k between i and j
             for (int k = (i + 1) % face_size; k != j; k = (k + 1) % face_size) {
                 // Check if triangle T_ikj is positively oriented
-                std::array<Eigen::VectorXd, 3> uv_triangle = {
+                std::array<Eigen::Vector2d, 3> uv_triangle = {
                     uv_vertices[i],
                     uv_vertices[k],
                     uv_vertices[j]};
-                std::array<Eigen::VectorXd, 3> triangle = {vertices[i], vertices[k], vertices[j]};
-                if (is_inverted_triangle(uv_triangle)) continue;
+                std::array<Eigen::Vector3d, 3> triangle = {vertices[i], vertices[k], vertices[j]};
+                if (is_inverted_triangle(uv_triangle, threshold)) continue;
 
                 // Check if the two subpolygons (i, k) and (k, j) are self overlapping
                 if (!is_self_overlapping_subpolygon[i][k]) continue;
@@ -274,8 +285,8 @@ void triangulate_self_overlapping_polygon(
 
 // Helper function to view the triangulated face
 void view_triangulation(
-    const std::vector<Eigen::VectorXd>& uv_vertices,
-    const std::vector<Eigen::VectorXd>& vertices,
+    const std::vector<Eigen::Vector2d>& uv_vertices,
+    const std::vector<Eigen::Vector3d>& vertices,
     const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
     const std::vector<std::vector<int>>& splitting_vertices,
     const std::vector<std::vector<Scalar>>& min_face_areas,
