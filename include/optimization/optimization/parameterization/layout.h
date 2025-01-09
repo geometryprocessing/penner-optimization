@@ -139,7 +139,8 @@ std::
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
-        bool use_uniform_bc=false);
+        bool use_uniform_bc=false,
+        std::string layout_output_path="");
 
     double signed_area(
         const Eigen::Vector2d& A,
@@ -152,6 +153,11 @@ std::tuple<
     Eigen::MatrixXd,
     Eigen::MatrixXi>
 compute_layout_VF(OverlayMesh<Scalar>& m_o);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec);
 
 #ifdef PYBIND
 #endif

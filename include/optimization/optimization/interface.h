@@ -148,7 +148,8 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc=false);
+        bool use_uniform_bc=false,
+        std::string layout_output_path="");
 
 std::
     tuple<

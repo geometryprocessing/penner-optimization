@@ -360,7 +360,9 @@ void view_seamless_parameterization(
     polyscope::init();
 
     // Add cut mesh with
-    polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT);
+    polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT)
+        ->setEnabled(false);
+    //polyscope::registerSurfaceMesh2D(mesh_handle +"_layout", uv, FT);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexParameterizationQuantity("uv", uv)
         ->setStyle(polyscope::ParamVizStyle::GRID)
@@ -453,18 +455,16 @@ void view_homology_basis(
         polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     }
     int num_faces = marked_metric.n_faces();
-    Eigen::VectorXd is_any_dual_loop_face;
-    is_any_dual_loop_face.setZero(num_faces);
+    Eigen::VectorXd is_any_dual_loop_face = Eigen::VectorXd::Constant(num_faces, -1);
     for (int i = 0; i < marked_metric.n_homology_basis_loops(); ++i) {
         const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
         std::vector<int> dual_loop_faces =
             homology_basis_loops[i]->generate_face_sequence(marked_metric);
 
-        Eigen::VectorXd is_dual_loop_face;
-        is_dual_loop_face.setZero(num_faces);
+        Eigen::VectorXd is_dual_loop_face = Eigen::VectorXd::Constant(num_faces, 0.5);
         for (const auto& dual_loop_face : dual_loop_faces) {
-            is_dual_loop_face(dual_loop_face) = 1.0;
-            is_any_dual_loop_face(dual_loop_face) = 1.0;
+            is_dual_loop_face(dual_loop_face) = marked_metric.kappa_hat[i];
+            is_any_dual_loop_face(dual_loop_face) = i;
         }
         if (i < num_homology_basis_loops)
         {

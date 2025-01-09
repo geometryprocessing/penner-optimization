@@ -762,19 +762,20 @@ void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::
     }
 }
 
-template <typename Scalar>
-void view_halfedge_mesh_type(
-    const Mesh<Scalar>& m,
-    const std::vector<Scalar>& u_vec,
-    const std::vector<Scalar>& v_vec,
-    const std::vector<char>& type)
+template<typename OverlayScalar>
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+    const Mesh<OverlayScalar>& m,
+    const std::vector<OverlayScalar>& u_vec,
+    const std::vector<OverlayScalar>& v_vec)
 {
-    Eigen::VectorXd u, v;
-    convert_std_to_eigen_vector(u_vec, u);
-    convert_std_to_eigen_vector(v_vec, v);
-    Eigen::MatrixXd uv(u.size(), 3);
-    uv.col(0) = u;
-    uv.col(1) = v;
+    int num_vertices = u_vec.size();
+    Eigen::MatrixXd uv = Eigen::MatrixXd::Zero(num_vertices, 3);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        uv(vi, 0) = (double)(u_vec[vi]);
+        uv(vi, 1) = (double)(v_vec[vi]);
+    }
+
     Eigen::MatrixXi F(m.n_faces(), 3);
     for (int f = 0; f < m.n_faces(); ++f) {
         int hij = m.h[f];
@@ -784,6 +785,18 @@ void view_halfedge_mesh_type(
         F(f, 1) = hjk;
         F(f, 2) = hki;
     }
+
+    return std::make_tuple(uv, F);
+}
+
+template <typename Scalar>
+void view_halfedge_mesh_type(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec,
+    const std::vector<char>& type)
+{
+    auto [uv, F] = build_layout_VF(m, u_vec, v_vec);
 #if ENABLE_VISUALIZATION
     spdlog::info("Viewing layout");
     polyscope::init();
@@ -867,7 +880,8 @@ get_consistent_layout(
     std::vector<int> singularities,
     const std::vector<bool>& is_cut_orig,
     const std::vector<bool>& is_cut,
-    bool use_uniform_bc)
+    bool use_uniform_bc,
+    std::string layout_output_path)
 {
     // Get original overlay face labels
     auto f_labels = get_overlay_face_labels(m_o);
@@ -902,6 +916,12 @@ get_consistent_layout(
     auto _v_c = std::get<1>(layout_res);
     auto is_cut_c = std::get<2>(layout_res);
     mc.type = mc_type;
+
+    if (layout_output_path != "")
+    {
+        auto [uv_c, F_c] = build_layout_VF(mc, _u_c, _v_c);
+        igl::writeOBJ(layout_output_path, uv_c, F_c);
+    }
 
 #ifdef CHECK_VALIDITY
     if (!check_uv(mc, _u_c, _v_c, is_cut_c)) {
@@ -1182,7 +1202,8 @@ std::
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
-        bool use_uniform_bc)
+        bool use_uniform_bc,
+        std::string layout_output_path)
 {
     const auto& m = mo.cmesh();
 
@@ -1215,7 +1236,8 @@ std::
         cones,
         is_cut_orig,
         is_cut,
-        use_uniform_bc);
+        use_uniform_bc,
+        layout_output_path);
     auto u_o = std::get<0>(layout_res);
     auto v_o = std::get<1>(layout_res);
     auto is_cut_h = std::get<2>(layout_res);
@@ -1389,7 +1411,8 @@ std::
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
-        bool use_uniform_bc);
+        bool use_uniform_bc,
+        std::string layout_output_path);
 
 template 
 std::tuple<
@@ -1427,7 +1450,8 @@ std::
         std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
-        bool use_uniform_bc);
+        bool use_uniform_bc,
+        std::string layout_output_path);
 template 
 std::tuple<
     Eigen::MatrixXi,

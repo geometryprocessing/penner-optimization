@@ -203,7 +203,8 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc)
+        bool use_uniform_bc,
+        std::string layout_output_path)
 {
     // Get metric target coordinates
     auto cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
@@ -289,7 +290,8 @@ std::
         endpoints,
         is_cut,
         {},
-        use_uniform_bc);
+        use_uniform_bc,
+        layout_output_path);
 }
 
 std::
@@ -410,7 +412,8 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc);
+        bool use_uniform_bc,
+        std::string layout_output_path);
 
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
@@ -436,7 +439,8 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc);
+        bool use_uniform_bc,
+        std::string layout_output_path);
 #endif
 #endif
   
