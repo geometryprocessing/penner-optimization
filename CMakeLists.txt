@@ -35,6 +35,9 @@ endif()
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+include(boost)
+include(eigen)
+
 # Optionally get multiprecision libraries
 if(USE_MULTIPRECISION)
   # Turning this on activates mpfr in the conformal code
