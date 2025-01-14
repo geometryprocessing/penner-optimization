@@ -80,15 +80,15 @@ RefinementMesh::RefinementMesh(
 
     // set area threshold using uv
     Eigen::VectorXd doublearea;
-    igl::doublearea(V, F, doublearea);
+    igl::doublearea(uv, F_uv, doublearea);
     area_threshold = doublearea.minCoeff() / 4.;
 
     // Build initial topology with refinement data
     build_vertex_points(V, uv);
     build_connectivity(F, F_uv, Fn_to_F, endpoints);
 
-    // Check for validity before refining and simplifying
 #if CHECK_VALIDITY
+    // Check for validity before refining and simplifying
     if (!is_valid_refinement_mesh()) {
         spdlog::error("Initial refinement mesh is invalid");
         clear();
@@ -1128,7 +1128,7 @@ bool RefinementMesh::triangulate_face(
         is_self_overlapping_subpolygon,
         splitting_vertices,
         min_face_areas,
-        area_threshold);
+        0.);
 
     // Return false if the face is not self overlapping
     if (!is_self_overlapping) {

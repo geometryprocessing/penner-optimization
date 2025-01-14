@@ -160,6 +160,13 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const std::vector<Scalar>& u_vec,
     const std::vector<Scalar>& v_vec);
 
+template <typename Scalar>
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(
+    Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    std::vector<bool>& is_cut_h,
+    int start_h = -1);
+
 #ifdef PYBIND
 #endif
 

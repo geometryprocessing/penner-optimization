@@ -480,9 +480,9 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     Mesh<Scalar>& m,
     const std::vector<Scalar>& u,
     std::vector<bool>& is_cut_h,
-    int start_h = -1)
+    int start_h)
 {
-    int num_halfedges = is_cut_h.size();
+    int num_halfedges = m.n_halfedges();
 
     auto _u = std::vector<Scalar>(m.n_halfedges(), 0.0);
     auto _v = std::vector<Scalar>(m.n_halfedges(), 0.0);
@@ -497,13 +497,13 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     }
 
     // set starting point - use a boundary edge
+    spdlog::debug("finding starting point");
     int h = 0;
     if (start_h == -1) {
         for (int i = 0; i < m.n_halfedges(); i++) {
             if (m.type[i] == 0) break;
             if (m.type[i] == 1 && m.type[m.opp[i]] == 2) {
                 h = m.n[m.n[i]];
-                spdlog::debug("Using edge {} as layout start", h);
                 break;
             }
         }
@@ -511,6 +511,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         assert(m.f[start_h] != -1);
         h = m.n[m.n[start_h]];
     }
+    spdlog::debug("Using edge {} as layout start", h);
 
     _u[h] = 0.0;
     _v[h] = 0.0;
@@ -557,6 +558,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
 
     auto square = [](Scalar x) { return x * x; };
 
+    spdlog::debug("beginning layout");
     while (!Q.empty()) {
         h = Q.front();
         Q.pop();
@@ -1427,6 +1429,13 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const std::vector<Scalar>& u_vec,
     const std::vector<Scalar>& v_vec);
 
+template
+std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(
+    Mesh<Scalar>& m,
+    const std::vector<Scalar>& u,
+    std::vector<bool>& is_cut_h,
+    int start_h = -1);
+
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 
@@ -1470,6 +1479,14 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const Mesh<mpfr::mpreal>& m,
     const std::vector<mpfr::mpreal>& u_vec,
     const std::vector<mpfr::mpreal>& v_vec);
+
+template
+std::tuple<std::vector<mpfr::mpreal>, std::vector<mpfr::mpreal>, std::vector<bool>> compute_layout_components(
+    Mesh<mpfr::mpreal>& m,
+    const std::vector<mpfr::mpreal>& u,
+    std::vector<bool>& is_cut_h,
+    int start_h = -1);
+
 #endif
 #endif
 
