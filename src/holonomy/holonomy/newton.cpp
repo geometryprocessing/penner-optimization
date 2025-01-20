@@ -59,7 +59,7 @@ void OptimizeHolonomyNewton::initialize_data_log()
     // Open main logging file
     data_log_path = join_path(alg_params.output_dir, "iteration_data_log.csv");
     spdlog::info("Writing data to {}", data_log_path);
-    log_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
+    log_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
     log_file << "num_iter,";
     log_file << "max_error,";
     log_file << "step_size,";
@@ -90,7 +90,7 @@ void OptimizeHolonomyNewton::initialize_timing_log()
     // Open timing logging file
     std::string data_log_path = join_path(alg_params.output_dir, "iteration_timing_log.csv");
     spdlog::info("Writing timing data to {}", data_log_path);
-    timing_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
+    timing_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
     timing_file << "time,";
     timing_file << "solve_time,";
     timing_file << "constraint_time,";
@@ -119,7 +119,7 @@ void OptimizeHolonomyNewton::initialize_energy_log()
 {
     std::string data_log_path = join_path(alg_params.output_dir, "iteration_energy_log.csv");
     spdlog::info("Writing energy data to {}", data_log_path);
-    energy_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
+    energy_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
     energy_file << "l2_energy,";
     energy_file << "rmsre,";
     energy_file << "rmse,";
@@ -144,7 +144,7 @@ void OptimizeHolonomyNewton::initialize_stability_log()
 {
     std::string data_log_path = join_path(alg_params.output_dir, "iteration_stability_log.csv");
     spdlog::info("Writing stability data to {}", data_log_path);
-    stability_file = std::ofstream(data_log_path, std::ios::out | std::ios::trunc);
+    stability_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
     stability_file << "max_error,";
     stability_file << "step_size,";
     stability_file << "num_flips,";
