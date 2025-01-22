@@ -7,6 +7,7 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 #include "holonomy/holonomy/rotation_form.h"
+#include "holonomy/core/intrinsic_field.h"
 #include "holonomy/similarity/conformal.h"
 #include "holonomy/similarity/energy.h"
 #include "holonomy/similarity/layout.h"
@@ -32,6 +33,13 @@ void init_holonomy_pybind(pybind11::module& m)
         .value("dual_min_primal_max", HomotopyBasisGenerator::Weighting::dual_min_primal_max)
         .value("primal_min_dual_max", HomotopyBasisGenerator::Weighting::primal_min_dual_max)
         .export_values();
+
+    pybind11::class_<IntrinsicNRosyField>(m, "IntrinsicNRosyField")
+        .def(pybind11::init<>())
+        .def("initialize", &IntrinsicNRosyField::initialize)
+        .def("set_field", &IntrinsicNRosyField::set_field)
+        .def("compute_principal_matchings", &IntrinsicNRosyField::compute_principal_matchings)
+        .def("compute_rotation_form", &IntrinsicNRosyField::compute_rotation_form);
 
     pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")
         .def(pybind11::init<>())
@@ -113,6 +121,13 @@ void init_holonomy_pybind(pybind11::module& m)
         default_call_guard);
 
     m.def("make_interior_free", &make_interior_free, default_call_guard);
+    m.def(
+        "generate_cones_from_rotation_form",
+        pybind11::overload_cast<
+            const Mesh<Scalar>&,
+            const std::vector<int>&,
+            const VectorX&,
+            bool>(&generate_cones_from_rotation_form), default_call_guard);
 
     m.def(
         "generate_VF_mesh_from_similarity_metric",
