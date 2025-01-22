@@ -371,6 +371,11 @@ void init_energies_pybind(pybind11::module& m)
         "Get the best fit conformal map for a metric map",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "root_mean_square_relative_error",
+        &root_mean_square_relative_error,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
 
 void init_opt_pybind(pybind11::module& m)
