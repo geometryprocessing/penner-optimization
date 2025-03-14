@@ -2,7 +2,7 @@
 
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
-#include "holonomy/core/intrinsic_field.h"
+#include "holonomy/field/intrinsic_field.h"
 #include "holonomy/core/quality.h"
 #include "holonomy/holonomy/cones.h"
 #include "holonomy/holonomy/holonomy.h"

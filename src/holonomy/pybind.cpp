@@ -6,8 +6,9 @@
 #include "holonomy/holonomy/cones.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
+#include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/rotation_form.h"
-#include "holonomy/core/intrinsic_field.h"
+#include "holonomy/field/intrinsic_field.h"
 #include "holonomy/similarity/conformal.h"
 #include "holonomy/similarity/energy.h"
 #include "holonomy/similarity/layout.h"
@@ -79,6 +80,10 @@ void init_holonomy_pybind(pybind11::module& m)
         .def("make_discrete_metric", &MarkedPennerConeMetric::make_discrete_metric)
         .def("get_flip_sequence", &MarkedPennerConeMetric::get_flip_sequence)
         .def("max_constraint_error", &MarkedPennerConeMetric::max_constraint_error)
+        .def("constraint", 
+                static_cast<VectorX (MarkedPennerConeMetric::*)(const VectorX&)>(&MarkedPennerConeMetric::constraint))
+        .def("constraint_jacobian", 
+                static_cast<MatrixX (MarkedPennerConeMetric::*)(const VectorX&)>(&MarkedPennerConeMetric::constraint_jacobian))
         .def("n_vertices", &MarkedPennerConeMetric::n_vertices)
         .def("n_edges", &MarkedPennerConeMetric::n_edges)
         .def("n_faces", &MarkedPennerConeMetric::n_faces)
@@ -103,8 +108,18 @@ void init_holonomy_pybind(pybind11::module& m)
         default_call_guard);
 
     m.def("generate_mesh", &generate_mesh, default_call_guard);
+    m.def("compute_metric_holonomy_matrix", &compute_metric_holonomy_matrix, default_call_guard);
+    m.def("build_reduced_matrix_system", &build_reduced_matrix_system, default_call_guard);
+    m.def("build_reduced_matrix_rhs", &build_reduced_matrix_rhs, default_call_guard);
+    m.def("compute_triangle_corner_angle_jacobian", &compute_triangle_corner_angle_jacobian, default_call_guard);
+    m.def("FE_to_double", &FE_to_double<Scalar>, default_call_guard);
     m.def("generate_marked_metric", &generate_marked_metric, default_call_guard);
+    m.def("generate_marked_metric_from_mesh", &generate_marked_metric_from_mesh, default_call_guard);
     m.def("generate_refined_marked_metric", &generate_refined_marked_metric, default_call_guard);
+    m.def("build_symmetric_matrix_system", &build_symmetric_matrix_system, default_call_guard);
+    m.def("build_metric_matrix", &build_metric_matrix, default_call_guard);
+    m.def("compute_metric_corner_angle_jacobian", &compute_metric_corner_angle_jacobian, default_call_guard);
+    m.def("compute_metric_constraint_with_jacobian", &compute_metric_constraint_with_jacobian_pybind, default_call_guard);
     m.def("generate_similarity_metric", &generate_similarity_metric, default_call_guard);
     m.def(
         "compute_conformal_similarity_metric",

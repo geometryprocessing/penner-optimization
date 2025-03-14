@@ -168,7 +168,7 @@ VectorX compute_metric_constraint(
 }
 
 // Compute the derivatives of metric corner angles with respect to halfedge lengths
-MatrixX compute_metric_corner_angle_jacobian(
+MatrixX compute_triangle_corner_angle_jacobian(
     const MarkedPennerConeMetric& marked_metric,
     const VectorX& cotangents)
 {
@@ -191,8 +191,172 @@ MatrixX compute_metric_corner_angle_jacobian(
         tripletList.push_back(T(hjk, hki, 0.5 * ck));
     }
 
-    // Build reduced coordinate Jacobian from triplet list
-    return marked_metric.change_metric_to_reduced_coordinates(tripletList, num_halfedges);
+    // Build Jacobian from triplets
+    int num_entries = tripletList.size();
+    MatrixX halfedge_jacobian(num_halfedges, num_halfedges);
+    halfedge_jacobian.reserve(num_entries);
+    halfedge_jacobian.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return halfedge_jacobian;
+}
+
+MatrixX build_symmetric_matrix_system(const MatrixX& A, int offset, int size)
+{
+    // Add hessian as upper block
+    int n = A.rows();
+    int m = A.cols();
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    for (int k = 0; k < A.outerSize(); ++k) {
+        for (MatrixX::InnerIterator it(A, k); it; ++it) {
+            int row = it.row();
+            int col = it.col();
+            for (int i = 0; i < n; ++i)
+            {
+                int var_id = (m * i) + col;
+                int eq_id = (n * i) + row;
+                Scalar value = it.value();
+                tripletList.push_back(T(eq_id, var_id, value));
+            }
+        }
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        for (int j = 0; j < n; ++j)
+        {
+            int eq_id = (n * i) + j;
+            int sym_var_id = offset + (n * i) + j; 
+            tripletList.push_back(T(eq_id, sym_var_id, -1.));
+        }
+    }
+
+    int count = n * n;
+    for (int i = 0; i < n; ++i)
+    {
+        for (int j = i; j < n; ++j)
+        {
+            int upper_var = offset + (n * i) + j; 
+            int lower_var = offset + (n * j) + i; 
+            tripletList.push_back(T(count, upper_var, 1.));
+            tripletList.push_back(T(count, lower_var, -1.));
+            ++count;
+        }
+    }
+
+    // Build Jacobian from triplets
+    int num_entries = tripletList.size();
+    MatrixX symmetric_matrix_system(count, size);
+    symmetric_matrix_system.reserve(num_entries);
+    symmetric_matrix_system.setFromTriplets(tripletList.begin(), tripletList.end());
+    return symmetric_matrix_system;
+}
+
+/*
+MatrixX build_shear_constraints(const Mesh<Scalar>& m)
+{
+    int num_halfedges = m.n_halfedges();
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        
+    }
+}
+*/
+
+std::tuple<MatrixX, VectorX> build_reduced_matrix_system(const MatrixX& A, int cols)
+{
+    // Add hessian as upper block
+    int n = A.rows();
+    int m = A.cols();
+    int num_var = cols * m;
+    int num_eq = cols * n;
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    VectorX rhs = VectorX::Zero(num_eq);
+    for (int k = 0; k < A.outerSize(); ++k) {
+        for (MatrixX::InnerIterator it(A, k); it; ++it) {
+            int row = it.row();
+            int col = it.col();
+            for (int i = 0; i < cols; ++i)
+            {
+                int var_id = (m * i) + col;
+                int eq_id = (n * i) + row;
+                Scalar value = it.value();
+                tripletList.push_back(T(eq_id, var_id, value));
+            }
+        }
+    }
+
+
+    // build Jacobian from triplets
+    int num_entries = tripletList.size();
+    MatrixX symmetric_matrix_system(num_eq, num_var);
+    symmetric_matrix_system.reserve(num_entries);
+    symmetric_matrix_system.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    // build rhs as flattened identity
+    for (int i = 0; i < cols; ++i)
+    {
+        rhs((cols * i) + i) = 1.;
+    }
+
+    return std::make_tuple(symmetric_matrix_system, rhs);
+}
+
+MatrixX build_metric_matrix(const Mesh<Scalar>& m)
+{
+    // build matrix with halfedge equality constraints
+    int num_halfedges = m.n_halfedges();
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    int count = 0;
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        int hji = m.opp[hij];
+        if (hji < hij) continue;
+        tripletList.push_back(T(count, hij, 1.));
+        tripletList.push_back(T(count, hji, -1.));
+        ++count;
+    }
+
+    // build Jacobian from triplets
+    int num_entries = tripletList.size();
+    MatrixX metric_matrix(count, num_halfedges);
+    metric_matrix.reserve(num_entries);
+    metric_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return metric_matrix;
+}
+
+VectorX build_reduced_matrix_rhs(const Eigen::MatrixXd& A)
+{
+    // build rhs as flattened matrix
+    int n = A.rows();
+    int m = A.cols();
+    spdlog::debug("flattening {} by {} matrix", n, m);
+    int num_eq = n * m;
+    VectorX rhs = VectorX::Zero(num_eq);
+    for (int i = 0; i < n; ++i)
+    {
+        for (int j = 0; j < m; ++j)
+        {
+            //int eq_id = (m * i) + j;
+            int eq_id = (n * j) + i;
+            rhs(eq_id) = A(i, j);
+            SPDLOG_TRACE("setting {} to A({}, {})={}", eq_id, i, j, rhs(eq_id));
+        }
+    }
+
+    return rhs;
+}
+
+// Compute the derivatives of metric corner angles with respect to metric lengths
+MatrixX compute_metric_corner_angle_jacobian(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& cotangents)
+{
+    MatrixX halfedge_jacobian = compute_triangle_corner_angle_jacobian(marked_metric, cotangents);
+    return marked_metric.change_metric_to_reduced_coordinates(halfedge_jacobian);
 }
 
 MatrixX compute_loop_holonomy_matrix(
@@ -276,9 +440,8 @@ MatrixX compute_holonomy_matrix(
     return J_transpose.transpose();
 }
 
-MatrixX compute_metric_constraint_jacobian(
+MatrixX compute_metric_holonomy_matrix(
     const MarkedPennerConeMetric& marked_metric,
-    const VectorX& cotangents,
     bool only_free_vertices)
 {
     // Get vertex representation
@@ -289,13 +452,22 @@ MatrixX compute_metric_constraint_jacobian(
         angle_constraint_system = id_matrix(marked_metric.n_ind_vertices());
     }
 
+    // Get matrix summing up corner angles to form holonomy matrix
+    const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
+    return compute_holonomy_matrix(marked_metric, angle_constraint_system, homology_basis_loops);
+}
+
+MatrixX compute_metric_constraint_jacobian(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& cotangents,
+    bool only_free_vertices)
+{
     // Get corner angle derivatives with respect to metric coordinates
     MatrixX J_corner_angle_metric = compute_metric_corner_angle_jacobian(marked_metric, cotangents);
 
     // Get matrix summing up corner angles to form holonomy matrix
-    const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
     MatrixX holonomy_matrix =
-        compute_holonomy_matrix(marked_metric, angle_constraint_system, homology_basis_loops);
+        compute_metric_holonomy_matrix(marked_metric, only_free_vertices);
 
     // Build holonomy constraint jacobian
     return holonomy_matrix * J_corner_angle_metric;
@@ -374,6 +546,21 @@ void compute_metric_constraint_with_jacobian(
             need_jacobian,
             only_free_vertices);
     }
+}
+
+std::tuple<VectorX, MatrixX> compute_metric_constraint_with_jacobian_pybind(
+    const MarkedPennerConeMetric& marked_metric)
+{
+    VectorX constraint;
+    MatrixX J_constraint;
+    compute_metric_constraint_with_jacobian(
+        marked_metric,
+        constraint,
+        J_constraint,
+        true,
+        true);
+
+    return std::make_tuple(constraint, J_constraint);
 }
 
 } // namespace Holonomy

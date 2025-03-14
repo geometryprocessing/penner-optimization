@@ -1,4 +1,4 @@
-#include "holonomy/core/intrinsic_field.h"
+#include "holonomy/field/intrinsic_field.h"
 
 #include <gmm/gmm.h>
 #include <CoMISo/Solver/ConstrainedSolver.hh>
@@ -10,10 +10,10 @@
 #include <igl/principal_curvature.h>
 #include <igl/average_onto_faces.h>
 
-#include "holonomy/core/field.h"
+#include "holonomy/field/field.h"
 #include "util/spanning_tree.h"
 #include "holonomy/core/viewer.h"
-#include "holonomy/core/forms.h"
+#include "holonomy/field/forms.h"
 
 #include "optimization/core/constraint.h"
 #include "util/vector.h"

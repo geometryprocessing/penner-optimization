@@ -251,8 +251,16 @@ void init_classes_pybind(pybind11::module& m)
             "DifferentiableConeMetric")
             .def("get_metric_coordinates", &DifferentiableConeMetric::get_metric_coordinates)
             .def(
+                "get_corner_angles",
+                static_cast<
+                std::tuple<
+                    VectorX,
+                    VectorX
+                > (DifferentiableConeMetric::*)() const>(&DifferentiableConeMetric::get_corner_angles))
+            .def(
                 "get_reduced_metric_coordinates",
                 &DifferentiableConeMetric::get_reduced_metric_coordinates)
+            .def("get_expansion_matrix", &DifferentiableConeMetric::get_expansion_matrix)
             .def("set_metric_coordinates", &DifferentiableConeMetric::set_metric_coordinates);
 
     pybind11::class_<DiscreteMetric, DifferentiableConeMetric>(m, "DiscreteMetric")

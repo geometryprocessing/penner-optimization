@@ -60,7 +60,21 @@ MatrixX compute_holonomy_matrix(
     const Mesh<Scalar>& m,
     const MatrixX& angle_constraint_system,
     const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
+
+MatrixX compute_triangle_corner_angle_jacobian(
+    const MarkedPennerConeMetric& marked_metric,
+    const VectorX& cotangents);
+
+MatrixX compute_metric_holonomy_matrix(
+    const MarkedPennerConeMetric& marked_metric,
+    bool only_free_vertices=true);
     
+MatrixX build_symmetric_matrix_system(const MatrixX& A, int offset, int size);
+std::tuple<MatrixX, VectorX> build_reduced_matrix_system(const MatrixX& A, int cols);
+//VectorX build_reduced_matrix_rhs(const MatrixX& A);
+VectorX build_reduced_matrix_rhs(const Eigen::MatrixXd& A);
+MatrixX build_metric_matrix(const Mesh<Scalar>& m);
+
 /**
  * @brief Compute the holonomy constraints and the jacobian with respect to metric coordinates.
  * 
@@ -96,6 +110,9 @@ void add_basis_loop_constraints(
 MatrixX compute_metric_corner_angle_jacobian(
     const MarkedPennerConeMetric& marked_metric,
     const VectorX& cotangents);
+
+std::tuple<VectorX, MatrixX> compute_metric_constraint_with_jacobian_pybind(
+    const MarkedPennerConeMetric& marked_metric);
     
 } // namespace Holonomy
 } // namespace Penner

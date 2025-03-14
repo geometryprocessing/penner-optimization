@@ -4,12 +4,18 @@ set(HolonomyCoreSrc
   core/dual_lengths.cpp
   core/dual_loop.cpp
   core/dual_segment.cpp
-  core/field.cpp
-  core/forms.cpp
   core/homology_basis.cpp
-  core/intrinsic_field.cpp
   core/quality.cpp
   core/viewer.cpp
+)
+
+set(FieldSrc
+  field/field.cpp
+  field/frame_field.cpp
+  field/cross_field.cpp
+  field/facet_field.cpp
+  field/forms.cpp
+  field/intrinsic_field.cpp
 )
 
 set(HolonomySrc
@@ -33,6 +39,7 @@ add_library(PennerHolonomyLib
   interface.cpp
   pybind.cpp
   ${HolonomyCoreSrc}
+  ${FieldSrc}
   ${HolonomySrc}
   ${SimilaritySrc}
   ${DirichletSrc}
@@ -46,6 +53,7 @@ target_link_libraries(PennerHolonomyLib PUBLIC
 target_link_libraries(PennerHolonomyLib PRIVATE
   geometry-central
   nlohmann_json::nlohmann_json
+  DirectionalLib
   ${COMISO_LIBS}
 )
 target_compile_definitions(PennerHolonomyLib PUBLIC

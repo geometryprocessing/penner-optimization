@@ -66,6 +66,12 @@ void DifferentiableConeMetric::get_corner_angles(VectorX& he2angle, VectorX& he2
         corner_angles(*this, he2angle, he2cot);
     }
 }
+std::tuple<VectorX, VectorX> DifferentiableConeMetric::get_corner_angles() const
+{
+    VectorX he2angle, he2cot;
+    get_corner_angles(he2angle, he2cot);
+    return std::make_tuple(he2angle, he2cot);
+}
 
 std::unique_ptr<DifferentiableConeMetric> DifferentiableConeMetric::project_to_constraint(
     std::shared_ptr<ProjectionParameters> proj_params) const

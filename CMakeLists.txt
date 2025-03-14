@@ -102,6 +102,12 @@ include(cli11)
 include(json)
 include(geometry-central)
 
+include(directional)
+add_library(DirectionalLib INTERFACE)
+target_include_directories(DirectionalLib SYSTEM INTERFACE 
+  ${directional_SOURCE_DIR}/include
+)
+
 # Optionally create rendering library
 if(RENDER_TEXTURE)
   # Build core rendering library

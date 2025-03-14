@@ -1,7 +1,7 @@
 #include "holonomy/holonomy/cones.h"
 
 #include "util/boundary.h"
-#include "holonomy/core/forms.h"
+#include "holonomy/field/forms.h"
 #include "holonomy/holonomy/holonomy.h"
 
 #include "optimization/core/constraint.h"

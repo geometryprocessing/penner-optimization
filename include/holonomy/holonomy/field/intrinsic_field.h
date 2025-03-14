@@ -2,6 +2,11 @@
 
 #include "holonomy/core/common.h"
 
+// TODO: This needs a lot of cleanup. To make it clean:
+//   - The rounder should be moved to another file, and the CoMISo changes made in a fork
+//   - The facet principal curvature should be in another file
+//   - The double code should be much cleaner, e.g., by making a derived class
+
 namespace Penner {
 namespace Holonomy {
 
