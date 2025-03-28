@@ -25,7 +25,7 @@ namespace Penner {
 namespace Holonomy {
 
 // Initialize logging level
-void OptimizeHolonomyNewton::initialize_logging() {
+void OptimizeNewton::initialize_logging() {
     switch (alg_params.log_level) {
         case 6: spdlog::set_level(spdlog::level::trace); break;
         case 5: spdlog::set_level(spdlog::level::debug); break;
@@ -37,7 +37,7 @@ void OptimizeHolonomyNewton::initialize_logging() {
     }
 }
 
-void OptimizeHolonomyNewton::initialize_metric_status_log(MarkedPennerConeMetric& marked_metric)
+void OptimizeNewton::initialize_metric_status_log(MarkedPennerConeMetric& marked_metric)
 {
     // Open main logging file
     std::string data_log_path = join_path(alg_params.output_dir, "metric_status_log.csv");
@@ -47,7 +47,7 @@ void OptimizeHolonomyNewton::initialize_metric_status_log(MarkedPennerConeMetric
 }
 
 // Open a per iteration data log and write a header
-void OptimizeHolonomyNewton::initialize_data_log()
+void OptimizeNewton::initialize_data_log()
 {
     // Do nothing if error logging disabled
     if (!alg_params.error_log) return;
@@ -70,7 +70,7 @@ void OptimizeHolonomyNewton::initialize_data_log()
 }
 
 // Write newton log iteration data to file
-void OptimizeHolonomyNewton::write_data_log_entry()
+void OptimizeNewton::write_data_log_entry()
 {
     // Do nothing if error logging disabled
     if (!alg_params.error_log) return;
@@ -85,7 +85,7 @@ void OptimizeHolonomyNewton::write_data_log_entry()
     log_file << std::endl;
 }
 
-void OptimizeHolonomyNewton::initialize_timing_log()
+void OptimizeNewton::initialize_timing_log()
 {
     // Open timing logging file
     std::string data_log_path = join_path(alg_params.output_dir, "iteration_timing_log.csv");
@@ -100,7 +100,7 @@ void OptimizeHolonomyNewton::initialize_timing_log()
 }
 
 // Write newton log iteration data to file
-void OptimizeHolonomyNewton::write_timing_log_entry()
+void OptimizeNewton::write_timing_log_entry()
 {
     // Do nothing if error logging disabled
     if (!alg_params.error_log) return;
@@ -114,98 +114,31 @@ void OptimizeHolonomyNewton::write_timing_log_entry()
     timing_file << std::endl;
 }
 
-
-void OptimizeHolonomyNewton::initialize_energy_log()
-{
-    std::string data_log_path = join_path(alg_params.output_dir, "iteration_energy_log.csv");
-    spdlog::info("Writing energy data to {}", data_log_path);
-    energy_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
-    energy_file << "l2_energy,";
-    energy_file << "rmsre,";
-    energy_file << "rmse,";
-    energy_file << "rrmse,";
-    energy_file << std::endl;
-}
-
-// Write newton log iteration data to file
-void OptimizeHolonomyNewton::write_energy_log_entry()
-{
-    // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
-
-    energy_file << std::fixed << std::setprecision(8) << log.l2_energy << ",";
-    energy_file << std::fixed << std::setprecision(8) << log.rmsre << ",";
-    energy_file << std::fixed << std::setprecision(8) << log.rmse << ",";
-    energy_file << std::fixed << std::setprecision(8) << log.rrmse << ",";
-    energy_file << std::endl;
-}
-
-void OptimizeHolonomyNewton::initialize_stability_log()
-{
-    std::string data_log_path = join_path(alg_params.output_dir, "iteration_stability_log.csv");
-    spdlog::info("Writing stability data to {}", data_log_path);
-    stability_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
-    stability_file << "max_error,";
-    stability_file << "step_size,";
-    stability_file << "num_flips,";
-    stability_file << "min_corner_angle,";
-    stability_file << "max_corner_angle,";
-    stability_file << "direction_angle_change,";
-    stability_file << "direction_norm,";
-    stability_file << "direction_residual,";
-    stability_file << std::endl;
-
-}
-
-// Write newton log iteration data to file
-void OptimizeHolonomyNewton::write_stability_log_entry()
-{
-    // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
-
-    // Write iteration row
-    stability_file << std::scientific << std::setprecision(8) << log.max_error << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.step_size << ",";
-    stability_file << log.num_flips << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.min_corner_angle << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.max_corner_angle << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.direction_angle_change << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.direction_norm << ",";
-    stability_file << std::scientific << std::setprecision(8) << log.direction_residual << ",";
-    stability_file << std::endl;
-}
-
 // Open all logs
-void OptimizeHolonomyNewton::initialize_logs()
+void OptimizeNewton::initialize_logs()
 {
     initialize_data_log();
     initialize_timing_log();
-    initialize_energy_log();
-    initialize_stability_log();
 }
 
-void OptimizeHolonomyNewton::write_log_entries()
+void OptimizeNewton::write_log_entries()
 {
     write_data_log_entry();
     write_timing_log_entry();
-    write_energy_log_entry();
-    write_stability_log_entry();
 }
 
 // Close the error log file
-void OptimizeHolonomyNewton::close_logs()
+void OptimizeNewton::close_logs()
 {
     // Do nothing if error logging disabled
     if (!alg_params.error_log) return;
 
     log_file.close();
     timing_file.close();
-    energy_file.close();
-    stability_file.close();
 }
 
 // Prepare output directory for checkpoints
-void OptimizeHolonomyNewton::initialize_checkpoints()
+void OptimizeNewton::initialize_checkpoints()
 {
     // Do nothing if checkpointing disabled
     if (alg_params.checkpoint_frequency <= 0) return;
@@ -217,7 +150,7 @@ void OptimizeHolonomyNewton::initialize_checkpoints()
 
 // Write metric and descent direction data to file
 // WARNING: Assumes the written data is updated and consistent
-void OptimizeHolonomyNewton::checkpoint_direction()
+void OptimizeNewton::checkpoint_direction()
 {
     // Do nothing if this is not a checkpointing iteration
     if (alg_params.checkpoint_frequency <= 0) return;
@@ -246,7 +179,7 @@ void OptimizeHolonomyNewton::checkpoint_direction()
     write_sparse_matrix(J, checkpoint_path);
 }
 
-void OptimizeHolonomyNewton::checkpoint_metric(const MarkedPennerConeMetric& marked_metric) {
+void OptimizeNewton::checkpoint_metric(const MarkedPennerConeMetric& marked_metric) {
     // Do nothing if this is not a checkpointing iteration
     if (alg_params.checkpoint_frequency <= 0) return;
     if ((log.num_iter % alg_params.checkpoint_frequency) != 0) return;
@@ -281,10 +214,10 @@ void OptimizeHolonomyNewton::checkpoint_metric(const MarkedPennerConeMetric& mar
 }
 
 // Update the holonomy and length error log data
-void OptimizeHolonomyNewton::update_log_error(const MarkedPennerConeMetric& marked_metric)
+void OptimizeNewton::update_log(const MarkedPennerConeMetric& marked_metric)
 {
     // Get edge lengths
-    int num_edges = reduced_metric_coords.size();
+    int num_edges = marked_metric.n_reduced_coordinates();
     VectorX l_init(num_edges);
     VectorX l(num_edges);
     for (int E = 0; E < num_edges; ++E) {
@@ -296,7 +229,6 @@ void OptimizeHolonomyNewton::update_log_error(const MarkedPennerConeMetric& mark
     log.max_error = constraint.cwiseAbs().maxCoeff();
 
     // Update metric error
-    log.l2_energy = l2_energy->EnergyFunctor::energy(marked_metric);
     log.rmse = Optimization::root_mean_square_error(l, l_init);
     log.rrmse = Optimization::relative_root_mean_square_error(l, l_init);
     log.rmsre = Optimization::root_mean_square_relative_error(l, l_init);
@@ -304,19 +236,9 @@ void OptimizeHolonomyNewton::update_log_error(const MarkedPennerConeMetric& mark
     // Update corner angle measurements
     log.min_corner_angle = alpha.minCoeff();
     log.max_corner_angle = alpha.maxCoeff();
-
-    // Update changes in angle for the gradient and direction
-    auto cos_angle = [](const VectorX& v, const VectorX& w)
-    {
-        return acos(v.dot(w) / (v.norm() * w.norm()));
-    };
-    if (log.num_iter > 1)
-    {
-        log.direction_angle_change = cos_angle(descent_direction, prev_descent_direction);
-    }
 }
 
-void OptimizeHolonomyNewton::solve_linear_system(const MatrixX& metric_basis_matrix)
+void OptimizeNewton::solve_linear_system()
 {
     // Make matrix for optimization
 
@@ -405,7 +327,7 @@ void OptimizeHolonomyNewton::solve_linear_system(const MatrixX& metric_basis_mat
 }
 
 // Determine initial lambda for next line search based on method parameters
-void OptimizeHolonomyNewton::update_lambda()
+void OptimizeNewton::update_lambda()
 {
     if (alg_params.reset_lambda) {
         lambda = alg_params.lambda0;
@@ -415,7 +337,7 @@ void OptimizeHolonomyNewton::update_lambda()
 }
 
 // Update the corner angles and constraint given the marked metric
-void OptimizeHolonomyNewton::update_holonomy_constraint(MarkedPennerConeMetric& marked_metric)
+void OptimizeNewton::update_constraint(MarkedPennerConeMetric& marked_metric)
 {
     // TODO Make method
     // Check current metric coordinates for validity
@@ -445,12 +367,9 @@ void OptimizeHolonomyNewton::update_holonomy_constraint(MarkedPennerConeMetric& 
 
 // Update the corner angles, constraint, constraint jacobian, and descent direction given the
 // marked metric
-void OptimizeHolonomyNewton::update_descent_direction(
-    MarkedPennerConeMetric& marked_metric,
-    const MatrixX& metric_basis_matrix)
+void OptimizeNewton::update_descent_direction(MarkedPennerConeMetric& marked_metric)
 {
     double t_start;
-    prev_descent_direction = descent_direction;
 
     // Compute corner angles and the constraint with its jacobian
     // TODO Add safety checks
@@ -470,7 +389,7 @@ void OptimizeHolonomyNewton::update_descent_direction(
     SPDLOG_DEBUG("Metric basis with average {}", metric_basis_matrix.coeffs().mean());
     SPDLOG_DEBUG("Constraint with average {}", constraint.mean());
 
-    solve_linear_system(metric_basis_matrix);
+    solve_linear_system();
 
     SPDLOG_TRACE("Descent direction found with norm {}", descent_direction.norm());
     SPDLOG_TRACE("Descent direction error is {}", (J * descent_direction + constraint).norm());
@@ -482,7 +401,7 @@ void OptimizeHolonomyNewton::update_descent_direction(
 
 // Perform a backtracking line search along the current descent direction from the current
 // metric coordinates using the initial metric connectivity
-void OptimizeHolonomyNewton::perform_line_search(
+void OptimizeNewton::perform_line_search(
     const MarkedPennerConeMetric& initial_marked_metric,
     MarkedPennerConeMetric& marked_metric)
 {
@@ -510,7 +429,7 @@ void OptimizeHolonomyNewton::perform_line_search(
     // Make initial line step with updated constraint
     reduced_metric_coords = reduced_metric_start + lambda * descent_direction;
     marked_metric.change_metric(initial_marked_metric, reduced_metric_coords, false, false);
-    update_holonomy_constraint(marked_metric);
+    update_constraint(marked_metric);
 
     // Line search until the constraint norm decreases and the projected constraint is
     // nonpositive We also allow the norm bound to be dropped or made approximate with some
@@ -533,7 +452,7 @@ void OptimizeHolonomyNewton::perform_line_search(
         // Change metric and update constraint
         reduced_metric_coords = reduced_metric_start + lambda * descent_direction;
         marked_metric.change_metric(initial_marked_metric, reduced_metric_coords, false, false);
-        update_holonomy_constraint(marked_metric);
+        update_constraint(marked_metric);
 
         // Update squared constraint norm and projected constraint
         l2_c_sq = constraint.squaredNorm();
@@ -554,7 +473,7 @@ void OptimizeHolonomyNewton::perform_line_search(
 }
 
 // Determine if the optimization has converged or maximum time/iteration is reached
-bool OptimizeHolonomyNewton::is_converged()
+bool OptimizeNewton::is_converged()
 {
     Scalar prev_constraint_max = constraint_max;
     constraint_max = constraint.cwiseAbs().maxCoeff();
@@ -587,17 +506,16 @@ bool OptimizeHolonomyNewton::is_converged()
 
 // Main method to run the optimization with a given metric, metric basis, and parameters
 // Each run completely resets the state of the optimization
-MarkedPennerConeMetric OptimizeHolonomyNewton::run(
+MarkedPennerConeMetric OptimizeNewton::run(
     const MarkedPennerConeMetric& initial_marked_metric,
-    const MatrixX& metric_basis_matrix,
+    const MatrixX& input_metric_basis_matrix,
     const NewtonParameters& input_alg_params)
 {
     // Initialize logging methods
     timer.start();
+    metric_basis_matrix = input_metric_basis_matrix;
     alg_params = input_alg_params;
     lambda = alg_params.lambda0;
-    l2_energy = std::make_unique<Optimization::LogLengthEnergy>(
-        Optimization::LogLengthEnergy(initial_marked_metric));
     initialize_logging();
     initialize_logs();
     initialize_checkpoints();
@@ -610,10 +528,10 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
     initialize_metric_status_log(*marked_metric);
 
     // Get initial constraint
-    update_holonomy_constraint(*marked_metric);
+    update_constraint(*marked_metric);
 
     // Get before-first-iteration information
-    update_log_error(*marked_metric);
+    update_log(*marked_metric);
     write_log_entries();
     spdlog::info("itr(0) lm({}) max_error({}))", lambda, log.max_error);
 
@@ -629,7 +547,7 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
         update_lambda();
 
         // Compute Newton descent direction
-        update_descent_direction(*marked_metric, metric_basis_matrix);
+        update_descent_direction(*marked_metric);
 
         // Checkpoint current state
         // WARNING: Must be done after updating descent direction and before line search
@@ -641,7 +559,7 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
         // Log current step
         log.step_size = lambda;
         log.time = timer.getElapsedTime();
-        update_log_error(*marked_metric);
+        update_log(*marked_metric);
         write_log_entries();
         checkpoint_metric(*marked_metric);
         spdlog::info("itr({}) lm({}) max_error({}))", itr, lambda, log.max_error);
@@ -657,6 +575,127 @@ MarkedPennerConeMetric OptimizeHolonomyNewton::run(
     return *marked_metric;
 }
 
+void OptimizeHolonomyNewton::initialize_energy_log()
+{
+    std::string data_log_path = join_path(alg_params.output_dir, "iteration_energy_log.csv");
+    spdlog::info("Writing energy data to {}", data_log_path);
+    energy_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
+    energy_file << "l2_energy,";
+    energy_file << "rmsre,";
+    energy_file << "rmse,";
+    energy_file << "rrmse,";
+    energy_file << std::endl;
+}
+
+// Write newton log iteration data to file
+void OptimizeHolonomyNewton::write_energy_log_entry()
+{
+    // Do nothing if error logging disabled
+    if (!alg_params.error_log) return;
+
+    energy_file << std::fixed << std::setprecision(8) << holonomy_log.l2_energy << ",";
+    energy_file << std::fixed << std::setprecision(8) << log.rmsre << ",";
+    energy_file << std::fixed << std::setprecision(8) << log.rmse << ",";
+    energy_file << std::fixed << std::setprecision(8) << log.rrmse << ",";
+    energy_file << std::endl;
+}
+
+void OptimizeHolonomyNewton::initialize_stability_log()
+{
+    std::string data_log_path = join_path(alg_params.output_dir, "iteration_stability_log.csv");
+    spdlog::info("Writing stability data to {}", data_log_path);
+    stability_file = std::ofstream(data_log_path, std::ios::out | std::ios::app);
+    stability_file << "max_error,";
+    stability_file << "step_size,";
+    stability_file << "num_flips,";
+    stability_file << "min_corner_angle,";
+    stability_file << "max_corner_angle,";
+    stability_file << "direction_angle_change,";
+    stability_file << "direction_norm,";
+    stability_file << "direction_residual,";
+    stability_file << std::endl;
+
+}
+
+// Write newton log iteration data to file
+void OptimizeHolonomyNewton::write_stability_log_entry()
+{
+    // Do nothing if error logging disabled
+    if (!alg_params.error_log) return;
+
+    // Write iteration row
+    stability_file << std::scientific << std::setprecision(8) << log.max_error << ",";
+    stability_file << std::scientific << std::setprecision(8) << log.step_size << ",";
+    stability_file << log.num_flips << ",";
+    stability_file << std::scientific << std::setprecision(8) << log.min_corner_angle << ",";
+    stability_file << std::scientific << std::setprecision(8) << log.max_corner_angle << ",";
+    stability_file << std::scientific << std::setprecision(8) << holonomy_log.direction_angle_change << ",";
+    stability_file << std::scientific << std::setprecision(8) << log.direction_norm << ",";
+    stability_file << std::scientific << std::setprecision(8) << log.direction_residual << ",";
+    stability_file << std::endl;
+}
+
+
+void OptimizeHolonomyNewton::initialize_logs()
+{
+    OptimizeNewton::initialize_logs();
+    initialize_energy_log();
+    initialize_stability_log();
+}
+
+void OptimizeHolonomyNewton::write_log_entries()
+{
+    OptimizeNewton::write_log_entries();
+    write_energy_log_entry();
+    write_stability_log_entry();
+}
+
+// Close the error log file
+void OptimizeHolonomyNewton::close_logs()
+{
+    // Do nothing if error logging disabled
+    if (!alg_params.error_log) return;
+
+    OptimizeNewton::close_logs();
+    energy_file.close();
+    stability_file.close();
+}
+
+// Update the holonomy and length error log data
+void OptimizeHolonomyNewton::update_log(const MarkedPennerConeMetric& marked_metric)
+{
+    OptimizeNewton::update_log(marked_metric);
+
+    // Update metric error
+    holonomy_log.l2_energy = l2_energy->EnergyFunctor::energy(marked_metric);
+
+    // Update changes in angle for the gradient and direction
+    auto cos_angle = [](const VectorX& v, const VectorX& w)
+    {
+        return acos(v.dot(w) / (v.norm() * w.norm()));
+    };
+    if (log.num_iter > 1)
+    {
+        holonomy_log.direction_angle_change = cos_angle(descent_direction, prev_descent_direction);
+    }
+}
+
+void OptimizeHolonomyNewton::update_descent_direction(MarkedPennerConeMetric& marked_metric)
+{
+    // save previous direction
+    prev_descent_direction = descent_direction;
+    OptimizeNewton::update_descent_direction(marked_metric);
+}
+
+MarkedPennerConeMetric OptimizeHolonomyNewton::run(
+    const MarkedPennerConeMetric& initial_marked_metric,
+    const MatrixX& input_metric_basis_matrix,
+    const NewtonParameters& input_alg_params)
+{
+    l2_energy = std::make_unique<Optimization::LogLengthEnergy>(
+        Optimization::LogLengthEnergy(initial_marked_metric));
+    return OptimizeNewton::run(initial_marked_metric, input_metric_basis_matrix, input_alg_params);
+}
 
 MarkedPennerConeMetric optimize_metric_angles(
     const MarkedPennerConeMetric& initial_marked_metric,

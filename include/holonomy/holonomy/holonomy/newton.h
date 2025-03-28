@@ -52,7 +52,6 @@ struct NewtonLog
     Scalar step_size = 0.0; // step size taken along the Newton descent direction
     int num_flips = 0; // number of flips to make delaunay from initial connectivity
 
-    Scalar l2_energy = 0.0; // l2 deviation from original metric coordinates
     Scalar rmse = 0.0; // root-mean-square-error of metric coordinates
     Scalar rrmse = 0.0; // relative-root-mean-square-error of metric coordinates
     Scalar rmsre = 0.0; // root-mean-square-relative-error of metric coordinates
@@ -68,11 +67,14 @@ struct NewtonLog
     Scalar min_corner_angle = 0.0; // minimum angle at a corner
     Scalar max_corner_angle = 0.0; // maximum angle at a corner
 
-    Scalar direction_angle_change = 0.0; // angle between current and previous iteration descent direction
-
     Scalar direction_norm = 0.0; // norm of the Newton descent direction
     Scalar direction_residual = 0.0; // residual ||Ax - b|| of the linear solve
+};
 
+struct HolonomyNewtonLog 
+{
+    Scalar l2_energy = 0.0; // l2 deviation from original metric coordinates
+    Scalar direction_angle_change = 0.0; // angle between current and previous iteration descent direction
     Scalar error_norm_sq; // TODO
     Scalar proj_grad; // TODO
 };
@@ -141,17 +143,15 @@ void view_optimization_state(
     std::string mesh_handle="",
     bool show=true);
 
-class OptimizeHolonomyNewton
+class OptimizeNewton
 {
 public:
+    NewtonLog get_log() { return log; }
+
     MarkedPennerConeMetric run(
         const MarkedPennerConeMetric& initial_marked_metric,
-        const MatrixX& metric_basis_matrix,
+        const MatrixX& input_metric_basis_matrix,
         const NewtonParameters& input_alg_params);
-
-    OptimizeHolonomyNewton() {}
-
-    NewtonLog get_log() { return log; }
 
 protected:
     // Metric data
@@ -159,14 +159,12 @@ protected:
     VectorX reduced_metric_coords;
     VectorX alpha;
     VectorX cot_alpha;
+    MatrixX metric_basis_matrix;
 
     // Constraint and descent direction data
     VectorX constraint;
     MatrixX J;
     VectorX descent_direction;
-
-    // Previous descent direction data (for logging)
-    VectorX prev_descent_direction;
 
     // Algorithm data
     Scalar lambda;
@@ -175,23 +173,63 @@ protected:
 
     // Logging data
     std::string checkpoint_dir;
+    std::ofstream metric_status_file;
     std::ofstream log_file;
     std::ofstream timing_file;
-    std::ofstream energy_file;
-    std::ofstream stability_file;
-    std::ofstream metric_status_file;
     igl::Timer timer;
     NewtonLog log;
-    std::unique_ptr<Optimization::EnergyFunctor> l2_energy;
 
+    // logging methods
     void initialize_logging();
     void initialize_metric_status_log(MarkedPennerConeMetric& marked_metric);
 
-    void initialize_data_log();
-    void write_data_log_entry();
+    virtual void initialize_data_log();
+    virtual void write_data_log_entry();
 
     void initialize_timing_log();
     void write_timing_log_entry();
+
+    virtual void initialize_logs();
+    virtual void write_log_entries();
+    virtual void close_logs();
+
+    virtual void initialize_checkpoints();
+    virtual void checkpoint_direction();
+    virtual void checkpoint_metric(const MarkedPennerConeMetric& marked_metric);
+
+    // core Newton method steps
+    virtual void update_lambda();
+    virtual void update_log(const MarkedPennerConeMetric& marked_metric);
+    virtual void update_constraint(MarkedPennerConeMetric& marked_metric);
+    virtual void update_descent_direction(MarkedPennerConeMetric& marked_metric);
+    virtual void perform_line_search(
+        const MarkedPennerConeMetric& initial_marked_metric,
+        MarkedPennerConeMetric& marked_metric);
+    virtual bool is_converged();
+
+    // utility function
+    void solve_linear_system();
+};
+
+class OptimizeHolonomyNewton : public OptimizeNewton
+{
+public:
+    MarkedPennerConeMetric run(
+        const MarkedPennerConeMetric& initial_marked_metric,
+        const MatrixX& input_metric_basis_matrix,
+        const NewtonParameters& input_alg_params);
+
+    OptimizeHolonomyNewton() {}
+
+protected:
+    // additional logging data
+    VectorX prev_descent_direction;
+    std::unique_ptr<Optimization::EnergyFunctor> l2_energy;
+    HolonomyNewtonLog holonomy_log;
+
+    // additoinal files
+    std::ofstream energy_file;
+    std::ofstream stability_file;
 
     void initialize_energy_log();
     void write_energy_log_entry();
@@ -199,29 +237,13 @@ protected:
     void initialize_stability_log();
     void write_stability_log_entry();
 
-    void initialize_logs();
-    void write_log_entries();
-    void close_logs();
+    virtual void initialize_logs() override;
+    virtual void write_log_entries() override;
+    virtual void close_logs() override;
 
-    void initialize_checkpoints();
-    void checkpoint_direction();
-    void checkpoint_metric(const MarkedPennerConeMetric& marked_metric);
-
-    void update_log_error(const MarkedPennerConeMetric& marked_metric);
-
-    void solve_linear_system(const MatrixX& metric_basis_matrix);
-
-    void update_lambda();
-    void update_holonomy_constraint(MarkedPennerConeMetric& marked_metric);
-    void update_descent_direction(
-        MarkedPennerConeMetric& marked_metric,
-        const MatrixX& metric_basis_matrix);
-
-    void perform_line_search(
-        const MarkedPennerConeMetric& initial_marked_metric,
-        MarkedPennerConeMetric& marked_metric);
-
-    bool is_converged();
+    virtual void update_log(const MarkedPennerConeMetric& marked_metric) override;
+    virtual void update_descent_direction(
+        MarkedPennerConeMetric& marked_metric) override;
 };
 
 } // namespace Holonomy
