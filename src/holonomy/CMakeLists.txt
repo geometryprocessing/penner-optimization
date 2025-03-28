@@ -60,7 +60,7 @@ target_compile_definitions(PennerHolonomyLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
 # TODO Fix for multiprecision
-if (NOT USE_MULTIPRECISION)
+if ((NOT USE_MULTIPRECISION) AND (USE_WARNINGS))
     target_compile_options(PennerHolonomyLib PRIVATE
       -Wall -Wpedantic -Wextra -Werror
     )
