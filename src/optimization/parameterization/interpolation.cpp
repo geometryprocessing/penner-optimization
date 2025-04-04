@@ -95,17 +95,17 @@ void interpolate_penner_coordinates(
         // Compute translations for reparametrization
         VectorX halfedge_translations;
         compute_as_symmetric_as_possible_translations(
-            change_mesh_type<OverlayScalar, Scalar>(mc),
+            mc,
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_TRACE(
+        SPDLOG_INFO(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
 
         // Change the metric and reparameterize
-        spdlog::trace("Changing underlying metric");
+        spdlog::debug("Changing underlying metric");
         interpolation_mesh.change_hyperbolic_surface_metric(
             halfedge_metric_coords,
             scale_factors,
@@ -142,6 +142,7 @@ void interpolate_penner_coordinates(
         }
 
         // Undo the reparametrization
+        spdlog::debug("Inverting reparameterization");
         VectorX inverse_halfedge_translations = -halfedge_translations;
         reverse_interpolation_mesh.change_hyperbolic_surface_metric(
             initial_halfedge_metric_coords,
@@ -176,7 +177,7 @@ void interpolate_penner_coordinates(
         std::vector<int> eucl_del_R = mc.R;
 
         // Copy flip sequence with ptolemy flips and new metric to get metric coordinates
-        spdlog::trace("Getting flipped metric coordinates");
+        spdlog::debug("Getting flipped metric coordinates");
         VectorX trivial_halfedge_translations;
         trivial_halfedge_translations.setZero(halfedge_metric_coords.size());
         InterpolationMesh<OverlayScalar> metric_interpolation_mesh =
@@ -192,7 +193,7 @@ void interpolate_penner_coordinates(
         // Compute translations for reparametrization
         VectorX halfedge_translations;
         compute_as_symmetric_as_possible_translations(
-            change_mesh_type<OverlayScalar, Scalar>(mc),
+            mc,
             flipped_halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
@@ -202,7 +203,7 @@ void interpolate_penner_coordinates(
             halfedge_translations.maxCoeff());
 
         // Change the metric and reparameterize
-        spdlog::trace("Changing underlying metric");
+        spdlog::debug("Changing underlying metric");
         interpolation_mesh.change_hyperbolic_surface_metric(
             flipped_halfedge_metric_coords,
             scale_factors,
@@ -229,6 +230,7 @@ void interpolate_penner_coordinates(
         reverse_interpolation_mesh.get_mesh().R = eucl_del_R;
 
         // Undo the reparametrization
+        spdlog::debug("Inverting reparameterization");
         VectorX inverse_halfedge_translations = -halfedge_translations;
         reverse_interpolation_mesh.change_hyperbolic_surface_metric(
             initial_halfedge_metric_coords,
@@ -620,7 +622,7 @@ void InterpolationMesh<OverlayScalar>::change_hyperbolic_surface_metric(
     const VectorX& scale_factors,
     const VectorX& halfedge_translations)
 {
-    spdlog::trace("Changing the surface metric");
+    spdlog::debug("Changing the surface metric");
     if (!m_is_valid) {
         spdlog::error("Invalid interpolation mesh");
         return;
