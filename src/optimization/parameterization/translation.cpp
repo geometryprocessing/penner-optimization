@@ -35,6 +35,7 @@
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "util/embedding.h"
 #include "util/linear_algebra.h"
+#include "util/vector.h"
 #include "optimization/core/reparametrization.h"
 #include "optimization/core/shear.h"
 
@@ -140,7 +141,7 @@ void generate_translation_lagrangian_system(
     }
 }
 
-void compute_as_symmetric_as_possible_translations(
+void _compute_as_symmetric_as_possible_translations(
     const Mesh<Scalar>& m,
     const VectorX& he_metric_coords,
     const VectorX& he_metric_target,
@@ -171,6 +172,139 @@ void compute_as_symmetric_as_possible_translations(
     int num_halfedges = he_shear_change.size();
     he_translations = lagrangian_solution.head(num_halfedges);
 }
+
+template <typename OverlayScalar>
+void generate_translation_constraint_system(
+    const Mesh<OverlayScalar>& m,
+    const VectorX& halfedge_shear_change,
+    Eigen::SparseMatrix<OverlayScalar>& constraint_matrix,
+    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1>& right_hand_side)
+{
+    // Get edge maps
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    build_edge_maps(change_mesh_type<OverlayScalar, Scalar>(m), he2e, e2he);
+
+    // Get number of halfedges, edges, and faces
+    int n_h = m.n.size();
+    int n_e = e2he.size();
+    int n_f = m.h.size();
+
+    // Initialize matrix entry list
+    std::vector<Eigen::Triplet<OverlayScalar>> tripletList;
+    std::vector<Scalar> rhs_vec;
+    tripletList.reserve(2 * n_e + 3 * n_f);
+    rhs_vec.reserve(n_e + n_f);
+
+    // Add halfedge sum constraints
+    int mu_count = 0;
+    for (int e = 0; e < n_e; ++e) {
+        int h = e2he[e];
+        int ho = m.opp[h];
+
+        // Add edge sum block
+        tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count, h, OverlayScalar(1.0)));
+        tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count, ho, OverlayScalar(1.0)));
+
+        // Add constrained sum values to RHS
+        rhs_vec.push_back(halfedge_shear_change[h]);
+
+        // Increment number of constraints by 1
+        mu_count += 1;
+    }
+
+    // Add face sum constraints (leaving one out due to redundancy)
+    int nu_count = 0;
+    for (int f = 1; f < n_f; ++f) {
+        int hij = m.h[f];
+        int hjk = m.n[hij];
+        int hki = m.n[hjk];
+
+        // Add face sum block
+        tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count + nu_count, hij, OverlayScalar(1.0)));
+        tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count + nu_count, hjk, OverlayScalar(1.0)));
+        tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count + nu_count, hki, OverlayScalar(1.0)));
+
+        // Add 0 to RHS
+        rhs_vec.push_back(0.0);
+
+        // Increment constraint counter by 1
+        nu_count += 1;
+    }
+
+    // Build matrix
+    int n_constraint = mu_count + nu_count;
+    constraint_matrix.resize(n_constraint, n_h);
+    constraint_matrix.reserve(tripletList.size());
+    constraint_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    // Build RHS
+    right_hand_side.setZero(n_constraint);
+    for (int i = 0; i < n_constraint; ++i) {
+        right_hand_side[i] = OverlayScalar(rhs_vec[i]);
+    }
+}
+
+template <typename OverlayScalar>
+void compute_as_symmetric_as_possible_translations(
+    const Mesh<OverlayScalar>& m,
+    const VectorX& he_metric_coords,
+    const VectorX& he_metric_target,
+    VectorX& he_translations)
+{
+    spdlog::debug("Computing least squares translations with psuedo-inverse");
+
+    // Compute the change in shear from the target to the new metric
+    spdlog::trace("Computing shear change");
+    VectorX he_shear_change;
+    compute_shear_change(
+        change_mesh_type<OverlayScalar, Scalar>(m),
+        he_metric_coords,
+        he_metric_target,
+        he_shear_change);
+    SPDLOG_INFO(
+        "shear change in range [{}, {}]",
+        he_shear_change.minCoeff(),
+        he_shear_change.maxCoeff());
+
+    // Build the constraint for the problem
+    spdlog::trace("Computing constraint system");
+    Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
+    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> right_hand_side;
+    generate_translation_constraint_system(m, he_shear_change, constraint_matrix, right_hand_side);
+
+    // Compute the solution of the constraint
+    spdlog::debug(
+        "Computing solution for {}x{} system with length {} rhs",
+        constraint_matrix.rows(),
+        constraint_matrix.cols(),
+        right_hand_side.size());
+    Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
+    //gram_matrix.makeCompressed();
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
+    solver.compute(gram_matrix);
+    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
+
+    // The desired translations are at the head of the solution vector
+    he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+}
+
+template void compute_as_symmetric_as_possible_translations<Scalar>(
+    const Mesh<Scalar>& m,
+    const VectorX& he_metric_coords,
+    const VectorX& he_metric_target,
+    VectorX& he_translations);
+
+#ifdef WITH_MPFR
+#ifndef MULTIPRECISION
+template void compute_as_symmetric_as_possible_translations<mpfr::mpreal>(
+    const Mesh<mpfr::mpreal>& m,
+    const VectorX& he_metric_coords,
+    const VectorX& he_metric_target,
+    VectorX& he_translations);
+
+#endif
+#endif
 
 } // namespace Optimization
 } // namespace Penner

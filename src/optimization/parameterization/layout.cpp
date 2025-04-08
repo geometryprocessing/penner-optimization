@@ -1078,6 +1078,8 @@ get_consistent_layout(
         }
         m.l[h0] = sqrt(
             (u_o[h0] - u_o[h1]) * (u_o[h0] - u_o[h1]) + (v_o[h0] - v_o[h1]) * (v_o[h0] - v_o[h1]));
+        if (std::isnan(double(m.l[h0])))
+            spdlog::error("length computation produced nan.");
     }
     m.type = std::vector<char>(m.n.size(), 0);
     int num_m_halfedges = m.n.size();
