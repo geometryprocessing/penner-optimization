@@ -34,7 +34,6 @@ bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form)
         Scalar xji = one_form[hji];
         if (!float_equal<Scalar>(xij + xji, 0.)) {
             spdlog::error("Edge pair ({}, {}) have form values ({}, {})", hij, hji, xij, xji);
-
             return false;
         }
     }
