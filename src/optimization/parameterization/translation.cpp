@@ -262,7 +262,7 @@ void compute_as_symmetric_as_possible_translations(
         he_metric_coords,
         he_metric_target,
         he_shear_change);
-    SPDLOG_INFO(
+    SPDLOG_TRACE(
         "shear change in range [{}, {}]",
         he_shear_change.minCoeff(),
         he_shear_change.maxCoeff());
@@ -287,6 +287,13 @@ void compute_as_symmetric_as_possible_translations(
 
     // The desired translations are at the head of the solution vector
     he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+
+    // use zero coordinates as fallback for nans
+    if (std::isnan(he_translations.maxCoeff()))
+    {
+        spdlog::warn("Setting halfedge translations to zero due to numerical instability");
+        he_translations.setZero();
+    }
 }
 
 template void compute_as_symmetric_as_possible_translations<Scalar>(

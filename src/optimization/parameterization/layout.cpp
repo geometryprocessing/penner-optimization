@@ -1076,8 +1076,8 @@ get_consistent_layout(
             spdlog::error("h0 h1 picked wrong.");
             exit(0);
         }
-        m.l[h0] = sqrt(
-            (u_o[h0] - u_o[h1]) * (u_o[h0] - u_o[h1]) + (v_o[h0] - v_o[h1]) * (v_o[h0] - v_o[h1]));
+        m.l[h0] = sqrt(max(
+            (u_o[h0] - u_o[h1]) * (u_o[h0] - u_o[h1]) + (v_o[h0] - v_o[h1]) * (v_o[h0] - v_o[h1]), 0.));
         if (std::isnan(double(m.l[h0])))
             spdlog::error("length computation produced nan.");
     }
