@@ -91,6 +91,10 @@ void interpolate_penner_coordinates(
         // Get the metric coordinates of the original metric
         VectorX initial_halfedge_metric_coords =
             interpolation_mesh.get_halfedge_metric_coordinates();
+        SPDLOG_TRACE(
+            "Initial metric coordiantes in range [{}, {}]",
+            initial_halfedge_metric_coords.minCoeff(),
+            initial_halfedge_metric_coords.maxCoeff());
 
         // Compute translations for reparametrization
         VectorX halfedge_translations;
@@ -99,7 +103,7 @@ void interpolate_penner_coordinates(
             halfedge_metric_coords,
             initial_halfedge_metric_coords,
             halfedge_translations);
-        SPDLOG_INFO(
+        SPDLOG_TRACE(
             "Translations in range [{}, {}]",
             halfedge_translations.minCoeff(),
             halfedge_translations.maxCoeff());
