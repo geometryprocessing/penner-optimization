@@ -1692,6 +1692,26 @@ void IntrinsicNRosyField::compute_principal_matchings(const Mesh<Scalar>& m)
     }
 }
 
+void IntrinsicNRosyField::fix_inconsistent_matchings(const Mesh<Scalar>& m)
+{
+    int num_halfedges = m.n_halfedges();
+    VectorX rotation_form(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        if (hij < m.opp[hij]) continue;
+        int hji = m.opp[hij];
+
+        // check if principal matchings consistent
+        if (period_jump[hji] == -period_jump[hij]) continue;
+
+        // fix principal matchings if not
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        Scalar delta_theta = theta[f0] - theta[f1] + kappa[hij];
+        period_jump[hij] = -round(delta_theta / period_value[hij]);
+        period_jump[hji] = -period_jump[hij];
+    }
+}
+
 std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m) const
 {
     // Compute the corner angles

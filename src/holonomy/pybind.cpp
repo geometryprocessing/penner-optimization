@@ -40,6 +40,7 @@ void init_holonomy_pybind(pybind11::module& m)
         .def("initialize", &IntrinsicNRosyField::initialize)
         .def("set_field", &IntrinsicNRosyField::set_field)
         .def("compute_principal_matchings", &IntrinsicNRosyField::compute_principal_matchings)
+        .def("fix_inconsistent_matchings", &IntrinsicNRosyField::fix_inconsistent_matchings)
         .def("compute_rotation_form", &IntrinsicNRosyField::compute_rotation_form);
 
     pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")

@@ -67,6 +67,7 @@ public:
     void initialize(const Mesh<Scalar>& m);
     void solve(const Mesh<Scalar>& m);
     void compute_principal_matchings(const Mesh<Scalar>& m);
+    void fix_inconsistent_matchings(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
