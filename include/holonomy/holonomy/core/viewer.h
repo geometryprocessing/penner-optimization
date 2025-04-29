@@ -78,5 +78,10 @@ void view_parameterization_quality(
     std::string mesh_handle="",
     bool show=true);
 
+VectorX compute_angle_error(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv);
+
 } // namespace Holonomy
 } // namespace Penner

@@ -156,6 +156,13 @@ Scalar uv_cos_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
     return (dot_01 / norm);
 }
 
+Scalar uv_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1)
+{
+    Scalar angle_0 = atan2(uv_0[1], uv_0[0]);
+    Scalar angle_1 = atan2(uv_1[1], uv_1[0]);
+    return angle_1 - angle_0;
+}
+
 std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,
@@ -213,6 +220,54 @@ std::tuple<VectorX, VectorX, VectorX, VectorX> compute_seamless_error(
     }
 
     return std::make_tuple(uv_length_error, uv_angle_error, uv_length, uv_angle);
+}
+
+VectorX compute_angle_error(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv)
+{
+    // Get the edge topology for the original uncut mesh
+    Eigen::MatrixXi uE, EF, EI;
+    Eigen::VectorXi EMAP;
+    igl::edge_flaps(F, uE, EMAP, EF, EI);
+
+    // Iterate over edges to check the length inconsistencies
+    VectorX uv_angle_error = VectorX::Zero(F.size());
+    for (Eigen::Index e = 0; e < EF.rows(); ++e) {
+        // Get face corners corresponding to the current edge
+        int f0 = EF(e, 0);
+        int f1 = EF(e, 1);
+
+        // Check first face (if not boundary)
+        if (f0 < 0) continue;
+        int i0 = EI(e, 0); // corner vertex face index
+        int v0n = F_uv(f0, (i0 + 1) % 3); // next vertex
+        int v0p = F_uv(f0, (i0 + 2) % 3); // previous vertex
+
+        // Check second face (if not boundary)
+        if (f1 < 0) continue;
+        int i1 = EI(e, 1); // corner vertex face index
+        int v1n = F_uv(f1, (i1 + 1) % 3); // next vertex
+        int v1p = F_uv(f1, (i1 + 2) % 3); // next vertex
+
+        // Compute the length of each halfedge corresponding to the corner in the cut mesh
+        Eigen::Vector2d uv_00 = uv.row(v0n);
+        Eigen::Vector2d uv_01 = uv.row(v0p);
+        Eigen::Vector2d uv_10 = uv.row(v1n);
+        Eigen::Vector2d uv_11 = uv.row(v1p);
+        Scalar angle = uv_angle(uv_01 - uv_00, uv_11 - uv_10);
+        Scalar rounded_angle = pos_fmod(angle + (4. * M_PI), M_PI / 2.);
+        Scalar angle_error = min(rounded_angle, (M_PI / 2.) - rounded_angle);
+
+        // set length error for the given edge
+        i0 = (i0 + 1) % 3;
+        i1 = (i1 + 1) % 3;
+        uv_angle_error(3 * f0 + i0) = angle_error;
+        uv_angle_error(3 * f1 + i1) = angle_error;
+    }
+
+    return uv_angle_error;
 }
 
 void view_constraint_error(
