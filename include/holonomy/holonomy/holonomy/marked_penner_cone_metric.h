@@ -71,7 +71,7 @@ public:
      * @param need_jacobian: (optional) track change of metric jacobian if true
      * @param do_repeat_flips: (optional) repeat flips to restore current connectivity if true
      */
-    void change_metric(
+    virtual void change_metric(
         const MarkedPennerConeMetric& m,
         const VectorX& metric_coords,
         bool need_jacobian = true,

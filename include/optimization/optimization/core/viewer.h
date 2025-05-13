@@ -136,6 +136,14 @@ void view_independent_vertex_function(
     std::string mesh_handle="",
     bool show=true);
 
+void view_halfedge_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& halfedge_function,
+    std::string mesh_handle="",
+    bool show=true);
+
 VectorX compute_corner_angles(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F

@@ -722,5 +722,45 @@ void view_independent_vertex_function(
 #endif
 }
 
+void view_halfedge_function(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V,
+    const VectorX& halfedge_function,
+    std::string mesh_handle,
+    bool show)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "halfedge function";
+    }
+
+    if (show) {
+        spdlog::info("Viewing {} mesh", mesh_handle);
+    }
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
+    int num_halfedges = m.n_halfedges();
+    if (num_halfedges != halfedge_function.size())
+    {
+        spdlog::error("Inconsistent number of halfedges and function size");
+        return;
+    }
+
+    // convert halfedge function indexing to polyscope mesh
+    VectorX halfedge_function_mesh = generate_FV_halfedge_data(F_halfedge, halfedge_function);
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "halfedge function",
+            convert_scalar_to_double_vector(halfedge_function_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+
+    if (show) polyscope::show();
+#endif
+}
+
 } // namespace Optimization
 } // namespace Penner

@@ -74,7 +74,7 @@ double cos_angle_rescaled_tri(const Mesh<Scalar>& m, int h)
 
     // Will (may?) get triangle inequality violations if the following
     // lines are uncommented.
-    const double EPS = FLT_EPSILON;
+    const double EPS = 1e-10; // FLT_EPSILON;
     if (1.0 <= cos01 && cos01 < 1 + EPS) {
         cos01 = 1.0;
     } else if (-1.0 >= cos01 && cos01 > -1 - EPS) {
