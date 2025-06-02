@@ -1712,6 +1712,66 @@ void IntrinsicNRosyField::fix_inconsistent_matchings(const Mesh<Scalar>& m)
     }
 }
 
+bool IntrinsicNRosyField::has_cone_pair(const Mesh<Scalar>& m) const
+{
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+    int num_pos_cones = 0;
+    int num_neg_cones = 0;
+    int defect = 0;
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] > 4) ++num_neg_cones;
+        if (cones[vi] < 4) ++num_pos_cones;
+        defect += (4 - cones[vi]);
+    }
+
+    // check if cone pair on torus
+    return ((defect == 0) && (num_pos_cones == 1) && (num_neg_cones == 1));
+
+}
+
+void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
+{
+    // TODO doubled
+    if (m.type[0] != 0)
+    {
+        spdlog::warn("Cannot fix cone pairs on doubled mesh");
+        return;
+    }
+
+    if (!has_cone_pair(m)) return;
+
+    // get pos and neg cone
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+    int pos_cone = -1;
+    int neg_cone = -1;
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] > 4) neg_cone = vi;
+        if (cones[vi] < 4) pos_cone = vi;
+    }
+    spdlog::info("Fixing cone pair at {} and {}", pos_cone, neg_cone);
+
+    // build path between cones
+    std::vector<int> path = find_shortest_path(m, pos_cone, neg_cone);
+
+    // adjust period jumps on path
+    for (int hij : path)
+    {
+        int hji = m.opp[hij];
+        ++period_jump[hij];
+        --period_jump[hji];
+    }
+
+    // check success
+    if (has_cone_pair(m))
+    {
+        spdlog::error("Could not remove cone pair");
+    }
+}
+
 std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m) const
 {
     // Compute the corner angles
@@ -1760,6 +1820,30 @@ std::vector<int> IntrinsicNRosyField::generate_kappa_cones(const Mesh<Scalar>& m
     for (int hij = 0; hij < m.n_halfedges(); hij++) {
         Th_hat[m.v_rep[m.to[m.n[hij]]]] += he2angle[hij];
         Th_hat[m.v_rep[m.to[hij]]] += kappa[hij];
+    }
+
+    std::vector<int> base_cones(num_vertices, 0);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+    }
+
+    return base_cones;
+}
+
+std::vector<int> IntrinsicNRosyField::generate_cones(const Mesh<Scalar>& m) const
+{
+    // Compute the corner angles
+    VectorX he2angle, he2cot;
+    Optimization::corner_angles(m, he2angle, he2cot);
+
+    int num_vertices = m.n_ind_vertices();
+    std::vector<Scalar> Th_hat(num_vertices, 0);
+    for (int hij = 0; hij < m.n_halfedges(); hij++) {
+        Th_hat[m.v_rep[m.to[m.n[hij]]]] += he2angle[hij];
+        Th_hat[m.v_rep[m.to[hij]]] += kappa[hij];
+
+        Th_hat[m.v_rep[m.to[hij]]] += period_value[hij] * period_jump[hij];
     }
 
     std::vector<int> base_cones(num_vertices, 0);

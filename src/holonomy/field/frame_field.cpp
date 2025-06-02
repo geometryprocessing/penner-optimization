@@ -8,6 +8,7 @@
 #include <igl/per_face_normals.h>
 #include <igl/local_basis.h>
 #include <igl/rotate_vectors.h>
+#include <igl/internal_angles.h>
 #include <igl/comb_cross_field.h>
 #include <igl/cross_field_mismatch.h>
 #include <igl/find_cross_field_singularities.h>
@@ -164,6 +165,34 @@ load_frame_field(const std::string& filename)
     // Close file
     input_file.close();
     return std::make_tuple(reference_field, theta, kappa, period_jump);
+}
+
+std::vector<Scalar> compute_cone_angle( 
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump)
+{
+    // Compute the corner angles
+    Eigen::MatrixXd angles;
+    igl::internal_angles(V, F, angles);
+
+    int num_vertices = V.rows();
+    int num_faces = F.rows();
+    std::vector<Scalar> Th_hat(num_vertices, 0);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int j = (i + 1) % 3;
+            int vi = F(fijk, i);
+            Th_hat[vi] += angles(fijk, i);
+            Th_hat[vi] += kappa(fijk, j);
+            Th_hat[vi] += (M_PI / 2.) * period_jump(fijk, j);
+        }
+    }
+
+    return Th_hat;
 }
 
 Eigen::VectorXd infer_theta(
