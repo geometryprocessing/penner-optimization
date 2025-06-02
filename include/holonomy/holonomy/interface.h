@@ -186,7 +186,8 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
-    MarkedMetricParameters marked_metric_params);
+    MarkedMetricParameters marked_metric_params,
+    std::vector<int> marked_halfedges={});
 
 std::vector<int> extend_vtx_reindex(
     const Mesh<Scalar>& m,
