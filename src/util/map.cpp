@@ -3,6 +3,7 @@
 #include "util/vector.h"
 
 #include <random>
+#include <chrono>
 
 namespace Penner {
 
@@ -62,13 +63,21 @@ std::vector<int> invert_map(const std::vector<int>& map)
     return inverse_map;
 }
 
-std::vector<int> generate_permutation(int n)
+std::vector<int> generate_permutation(int n, bool use_random_seed)
 {
     // generate permuation for the given size
     std::vector<int> permutation;
     Penner::arange(n, permutation);
-    auto rng = std::default_random_engine{};
-    std::shuffle(permutation.begin(), permutation.end(), rng);
+    if (use_random_seed)
+    {
+        auto rng = std::default_random_engine(std::chrono::system_clock::now().time_since_epoch().count());
+        std::shuffle(permutation.begin(), permutation.end(), rng);
+    }
+    else
+    {
+        auto rng = std::default_random_engine{};
+        std::shuffle(permutation.begin(), permutation.end(), rng);
+    }
     return permutation;
 }
 

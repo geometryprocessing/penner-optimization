@@ -1552,7 +1552,7 @@ std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
     int num_vertices = m.n_ind_vertices();
     if (m.type[0] == 0)
     {
-        return std::vector<int>(num_vertices, 0);
+        return std::vector<int>(num_vertices, 1);
     }
 
     std::vector<int> min_cones(num_vertices, 4);
