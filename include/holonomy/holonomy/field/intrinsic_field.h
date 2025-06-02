@@ -68,6 +68,7 @@ public:
     void solve(const Mesh<Scalar>& m);
     void compute_principal_matchings(const Mesh<Scalar>& m);
     void fix_inconsistent_matchings(const Mesh<Scalar>& m);
+    void fix_cone_pair(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -116,6 +117,8 @@ private:
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     std::vector<int> generate_base_cones(const Mesh<Scalar>& m) const;
     std::vector<int> generate_kappa_cones(const Mesh<Scalar>& m) const;
+    std::vector<int> generate_cones(const Mesh<Scalar>& m) const;
+    bool has_cone_pair(const Mesh<Scalar>& m) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
     void initialize_kappa(const Mesh<Scalar>& m);

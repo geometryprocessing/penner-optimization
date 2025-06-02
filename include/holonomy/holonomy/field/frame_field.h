@@ -153,6 +153,12 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> r
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+std::vector<Scalar> compute_cone_angle( 
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump);
+
 
 } // namespace Feature 
 } // namespace Penner
