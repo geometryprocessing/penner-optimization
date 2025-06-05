@@ -1731,6 +1731,19 @@ bool IntrinsicNRosyField::has_cone_pair(const Mesh<Scalar>& m) const
 
 }
 
+bool IntrinsicNRosyField::has_zero_cone(const Mesh<Scalar>& m) const
+{
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] <= 0) return true;
+    }
+
+    return false;
+
+}
+
 void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
 {
     // TODO doubled
@@ -1752,7 +1765,8 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
         if (cones[vi] > 4) neg_cone = vi;
         if (cones[vi] < 4) pos_cone = vi;
     }
-    spdlog::info("Fixing cone pair at {} and {}", pos_cone, neg_cone);
+    int size = (4 - cones[pos_cone]);
+    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone);
 
     // build path between cones
     std::vector<int> path = find_shortest_path(m, pos_cone, neg_cone);
@@ -1761,14 +1775,50 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
     for (int hij : path)
     {
         int hji = m.opp[hij];
-        ++period_jump[hij];
-        --period_jump[hji];
+        period_jump[hij] += size;
+        period_jump[hji] -= size;
     }
 
     // check success
     if (has_cone_pair(m))
     {
         spdlog::error("Could not remove cone pair");
+    }
+}
+
+void IntrinsicNRosyField::fix_zero_cones(const Mesh<Scalar>& m)
+{
+    // TODO doubled
+    if (m.type[0] != 0)
+    {
+        spdlog::warn("Cannot fix zero cone on doubled mesh");
+        return;
+    }
+
+    while (has_zero_cone(m))
+    {
+        // get zero and max neg cone
+        std::vector<int> cones = generate_cones(m);
+        int num_vertices = cones.size();
+        int zero_cone = -1;
+        int max_cone = 0;
+        for (int vi = 0; vi < num_vertices; ++vi)
+        {
+            if (cones[vi] == 0) zero_cone = vi;
+            if (cones[vi] > cones[max_cone]) max_cone = vi;
+        }
+        spdlog::info("Fixing zero cone at {} with angle {} at {}", zero_cone, cones[max_cone], max_cone);
+
+        // build path between cones
+        std::vector<int> path = find_shortest_path(m, zero_cone, max_cone);
+
+        // adjust period jumps on path
+        for (int hij : path)
+        {
+            int hji = m.opp[hij];
+            ++period_jump[hij];
+            --period_jump[hji];
+        }
     }
 }
 
