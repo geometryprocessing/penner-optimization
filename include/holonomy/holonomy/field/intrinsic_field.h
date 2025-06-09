@@ -64,12 +64,15 @@ public:
 
     Scalar min_angle = 0.;
 
+    void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
     void initialize(const Mesh<Scalar>& m);
     void solve(const Mesh<Scalar>& m);
     void compute_principal_matchings(const Mesh<Scalar>& m);
     void fix_inconsistent_matchings(const Mesh<Scalar>& m);
+    void remove_greedy_cone_pairs(const Mesh<Scalar>& m);
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
+    void concentrate_curvature(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -121,6 +124,9 @@ private:
     std::vector<int> generate_cones(const Mesh<Scalar>& m) const;
     bool has_cone_pair(const Mesh<Scalar>& m) const;
     bool has_zero_cone(const Mesh<Scalar>& m) const;
+    int get_max_cone(const std::vector<int>& cones) const;
+    int get_zero_cone(const std::vector<int>& cones) const;
+    int compute_total_defect(const Mesh<Scalar>& m) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
     void initialize_kappa(const Mesh<Scalar>& m);

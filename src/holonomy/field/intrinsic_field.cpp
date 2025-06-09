@@ -1712,19 +1712,32 @@ void IntrinsicNRosyField::fix_inconsistent_matchings(const Mesh<Scalar>& m)
     }
 }
 
+int IntrinsicNRosyField::compute_total_defect(const Mesh<Scalar>& m) const
+{
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+    int defect = 0;
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        defect += (4 - cones[vi]);
+    }
+
+    return defect;
+
+}
+
 bool IntrinsicNRosyField::has_cone_pair(const Mesh<Scalar>& m) const
 {
     std::vector<int> cones = generate_cones(m);
     int num_vertices = cones.size();
     int num_pos_cones = 0;
     int num_neg_cones = 0;
-    int defect = 0;
     for (int vi = 0; vi < num_vertices; ++vi)
     {
         if (cones[vi] > 4) ++num_neg_cones;
         if (cones[vi] < 4) ++num_pos_cones;
-        defect += (4 - cones[vi]);
     }
+    int defect = compute_total_defect(m);
 
     // check if cone pair on torus
     return ((defect == 0) && (num_pos_cones == 1) && (num_neg_cones == 1));
@@ -1742,6 +1755,20 @@ bool IntrinsicNRosyField::has_zero_cone(const Mesh<Scalar>& m) const
 
     return false;
 
+}
+
+void IntrinsicNRosyField::move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size)
+{
+    // build path between cones
+    std::vector<int> path = find_shortest_path(m, origin_v, destination_v);
+
+    // adjust period jumps on path
+    for (int hij : path)
+    {
+        int hji = m.opp[hij];
+        period_jump[hij] += size;
+        period_jump[hji] -= size;
+    }
 }
 
 void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
@@ -1768,22 +1795,37 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
     int size = (4 - cones[pos_cone]);
     spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone);
 
-    // build path between cones
-    std::vector<int> path = find_shortest_path(m, pos_cone, neg_cone);
-
-    // adjust period jumps on path
-    for (int hij : path)
-    {
-        int hji = m.opp[hij];
-        period_jump[hij] += size;
-        period_jump[hji] -= size;
-    }
+    // move curvature
+    move_cone(m, pos_cone, neg_cone, size);
 
     // check success
     if (has_cone_pair(m))
     {
         spdlog::error("Could not remove cone pair");
     }
+}
+
+int IntrinsicNRosyField::get_max_cone(const std::vector<int>& cones) const
+{
+    int num_vertices = cones.size();
+    int max_cone = 0;
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] > cones[max_cone]) max_cone = vi;
+    }
+
+    return max_cone;
+}
+
+int IntrinsicNRosyField::get_zero_cone(const std::vector<int>& cones) const
+{
+    int num_vertices = cones.size();
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] == 0) return vi;
+    }
+
+    return -1;
 }
 
 void IntrinsicNRosyField::fix_zero_cones(const Mesh<Scalar>& m)
@@ -1799,26 +1841,64 @@ void IntrinsicNRosyField::fix_zero_cones(const Mesh<Scalar>& m)
     {
         // get zero and max neg cone
         std::vector<int> cones = generate_cones(m);
-        int num_vertices = cones.size();
-        int zero_cone = -1;
-        int max_cone = 0;
-        for (int vi = 0; vi < num_vertices; ++vi)
-        {
-            if (cones[vi] == 0) zero_cone = vi;
-            if (cones[vi] > cones[max_cone]) max_cone = vi;
-        }
+        int zero_cone = get_zero_cone(cones);
+        int max_cone = get_max_cone(cones);
         spdlog::info("Fixing zero cone at {} with angle {} at {}", zero_cone, cones[max_cone], max_cone);
 
-        // build path between cones
-        std::vector<int> path = find_shortest_path(m, zero_cone, max_cone);
+        // move curvature
+        move_cone(m, zero_cone, max_cone, 1);
+    }
+}
 
-        // adjust period jumps on path
-        for (int hij : path)
+void IntrinsicNRosyField::remove_greedy_cone_pairs(const Mesh<Scalar>& m)
+{
+    // get pos and neg cone
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+
+    while (true)
+    {
+        int pos_cone = -1;
+        int neg_cone = -1;
+        // find positive and negative cone
+        for (int vi = 0; vi < num_vertices; ++vi)
         {
-            int hji = m.opp[hij];
-            ++period_jump[hij];
-            --period_jump[hji];
+            // check if positive or negative cone
+            if (cones[vi] > 4) neg_cone = vi;
+            if (cones[vi] < 4) pos_cone = vi;
+
+            // check if both cones found
+            if ((neg_cone >= 0) && (pos_cone >= 0)) break;
         }
+
+        // stop if only positive or negative cones remain
+        if ((neg_cone < 0) || (pos_cone < 0)) break;
+
+        // move curvature if cone pair found
+        move_cone(m, pos_cone, neg_cone, 1);
+        cones[pos_cone]++;
+        cones[neg_cone]--;
+    }
+}
+
+void IntrinsicNRosyField::concentrate_curvature(const Mesh<Scalar>& m)
+{
+    // get cones
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+
+    // nothing to do on genus zero surface with positive defect
+    if (compute_total_defect(m) > 0) return;
+
+    // get cone with most curvature to concentrate curvature at
+    int max_cone = get_max_cone(cones);
+
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        // get defect to move
+        int defect = (4 - cones[vi]);
+        if (defect == 0) continue;
+        move_cone(m, vi, max_cone, defect);
     }
 }
 

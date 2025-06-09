@@ -13,6 +13,7 @@ struct FieldParameters
 {
     Scalar min_angle = 0.; // minimum allowed cone angle in the cross field
     bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
+    bool collapse_cones = false; // collapse as many cones as possible TODO
 };
 
 /**
