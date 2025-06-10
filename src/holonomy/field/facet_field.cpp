@@ -653,8 +653,8 @@ std::tuple<Eigen::VectorXi, Eigen::VectorXi> generate_halfedge_from_face_matchin
 {
     int num_faces = m.n_faces();
     int num_halfedges = m.n_halfedges();
-    assert(num_faces = F.rows());
-    assert(num_faces = F_matchings.rows());
+    assert(num_faces == F.rows());
+    assert(num_faces == F_matchings.rows());
 
     Eigen::VectorXi reference_halfedges(num_faces);
     Eigen::VectorXi matchings(num_halfedges);
