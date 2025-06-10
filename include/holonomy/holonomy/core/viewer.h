@@ -104,5 +104,11 @@ VectorX compute_angle_error(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& F_uv);
 
+Scalar compute_uv_length(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1);
+
+Scalar uv_cos_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1);
+
+Scalar uv_angle(const Eigen::Vector2d& uv_0, const Eigen::Vector2d& uv_1);
+
 } // namespace Holonomy
 } // namespace Penner
