@@ -226,7 +226,7 @@ void OptimizeNewton::update_log(const MarkedPennerConeMetric& marked_metric)
     }
 
     // Update holonomy error
-    log.max_error = constraint.cwiseAbs().maxCoeff();
+    log.max_error = (constraint.size() == 0) ? 0. : constraint.cwiseAbs().maxCoeff();
 
     // Update metric error
     log.rmse = Optimization::root_mean_square_error(l, l_init);
@@ -476,13 +476,13 @@ void OptimizeNewton::perform_line_search(
 bool OptimizeNewton::is_converged()
 {
     Scalar prev_constraint_max = constraint_max;
-    constraint_max = constraint.cwiseAbs().maxCoeff();
+    constraint_max = (constraint.size() == 0) ? 0. : constraint.cwiseAbs().maxCoeff();
     if (constraint_max == prev_constraint_max) {
         spdlog::info("Stopping optimization as error {} did not decrease", prev_constraint_max);
         return true;
     }
 
-    if (constraint.cwiseAbs().maxCoeff() < alg_params.error_eps) {
+    if (constraint_max <= alg_params.error_eps) {
         spdlog::info("Stopping optimization as max error {} reached", alg_params.error_eps);
         return true;
     }
@@ -491,13 +491,13 @@ bool OptimizeNewton::is_converged()
         return true;
     }
     if (log.num_iter >= alg_params.max_itr) {
-        spdlog::trace(
+        spdlog::info(
             "Stopping optimization as reached maximum iteration {}",
             alg_params.max_itr);
         return true;
     }
     if (timer.getElapsedTime() >= alg_params.max_time) {
-        spdlog::trace("Stopping optimization as reached maximum time {}", alg_params.max_time);
+        spdlog::info("Stopping optimization as reached maximum time {}", alg_params.max_time);
         return true;
     }
 
@@ -511,6 +511,8 @@ MarkedPennerConeMetric OptimizeNewton::run(
     const MatrixX& input_metric_basis_matrix,
     const NewtonParameters& input_alg_params)
 {
+    log = NewtonLog();
+    
     // Initialize logging methods
     timer.start();
     metric_basis_matrix = input_metric_basis_matrix;

@@ -234,12 +234,13 @@ void MarkedPennerConeMetric::reset_connectivity(const MarkedPennerConeMetric& m)
 void MarkedPennerConeMetric::reset_markings(const MarkedPennerConeMetric& m)
 {
     // Loop data
-    int num_basis_loops = n_homology_basis_loops();
+    int num_basis_loops = m.n_homology_basis_loops();
+    m_homology_basis_loops.resize(num_basis_loops);
     for (int i = 0; i < num_basis_loops; ++i) {
         m_homology_basis_loops[i] = m.get_homology_basis_loops()[i]->clone();
 
-        // kappa_hat does not change
     }
+    kappa_hat = m.kappa_hat;
 }
 
 void MarkedPennerConeMetric::reset_marked_metric(const MarkedPennerConeMetric& m)

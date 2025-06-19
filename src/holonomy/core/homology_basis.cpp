@@ -204,5 +204,45 @@ std::vector<int> HomotopyBasisGenerator::construct_homology_basis_loop(int index
     return std::get<0>(construct_homology_basis_edge_loop(index));
 }
 
+std::vector<DualSegment> HomotopyBasisGenerator::construct_homology_basis_dual_path(int index) const
+{
+    const Mesh<Scalar>& m = m_mesh;
+    auto [dual_loop_faces, dual_loop_edges] = construct_homology_basis_edge_loop(index);
+
+    // Resize dual loop to the size of the face loop
+    int num_segments = dual_loop_faces.size();
+    std::vector<DualSegment> dual_loop(num_segments);
+
+    // Get initial halfedge for the first face
+    int h = m.h[dual_loop_faces[0]];
+    for (int i = 0; i < num_segments; ++i) {
+        assert(m.f[h] == dual_loop_faces[i]);
+
+        // Find the edge adjacent to the next face in the sequence
+        int j = (i + 1) % num_segments; // next periodic index
+        int next_edge = dual_loop_edges[j];
+        int h_start = h;
+        while (m_he2e[h] != next_edge) {
+            h = m.n[h];
+
+            // Catch full face circulation without finding the desired next face
+            if (h == h_start) {
+                throw std::runtime_error("Face dual loop is not connected");
+            }
+        }
+
+        // Set dual loop halfedge indices for the current edge
+        dual_loop[i][1] = h;
+        dual_loop[j][0] = m.opp[h];
+
+        // Increment traversal halfedge to the next face
+        h = m.n[m.opp[h]];
+    }
+
+    assert(is_valid_dual_loop(m, dual_loop));
+    return dual_loop;
+}
+
+
 } // namespace Holonomy
 } // namespace Penner

@@ -26,6 +26,7 @@ struct MarkedMetricParameters
     bool remove_symmetry = false; // remove symmetry structure from doubled mesh
     bool free_interior = false; // remove interior cone constraints
     bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
+    bool use_connectivity = true; // use connectivity structure for markings
 };
 
 /**
