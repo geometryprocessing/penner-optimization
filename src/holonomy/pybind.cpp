@@ -9,6 +9,7 @@
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/rotation_form.h"
 #include "holonomy/field/intrinsic_field.h"
+#include "holonomy/field/frame_field.h"
 #include "holonomy/similarity/conformal.h"
 #include "holonomy/similarity/energy.h"
 #include "holonomy/similarity/layout.h"
@@ -153,6 +154,10 @@ void init_holonomy_pybind(pybind11::module& m)
         "generate_penner_coordinates",
         &generate_penner_coordinates,
         default_call_guard);
+
+    m.def("load_frame_field", &load_frame_field, default_call_guard);
+    m.def("write_frame_field", &write_frame_field, default_call_guard);
+    m.def("refine_frame_field", &refine_frame_field, default_call_guard);
 
 }
 

@@ -1,11 +1,13 @@
 add_subdirectory(util)
 add_subdirectory(optimization)
 add_subdirectory(holonomy)
+add_subdirectory(feature)
 
 add_library(PennerLib INTERFACE)
 target_link_libraries(PennerLib INTERFACE
   PennerOptimizationLib
   PennerHolonomyLib
+  PennerFeatureLib
 )
 
 if(USE_PYBIND)
@@ -15,8 +17,7 @@ if(USE_PYBIND)
 
   # Link libraries
   target_link_libraries(penner PUBLIC
-    PennerOptimizationLib
-    PennerHolonomyLib
+    PennerLib
     ${RENDER_LIBRARIES}
   )
 

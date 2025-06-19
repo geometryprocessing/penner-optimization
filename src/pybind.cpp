@@ -30,10 +30,12 @@
 *********************************************************************************/
 #include "optimization/pybind.h"
 #include "holonomy/pybind.h"
+#include "feature/pybind.h"
 
 using namespace Penner;
 using namespace Optimization;
 using namespace Holonomy;
+using namespace Feature;
 
 #ifdef PYBIND
 #ifndef MULTIPRECISION
@@ -44,6 +46,7 @@ PYBIND11_MODULE(penner, m)
     m.doc() = "pybindings for penner methods";
     init_optimization_pybind(m);
     init_holonomy_pybind(m);
+    init_feature_pybind(m);
 }
 
 #endif
