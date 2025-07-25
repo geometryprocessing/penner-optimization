@@ -830,7 +830,8 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(Mesh<Scalar>& m){
+compute_layout_VF(const Mesh<Scalar>& _m){
+    Mesh<Scalar> m = _m;
     auto m_type = m.type;
     m.type = std::vector<char>(m.n_halfedges(), 0);
     std::vector<bool> _is_cut_place_holder = {};
@@ -1436,7 +1437,7 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(Mesh<Scalar>& m_o);
+compute_layout_VF(const Mesh<Scalar>& m_o);
 
 template 
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
@@ -1487,7 +1488,7 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(Mesh<mpfr::mpreal>& m_o);
+compute_layout_VF(const Mesh<mpfr::mpreal>& m_o);
 
 template
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(

@@ -459,6 +459,9 @@ void init_parameterization_pybind(pybind11::module& m)
         &compute_uv_length_error,
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def("compute_layout_VF", &compute_layout_VF<double>, 
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
 
 #ifdef USE_HIGHFIVE

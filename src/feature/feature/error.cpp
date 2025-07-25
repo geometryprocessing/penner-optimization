@@ -83,8 +83,8 @@ double compute_face_edge_alignment(
     const Eigen::MatrixXi& F_uv,
     const FaceEdge& edge)
 {
-    Scalar right_alignment = compute_corner_alignment(uv, F_uv, edge.right_corner());
-    Scalar left_alignment = compute_corner_alignment(uv, F_uv, edge.left_corner());
+    double right_alignment = compute_corner_alignment(uv, F_uv, edge.right_corner());
+    double left_alignment = compute_corner_alignment(uv, F_uv, edge.left_corner());
     return max(right_alignment, left_alignment);
 }
 
@@ -309,7 +309,7 @@ Eigen::MatrixXd compute_height(const Eigen::MatrixXd& uv, const Eigen::MatrixXi&
 
             // get the length of the component of the next edge orthogonal to the base (i.e., the height)
             Eigen::Matrix<double, 1, 2> eij_perp(-eij[1], eij[0]);
-            Scalar lij = eij.norm();
+            double lij = eij.norm();
             height(fijk, k) = (lij > 0) ? (eij_perp.dot(ejk) / lij) : lij;
         }
     }

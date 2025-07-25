@@ -10,7 +10,8 @@ target_link_libraries(PennerLib INTERFACE
   PennerFeatureLib
 )
 
-if(USE_PYBIND)
+if(FALSE)
+#if(USE_PYBIND)
   add_library(penner MODULE
     pybind.cpp
   )

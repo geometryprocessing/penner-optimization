@@ -310,6 +310,12 @@ void OptimizeNewton::solve_linear_system()
 #else
         spdlog::error("Cholmod with SuiteSparse not available. Set USE_SUITESPARSE to use.");
 #endif
+    } else if (alg_params.solver == "gradient") {
+        MatrixX A = J * metric_basis_matrix;
+        VectorX rhs = constraint;
+        log.solve_time = 0.;
+
+        descent_direction = -metric_basis_matrix * (A.transpose() * rhs);
     } else {
         // Build pseudo-inverse
         MatrixX A = J * metric_basis_matrix;
@@ -415,8 +421,10 @@ void OptimizeNewton::perform_line_search(
     // constraint, but this may fail due to numerical instability or regularization
     Scalar l2_c0_sq = constraint.squaredNorm();
     Scalar proj_g0 = constraint.dot(J * descent_direction);
+    Scalar armijo_bound = l2_c0_sq + (alg_params.armijo_rate * lambda * proj_g0); 
     spdlog::debug("Initial squared error norm is {}", l2_c0_sq);
     spdlog::debug("Initial projected constraint is {}", proj_g0);
+    spdlog::debug("armijo bound is {}", armijo_bound);
 
     // Reduce descent direction range to avoid nans/infs
     if (alg_params.do_reduction) {
@@ -438,15 +446,17 @@ void OptimizeNewton::perform_line_search(
     Scalar l2_c_sq = constraint.squaredNorm();
     Scalar proj_cons = constraint.dot(J * descent_direction);
     Scalar gamma = 1.; // require ratio of current to initial constraint norm to be below alpha
-    bool bound_norm = true;
-    while ((bound_norm && (l2_c_sq > (gamma * l2_c0_sq))) || (proj_cons > 0)) {
+    bool bound_norm = (lambda > alg_params.bound_norm_thres);
+    while ((bound_norm && (l2_c_sq  > (gamma * armijo_bound))) || (proj_cons > 0)) {
         // Backtrack one step
         lambda /= 2;
+        armijo_bound = l2_c0_sq + (alg_params.armijo_rate * lambda * proj_g0); 
+        spdlog::debug("armijo bound is {}", armijo_bound);
 
         // If lambda low enough, stop bounding the norm
         if (lambda <= alg_params.bound_norm_thres) {
             bound_norm = false;
-            spdlog::debug("Dropping norm bound.");
+            spdlog::info("Dropping norm bound.");
         }
 
         // Change metric and update constraint
@@ -544,8 +554,6 @@ MarkedPennerConeMetric OptimizeNewton::run(
         if (is_converged()) break;
 
         // Increment iteration and lambda
-        itr++;
-        log.num_iter = itr;
         update_lambda();
 
         // Compute Newton descent direction
@@ -559,12 +567,14 @@ MarkedPennerConeMetric OptimizeNewton::run(
         perform_line_search(initial_marked_metric, *marked_metric);
 
         // Log current step
+        itr++;
+        log.num_iter = itr;
         log.step_size = lambda;
         log.time = timer.getElapsedTime();
         update_log(*marked_metric);
         write_log_entries();
         checkpoint_metric(*marked_metric);
-        spdlog::info("itr({}) lm({}) max_error({}))", itr, lambda, log.max_error);
+        spdlog::info("itr({}) lm({}) max_error({}) rmsre ({})", itr, lambda, log.max_error, log.rmsre);
     }
 
     // Close logging
@@ -586,6 +596,7 @@ void OptimizeHolonomyNewton::initialize_energy_log()
     energy_file << "rmsre,";
     energy_file << "rmse,";
     energy_file << "rrmse,";
+    energy_file << "average,";
     energy_file << std::endl;
 }
 
@@ -599,6 +610,7 @@ void OptimizeHolonomyNewton::write_energy_log_entry()
     energy_file << std::fixed << std::setprecision(8) << log.rmsre << ",";
     energy_file << std::fixed << std::setprecision(8) << log.rmse << ",";
     energy_file << std::fixed << std::setprecision(8) << log.rrmse << ",";
+    energy_file << std::fixed << std::setprecision(8) << holonomy_log.average << ",";
     energy_file << std::endl;
 }
 
@@ -669,6 +681,7 @@ void OptimizeHolonomyNewton::update_log(const MarkedPennerConeMetric& marked_met
     OptimizeNewton::update_log(marked_metric);
 
     // Update metric error
+    holonomy_log.average = (marked_metric.get_reduced_metric_coordinates()).mean();
     holonomy_log.l2_energy = l2_energy->EnergyFunctor::energy(marked_metric);
 
     // Update changes in angle for the gradient and direction

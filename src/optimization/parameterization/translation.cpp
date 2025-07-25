@@ -289,7 +289,7 @@ void compute_as_symmetric_as_possible_translations(
     he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
 
     // use zero coordinates as fallback for nans
-    if (std::isnan(he_translations.maxCoeff()))
+    if (isnan(he_translations.maxCoeff()))
     {
         spdlog::warn("Setting halfedge translations to zero due to numerical instability");
         he_translations.setZero();

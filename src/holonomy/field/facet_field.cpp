@@ -186,7 +186,7 @@ double diff_reference_angles(
     double kij = di - dj + M_PI;
     // kij += crossfield_angles[m.f[h]] - crossfield_angles[m.f[m.opp[h]]];
     //  to be consistent with mixed integer, ensure that kij \in (-pi, pi]
-    kij = pos_fmod(kij, 2 * M_PI);
+    kij = (double)(pos_fmod(kij, 2 * M_PI));
     if (kij > M_PI) {
         kij -= 2 * M_PI;
     }

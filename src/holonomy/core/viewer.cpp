@@ -590,7 +590,7 @@ void view_homology_basis(
 
         Eigen::VectorXd is_dual_loop_face = Eigen::VectorXd::Constant(num_faces, 0.5);
         for (const auto& dual_loop_face : dual_loop_faces) {
-            is_dual_loop_face(dual_loop_face) = marked_metric.kappa_hat[i];
+            is_dual_loop_face(dual_loop_face) = (double)(marked_metric.kappa_hat[i]);
             is_any_dual_loop_face(dual_loop_face) = i;
         }
         if (i < num_homology_basis_loops)

@@ -159,7 +159,7 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(Mesh<Scalar>& m);
+compute_layout_VF(const Mesh<Scalar>& m);
 
 template<typename OverlayScalar>
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(

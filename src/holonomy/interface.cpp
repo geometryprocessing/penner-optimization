@@ -17,7 +17,6 @@
 #include "util/io.h"
 #include "util/vector.h"
 
-
 #include <igl/facet_components.h>
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"

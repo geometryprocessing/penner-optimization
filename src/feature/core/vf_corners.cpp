@@ -484,7 +484,7 @@ Eigen::MatrixXd transfer_halfedge_function_to_corner(
             int vj = F(fijk, j);
             int vk = F(fijk, k);
             int hjk = vv2he.coeff(vj, vk) - 1;
-            corner_func(fijk, i) = halfedge_func[hjk];
+            corner_func(fijk, i) = (double)(halfedge_func[hjk]);
         }
     }
 

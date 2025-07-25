@@ -78,11 +78,11 @@ public:
         return (cone < min_cones[vj]);
     }
 
-    int test_round(int id, double x)
+    int test_round(int id, Scalar x)
     {
         int hij = var2he[id];
         //int rounded_value = ((x)<0?int((x)-0.5):int((x)+0.5));
-        int rounded_value = round(x);
+        int rounded_value = lround(x);
         int hji = opp[hij];
         values[hij] = rounded_value;
         values[hji] = -rounded_value;
@@ -109,7 +109,7 @@ public:
 
     }
 
-    int commit_round(int id, double x)
+    int commit_round(int id, Scalar x)
     {
         int rounded_value = test_round(id, x);
         int hij = var2he[id];
@@ -700,7 +700,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
         
         int fi = m.f[hij];
         int fj = m.f[hij];
-        //period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        //period_jump[hij] = (int)(lround((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
         period_jump[hij] = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
         period_jump[hji] = -period_jump[hij];
     }
@@ -782,7 +782,7 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
         
         int fi = m.f[hij];
         int fj = m.f[hij];
-        period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        period_jump[hij] = (int)(lround((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
         period_jump[hji] = -period_jump[hij];
         period_jump[m.R[hij]] = -period_jump[hij];
         period_jump[m.opp[m.R[hij]]] = period_jump[hij];
@@ -849,7 +849,7 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
         
         int fi = m.f[hij];
         int fj = m.f[hij];
-        //period_jump[hij] = (int)(round((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
+        //period_jump[hij] = (int)(lround((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
         period_jump[hij] = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
         period_jump[hji] = -period_jump[hij];
         period_jump[m.R[hij]] = -period_jump[hij];
@@ -1640,7 +1640,7 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
         if (halfedge_var_id[hij] != -1) {
             //if ((m.type[hij] == 2) || (m.type[m.opp[hij]] == 2)) continue;
             int hji = m.opp[hij];
-            period_jump[hij] = (int)std::round(x[halfedge_var_id[hij]]);
+            period_jump[hij] = lround(x[halfedge_var_id[hij]]);
             period_jump[hji] = -period_jump[hij];
 
             if (m.type[hij] > 0)
@@ -1687,7 +1687,7 @@ void IntrinsicNRosyField::compute_principal_matchings(const Mesh<Scalar>& m)
         int f0 = m.f[hij];
         int f1 = m.f[hji];
         Scalar delta_theta = theta[f0] - theta[f1] + kappa[hij];
-        period_jump[hij] = -round(delta_theta / period_value[hij]);
+        period_jump[hij] = -lround(delta_theta / period_value[hij]);
         period_jump[hji] = -period_jump[hij];
     }
 }
@@ -1707,7 +1707,7 @@ void IntrinsicNRosyField::fix_inconsistent_matchings(const Mesh<Scalar>& m)
         int f0 = m.f[hij];
         int f1 = m.f[hji];
         Scalar delta_theta = theta[f0] - theta[f1] + kappa[hij];
-        period_jump[hij] = -round(delta_theta / period_value[hij]);
+        period_jump[hij] = -lround(delta_theta / period_value[hij]);
         period_jump[hji] = -period_jump[hij];
     }
 }
@@ -1933,7 +1933,7 @@ std::vector<int> IntrinsicNRosyField::generate_base_cones(const Mesh<Scalar>& m)
     std::vector<int> base_cones(num_vertices, 0);
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+        base_cones[vi] = lround(Th_hat[vi] / (M_PI / 2.));
     }
 
     return base_cones;
@@ -1955,7 +1955,7 @@ std::vector<int> IntrinsicNRosyField::generate_kappa_cones(const Mesh<Scalar>& m
     std::vector<int> base_cones(num_vertices, 0);
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+        base_cones[vi] = lround(Th_hat[vi] / (M_PI / 2.));
     }
 
     return base_cones;
@@ -1979,7 +1979,7 @@ std::vector<int> IntrinsicNRosyField::generate_cones(const Mesh<Scalar>& m) cons
     std::vector<int> base_cones(num_vertices, 0);
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        base_cones[vi] = round(Th_hat[vi] / (M_PI / 2.));
+        base_cones[vi] = lround(Th_hat[vi] / (M_PI / 2.));
     }
 
     return base_cones;
