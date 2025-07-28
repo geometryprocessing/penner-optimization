@@ -142,6 +142,7 @@ void init_feature_pybind(pybind11::module& m)
 
 #ifdef WITH_MPFR
     m.def("parameterize_cut_mesh_mpfr", &parameterize_cut_mesh<mpfr::mpreal>, default_call_guard);
+    m.def("generate_connected_parameterization_mpfr", &generate_connected_parameterization<mpfr::mpreal>, default_call_guard);
 #endif
 
     m.def("mask_difference", &mask_difference, default_call_guard);
@@ -176,7 +177,6 @@ void init_feature_pybind(pybind11::module& m)
     m.def("write_boundary", &write_boundary, default_call_guard);
     m.def("write_features", &write_features, default_call_guard);
     m.def("generate_connected_parameterization", &generate_connected_parameterization<double>, default_call_guard);
-    m.def("generate_connected_parameterization_mpfr", &generate_connected_parameterization<mpfr::mpreal>, default_call_guard);
     m.def("load_feature_edges", &load_feature_edges, default_call_guard);
     m.def("load_mesh_edges", &load_mesh_edges, default_call_guard);
 }

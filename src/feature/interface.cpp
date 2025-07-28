@@ -325,6 +325,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     // parameterize the cut mesh in low precision
     bool use_uniform_bc = false;
     if (use_high_precision) {
+#ifdef WITH_MPFR
         mpfr::mpreal::set_default_prec(100);
         std::tie(V_o, F_o, uv_o, FT_o, fn_to_f, endpoints) = parameterize_cut_mesh<mpfr::mpreal>(
             embedding_metric,
@@ -335,6 +336,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
             face_reindex,
             use_uniform_bc,
             "./");
+#endif
     }
     else
     {

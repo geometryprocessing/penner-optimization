@@ -101,6 +101,7 @@ include(spectra)
 include(cli11)
 include(json)
 include(geometry-central)
+include(symmetric-dirichlet)
 
 include(directional)
 add_library(DirectionalLib INTERFACE)

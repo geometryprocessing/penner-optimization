@@ -60,7 +60,6 @@ target_include_directories(PennerFeatureLib PUBLIC ../../include/feature)
 target_link_libraries(PennerFeatureLib PUBLIC
   PennerOptimizationLib
   PennerHolonomyLib
-  FieldLib
   ${MPFR_LIBRARIES}
   igl::core
   ${SUITESPARSE_LIBS}
