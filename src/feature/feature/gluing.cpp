@@ -58,12 +58,16 @@ std::vector<Scalar> compute_glued_angles(
 {
     int num_glued_vertices = V_map.maxCoeff() + 1;
     std::vector<Scalar> Th_hat(num_glued_vertices, 0.);
+    bool is_cut = !(m.type[0] == 0);
 
     // sum up angles, dividing by 2 to account for doubling
     int num_ind_vertices = m.n_ind_vertices();
     for (int vi = 0; vi < num_ind_vertices; ++vi)
     {
-        Th_hat[V_map[vtx_reindex[vi]]] += (m.Th_hat[vi] / 2.);
+        int Vi = V_map[vtx_reindex[vi]];
+        Scalar theta = m.Th_hat[vi];
+        if (is_cut) theta /= 2.;
+        Th_hat[Vi] += theta;
     }
 
     return Th_hat;

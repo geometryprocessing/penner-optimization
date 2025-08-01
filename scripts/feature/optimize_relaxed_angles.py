@@ -107,7 +107,11 @@ def run_one(args, fname):
         logger.info("Generating parametrized mesh")
         aligned_metric_generator.parameterize(False)
         V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = aligned_metric_generator.get_parameterization()
+
+        logger.info("Refining field")
         reference_field_r, theta_r, kappa_r, period_jump_r = aligned_metric_generator.get_refined_field()
+
+        logger.info("Refining features and getting misaligned edges")
         feature_face_edges, misaligned_face_edges = aligned_metric_generator.get_refined_features()
         feature_edges = penner.compute_face_edge_endpoints(feature_face_edges, F_r)
         misaligned_edges = penner.compute_face_edge_endpoints(misaligned_face_edges, F_r)

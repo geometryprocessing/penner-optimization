@@ -15,7 +15,7 @@ import optimization_scripts.script_util as script_util
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 def compute_seamless_error(F, uv, FT):
-    uv_length_error, uv_angle_error, uv_length, uv_angle = feature.compute_seamless_error(F, uv, FT)
+    uv_length_error, uv_angle_error, uv_length, uv_angle = penner.compute_seamless_error(F, uv, FT)
     return max(np.max(uv_length_error), np.max(uv_angle_error))
 
 def is_seamless(F, uv, FT, thres=1e-10):
@@ -43,9 +43,9 @@ def run_one(args, fname):
     try:
         uv_path = os.path.join(output_dir, name + ".obj")
         V, uv, _, F, FT, _ = igl.read_obj(uv_path)
-        feature_edges = feature.load_mesh_edges(uv_path)
+        feature_edges = penner.load_mesh_edges(uv_path)
     except:
-        print("Could not load mesh")
+        print(f"Could not load mesh at {uv_path}")
         return {}
 
     # check if input is valid
@@ -55,7 +55,7 @@ def run_one(args, fname):
         return
 
     # attempt to make connected domain
-    uv_c, FT_c = feature.generate_connected_parameterization(V, F, uv, FT)
+    uv_c, FT_c = penner.generate_connected_parameterization(V, F, uv, FT)
 
     # try multiprecision if fails
     seamless_error = compute_seamless_error(F, uv_c, FT_c)
@@ -63,7 +63,7 @@ def run_one(args, fname):
     if (seamless_error > 1e-10):
         print(f"original mesh had seamless error {initial_seamless_error}")
         print(f"connected mesh is not seamless with error {seamless_error}; fallback to multiprecision")
-        uv_c, FT_c = feature.generate_connected_parameterization_mpfr(V, F, uv, FT)
+        uv_c, FT_c = penner.generate_connected_parameterization_mpfr(V, F, uv, FT)
 
         # report if multiprecision fails as well
         seamless_error = compute_seamless_error(F, uv_c, FT_c)

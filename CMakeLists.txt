@@ -37,7 +37,7 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(eigen)
 
 # Optionally get multiprecision libraries
-if(USE_MULTIPRECISION)
+if(USE_MULTIPRECISION OR USE_MULTIPRECISION_OVERLAY)
   # Turning this on activates mpfr in the conformal code
   option(LIBIGL_COPYLEFT_CGAL "Use CGAL" ON)
   add_compile_definitions(WITH_MPFR)
@@ -45,6 +45,9 @@ if(USE_MULTIPRECISION)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})
+endif()
+if(USE_MULTIPRECISION) 
+  add_compile_definitions(MULTIPRECISION)
 endif()
 
 # Optionally get frame field libraries
