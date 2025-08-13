@@ -216,6 +216,7 @@ AlignedMetricGenerator::AlignedMetricGenerator(
     const Eigen::VectorXd& theta_,
     const Eigen::MatrixXd& kappa_,
     const Eigen::MatrixXi& period_jump_,
+    MarkedMetricParameters marked_metric_params,
     Scalar regularization_factor,
     bool use_minimal_forest)
     : parameterized(false)
@@ -252,7 +253,6 @@ AlignedMetricGenerator::AlignedMetricGenerator(
     std::vector<std::pair<int, int>> relaxed_corners = compute_mask_corners(F_is_soft_feature);
 
     // build a cut metric generator for the field cut mesh and input field
-    MarkedMetricParameters marked_metric_params;
     marked_metric_params.remove_trivial_torus = false;
     marked_metric_params.use_log_length = true;
     CutMetricGenerator cut_metric_generator(V_cut, F_cut, marked_metric_params, relaxed_corners);
@@ -464,6 +464,7 @@ Eigen::MatrixXd generate_feature_aligned_metric(
     const NewtonParameters& alg_params)
 {
     // use utility class
+    MarkedMetricParameters marked_metric_params;
     AlignedMetricGenerator aligned_metric_generator(
         V,
         F,
@@ -472,7 +473,8 @@ Eigen::MatrixXd generate_feature_aligned_metric(
         reference_field,
         theta,
         kappa,
-        period_jump);
+        period_jump,
+        marked_metric_params);
     aligned_metric_generator.optimize_relaxed(alg_params);
     
     return aligned_metric_generator.get_metric();
@@ -497,6 +499,7 @@ generate_feature_aligned_parameterization(
     const NewtonParameters& alg_params)
 {
     // use utility class
+    MarkedMetricParameters marked_metric_params;
     AlignedMetricGenerator aligned_metric_generator(
         V,
         F,
@@ -505,7 +508,8 @@ generate_feature_aligned_parameterization(
         reference_field,
         theta,
         kappa,
-        period_jump);
+        period_jump,
+        marked_metric_params);
     aligned_metric_generator.optimize_relaxed(alg_params);
     
     return aligned_metric_generator.get_parameterization();

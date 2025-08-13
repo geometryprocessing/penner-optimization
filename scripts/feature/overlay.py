@@ -52,7 +52,7 @@ def run_one(args, fname):
 
     # load frame field
     try:
-        reference_field, theta, kappa, period_jump = feature.load_frame_field(os.path.join(args['field_dir'], name + ".ffield"))
+        reference_field, theta, kappa, period_jump = penner.load_frame_field(os.path.join(args['field_dir'], name + ".ffield"))
     except:
         logger.info("Could not open frame field")
         return
@@ -76,9 +76,9 @@ def run_one(args, fname):
 
     # generate hard feature constraints
     logger.info("Creating feature findere")
-    feature_finder = feature.FeatureFinder(V, F)
+    feature_finder = penner.FeatureFinder(V, F)
     feature_finder.mark_features(feature_edges)
-    hard_feature_finder = feature.FeatureFinder(V, F)
+    hard_feature_finder = penner.FeatureFinder(V, F)
     hard_feature_finder.mark_features(spanning_edges)
 
     # generate cut mesh and feature masks
@@ -92,15 +92,15 @@ def run_one(args, fname):
     marked_metric_params.remove_trivial_torus = False
     marked_metric_params.use_log_length = True
     marked_metric_params.remove_loop_constraints = True
-    cut_metric_generator = feature.CutMetricGenerator(V_cut, F_cut, marked_metric_params, [])
+    cut_metric_generator = penner.CutMetricGenerator(V_cut, F_cut, marked_metric_params, [])
     cut_metric_generator.set_fields(F_cut, reference_field, theta, kappa, period_jump)
     embedding_metric, vtx_reindex, face_reindex, rotation_form, Th_hat = cut_metric_generator.get_fixed_aligned_metric(V_map, marked_metric_params)
 
     # build metric with penner coordinates
     logger.info("Computing penner coordinates")
-    dirichlet_metric = feature.DirichletPennerConeMetric(embedding_metric)
-    opt_marked_metric = feature.DirichletPennerConeMetric(embedding_metric)
-    metric_coords = feature.transfer_corner_function_to_halfedge(
+    dirichlet_metric = penner.DirichletPennerConeMetric(embedding_metric)
+    opt_marked_metric = penner.DirichletPennerConeMetric(embedding_metric)
+    metric_coords = penner.transfer_corner_function_to_halfedge(
         dirichlet_metric,
         vtx_reindex,
         V_map,
@@ -110,7 +110,7 @@ def run_one(args, fname):
 
     logger.info("Generating parametrized mesh")
     if (args['use_robust_overlay']):
-        V_o, F_o, uv_o, FT_o, fn_to_f, endpoints = feature.parameterize_cut_mesh_mpfr(
+        V_o, F_o, uv_o, FT_o, fn_to_f, endpoints = penner.parameterize_cut_mesh_mpfr(
             embedding_metric,
             dirichlet_metric,
             opt_marked_metric,
@@ -120,7 +120,7 @@ def run_one(args, fname):
             args['use_uniform_bc'],
             "")
     else:
-        V_o, F_o, uv_o, FT_o, fn_to_f, endpoints = feature.parameterize_cut_mesh(
+        V_o, F_o, uv_o, FT_o, fn_to_f, endpoints = penner.parameterize_cut_mesh(
             embedding_metric,
             dirichlet_metric,
             opt_marked_metric,
@@ -129,11 +129,13 @@ def run_one(args, fname):
             face_reindex,
             args['use_uniform_bc'],
             "")
+    uv_mesh_path = os.path.join(output_dir, name + '_overlay_with_uv.obj')
+    penner.write_obj_with_uv(uv_mesh_path, V_o, F_o, uv_o, FT_o)
 
-    F_o_is_hard_feature = feature.generate_overlay_cut_mask(F_o, endpoints, F_cut, F_is_hard_feature)
-    F_o_is_feature = feature.generate_overlay_cut_mask(F_o, endpoints, F_cut, F_is_feature)
-    uv_o = feature.align_to_hard_features(uv_o, FT_o, F_o_is_hard_feature)
-    stitch_res = feature.stitch_cut_overlay(
+    F_o_is_hard_feature = penner.generate_overlay_cut_mask(F_o, endpoints, F_cut, F_is_hard_feature)
+    F_o_is_feature = penner.generate_overlay_cut_mask(F_o, endpoints, F_cut, F_is_feature)
+    uv_o = penner.align_to_hard_features(uv_o, FT_o, F_o_is_hard_feature)
+    stitch_res = penner.stitch_cut_overlay(
         V_o,
         F_o,
         uv_o,
@@ -150,25 +152,25 @@ def run_one(args, fname):
     refinement_mesh = penner.RefinementMesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s)
     V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = refinement_mesh.get_VF_mesh()
     if args['use_connected_layout']:
-        uv_r, FT_r = feature.generate_connected_parameterization(V_r, F_r, uv_r, FT_r)
-    F_r_is_feature = feature.generate_overlay_cut_mask(F_r, endpoints_r, F, F_is_feature)
+        uv_r, FT_r = penner.generate_connected_parameterization(V_r, F_r, uv_r, FT_r)
+    F_r_is_feature = penner.generate_overlay_cut_mask(F_r, endpoints_r, F, F_is_feature)
 
     # Write combined refined mesh with uv
     uv_mesh_path = os.path.join(output_dir, name + '_refined_with_uv.obj')
     logger.info("Saving refined uv mesh at {}".format(uv_mesh_path))
     penner.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
-    feature_corners = feature.compute_mask_corners(F_r_is_feature)
-    feature_face_edges = feature.compute_face_edges_from_corners(F_r, feature_corners)
-    feature_face_edges, misaligned_face_edges = feature.prune_misaligned_face_edges(
+    feature_corners = penner.compute_mask_corners(F_r_is_feature)
+    feature_face_edges = penner.compute_face_edges_from_corners(F_r, feature_corners)
+    feature_face_edges, misaligned_face_edges = penner.prune_misaligned_face_edges(
         uv_r,
         FT_r,
         feature_face_edges,
         args['feature_threshold'])
-    feature_edges = feature.compute_face_edge_endpoints(feature_face_edges, F_r)
-    feature_error = feature.compute_mask_uv_alignment(uv_r, FT_r, F_r_is_feature)
+    feature_edges = penner.compute_face_edge_endpoints(feature_face_edges, F_r)
+    feature_error = penner.compute_mask_uv_alignment(uv_r, FT_r, F_r_is_feature)
 
     # save misaligned edges to file
-    misaligned_edges = feature.compute_face_edge_endpoints(misaligned_face_edges, FT_r)
+    misaligned_edges = penner.compute_face_edge_endpoints(misaligned_face_edges, FT_r)
     misaligned_path = os.path.join(output_dir, name + '_refined_with_uv_misaligned_edges')
     np.savetxt(misaligned_path, misaligned_edges, fmt='%i')
 
@@ -177,11 +179,11 @@ def run_one(args, fname):
     uv_embed[:, :2] = uv_r[:, :2]
     uv_areas = 0.5 * igl.doublearea(uv_embed, FT_r)
     corner_angles = igl.internal_angles(uv_embed, FT_r)
-    height = feature.compute_height(uv_r, FT_r)
+    height = penner.compute_height(uv_r, FT_r)
 
     # write uv analysis
     analysis_dict = {} 
-    uv_length_error, uv_angle_error, uv_length, uv_angle = feature.compute_seamless_error(F_r, uv_r, FT_r)
+    uv_length_error, uv_angle_error, uv_length, uv_angle = penner.compute_seamless_error(F_r, uv_r, FT_r)
     analysis_dict['length_error'] = np.max(uv_length_error)
     analysis_dict['seamless_error'] = np.max(uv_angle_error)
     analysis_dict['feature_error'] = np.max(feature_error)
@@ -189,7 +191,7 @@ def run_one(args, fname):
     analysis_dict['height'] = np.min(height)
     analysis_dict['min_angle'] = np.min(corner_angles)
     analysis_dict['max_angle'] = np.max(corner_angles)
-    analysis_dict['num_flipped'] = feature.check_flip(uv_r, FT_r)
+    analysis_dict['num_flipped'] = penner.check_flip(uv_r, FT_r)
     analysis_df = pd.DataFrame(analysis_dict, index=[name,])
     csv_path = os.path.join(output_dir, 'uv_analysis.csv')
     logger.info(f"Saving analysis table to {csv_path}")
@@ -205,12 +207,12 @@ def run_one(args, fname):
     # write seams and features
     global_output_dir = os.path.join(args['output_dir'], "output")
     seam_path = os.path.join(global_output_dir, name + '_seams.obj')
-    feature.write_seams(seam_path, V_r, F_r, FT_r, F_r_is_feature)
+    penner.write_seams(seam_path, V_r, F_r, FT_r, F_r_is_feature)
     feature_path = os.path.join(global_output_dir, name + '_features.obj')
-    feature.write_features(feature_path, V_r, F_r, F_r_is_feature)
+    penner.write_features(feature_path, V_r, F_r, F_r_is_feature)
 
     # refine cross field
-    reference_field_r, theta_r, kappa_r, period_jump_r = feature.refine_frame_field(
+    reference_field_r, theta_r, kappa_r, period_jump_r = penner.refine_frame_field(
         F_r,
         FT_r,
         fn_to_f_r,
@@ -232,7 +234,7 @@ def run_one(args, fname):
     np.savetxt(endpoints_path, endpoints_r, fmt='%i')
 
     output_filename = os.path.join(output_dir, m + ".ffield")
-    feature.write_frame_field(output_filename, reference_field_r, theta_r, kappa_r, period_jump_r);
+    penner.write_frame_field(output_filename, reference_field_r, theta_r, kappa_r, period_jump_r);
     
 
 def run_many(args):

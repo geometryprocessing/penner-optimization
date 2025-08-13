@@ -52,7 +52,7 @@ def run_one(args, fname):
     initial_seamless_error = compute_seamless_error(F, uv, FT)
     if (initial_seamless_error > 1e-7):
         print(f"Input mesh is not seamless with error {initial_seamless_error}")
-        return
+        #return
 
     # attempt to make connected domain
     uv_c, FT_c = penner.generate_connected_parameterization(V, F, uv, FT)

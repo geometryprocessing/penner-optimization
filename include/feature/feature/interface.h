@@ -143,6 +143,7 @@ public:
         const Eigen::VectorXd& theta_,
         const Eigen::MatrixXd& kappa_,
         const Eigen::MatrixXi& period_jump_,
+        MarkedMetricParameters marked_metric_params,
         Scalar regularization_factor=1.,
         bool use_minimal_forest=false);
 

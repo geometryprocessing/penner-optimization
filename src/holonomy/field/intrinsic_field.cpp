@@ -1385,7 +1385,8 @@ void IntrinsicNRosyField::initialize_double_mixed_integer_system(const Mesh<Scal
     // TODO: Soft constraints
 }
 
-
+// TODO Make option and make cone rounder code public
+#if ROUND_CONES
 class ConeMISolver : public COMISO::MISolver
 {
 public:
@@ -1546,6 +1547,7 @@ public:
     }
 
 };
+#endif
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
 {
@@ -1618,10 +1620,13 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
         min_cones = generate_min_cones(m);
     }
     Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
+#if ROUND_CONES
     ConeMISolver cs;
     cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
-    //COMISO::MISolver cs;
-    //cs.solve(Acsc, x, gmm_b, var_edges);
+#else
+    COMISO::MISolver cs;
+    cs.solve(Acsc, x, gmm_b, var_edges);
+#endif
 
     // Copy the face angles
     int num_faces = m.n_faces();

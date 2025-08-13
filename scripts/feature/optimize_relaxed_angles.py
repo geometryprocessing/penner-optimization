@@ -74,6 +74,8 @@ def run_one(args, fname):
     alg_params.error_log = True
 
     # build optimizer
+    marked_metric_params = penner.MarkedMetricParameters()
+    marked_metric_params.remove_loop_constraints = args['remove_holonomy_constraints']
     regularization_factor = 0. if args['use_initial_zero'] else 1.
     aligned_metric_generator = penner.AlignedMetricGenerator(
         V,
@@ -84,6 +86,7 @@ def run_one(args, fname):
         theta,
         kappa,
         period_jump,
+        marked_metric_params,
         regularization_factor,
         args['use_minimal_forest'])
 
@@ -204,6 +207,8 @@ def add_arguments(parser):
                                                      type=bool, default=False)
     parser.add_argument("--regenerate_metric",  help="don't skip optimization if already complete",
                                                      type=bool, default=False)
+    parser.add_argument("--remove_holonomy_constraints",      help="remove holonomy constraints",
+                                                     action="store_true")
     parser.add_argument("-o",  "--output_dir",
                         help="directory for output lambdas and logs")
 

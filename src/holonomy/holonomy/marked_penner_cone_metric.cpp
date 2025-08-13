@@ -345,6 +345,7 @@ std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_con
     alg_params.error_eps = proj_params->error_eps;
     alg_params.do_reduction = proj_params->do_reduction;
     alg_params.output_dir = proj_params->output_dir;
+    alg_params.solver = "ldlt";
     spdlog::info("Doing projection");
     spdlog::info("Output to {}", alg_params.output_dir);
 

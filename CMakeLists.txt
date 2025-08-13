@@ -98,13 +98,14 @@ if(USE_SUITESPARSE)
 endif()
 
 # Get external libraries
+include(boost)
 include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)
 include(cli11)
 include(json)
 include(geometry-central)
-include(symmetric-dirichlet)
+#include(symmetric-dirichlet)
 
 include(directional)
 add_library(DirectionalLib INTERFACE)

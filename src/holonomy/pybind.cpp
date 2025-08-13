@@ -15,12 +15,26 @@
 #include "holonomy/similarity/layout.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 #include "util/boundary.h"
+#include "igl/writeOBJ.h"
 
 namespace Penner {
 namespace Holonomy {
 
 #ifdef PYBIND
 #ifndef MULTIPRECISION
+
+void writeOBJ(
+    const std::string str,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& CN,
+    const Eigen::MatrixXi& FN,
+    const Eigen::MatrixXd& TC,
+    const Eigen::MatrixXi& FTC)
+{
+    igl::writeOBJ(str, V, F, CN, FN, TC, FTC);
+}
+
 
 void init_holonomy_pybind(pybind11::module& m)
 {
@@ -158,6 +172,7 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("load_frame_field", &load_frame_field, default_call_guard);
     m.def("write_frame_field", &write_frame_field, default_call_guard);
     m.def("refine_frame_field", &refine_frame_field, default_call_guard);
+    m.def("write_obj", writeOBJ, default_call_guard);
 
 }
 

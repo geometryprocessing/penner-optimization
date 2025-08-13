@@ -15,6 +15,7 @@
 #include "feature/dirichlet/optimization.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 #include "feature/dirichlet/angle_constraint_relaxer.h"
+#include "feature/experimental/polygon_cones.h"
 #include "feature/feature/error.h"
 #include "feature/feature/features.h"
 #include "feature/core/viewer.h"
@@ -117,6 +118,7 @@ void init_feature_pybind(pybind11::module& m)
             const Eigen::VectorXd&,
             const Eigen::MatrixXd&,
             const Eigen::MatrixXi&,
+            MarkedMetricParameters,
             Scalar,
             bool>())
         .def("optimize_full", &AlignedMetricGenerator::optimize_full)
@@ -159,6 +161,7 @@ void init_feature_pybind(pybind11::module& m)
     m.def("align_to_hard_features", &align_to_hard_features, default_call_guard);
     m.def("stitch_cut_overlay", &stitch_cut_overlay, default_call_guard);
     m.def("compute_edge_alignment", &compute_edge_alignment, default_call_guard);
+    m.def("compute_edge_corners", &compute_edge_corners, default_call_guard);
     m.def("prune_misaligned_corners", &prune_misaligned_corners, default_call_guard);
     m.def("prune_misaligned_edges", &prune_misaligned_edges, default_call_guard);
     m.def("prune_redundant_edge_corners", &prune_redundant_edge_corners, default_call_guard);
@@ -179,6 +182,7 @@ void init_feature_pybind(pybind11::module& m)
     m.def("generate_connected_parameterization", &generate_connected_parameterization<double>, default_call_guard);
     m.def("load_feature_edges", &load_feature_edges, default_call_guard);
     m.def("load_mesh_edges", &load_mesh_edges, default_call_guard);
+    m.def("generate_polygon_cones", &generate_polygon_cones, default_call_guard);
 }
 
 #endif
