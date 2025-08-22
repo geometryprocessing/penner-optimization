@@ -141,12 +141,25 @@ void log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name);
  * @param output_filename: filename for writing
  */
 template <typename VectorType>
-void write_vector(const VectorType& v, const std::string& output_filename, int precision = 17)
+void write_vector(
+    const VectorType& v,
+    const std::string& output_filename,
+    int precision = 17,
+    std::string sep = "\n",
+    bool append = false)
 {
-    std::ofstream output_file(output_filename, std::ios::out | std::ios::trunc);
+    std::ofstream output_file;
+    if (append)
+    {
+        output_file = std::ofstream(output_filename, std::ios::out | std::ios::app);
+    }
+    else
+    {
+        output_file = std::ofstream(output_filename, std::ios::out | std::ios::trunc);
+    }
     int n = v.size();
     for (int i = 0; i < n; ++i) {
-        output_file << std::setprecision(precision) << v[i] << std::endl;
+        output_file << std::setprecision(precision) << v[i] << sep;
     }
     output_file.close();
 }

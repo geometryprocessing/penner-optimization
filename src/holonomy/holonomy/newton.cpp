@@ -421,9 +421,11 @@ void OptimizeNewton::perform_line_search(
     // constraint, but this may fail due to numerical instability or regularization
     Scalar l2_c0_sq = constraint.squaredNorm();
     Scalar proj_g0 = constraint.dot(J * descent_direction);
+    Scalar l2_grad_max = (J.transpose() * constraint).cwiseAbs().maxCoeff();
     Scalar armijo_bound = l2_c0_sq + (alg_params.armijo_rate * lambda * proj_g0); 
     spdlog::debug("Initial squared error norm is {}", l2_c0_sq);
     spdlog::debug("Initial projected constraint is {}", proj_g0);
+    spdlog::debug("Max coefficient of the l2 norm gradient is {}", l2_grad_max);
     spdlog::debug("armijo bound is {}", armijo_bound);
 
     // Reduce descent direction range to avoid nans/infs
