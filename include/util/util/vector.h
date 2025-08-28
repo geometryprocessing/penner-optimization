@@ -47,6 +47,33 @@ std::vector<Type> convert_vector(const Eigen::Matrix<Type, Eigen::Dynamic, 1>& v
     return std::vector<Type>(v.data(), v.data() + v.size());
 }
 
+/**
+ * @brief Check if two vectors are equal, up to numerical tolerance.
+ * 
+ * @tparam VectorType 
+ * @param v: first vector
+ * @param w: second vector
+ * @return true if equal
+ * @return false otherwise
+ */
+template <typename VectorType>
+bool vector_equal(const VectorType& v, const VectorType& w)
+{
+    int n = v.size();
+    int m = w.size();
+
+    // check for consistent sizes
+    if (n != m) return false;
+
+    // check all entries
+    for (int i = 0; i < n; ++i)
+    {
+        if (!float_equal(v[i], w[i])) return false;
+    }
+
+    return true;
+}
+
 template <typename VectorType>
 Scalar compute_total_sum(const VectorType& v)
 {

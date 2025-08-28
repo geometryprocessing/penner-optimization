@@ -765,7 +765,7 @@ void check_if_flipped(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::
 }
 
 template<typename OverlayScalar>
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const Mesh<OverlayScalar>& m,
     const std::vector<OverlayScalar>& u_vec,
     const std::vector<OverlayScalar>& v_vec)
@@ -779,16 +779,21 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     }
 
     Eigen::MatrixXi F(m.n_faces(), 3);
+    Eigen::MatrixXi FT(m.n_faces(), 3);
     for (int f = 0; f < m.n_faces(); ++f) {
         int hij = m.h[f];
         int hjk = m.n[hij];
         int hki = m.n[hjk];
-        F(f, 0) = hij;
-        F(f, 1) = hjk;
-        F(f, 2) = hki;
+        F(f, 0) = m.to[hij];
+        F(f, 1) = m.to[hjk];
+        F(f, 2) = m.to[hki];
+
+        FT(f, 0) = hij;
+        FT(f, 1) = hjk;
+        FT(f, 2) = hki;
     }
 
-    return std::make_tuple(uv, F);
+    return std::make_tuple(F, uv, FT);
 }
 
 template <typename Scalar>
@@ -798,11 +803,11 @@ void view_halfedge_mesh_type(
     const std::vector<Scalar>& v_vec,
     const std::vector<char>& type)
 {
-    auto [uv, F] = build_layout_VF(m, u_vec, v_vec);
+    auto [F, uv, FT] = build_layout_VF(m, u_vec, v_vec);
 #if ENABLE_VISUALIZATION
     spdlog::info("Viewing layout");
     polyscope::init();
-    polyscope::registerSurfaceMesh2D("layout", uv, F)
+    polyscope::registerSurfaceMesh2D("layout", uv, FT)
         ->addVertexScalarQuantity("type", type);
     polyscope::show();
 #endif
@@ -825,33 +830,31 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(OverlayMesh<Scalar>& m_o){
-    // Compute layout of the underlying flipped mesh
-    auto mc = m_o.cmesh();
-    m_o.garbage_collection();
-    auto mc_type = mc.type;
-    mc.type = std::vector<char>(mc.n_halfedges(), 0);
+compute_layout_VF(const Mesh<Scalar>& _m){
+    Mesh<Scalar> m = _m;
+    auto m_type = m.type;
+    m.type = std::vector<char>(m.n_halfedges(), 0);
     std::vector<bool> _is_cut_place_holder = {};
-    std::vector<Scalar> u_vec(mc.n_ind_vertices(), 0.0);
-    auto layout_res = compute_layout(mc, u_vec, _is_cut_place_holder);
+    std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
+    auto layout_res = compute_layout(m, u_vec, _is_cut_place_holder);
     auto _u_c = std::get<0>(layout_res);
     auto _v_c = std::get<1>(layout_res);
-    mc.type = mc_type;
+    m.type = m_type;
 
-    int num_vertices = mc.n_ind_vertices();
-    int num_halfedges = mc.n_halfedges();
-    int num_faces = mc.n_faces();
+    int num_vertices = m.n_ind_vertices();
+    int num_halfedges = m.n_halfedges();
+    int num_faces = m.n_faces();
     Eigen::MatrixXi F_c(num_faces, 3);
     Eigen::MatrixXd uv_c(num_halfedges, 2);
     Eigen::MatrixXi FT_c(num_faces, 3);
     for (int fijk = 0; fijk < num_faces; ++fijk)
     {
-        int hij = mc.h[fijk];
+        int hij = m.h[fijk];
         for (int i = 0; i < 3; ++i)
         {
-            F_c(fijk, i) = mc.v_rep[mc.to[hij]];
+            F_c(fijk, i) = m.v_rep[m.to[hij]];
             FT_c(fijk, i) = hij;
-            hij = mc.n[hij];
+            hij = m.n[hij];
         }
     }
     for (int hij = 0; hij < num_halfedges; ++hij)
@@ -861,6 +864,17 @@ compute_layout_VF(OverlayMesh<Scalar>& m_o){
     }
 
     return std::make_tuple(F_c, uv_c, FT_c);
+}
+
+[[deprecated]]
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> generate_layout(Mesh<Scalar>& m)
+{
+    std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.);
+    std::vector<bool> is_cut;
+    auto layout_res = compute_layout(m, u_vec, is_cut);
+    auto u_c = std::get<0>(layout_res);
+    auto v_c = std::get<1>(layout_res);
+    return build_layout_VF(m, u_c, v_c);
 }
 
 /**
@@ -921,8 +935,8 @@ get_consistent_layout(
 
     if (layout_output_path != "")
     {
-        auto [uv_c, F_c] = build_layout_VF(mc, _u_c, _v_c);
-        igl::writeOBJ(layout_output_path, uv_c, F_c);
+        auto [F_c, uv_c, FT_c] = build_layout_VF(mc, _u_c, _v_c);
+        igl::writeOBJ(layout_output_path, uv_c, FT_c);
     }
 
 #ifdef CHECK_VALIDITY
@@ -1423,10 +1437,10 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(OverlayMesh<Scalar>& m_o);
+compute_layout_VF(const Mesh<Scalar>& m_o);
 
 template 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u_vec,
     const std::vector<Scalar>& v_vec);
@@ -1474,10 +1488,10 @@ std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(OverlayMesh<mpfr::mpreal>& m_o);
+compute_layout_VF(const Mesh<mpfr::mpreal>& m_o);
 
 template
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const Mesh<mpfr::mpreal>& m,
     const std::vector<mpfr::mpreal>& u_vec,
     const std::vector<mpfr::mpreal>& v_vec);

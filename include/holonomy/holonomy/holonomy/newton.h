@@ -30,6 +30,7 @@ struct NewtonParameters
     Scalar min_lambda = 1e-16; // terminate if lambda drops below this threshold
     int log_level = -1; // controlling detail of console logging
     Scalar bound_norm_thres = 1e-8; // line step threshold to stop bounding the error norm
+    Scalar armijo_rate = 0.; // parameter for armijo decrease condition
 
 #ifdef USE_SUITESPARSE
     std::string solver = "cholmod"; // solver to use for pseudoinverse computation
@@ -75,6 +76,7 @@ struct HolonomyNewtonLog
 {
     Scalar l2_energy = 0.0; // l2 deviation from original metric coordinates
     Scalar direction_angle_change = 0.0; // angle between current and previous iteration descent direction
+    Scalar average = 0.0; // average metric coordinates
     Scalar error_norm_sq; // TODO
     Scalar proj_grad; // TODO
 };

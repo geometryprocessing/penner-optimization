@@ -17,7 +17,6 @@
 #include "util/io.h"
 #include "util/vector.h"
 
-
 #include <igl/facet_components.h>
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
@@ -166,34 +165,31 @@ void generate_basis_loops(
 
     // Initialize basis list loop and lambda to add loops
     basis_loops.reserve(num_basis_loops);
-    bool use_connectivity = true;
-    auto add_basis_loop = [&](const std::vector<int>& basis_loop) {
+    auto add_basis_loop = [&](const std::vector<DualSegment>& basis_loop) {
         // increment count
         num_basis_loops++;
 
         // Use custom data structure for dual loop tracking
-        if (use_connectivity) {
-            basis_loops.push_back(std::make_unique<DualLoopConnectivity>(
-                DualLoopConnectivity(build_dual_path_from_face_sequence(m, basis_loop))));
+        if (marked_metric_params.use_connectivity) {
+            basis_loops.push_back(std::make_unique<DualLoopConnectivity>(DualLoopConnectivity(basis_loop)));
         }
         // Use simpler list representation
         else {
-            basis_loops.push_back(std::make_unique<DualLoopList>(
-                DualLoopList(build_dual_path_from_face_sequence(m, basis_loop))));
+            basis_loops.push_back(std::make_unique<DualLoopList>(DualLoopList(basis_loop)));
         }
     };
 
     // Add homology basis loops
     for (int i = 0; i < num_homology_basis_loops; ++i) {
-        add_basis_loop(holonomy_basis_generator.construct_homology_basis_loop(i));
+        //auto basis_loop = holonomy_basis_generator.construct_homology_basis_loop(i);
+        //add_basis_loop(build_dual_path_from_face_sequence(m, basis_loop));
+        add_basis_loop(holonomy_basis_generator.construct_homology_basis_dual_path(i));
     }
 
     // Add boundary basis loops
     for (int i = 0; i < num_basis_boundaries; ++i) {
-        // TODO Think if need
-        // add_basis_loop(boundary_basis_generator.construct_boundary_basis_loop(i));
-
-        add_basis_loop(boundary_basis_generator.construct_boundary_path_basis_loop(i));
+        auto basis_loop = boundary_basis_generator.construct_boundary_path_basis_loop(i);
+        add_basis_loop(build_dual_path_from_face_sequence(m, basis_loop));
     }
 }
 

@@ -1,5 +1,9 @@
 #include "feature/interface.h"
 
+#ifdef WITH_MPFR
+#include <unsupported/Eigen/MPRealSupport>
+#endif
+
 #include "util/vf_mesh.h"
 #include "util/boundary.h"
 

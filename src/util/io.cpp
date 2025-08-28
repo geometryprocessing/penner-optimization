@@ -105,11 +105,11 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, st
     if (!input_file) return {};
 
     // Read file
-    std::vector<std::array<Scalar, 3>> matrix_vec = {};
+    std::vector<std::array<double, 3>> matrix_vec = {};
     std::string line;
     while (std::getline(input_file, line)) {
         std::istringstream iss(line);
-        Scalar v1, v2, v3;
+        double v1, v2, v3;
         iss >> v1 >> v2 >> v3;
         matrix_vec.push_back({v1, v2, v3});
     }

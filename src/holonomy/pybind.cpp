@@ -88,6 +88,12 @@ void init_holonomy_pybind(pybind11::module& m)
         .def_readwrite("min_angle", &FieldParameters::min_angle);
 
     pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
+        .def(pybind11::init<
+            const Mesh<Scalar>&,
+            const VectorX&,
+            const std::vector<std::unique_ptr<DualLoop>>&,
+            const std::vector<Scalar>&
+        >())
         .def_readwrite("kappa_hat", &MarkedPennerConeMetric::kappa_hat)
         .def("flip_ccw", &MarkedPennerConeMetric::flip_ccw)
         .def("undo_flips", &MarkedPennerConeMetric::undo_flips)

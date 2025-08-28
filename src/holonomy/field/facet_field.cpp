@@ -186,7 +186,7 @@ double diff_reference_angles(
     double kij = di - dj + M_PI;
     // kij += crossfield_angles[m.f[h]] - crossfield_angles[m.f[m.opp[h]]];
     //  to be consistent with mixed integer, ensure that kij \in (-pi, pi]
-    kij = pos_fmod(kij, 2 * M_PI);
+    kij = (double)(pos_fmod(kij, 2 * M_PI));
     if (kij > M_PI) {
         kij -= 2 * M_PI;
     }
@@ -653,8 +653,8 @@ std::tuple<Eigen::VectorXi, Eigen::VectorXi> generate_halfedge_from_face_matchin
 {
     int num_faces = m.n_faces();
     int num_halfedges = m.n_halfedges();
-    assert(num_faces = F.rows());
-    assert(num_faces = F_matchings.rows());
+    assert(num_faces == F.rows());
+    assert(num_faces == F_matchings.rows());
 
     Eigen::VectorXi reference_halfedges(num_faces);
     Eigen::VectorXi matchings(num_halfedges);

@@ -113,7 +113,6 @@ std::vector<bool> pullback_cut_to_overlay(
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
 
-
 // TODO: Document this technical function
 // Exposed for usage in other libraries
 template <typename OverlayScalar>
@@ -147,15 +146,23 @@ std::
         const Eigen::Vector2d& B,
         const Eigen::Vector2d& C);
 
+/**
+ * @brief Generate a mesh of the layout of the intrinsic metric.
+ * 
+ * @param m: mesh with intrinsic metric
+ * @return mesh faces
+ * @return planar layout vertices
+ * @return layout faces
+ */
 template <typename Scalar>
 std::tuple<
     Eigen::MatrixXi,
     Eigen::MatrixXd,
     Eigen::MatrixXi>
-compute_layout_VF(OverlayMesh<Scalar>& m_o);
+compute_layout_VF(const Mesh<Scalar>& m);
 
 template<typename OverlayScalar>
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
     const Mesh<Scalar>& m,
     const std::vector<Scalar>& u_vec,
     const std::vector<Scalar>& v_vec);

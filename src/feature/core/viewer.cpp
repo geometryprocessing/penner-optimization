@@ -10,11 +10,14 @@
 #include "feature/core/quads.h"
 #include "optimization/core/projection.h"
 #include "holonomy/field/intrinsic_field.h"
+#include "optimization/core/viewer.h"
 
 #include "holonomy/core/viewer.h"
 #include "util/vf_mesh.h"
 
 #include <igl/principal_curvature.h>
+#include <igl/per_vertex_normals.h>
+#include <igl/bounding_box_diagonal.h>
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/curve_network.h"
@@ -165,66 +168,6 @@ void view_feature_edges(
     polyscope::registerCurveNetwork(mesh_handle, V, E);
 
     if (show) polyscope::show();
-#endif
-}
-
-
-void view_cross_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta,
-    const Eigen::MatrixXd& kappa,
-    const Eigen::MatrixXi& period_jump,
-    std::string mesh_handle)
-{
-    if (mesh_handle == "") {
-        mesh_handle = "cross_field";
-    }
-
-    // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
-    int num_faces = F.rows();
-
-    // transfer kappa and period jump to viewer halfedge indexing
-    Eigen::VectorXd halfedge_kappa(3 * num_faces);
-    Eigen::VectorXd halfedge_period_jump(3 * num_faces);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        for (int i = 0; i < 3; ++i)
-        {
-            int j = (i + 1) % 3;
-            halfedge_kappa[3* fijk + j] = kappa(fijk, i);
-            halfedge_period_jump[3* fijk + j] = period_jump(fijk, i);
-        }
-    }
-
-#ifdef ENABLE_VISUALIZATION
-    polyscope::init();
-    polyscope::registerSurfaceMesh(mesh_handle, V, F);
-    polyscope::getSurfaceMesh(mesh_handle)
-        ->addFaceScalarQuantity(
-            "theta",
-            theta)
-        ->setColorMap("coolwarm")
-        ->setEnabled(true);
-    polyscope::getSurfaceMesh(mesh_handle)
-        ->addFaceVectorQuantity("reference", reference_field)
-        ->setVectorRadius(0.0005)
-        ->setVectorLengthScale(0.005)
-        ->setEnabled(true);
-    polyscope::getSurfaceMesh(mesh_handle)
-        ->addFaceVectorQuantity("frame", frame_field)
-        ->setVectorRadius(0.0005)
-        ->setVectorLengthScale(0.005)
-        ->setEnabled(true);
-    polyscope::getSurfaceMesh(mesh_handle)
-        ->addHalfedgeScalarQuantity("kappa", halfedge_kappa)
-        ->setEnabled(false);
-    polyscope::getSurfaceMesh(mesh_handle)
-        ->addHalfedgeScalarQuantity("period jump", halfedge_period_jump)
-        ->setEnabled(false);
-    polyscope::show();
 #endif
 }
 
@@ -516,6 +459,95 @@ void view_conformal_scaling(
         ->setEnabled(true);
 
     if (show) polyscope::show();
+#endif
+}
+
+Eigen::MatrixXd displace_cut_faces(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Scalar displacement
+) {
+    // compute normals for displacement
+    Eigen::MatrixXd N;
+    igl::per_vertex_normals(V, F, N);
+    Scalar abs_disp = displacement * igl::bounding_box_diagonal(V);
+
+    return V + abs_disp * N;
+}
+
+void view_feature_cross_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    Scalar displacement,
+    std::string mesh_handle)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "cross_field";
+    }
+
+    // generate frame field geometry from cross field
+    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
+    int num_faces = F.rows();
+
+    // transfer kappa and period jump to viewer halfedge indexing
+    Eigen::VectorXd halfedge_kappa(3 * num_faces);
+    Eigen::VectorXd halfedge_period_jump(3 * num_faces);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int j = (i + 1) % 3;
+            halfedge_kappa[3* fijk + j] = kappa(fijk, i);
+            halfedge_period_jump[3* fijk + j] = period_jump(fijk, i);
+        }
+    }
+
+    // displace the cut faces for visualization
+    Eigen::MatrixXd V_disp = displace_cut_faces(V, F, displacement);
+
+    // get cone angles
+    std::vector<Scalar> Th_hat = Holonomy::compute_cone_angle(V, F, kappa, period_jump);
+    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V_disp, Th_hat);
+
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V_disp, F);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "theta",
+            theta)
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceVectorQuantity("reference", reference_field)
+        ->setVectorRadius(0.0005)
+        ->setVectorLengthScale(0.005)
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceVectorQuantity("frame", frame_field)
+        ->setVectorRadius(0.0005)
+        ->setVectorLengthScale(0.005)
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity("kappa", halfedge_kappa)
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity("period jump", halfedge_period_jump)
+        ->setEnabled(false);
+        
+    polyscope::registerPointCloud("cross_field_cones", cone_positions);
+    polyscope::getPointCloud("cross_field_cones")
+        ->addScalarQuantity("index", cone_values)
+        ->setColorMap("coolwarm")
+        ->setMapRange({-M_PI, M_PI})
+        ->setEnabled(true);
+
+    polyscope::show();
 #endif
 }
 

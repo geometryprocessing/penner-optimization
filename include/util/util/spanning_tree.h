@@ -24,7 +24,7 @@ public:
      *
      * @return number of edges
      */
-    int n_edges() const { return m_edges.size(); }
+    int n_edges() const { return m_halfedges.size(); }
 
     /**
      * @brief Get the number of vertices in the forest
@@ -42,7 +42,13 @@ public:
     int edge(int index) const
     {
         assert(is_valid_index(index));
-        return m_edges[index];
+        return he2e[m_halfedges[index]];
+    }
+
+    int halfedge(int index) const
+    {
+        assert(is_valid_index(index));
+        return m_halfedges[index];
     }
 
     /**
@@ -108,7 +114,7 @@ public:
     }
 
 protected:
-    std::vector<int> m_edges;
+    std::vector<int> m_halfedges;
     std::vector<bool> m_edge_is_in_forest;
 
     // Edge to vertex maps
@@ -118,13 +124,15 @@ protected:
     // Vertex to edge maps
     std::vector<int> m_out;
 
+    // maps from edges to halfedges
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+
     // Index validation
-    int num_indices() const { return m_edges.size(); }
+    int num_indices() const { return m_halfedges.size(); }
     int num_edges() const { return m_edge_is_in_forest.size(); }
     int num_vertices() const { return m_out.size(); }
-    bool is_valid_index(int index) const {
-        return ((index >= 0) && (index < num_indices()));
-    }
+    bool is_valid_index(int index) const { return ((index >= 0) && (index < num_indices())); }
     bool is_valid_vertex_index(int vertex_index) const
     {
         return ((vertex_index >= 0) && (vertex_index < num_vertices()));
@@ -165,7 +173,7 @@ public:
         const std::vector<Scalar>& weights,
         int root = 0,
         bool use_shortest_path = false);
-        
+
     /**
      * @brief Determine if a mesh edge is in the tree
      *
@@ -173,10 +181,7 @@ public:
      * @return true if the edge is in the tree
      * @return false otherwise
      */
-    bool is_edge_in_tree(int edge_index) const
-    {
-        return is_edge_in_forest(edge_index);
-    }
+    bool is_edge_in_tree(int edge_index) const { return is_edge_in_forest(edge_index); }
 
 protected:
     void initialize_primal_tree(
@@ -220,10 +225,7 @@ public:
      * @return true if the edge is in the tree
      * @return false otherwise
      */
-    bool is_edge_in_tree(int edge_index) const
-    {
-        return is_edge_in_forest(edge_index);
-    }
+    bool is_edge_in_tree(int edge_index) const { return is_edge_in_forest(edge_index); }
 
 protected:
     void initialize_dual_tree(const Mesh<Scalar>& m, const std::vector<int>& face_from_halfedge);
@@ -275,7 +277,7 @@ class DualCotree : public DualTree
 public:
     /**
      * @brief Construct an empty Dual Cotree object
-     * 
+     *
      */
     DualCotree() {}
 
@@ -337,5 +339,14 @@ std::vector<int> build_dual_forest(
     int f_start = 0,
     bool use_shortest_path = false);
 
+/**
+ * @brief Find the shortest path from the start vertex to the end vertex.
+ *
+ * @param m: mesh
+ * @param v_start: starting vertex
+ * @param v_end: ending vertex
+ * @return path of halfedges from the starting to ending vertex
+ */
+std::vector<int> find_shortest_path(const Mesh<Scalar>& m, int v_start, int v_end);
 
 } // namespace Penner

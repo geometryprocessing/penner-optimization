@@ -17,6 +17,7 @@ namespace Holonomy {
  */
 VectorX
 Kappa(const Mesh<Scalar>& m, const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops, const VectorX& alpha);
+VectorX Kappa(const MarkedPennerConeMetric& marked_metric, const VectorX& alpha);
 
 /**
  * @brief Compute vertex cone holonomy constraints

@@ -21,8 +21,10 @@ using namespace OverlayProblem;
 #include <unsupported/Eigen/MPRealSupport>
 #include "mpreal.h"
 typedef mpfr::mpreal Scalar;
+const Scalar PI = Scalar(mpfr::const_pi());
 #else
 typedef double Scalar;
+const Scalar PI = M_PI;
 #endif
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> VectorX;

@@ -64,6 +64,7 @@ namespace Optimization {
 class DifferentiableConeMetric : public Mesh<Scalar>
 {
 public:
+    DifferentiableConeMetric() {};
     DifferentiableConeMetric(const Mesh<Scalar>& m);
 
     std::vector<int> he2e; // map from halfedge to edge
@@ -258,6 +259,7 @@ protected:
 class PennerConeMetric : public DifferentiableConeMetric
 {
 public:
+    PennerConeMetric();
     PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords);
 
     // ****************************************************

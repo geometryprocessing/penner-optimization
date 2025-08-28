@@ -103,28 +103,6 @@ void view_feature_edges(
     bool show=true);
 
 /**
- * @brief View a cross field on a mesh.
- * 
- * TODO: Move to holonomy
- * 
- * @param V: mesh vertices
- * @param F: mesh faces
- * @param reference_field: per-face reference tangent direction matrix
- * @param theta: offset angles of a representative cross field direction relative to the reference
- * @param kappa: per-corner rotation angle of the reference direction field across the opposite edge
- * @param period_jump: per-corner period jump of the cross field across the opposite edge
- * @param mesh_handle: (optional) name for edge mesh
- */
-void view_cross_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta,
-    const Eigen::MatrixXd& kappa,
-    const Eigen::MatrixXi& period_jump,
-    std::string mesh_handle = "intrinsic_field_mesh");
-
-/**
  * @brief View a quad mesh and its irregular vertices.
  * 
  * @param V: mesh vertices
@@ -238,6 +216,41 @@ void view_conformal_scaling(
     const Eigen::MatrixXi& F_uv,
     std::string mesh_handle="",
     bool show=true);
+
+/**
+ * @brief Displace mesh vertices along normals, offsetting feature cut faces.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param displacement: (optional) displacement of mesh faces (relative to the bounding box diagonal)
+ * @return displaced mesh vertices
+ */
+Eigen::MatrixXd displace_cut_faces(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Scalar displacement=0.01);
+
+/**
+ * @brief View a cross field on a cut mesh with displaced cut faces.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param reference_field: per-face reference tangent direction matrix
+ * @param theta: offset angles of a representative cross field direction relative to the reference
+ * @param kappa: per-corner rotation angle of the reference direction field across the opposite edge
+ * @param period_jump: per-corner period jump of the cross field across the opposite edge
+ * @param displacement: (optional) displacement of mesh faces (relative to the bounding box diagonal)
+ * @param mesh_handle: (optional) name for edge mesh
+ */
+void view_feature_cross_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    Scalar displacement = 0.01,
+    std::string mesh_handle = "");
 
 } // namespace Feature
 } // namespace Penner

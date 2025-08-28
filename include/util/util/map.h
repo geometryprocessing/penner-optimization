@@ -202,9 +202,10 @@ std::vector<int> invert_map(const std::vector<int>& map);
  * @brief Generate a random permutation
  *
  * @param n: size of the permutation
+ * @param use_random_seed: (optional) use time to seed randomness
  * @return permutation vector
  */
-std::vector<int> generate_permutation(int n);
+std::vector<int> generate_permutation(int n, bool use_random_seed=false);
 
 /**
  * @brief Shuffle the image indices of a map

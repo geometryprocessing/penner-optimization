@@ -26,6 +26,7 @@ struct MarkedMetricParameters
     bool remove_symmetry = false; // remove symmetry structure from doubled mesh
     bool free_interior = false; // remove interior cone constraints
     bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
+    bool use_connectivity = true; // use connectivity structure for markings
 };
 
 /**
@@ -186,7 +187,8 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
-    MarkedMetricParameters marked_metric_params);
+    MarkedMetricParameters marked_metric_params,
+    std::vector<int> marked_halfedges={});
 
 std::vector<int> extend_vtx_reindex(
     const Mesh<Scalar>& m,

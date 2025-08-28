@@ -50,8 +50,8 @@ void FlipMatrixGenerator::reset()
 }
 
 void FlipMatrixGenerator::multiply_by_matrix(
-    const std::vector<int>& column_indices,
-    const std::vector<Scalar>& values,
+    const std::array<int, 5>& column_indices,
+    const std::array<Scalar, 5>& values,
     int ed)
 {
     int num_entries = 0;
@@ -129,8 +129,8 @@ void FlipMapMatrixGenerator::reset()
 }
 
 void FlipMapMatrixGenerator::multiply_by_matrix(
-    const std::vector<int>& column_indices,
-    const std::vector<Scalar>& values,
+    const std::array<int, 5>& column_indices,
+    const std::array<Scalar, 5>& values,
     int ed)
 {
     // Compute the new row of J_del corresponding to edge ed, which is the only

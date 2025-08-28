@@ -64,10 +64,16 @@ public:
 
     Scalar min_angle = 0.;
 
+    void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
     void initialize(const Mesh<Scalar>& m);
     void solve(const Mesh<Scalar>& m);
     void compute_principal_matchings(const Mesh<Scalar>& m);
     void fix_inconsistent_matchings(const Mesh<Scalar>& m);
+    void remove_greedy_cone_pairs(const Mesh<Scalar>& m);
+    void fix_cone_pair(const Mesh<Scalar>& m);
+    void fix_zero_cones(const Mesh<Scalar>& m);
+    void collapse_adjacent_cones(const Mesh<Scalar>& m);
+    void concentrate_curvature(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -75,10 +81,14 @@ public:
         const Eigen::MatrixXi& F, 
         const std::vector<int>& face_reindex,
         const Eigen::VectorXi& reference_corner);
-void view(
+void update_viewer(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V) const;
+void view(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V);
 void initialize_priority_kappa(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex);
@@ -116,6 +126,12 @@ private:
     Scalar compute_angle_between_frames(const Mesh<Scalar>& m, const VectorX& he2angle, int h) const;
     std::vector<int> generate_base_cones(const Mesh<Scalar>& m) const;
     std::vector<int> generate_kappa_cones(const Mesh<Scalar>& m) const;
+    std::vector<int> generate_cones(const Mesh<Scalar>& m) const;
+    bool has_cone_pair(const Mesh<Scalar>& m) const;
+    bool has_zero_cone(const Mesh<Scalar>& m) const;
+    int get_max_cone(const std::vector<int>& cones) const;
+    int get_zero_cone(const std::vector<int>& cones) const;
+    int compute_total_defect(const Mesh<Scalar>& m) const;
 
     void initialize_local_frames(const Mesh<Scalar>& m);
     void initialize_kappa(const Mesh<Scalar>& m);
@@ -127,6 +143,8 @@ private:
     void initialize_double_period_jump(const Mesh<Scalar>& m);
     void initialize_double_mixed_integer_system(const Mesh<Scalar>& m);
 
+
+    void set_period_jump(const Mesh<Scalar>& m, int hij, Scalar jump_value);
 };
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m);
