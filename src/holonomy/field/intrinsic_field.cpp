@@ -1800,10 +1800,12 @@ void IntrinsicNRosyField::collapse_adjacent_cones(const Mesh<Scalar>& m)
         if ((!is_boundary[wj]) && (cones[vj] == 4)) continue;
 
         // modify cones
+        spdlog::info("collapsing cones {} and {}", cones[vi], cones[vj]);
         Scalar defect = 4 - cones[vi];
         set_period_jump(m, hij, period_jump[hij] - defect);
         cones[vi] += defect;
         cones[vj] -= defect;
+        spdlog::info("new cones {} and {}", cones[vi], cones[vj]);
     }
 
     std::vector<int> final_cones = generate_cones(m);
@@ -1814,6 +1816,97 @@ void IntrinsicNRosyField::collapse_adjacent_cones(const Mesh<Scalar>& m)
             spdlog::error("inconsistent cones {} and {}", cones[vi], final_cones[vi]);
         }
     }
+}
+
+
+void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
+{
+    // first collapse adjacent cones
+    collapse_adjacent_cones(m);
+
+    // compute initial cones
+    std::vector<int> cones = generate_cones(m);
+
+    // generate list of boundary vertices
+    int num_vertices = cones.size();
+    std::vector<bool> is_boundary = compute_boundary_vertices(m);
+
+    // collapse vertices with distance 2
+    bool collapsed = false;
+    bool collapse_boundary_cones = false; // should only collapse nearby interior cones
+    do
+    {
+        collapsed = false;
+        for (int wi = 0; wi < m.n_vertices(); ++wi)
+        {
+            std::vector<int> adjacent_cones = {};
+            int hij = m.out[wi];
+
+            // rotate clockwise to boundary edge if boundary vertex
+            if (is_boundary[wi])
+            {
+                while (true)
+                {
+                    hij = m.n[m.opp[hij]];
+                    if ((m.type[hij] == 1) && (m.type[m.opp[hij]] == 2)) break;
+                }
+            }
+
+            // sweep counterclockwise
+            int hik = hij;
+            do
+            {
+                // get edge endpoints (in double and original)
+                int wk = m.to[hik];
+                int vk = m.v_rep[wk];
+
+                // check for cone vertices on boundary
+                if ((is_boundary[wk]) && (cones[vk] != 2))
+                {
+                    if (collapse_boundary_cones) adjacent_cones.push_back(hik);
+                }
+                // check for cone vertices in interior
+                else if ((!is_boundary[wk]) && (cones[vk] != 4))
+                {
+                    adjacent_cones.push_back(hik);
+                }
+
+                // rotate counterclockwise
+                hik = m.opp[m.n[m.n[hik]]];
+                if (m.type[m.opp[hik]] == 2) break;
+            } while (hij != hik);
+
+            // modify cones
+            if (adjacent_cones.size() > 1)
+            {
+                int hij = adjacent_cones.front();
+                int hik = adjacent_cones.back();
+                int vj =  m.v_rep[m.to[hij]];
+                int vk =  m.v_rep[m.to[hik]];
+                spdlog::info("collapsing cones {} and {}", cones[vj], cones[vk]);
+                Scalar defect = 4 - cones[vk];
+                if (is_boundary[m.to[hik]]) defect = 2 - cones[vk];
+                set_period_jump(m, hij, period_jump[hij] - defect);
+                set_period_jump(m, hik, period_jump[hik] + defect);
+                cones[vk] += defect;
+                cones[vj] -= defect;
+                spdlog::info("new cones {} and {}", cones[vj], cones[vk]);
+                collapsed = true;
+            }
+                
+        }
+
+        // check computations of cones
+        std::vector<int> final_cones = generate_cones(m);
+        for (int vi = 0; vi < num_vertices; ++vi)
+        {
+            if (cones[vi] != final_cones[vi])
+            {
+                spdlog::error("inconsistent cones {} and {}", cones[vi], final_cones[vi]);
+            }
+        }
+    } while (collapsed);
+
 }
 
 void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)

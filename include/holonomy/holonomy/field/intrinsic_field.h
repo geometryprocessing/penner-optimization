@@ -73,6 +73,8 @@ public:
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
     void collapse_adjacent_cones(const Mesh<Scalar>& m);
+    void collapse_nearby_cones(const Mesh<Scalar>& m);
+
     void concentrate_curvature(const Mesh<Scalar>& m);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
