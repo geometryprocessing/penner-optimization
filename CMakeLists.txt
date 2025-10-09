@@ -14,7 +14,6 @@ if (PROJECT_IS_TOP_LEVEL)
 
   # Alternative library options
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
-  option(USE_EMBREE "Use Embree for rendering" OFF)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   option(USE_COMISO "Use Comiso for field generation" ON)
 
@@ -66,9 +65,6 @@ if (RENDER_TEXTURE)
   option(LIBIGL_GLFW "Use GLFW" ON)
   option(LIBIGL_PNG "Use PNG" ON)
 endif()
-if (USE_EMBREE)
-  option(LIBIGL_EMBREE "Use EMBREE" ON)
-endif()
 
 # Set compile definitions
 add_compile_definitions(_USE_MATH_DEFINES)
@@ -80,9 +76,6 @@ if(CHECK_VALIDITY)
 endif()
 if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
-endif()
-if (USE_EMBREE)
-  add_compile_definitions(USE_EMBREE)
 endif()
 if(USE_PYBIND)
   add_compile_definitions(PYBIND)
@@ -129,12 +122,6 @@ if(RENDER_TEXTURE)
     plot
   )
 
-  # Link in embree if enabled
-  if(USE_EMBREE)
-    target_link_libraries(rendering PUBLIC
-      igl::embree
-    )
-  endif()
 
   # Change rendering libraries from null to singleton
   set(RENDER_LIBRARIES

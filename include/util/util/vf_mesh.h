@@ -134,4 +134,16 @@ VectorX compute_cone_angles(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& FT);
 
+/// Reindex mesh such that V[i] = V[vtx_reindex[i]]
+///
+/// @param[in] V: mesh vertices
+/// @param[in] F: mesh faces
+/// @param[in] vtx_reindex: vertex reindexing
+/// @return reindex mesh vertices
+/// @return reindex mesh faces
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<int>& vtx_reindex);
+
 } // namespace Penner

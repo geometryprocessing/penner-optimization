@@ -322,7 +322,8 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> IntrinsicRefinementMesh::generate_m
         ++face_count;
     }
 
-    return std::make_tuple(V_ref, F);
+    // undo reindexing for consistency
+    return reindex_mesh(V_ref, F, vtx_reindex);
 }
 
 void IntrinsicRefinementMesh::view_refined_mesh(
@@ -433,6 +434,21 @@ int IntrinsicRefinementMesh::get_new_independent_vertex(int vi, int Rvi)
 }
 
 
+// reindex if in original mesh, or leave as is if refined
+// WARNING: assumes all refined vertices at end
+int get_refined_index(int vertex_index, const std::vector<int>& vtx_reindex)
+{
+    int num_orig_vertices = vtx_reindex.size();
+    if (vertex_index < num_orig_vertices)
+    {
+        return vtx_reindex[vertex_index];
+    }
+    else
+    {
+        return vertex_index;
+    }
+}
+
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_corner_feature_faces(const FeatureFinder& feature_finder)
 {
     const Mesh<Scalar>& m = feature_finder.get_mesh();
@@ -472,6 +488,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
     }
 
     // build list of feature edges
+    const auto& vtx_reindex = feature_finder.get_vertex_reindex();
     std::vector<VertexEdge> feature_edges;
     feature_edges.reserve(num_halfedges);
     for (int hij = 0; hij < num_halfedges; ++hij)
@@ -479,14 +496,13 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
         int hji = m.opp[hij];
         if (hij < hji) continue;
         if (!feature_finder.is_feature_halfedge(hij)) continue;
-        int vi = m.v_rep[m.to[hji]];
-        int vj = m.v_rep[m.to[hij]];
+        int vi = get_refined_index(m.v_rep[m.to[hji]], vtx_reindex);
+        int vj = get_refined_index(m.v_rep[m.to[hij]], vtx_reindex);
         feature_edges.push_back({vi, vj});
     }
 
     // generate refined VF mesh
     const auto& V = feature_finder.get_vertex_positions();
-    const auto& vtx_reindex = feature_finder.get_vertex_reindex();
     auto [V_ref, F_ref] = refinement_mesh.generate_mesh(V, vtx_reindex);
 
     return std::make_tuple(V_ref, F_ref, feature_edges);
@@ -533,6 +549,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     // initialize mesh for refinement
     const Mesh<Scalar>& m = feature_finder.get_mesh();
     IntrinsicRefinementMesh refinement_mesh(m);
+    const auto& vtx_reindex = feature_finder.get_vertex_reindex();
 
     // get spanning forest
     std::vector<bool> is_spanning_halfedge = feature_finder.compute_feature_forest_halfedges();
@@ -558,8 +575,8 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
 
         // add spanning edge to list
         int hji = m.opp[hij];
-        int vj = m.v_rep[m.to[hij]];
-        int vi = m.v_rep[m.to[hji]];
+        int vi = get_refined_index(m.v_rep[m.to[hji]], vtx_reindex);
+        int vj = get_refined_index(m.v_rep[m.to[hij]], vtx_reindex);
         spanning_edges.push_back({vi, vj});
 
         // label component as seen
@@ -567,7 +584,6 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     }
 
     // refine edge on components with no adjacent spanning tree edges
-    const auto& vtx_reindex = feature_finder.get_vertex_reindex();
     std::vector<bool> is_refined_halfedge(num_halfedges, false);
     std::vector<VertexEdge> feature_edges = {};
     feature_edges.reserve(num_halfedges);
@@ -583,8 +599,9 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
             int vk = refinement_mesh.refine_halfedge(h);
 
             // add spanning edge and feature edges for refined edge
-            int vi = m.v_rep[m.to[m.opp[h]]];
-            int vj = m.v_rep[m.to[h]];
+
+            int vi = get_refined_index(m.v_rep[m.to[m.opp[h]]], vtx_reindex);
+            int vj = get_refined_index(m.v_rep[m.to[h]], vtx_reindex);
             spanning_edges.push_back({vj, vk});
             feature_edges.push_back({vi, vk});
             feature_edges.push_back({vj, vk});
@@ -609,8 +626,8 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
         if (is_refined_halfedge[hij]) continue;
 
         // add feature edge
-        int vj = m.v_rep[m.to[hij]];
-        int vi = m.v_rep[m.to[hji]];
+        int vi = get_refined_index(m.v_rep[m.to[hji]], vtx_reindex);
+        int vj = get_refined_index(m.v_rep[m.to[hij]], vtx_reindex);
         feature_edges.push_back({vi, vj});
     }
 
