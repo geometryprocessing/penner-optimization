@@ -209,7 +209,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     feature_finder = FeatureFinder(V_ref_f, F_ref_f);
     feature_finder.mark_features(feature_edges_f);
     auto [V_ref_e, F_ref_e, feature_edges_e, spanning_edges_e, fn_to_f_e] = refine_feature_components(feature_finder, use_minimal_forest);
-    auto fn_to_f = vector_compose(fn_to_f_e, fn_to_f_f);
+    auto fn_to_f = vector_compose(fn_to_f_f, fn_to_f_e);
     return std::make_tuple(V_ref_e, F_ref_e, feature_edges_e, spanning_edges_e, fn_to_f);
 }
 
