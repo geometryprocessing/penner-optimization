@@ -11,7 +11,7 @@ namespace Feature {
 IntrinsicRefinementMesh::IntrinsicRefinementMesh(const Mesh<Scalar>& m)
     : m_mesh(m)
     , m_endpoints({})
-    , face_parent(arange(m.n_faces()))
+    , m_face_parent(arange(m.n_faces()))
 {}
 
 // Refine a single face, disregarding symmetry structure and independent vertices
@@ -36,11 +36,12 @@ int IntrinsicRefinementMesh::refine_single_face(int face_index)
     // get new vertex, face and hafledge indices
     int vl = get_new_vertex();
     int fijl = face_index;
+    int face_parent = m_face_parent[face_index];
     int fjkl = get_new_face();
     int fkil = get_new_face();
-    face_parent[fijl] = fijl;
-    face_parent[fjkl] = fijl;
-    face_parent[fkil] = fijl;
+    m_face_parent[fijl] = face_parent;
+    m_face_parent[fjkl] = face_parent;
+    m_face_parent[fkil] = face_parent;
     auto [hil, hli] = get_new_edge();
     auto [hjl, hlj] = get_new_edge();
     auto [hkl, hlk] = get_new_edge();
@@ -134,17 +135,19 @@ int IntrinsicRefinementMesh::refine_single_halfedge(int halfedge_index)
     int vj = m.to[hij];
     int vk = m.to[hjk];
     int vl = m.to[hil];
+    int fijk_parent = m_face_parent[fijk];
+    int fjil_parent = m_face_parent[fjil];
 
     // get new vertex, face and hafledge indices
     int vm = get_new_vertex();
     int fmjk = fijk;
     int fmki = get_new_face();
-    face_parent[fmjk] = fijk;
-    face_parent[fmki] = fijk;
+    m_face_parent[fmjk] = fijk_parent;
+    m_face_parent[fmki] = fijk_parent;
     int fmil = fjil;
     int fmlj = get_new_face();
-    face_parent[fmil] = fjil;
-    face_parent[fmlj] = fjil;
+    m_face_parent[fmil] = fjil_parent;
+    m_face_parent[fmlj] = fjil_parent;
     int him = hij;
     int hmi = hji;
     auto [hmj, hjm] = get_new_edge();
@@ -359,6 +362,7 @@ int IntrinsicRefinementMesh::get_new_face()
 
     // add null entries for face attributes
     m.h.push_back(-1);
+    m_face_parent.push_back(-1);
 
     return face_index;
 }

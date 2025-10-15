@@ -77,7 +77,7 @@ public:
     Mesh<Scalar>& get_mesh() { return m_mesh; }
     const Mesh<Scalar>& get_mesh() const { return m_mesh; }
 
-    const std::vector<int>& get_face_parent() const { return face_parent; }
+    const std::vector<int>& get_face_parent() const { return m_face_parent; }
 
 protected:
     int get_new_face();
@@ -88,7 +88,7 @@ protected:
 
     Mesh<Scalar> m_mesh;
     std::map<int, std::pair<int, int>> m_endpoints;
-    std::vector<int> face_parent;
+    std::vector<int> m_face_parent;
 
 private:
     virtual int refine_single_face(int face_index);
