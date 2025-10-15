@@ -77,6 +77,8 @@ public:
     Mesh<Scalar>& get_mesh() { return m_mesh; }
     const Mesh<Scalar>& get_mesh() const { return m_mesh; }
 
+    const std::vector<int>& get_face_parent() const { return face_parent; }
+
 protected:
     int get_new_face();
     int get_new_vertex();
@@ -86,6 +88,7 @@ protected:
 
     Mesh<Scalar> m_mesh;
     std::map<int, std::pair<int, int>> m_endpoints;
+    std::vector<int> face_parent;
 
 private:
     virtual int refine_single_face(int face_index);
@@ -99,8 +102,9 @@ private:
  * @return refined vertex positions
  * @return refined face indices
  * @return refined feature edges
+ * @return map from refined faces to parent faces
  */
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_corner_feature_faces(
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<int>> refine_corner_feature_faces(
     const FeatureFinder& feature_finder);
 
 /**
@@ -113,8 +117,9 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
  * @return refined face indices
  * @return refined feature edges
  * @return refined feature forest edges (spanning or minimal)
+ * @return map from refined faces to parent faces
  */
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>>
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>>
 refine_feature_components(const FeatureFinder& feature_finder, bool use_minimal_forest = false);
 
 } // namespace Feature

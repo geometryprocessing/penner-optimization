@@ -21,8 +21,9 @@ namespace Feature {
  * @return refined face indices
  * @return refined feature edges
  * @return refined feature forest edges (spanning or minimal)
+ * @return map from refined faces to parent faces
  */
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>> generate_refined_feature_mesh(
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>> generate_refined_feature_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     bool use_minimal_forest=false);

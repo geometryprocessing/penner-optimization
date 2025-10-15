@@ -83,6 +83,12 @@ inline void arange(size_t n, std::vector<int>& vec)
     vec.resize(n);
     std::iota(vec.begin(), vec.end(), 0);
 }
+inline std::vector<int> arange(size_t n)
+{
+    std::vector<int> vec;
+    arange(n, vec);
+    return vec;
+}
 
 template <typename OldScalar, typename NewScalar>
 Mesh<NewScalar> change_mesh_type(const Mesh<OldScalar>& m)

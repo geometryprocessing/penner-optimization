@@ -11,6 +11,7 @@ namespace Feature {
 IntrinsicRefinementMesh::IntrinsicRefinementMesh(const Mesh<Scalar>& m)
     : m_mesh(m)
     , m_endpoints({})
+    , face_parent(arange(m.n_faces()))
 {}
 
 // Refine a single face, disregarding symmetry structure and independent vertices
@@ -37,6 +38,9 @@ int IntrinsicRefinementMesh::refine_single_face(int face_index)
     int fijl = face_index;
     int fjkl = get_new_face();
     int fkil = get_new_face();
+    face_parent[fijl] = fijl;
+    face_parent[fjkl] = fijl;
+    face_parent[fkil] = fijl;
     auto [hil, hli] = get_new_edge();
     auto [hjl, hlj] = get_new_edge();
     auto [hkl, hlk] = get_new_edge();
@@ -135,8 +139,12 @@ int IntrinsicRefinementMesh::refine_single_halfedge(int halfedge_index)
     int vm = get_new_vertex();
     int fmjk = fijk;
     int fmki = get_new_face();
+    face_parent[fmjk] = fijk;
+    face_parent[fmki] = fijk;
     int fmil = fjil;
     int fmlj = get_new_face();
+    face_parent[fmil] = fjil;
+    face_parent[fmlj] = fjil;
     int him = hij;
     int hmi = hji;
     auto [hmj, hjm] = get_new_edge();
@@ -449,7 +457,7 @@ int get_refined_index(int vertex_index, const std::vector<int>& vtx_reindex)
     }
 }
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_corner_feature_faces(const FeatureFinder& feature_finder)
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<int>> refine_corner_feature_faces(const FeatureFinder& feature_finder)
 {
     const Mesh<Scalar>& m = feature_finder.get_mesh();
     int num_faces = m.n_faces();
@@ -505,7 +513,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
     const auto& V = feature_finder.get_vertex_positions();
     auto [V_ref, F_ref] = refinement_mesh.generate_mesh(V, vtx_reindex);
 
-    return std::make_tuple(V_ref, F_ref, feature_edges);
+    return std::make_tuple(V_ref, F_ref, feature_edges, refinement_mesh.get_face_parent());
 }
 
 
@@ -544,7 +552,7 @@ void make_minimal_forest(const Mesh<Scalar>& m, std::vector<bool>& is_spanning_h
     }
 }
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>> refine_feature_components(const FeatureFinder& feature_finder, bool use_minimal_forest)
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>> refine_feature_components(const FeatureFinder& feature_finder, bool use_minimal_forest)
 {
     // initialize mesh for refinement
     const Mesh<Scalar>& m = feature_finder.get_mesh();
@@ -635,7 +643,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     const auto& V = feature_finder.get_vertex_positions();
     auto [V_ref, F_ref] = refinement_mesh.generate_mesh(V, vtx_reindex);
     
-    return std::make_tuple(V_ref, F_ref, feature_edges, spanning_edges);
+    return std::make_tuple(V_ref, F_ref, feature_edges, spanning_edges, refinement_mesh.get_face_parent());
 }
 
 

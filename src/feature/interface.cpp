@@ -191,7 +191,7 @@ std::tuple<std::vector<Mesh<Scalar>>, std::vector<Eigen::VectorXi>> generate_com
 }
 
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>> generate_refined_feature_mesh(
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>> generate_refined_feature_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     bool use_minimal_forest)
@@ -203,12 +203,14 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     feature_finder.prune_small_features(5);
 
     // refine faces to avoid faces with two boundary edges
-    auto [V_ref_f, F_ref_f, feature_edges_f] = refine_corner_feature_faces(feature_finder);
+    auto [V_ref_f, F_ref_f, feature_edges_f, fn_to_f_f] = refine_corner_feature_faces(feature_finder);
 
     // refine edges to avoid feature components without a forest edge
     feature_finder = FeatureFinder(V_ref_f, F_ref_f);
     feature_finder.mark_features(feature_edges_f);
-    return refine_feature_components(feature_finder, use_minimal_forest);
+    auto [V_ref_e, F_ref_e, feature_edges_e, spanning_edges_e, fn_to_f_e] = refine_feature_components(feature_finder, use_minimal_forest);
+    auto fn_to_f = vector_compose(fn_to_f_e, fn_to_f_f);
+    return std::make_tuple(V_ref_e, F_ref_e, feature_edges_e, spanning_edges_e, fn_to_f);
 }
 
 AlignedMetricGenerator::AlignedMetricGenerator(
