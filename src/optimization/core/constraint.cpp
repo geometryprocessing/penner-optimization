@@ -106,7 +106,7 @@ void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& 
         he2cot[hj] = Aijk4 == 0.0 ? copysign(cot_infty, iJk) : (iJk / Aijk4);
         he2cot[hk] = Aijk4 == 0.0 ? copysign(cot_infty, ijK) : (ijK / Aijk4);
 
-#define USE_ACOS
+//#define USE_ACOS
 #ifdef USE_ACOS
         he2angle[hi] = acos(std::min<Scalar>(std::max<Scalar>(Ijk / (2.0 * lj * lk), -1.0), 1.0));
         he2angle[hj] = acos(std::min<Scalar>(std::max<Scalar>(iJk / (2.0 * lk * li), -1.0), 1.0));
@@ -125,13 +125,13 @@ void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& 
             he2angle[hk] = 2 * atan2(t23 * t12, denom); // a2 l31
             he2angle[hi] = 2 * atan2(t31 * t23, denom); // a3 l12
         } else if (t31 <= 0)
-            he2angle[hk] = pi;
+            he2angle[hk] = PI;
         else if (t23 <= 0)
-            he2angle[hj] = pi;
+            he2angle[hj] = PI;
         else if (t12 <= 0)
-            he2angle[hi] = pi;
+            he2angle[hi] = PI;
         else
-            he2angle[hj] = pi;
+            he2angle[hj] = PI;
 #endif
     }
 }

@@ -358,6 +358,7 @@ void index_vector_complement(
     }
 }
 
+
 /// Given a boolean array, enumerate the true and false entries.
 ///
 /// @param[in] boolean_array: array of boolean values
@@ -369,5 +370,6 @@ void enumerate_boolean_array(
     std::vector<int>& true_entry_list,
     std::vector<int>& false_entry_list,
     std::vector<int>& array_to_list_map);
+std::vector<int> enumerate_boolean_array(const std::vector<bool>& boolean_array);
 
 } // namespace Penner

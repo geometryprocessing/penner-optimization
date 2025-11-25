@@ -9,19 +9,15 @@
 
 namespace Penner {
 
-#ifdef ENABLE_VISUALIZATION
-extern glm::vec3 BEIGE;
-extern glm::vec3 BLACK_BROWN;
-extern glm::vec3 TAN;
-extern glm::vec3 MUSTARD;
-extern glm::vec3 FOREST_GREEN;
-extern glm::vec3 TEAL;
-extern glm::vec3 DARK_TEAL;
-#endif
-
 namespace Optimization {
 
 // TODO Refactor and add some more convenient viewers
+
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_halfedge_faces(
+    const std::vector<int>& next,
+    const std::vector<int>& f2h,
+    const std::vector<int>& to,
+    const std::vector<int>& vtx_reindex);
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     const Eigen::MatrixXd& V,

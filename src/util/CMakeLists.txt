@@ -1,5 +1,6 @@
 set(UtilSrc
   boundary.cpp
+  common.cpp
   embedding.cpp
   io.cpp
   linear_algebra.cpp

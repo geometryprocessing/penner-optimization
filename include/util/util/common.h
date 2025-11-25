@@ -14,6 +14,10 @@
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 #include "conformal_ideal_delaunay/globals.hh"
 
+#ifdef ENABLE_VISUALIZATION
+#include "polyscope/surface_mesh.h"
+#endif
+
 namespace Penner {
 using namespace OverlayProblem;
 
@@ -36,6 +40,16 @@ typedef Eigen::Matrix<Scalar, 2, 2> Matrix2x2;
 
 typedef Eigen::Triplet<Scalar> T;
 
+#ifdef ENABLE_VISUALIZATION
+extern glm::vec3 BEIGE;
+extern glm::vec3 BLACK;
+extern glm::vec3 BLACK_BROWN;
+extern glm::vec3 TAN;
+extern glm::vec3 MUSTARD;
+extern glm::vec3 FOREST_GREEN;
+extern glm::vec3 TEAL;
+extern glm::vec3 DARK_TEAL;
+#endif
 
 using std::max;
 using std::min;
@@ -82,6 +96,12 @@ inline void arange(size_t n, std::vector<int>& vec)
 {
     vec.resize(n);
     std::iota(vec.begin(), vec.end(), 0);
+}
+inline std::vector<int> arange(size_t n)
+{
+    std::vector<int> vec;
+    arange(n, vec);
+    return vec;
 }
 
 template <typename OldScalar, typename NewScalar>

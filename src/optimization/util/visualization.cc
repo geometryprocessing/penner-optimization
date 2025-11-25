@@ -85,6 +85,7 @@ void save_mesh_screen_capture(Viewer &viewer,
                               int width,
                               int height)
 {
+/*
     // Initialize windowless viewer
     glfwInit();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -102,6 +103,7 @@ void save_mesh_screen_capture(Viewer &viewer,
 
     // Save it to specified output path
     igl::png::writePNG(R, G, B, A, image_path);
+*/
 }
 
 } // namespace Optimization

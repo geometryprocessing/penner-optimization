@@ -31,8 +31,12 @@
 #pragma once
 
 #include <igl/opengl/glfw/Viewer.h>
-#include <igl/png/writePNG.h>
 #include <string>
+
+#ifdef RENDER_TEXTURE
+//#include <igl/png/writePNG.h> deprecated
+#endif
+
 
 namespace Penner {
 namespace Optimization {
@@ -53,6 +57,7 @@ void add_shading_to_mesh(Viewer &viewer,
                          const Eigen::VectorXd &AO,
                          double lighting_factor);
 
+[[deprecated]]
 void save_mesh_screen_capture(Viewer &viewer,
                               std::string image_path,
                               int width,

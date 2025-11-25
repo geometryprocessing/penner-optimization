@@ -40,9 +40,7 @@ int compute_map_range(const std::vector<int>& map)
     int domain = map.size();
     int range = 0;
     for (int i = 0; i < domain; ++i) {
-        if (range < (map[i] + 1)) {
-            range = map[i] + 1;
-        }
+        range = max(range, map[i] + 1);
     }
 
     return range;
@@ -85,6 +83,7 @@ std::vector<int> shuffle_map_image(const std::vector<int>& map)
 {
     // generate permuation for the map range
     int range = compute_map_range(map);
+    if (range <= 0) return map;
     std::vector<int> permutation = generate_permutation(range);
 
     // compute the map with the permutation
@@ -125,7 +124,7 @@ bool is_one_sided_inverse(
     return true;
 }
 
-bool are_polygon_mesh_edges_valid(const std::vector<int>& next, const std::vector<int>& prev)
+bool are_polygon_mesh_halfedges_valid(const std::vector<int>& next, const std::vector<int>& prev)
 {
     if (next.size() != prev.size()) {
         spdlog::warn("next and prev are not inverse");
@@ -141,6 +140,47 @@ bool are_polygon_mesh_edges_valid(const std::vector<int>& next, const std::vecto
     return true;
 }
 
+bool are_polygon_mesh_edges_valid(
+    const std::vector<int>& opp, 
+    const std::vector<int>& h2e, 
+    const std::vector<int>& e2h)
+{
+    if (opp.size() != h2e.size()) {
+        spdlog::warn("opp and h2e are inconsistent");
+        return false;
+    }
+
+    if (opp.size() != 2 * e2h.size()) {
+        spdlog::warn("there are not twice as many halfedges as edges");
+        return false;
+    }
+
+    // check all elements in opp are order 2
+    int num_halfedges = opp.size();
+    for (int h = 0; h < num_halfedges; ++h)
+    {
+        if ((opp[h] == h) || (opp[opp[h]] != h))
+        {
+            spdlog::warn("opp is not a fixed point free involution");
+            return false;
+        }
+    }
+
+    // h2e is invariant under opp
+    if (!is_invariant_under_permutation(h2e, opp)) {
+        spdlog::warn("h2e is not invariant under opposite");
+        return false;
+    }
+
+    // e2h is a right inverse for h2e
+    if (!is_one_sided_inverse(h2e, e2h)) {
+        spdlog::warn("e2h is not a right inverse for h2e");
+        return false;
+    }
+
+    return true;
+}
+
 
 bool are_polygon_mesh_vertices_valid(
     const std::vector<int>& opp,
@@ -148,7 +188,8 @@ bool are_polygon_mesh_vertices_valid(
     const std::vector<int>& to,
     const std::vector<int>& out)
 {
-    if (prev.size() != to.size()) {
+    if (opp.size() != to.size()) {
+        spdlog::warn("opp and to are inconsistent");
         return false;
     }
     long n_halfedges = to.size();
@@ -192,6 +233,7 @@ bool are_polygon_mesh_faces_valid(
     const std::vector<int>& f2he)
 {
     if (next.size() != he2f.size()) {
+        spdlog::warn("next and he2f are inconsistent");
         return false;
     }
 

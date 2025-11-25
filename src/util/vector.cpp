@@ -115,6 +115,21 @@ void write_subset(const VectorX& subset, const std::vector<int>& subset_indices,
     }
 }
 
+std::vector<int> enumerate_boolean_array(const std::vector<bool>& boolean_array)
+{
+    std::vector<int> true_entry_list = {};
+    int num_entries = boolean_array.size();
+    true_entry_list.reserve(num_entries);
+
+    // Iterate over the boolean array to enumerate the true entries
+    for (int i = 0; i < num_entries; ++i) {
+        if (boolean_array[i]) true_entry_list.push_back(i);
+    }
+
+    return true_entry_list;
+}
+        
+
 void enumerate_boolean_array(
     const std::vector<bool>& boolean_array,
     std::vector<int>& true_entry_list,

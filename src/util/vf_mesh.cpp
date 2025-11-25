@@ -275,4 +275,18 @@ VectorX compute_cone_angles(
     return cone_angles;
 }
 
+Eigen::MatrixXd subset_vertices(
+    const Eigen::MatrixXd& V,
+    const std::vector<int>& subset_vertices)
+{
+    int num_vertices = subset_vertices.size();
+    Eigen::MatrixXd V_subset(num_vertices, V.cols());
+    for (int i = 0; i < num_vertices; ++i)
+    {
+        V_subset.row(i) = V.row(subset_vertices[i]);
+    }
+
+    return V_subset;
+}
+
 } // namespace Penner

@@ -326,6 +326,7 @@ void OptimizeNewton::solve_linear_system()
         Eigen::SimplicialLDLT<MatrixX> solver;
         solver.compute(AAt);
         VectorX rhs = solver.solve(constraint);
+        spdlog::debug("solver error is {}", (AAt * rhs - constraint).norm());
         log.solve_time = timer.getElapsedTime() - t_solve_start;
 
         descent_direction = -metric_basis_matrix * (A.transpose() * rhs);

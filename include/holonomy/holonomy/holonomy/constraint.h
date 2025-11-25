@@ -69,6 +69,10 @@ MatrixX compute_triangle_corner_angle_jacobian(
 MatrixX compute_metric_holonomy_matrix(
     const MarkedPennerConeMetric& marked_metric,
     bool only_free_vertices=true);
+
+MatrixX compute_loop_holonomy_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
     
 MatrixX build_symmetric_matrix_system(const MatrixX& A, int offset, int size);
 std::tuple<MatrixX, VectorX> build_reduced_matrix_system(const MatrixX& A, int cols);

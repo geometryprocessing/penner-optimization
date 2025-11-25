@@ -112,6 +112,14 @@ void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::v
     }
 }
 
+std::vector<int> build_edge_map(const std::vector<int>& opp)
+{
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    build_edge_maps(opp, he2e, e2he);
+    return he2e;
+}
+
 void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he)
 {
     build_edge_maps(m.opp, he2e, e2he);

@@ -79,7 +79,8 @@ void view_flipped_triangles(
 }
 
 void view_halfedge_mesh_layout(
-    const Mesh<Scalar>& m,
+    const std::vector<int>& next,
+    const std::vector<int>& f2h,
     const std::vector<Scalar>& u_vec,
     const std::vector<Scalar>& v_vec)
 {
@@ -89,11 +90,12 @@ void view_halfedge_mesh_layout(
     Eigen::MatrixXd uv(u.size(), 3);
     uv.col(0) = u;
     uv.col(1) = v;
-    Eigen::MatrixXi F(m.n_faces(), 3);
-    for (int f = 0; f < m.n_faces(); ++f) {
-        int hij = m.h[f];
-        int hjk = m.n[hij];
-        int hki = m.n[hjk];
+    int num_faces = f2h.size();
+    Eigen::MatrixXi F(num_faces, 3);
+    for (int f = 0; f < num_faces; ++f) {
+        int hij = f2h[f];
+        int hjk = next[hij];
+        int hki = next[hjk];
         F(f, 0) = hij;
         F(f, 1) = hjk;
         F(f, 2) = hki;
@@ -104,6 +106,14 @@ void view_halfedge_mesh_layout(
     polyscope::registerSurfaceMesh2D("layout", uv, F);
     polyscope::show();
 #endif
+}
+
+void view_halfedge_mesh_layout(
+    const Mesh<Scalar>& m,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec)
+{
+    view_halfedge_mesh_layout(m.n, m.h, u_vec, v_vec);
 }
 
 void view_parameterization(

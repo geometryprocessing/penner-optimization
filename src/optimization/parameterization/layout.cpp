@@ -1452,6 +1452,12 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     std::vector<bool>& is_cut_h,
     int start_h = -1);
 
+template
+std::vector<bool> pullback_cut_to_overlay(
+    OverlayMesh<Scalar>& m_o,
+    const std::vector<bool>& is_cut_h,
+    bool is_original_cut);
+
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 
@@ -1489,6 +1495,12 @@ std::tuple<
     Eigen::MatrixXd,
     Eigen::MatrixXi>
 compute_layout_VF(const Mesh<mpfr::mpreal>& m_o);
+
+template
+std::vector<bool> pullback_cut_to_overlay(
+    OverlayMesh<mpfr::mpreal>& m_o,
+    const std::vector<bool>& is_cut_h,
+    bool is_original_cut);
 
 template
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(

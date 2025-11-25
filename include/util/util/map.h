@@ -331,7 +331,12 @@ bool is_one_sided_inverse(
  * @param prev: size #he vector, prev halfedge id
  * @return true iff the edge maps are valid
  */
-bool are_polygon_mesh_edges_valid(const std::vector<int>& next, const std::vector<int>& prev);
+bool are_polygon_mesh_halfedges_valid(const std::vector<int>& next, const std::vector<int>& prev);
+
+bool are_polygon_mesh_edges_valid(
+    const std::vector<int>& opp, 
+    const std::vector<int>& h2e, 
+    const std::vector<int>& e2h);
 
 /**
  * @brief Check if the maps defining the vertex connectivity of a polygonal mesh (to and out)

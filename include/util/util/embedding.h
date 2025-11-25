@@ -95,6 +95,14 @@ struct ReductionMaps
 void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he);
 void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::vector<int>& e2he);
 
+
+/// Build projection he2e mapping halfedge indices for a halfedge mesh to a list of edge
+/// indices.
+///
+/// @param[in] opp: map of opposite halfedges
+/// @return map from halfedge indices to edge indices
+std::vector<int> build_edge_map(const std::vector<int>& opp);
+
 /// Build projection from edges in a doubled mesh to the edges that intersect
 /// the original mesh i.e. edges that are not type 2.
 ///
