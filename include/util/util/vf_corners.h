@@ -1,9 +1,10 @@
 #pragma once
 
-#include "feature/core/common.h"
+#include "util/common.h"
 
 namespace Penner {
-namespace Feature {
+
+typedef std::array<int, 2> VertexEdge;
 
 /**
  * @brief Representation of an edge as the two opposite face corners
@@ -243,19 +244,6 @@ Eigen::MatrixXd transfer_halfedge_function_to_corner(
     const VectorX& halfedge_func);
 
 /**
- * @brief Find the seams of the parameterization of a closed mesh.
- * 
- * TODO: Extend to open meshes
- * 
- * @param F: mesh faces
- * @param FT: mesh layout faces
- * @return |F|x3 mask of corners opposite seam edges
- */
-Eigen::MatrixXi find_seams(
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXi& FT);
-
-/**
  * @brief Given a mask of corners opposite edges, generate the corresponding edge geometry.
  * 
  * @param V: mesh vertices
@@ -270,5 +258,4 @@ generate_edges(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_is_edge);
 
-} // namespace Feature
 } // namespace Penner

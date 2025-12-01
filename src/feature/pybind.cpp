@@ -20,7 +20,7 @@
 
 #include "feature/core/common.h"
 #include "feature/core/component_mesh.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "feature/dirichlet/constraint.h"
 #include "feature/dirichlet/optimization.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"

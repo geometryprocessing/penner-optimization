@@ -4,7 +4,7 @@
 
 #include "holonomy/core/viewer.h"
 #include "feature/core/component_mesh.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "holonomy/holonomy/cones.h"
 #include "util/vector.h"
 

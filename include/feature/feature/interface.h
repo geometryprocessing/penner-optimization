@@ -4,7 +4,7 @@
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 #include "feature/feature/features.h"
 #include "holonomy/field/intrinsic_field.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "holonomy/interface.h"
 
 namespace Penner {

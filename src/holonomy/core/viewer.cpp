@@ -14,6 +14,7 @@
 
 #include "util/vector.h"
 #include "util/vf_mesh.h"
+#include "util/vf_corners.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/field/frame_field.h"
 #include "optimization/core/viewer.h"
@@ -482,6 +483,8 @@ void view_seamless_parameterization(
     }
     if (cone_values.size() > 0) spdlog::info("maximum cone error is {}", cone_error.maxCoeff());
 
+    Eigen::MatrixXi F_is_seam = find_seams(F, FT);
+    auto [V_seams, E_seams] = generate_edges(V, F, F_is_seam);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -489,6 +492,8 @@ void view_seamless_parameterization(
     // Add cut mesh with
     polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT)
         ->setEnabled(true);
+    polyscope::registerCurveNetwork(mesh_handle+"_seames", V_seams, E_seams)
+        ->setEnabled(false);
     //polyscope::registerSurfaceMesh2D(mesh_handle +"_layout", uv, FT);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexParameterizationQuantity("uv", uv)

@@ -1,7 +1,7 @@
 #include "feature/dirichlet/cone_perturber.h"
 
 #include "optimization/core/constraint.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 
 namespace Penner {
 namespace Feature {

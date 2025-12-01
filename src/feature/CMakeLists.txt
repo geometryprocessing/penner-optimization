@@ -6,7 +6,6 @@ set(FeatureCoreSrc
   core/union_meshes.cpp
   core/quads.cpp
   core/viewer.cpp
-  core/vf_corners.cpp
 )
 
 set(DirichletSrc

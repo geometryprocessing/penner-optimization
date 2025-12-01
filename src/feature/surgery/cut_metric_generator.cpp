@@ -7,7 +7,7 @@
 
 #include "feature/core/component_mesh.h"
 #include "feature/core/union_meshes.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "feature/dirichlet/cone_perturber.h"
 #include "feature/feature/gluing.h"
 

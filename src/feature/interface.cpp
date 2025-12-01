@@ -18,7 +18,7 @@
 #include "feature/core/component_mesh.h"
 #include "holonomy/core/viewer.h"
 #include "feature/dirichlet/angle_constraint_relaxer.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "feature/feature/error.h"
 #include "feature/dirichlet/optimization.h"
 #include "feature/surgery/cut_metric_generator.h"

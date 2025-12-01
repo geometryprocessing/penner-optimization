@@ -307,4 +307,37 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
 
 }
 
+Eigen::MatrixXi find_seams(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& FT)
+{
+    Eigen::MatrixXi TT;
+    Eigen::MatrixXi TTi;
+	igl::triangle_triangle_adjacency(F, TT, TTi);
+
+    int num_faces = F.rows();
+    Eigen::MatrixXi F_mask = Eigen::MatrixXi::Zero(num_faces, 3);
+	for (int f = 0; f < num_faces; ++f) {
+		// Check if an edge is a cut
+		for (int k = 0; k < 3; ++k) {
+			int i = (k + 1) % 3;
+			int j = (i + 1) % 3;
+			int f_opp = TT(f, i);
+			if (F(f, j) != F(f_opp, TTi(f, i)))
+				spdlog::error("Incorrect 1");
+			if (F(f, i) != F(f_opp, (TTi(f, i) + 1) % 3))
+				spdlog::error("Incorrect 2");
+			int uvi = FT(f, i);
+			int uvj = FT(f, j);
+			int uvi_opp = FT(f_opp, (TTi(f, i) + 1) % 3);
+			int uvj_opp = FT(f_opp, TTi(f, i));
+			if ((uvi != uvi_opp) || (uvj != uvj_opp)) {
+                F_mask(f, k) = 1;
+			}
+		}
+    }
+
+    return F_mask;
+}
+
 } // namespace Penner

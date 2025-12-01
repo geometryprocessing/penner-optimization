@@ -2,7 +2,7 @@
 #pragma once
 
 #include "feature/core/common.h"
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 
 namespace Penner {
 namespace Feature {

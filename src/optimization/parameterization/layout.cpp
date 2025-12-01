@@ -1179,7 +1179,7 @@ get_consistent_layout(
     is_cut_o.resize(m_o.n.size());
 
     // Trim unnecessary branches of the cut graph
-    bool do_trim = false;
+    bool do_trim = true;
     if (do_trim) {
         trim_open_branch(m_o, f_labels, singularities, is_cut_o);
     }

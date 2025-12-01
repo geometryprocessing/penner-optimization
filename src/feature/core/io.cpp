@@ -1,6 +1,7 @@
 #include "feature/core/io.h"
 
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
+#include "util/vf_mesh.h"
 
 #include <igl/remove_unreferenced.h>
 

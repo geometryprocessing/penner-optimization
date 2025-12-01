@@ -13,7 +13,6 @@ using Holonomy::DualLoop;
 using Holonomy::MarkedPennerConeMetric;
 using Holonomy::NewtonParameters;
 using Holonomy::MarkedMetricParameters;
-typedef std::array<int, 2> VertexEdge;
 
 /**
  * @brief Compute the square of a scalar.

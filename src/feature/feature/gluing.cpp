@@ -1,7 +1,7 @@
 
 #include "feature/feature/gluing.h"
 
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "holonomy/holonomy/cones.h"
 
 namespace Penner {

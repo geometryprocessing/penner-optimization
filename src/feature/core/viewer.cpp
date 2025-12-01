@@ -1,6 +1,6 @@
 #include "feature/core/viewer.h"
 
-#include "feature/core/vf_corners.h"
+#include "util/vf_corners.h"
 #include "feature/feature/error.h"
 #include "feature/feature/features.h"
 #include "feature/feature/gluing.h"

@@ -146,4 +146,19 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
     const Eigen::MatrixXi& F,
     const std::vector<int>& vtx_reindex);
 
+/**
+ * @brief Find the seams of the parameterization of a closed mesh.
+ * 
+ * TODO: Extend to open meshes
+ * 
+ * @param F: mesh faces
+ * @param FT: mesh layout faces
+ * @return |F|x3 mask of corners opposite seam edges
+ */
+Eigen::MatrixXi find_seams(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& FT);
+
+
+
 } // namespace Penner

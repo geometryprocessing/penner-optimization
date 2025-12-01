@@ -6,6 +6,7 @@ set(UtilSrc
   map.cpp
   spanning_tree.cpp
   vector.cpp
+  vf_corners.cpp
   vf_mesh.cpp
 )
 
