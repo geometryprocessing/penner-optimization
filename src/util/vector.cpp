@@ -61,13 +61,7 @@ void convert_eigen_to_std_vector(const VectorX& vector_eigen, std::vector<Scalar
 Eigen::Matrix<double, Eigen::Dynamic, 1> convert_scalar_to_double_vector(
     const VectorX& vector_scalar)
 {
-    int num_entries = vector_scalar.size();
-    Eigen::Matrix<double, Eigen::Dynamic, 1> vector_double(num_entries);
-    for (int i = 0; i < num_entries; ++i) {
-        vector_double[i] = (double)(vector_scalar[i]);
-    }
-
-    return vector_double;
+    return convert_vector_type<Scalar, double>(vector_scalar);
 }
 
 std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> convert_scalar_to_double_vector(

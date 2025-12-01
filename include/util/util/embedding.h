@@ -93,6 +93,7 @@ struct ReductionMaps
 /// @param[out] he2e: map from halfedge indices to edge indices
 /// @param[out] e2he: map from edge indices to halfedge indices
 void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he);
+void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::vector<int>& e2he);
 
 /// Build projection from edges in a doubled mesh to the edges that intersect
 /// the original mesh i.e. edges that are not type 2.
@@ -110,12 +111,45 @@ void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<
 /// the original mesh.
 /// @param[out] embed: map from edges that intersect the original mesh to the
 /// double mesh
+template <typename Scalar>
 void build_refl_proj(
     const Mesh<Scalar>& m,
     const std::vector<int>& he2e,
     const std::vector<int>& e2he,
     std::vector<int>& proj,
-    std::vector<int>& embed);
+    std::vector<int>& embed)
+{
+    // Resize arrays
+    proj.resize(e2he.size());
+    embed.clear();
+    embed.reserve(e2he.size());
+
+    // Build injective map from edges that are not type 2 to double mesh
+    int num_edges = e2he.size();
+    for (int e = 0; e < num_edges; ++e) {
+        int h0 = m.h0(e2he[e]);
+        int h1 = m.h1(e2he[e]);
+        if ((m.type[h0] != 2) || (m.type[h1] != 2)) {
+            embed.push_back(e);
+        }
+    }
+
+    // Construct map from double mesh to the embedded mesh
+    // Map reflection of edges in the image of the embedding to the original edge
+    int num_embedded_edges = embed.size();
+    for (int E = 0; E < num_embedded_edges; ++E) {
+        int e = embed[E];
+        int Re = he2e[m.R[e2he[e]]];
+        proj[Re] = E;
+    }
+
+    // Map embedded edge to itself. Note that if E is identified with e = embed[E]
+    // then this implies proj[E] = E and the map is a projection.
+    for (int E = 0; E < num_embedded_edges; ++E) {
+        int e = embed[E];
+        proj[e] = E;
+    }
+}
 
 /// Build projection from halfedges in a doubled mesh to the halfedges that
 /// intersect the original mesh i.e. edges that are not type 2.

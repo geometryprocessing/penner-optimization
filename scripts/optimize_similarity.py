@@ -5,8 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
-import holonomy_py as holonomy
-import optimization_py as opt 
+import penner
 import pickle, math
 import igl
 import optimization_scripts.script_util as script_util
@@ -34,7 +33,7 @@ def optimize_similarity_one(args, fname):
     free_cones = []
     fix_boundary = False
     set_holonomy_constraints = True
-    similarity_metric = holonomy.generate_similarity_mesh(V, F, V, F, Th_hat, rotation_form, free_cones, fix_boundary, set_holonomy_constraints)
+    similarity_metric = penner.generate_similarity_mesh(V, F, V, F, Th_hat, rotation_form, free_cones, fix_boundary, set_holonomy_constraints)
 
     # Get mesh information
     is_bd = igl.is_border_vertex(V, F)
@@ -48,7 +47,7 @@ def optimize_similarity_one(args, fname):
     # Build energies
     energy_choice = args['similarity_energy_choice']
     if (energy_choice == "integrated"):
-        opt_energy = holonomy.IntegratedEnergy(similarity_metric)
+        opt_energy = penner.IntegratedEnergy(similarity_metric)
     elif (energy_choice == "coordinate"):
         num_coords = len(similarity_metric.get_reduced_metric_coordinates())
         num_form_coords = similarity_metric.n_homology_basis_loops()
@@ -58,7 +57,7 @@ def optimize_similarity_one(args, fname):
             return
 
         coordinates = np.arange(num_coords - num_form_coords, num_coords)
-        opt_energy = holonomy.CoordinateEnergy(similarity_metric, coordinates)
+        opt_energy = penner.CoordinateEnergy(similarity_metric, coordinates)
     else:
         logger.error("No valid energy selected")
         return
@@ -70,7 +69,7 @@ def optimize_similarity_one(args, fname):
         optimized_similarity_metric = opt.optimize_metric(similarity_metric, opt_energy, proj_params, opt_params)
     if (args['optimization_method'] == 'shear'):
         shear_basis_matrix, _ = opt.compute_shear_dual_basis(similarity_metric)
-        domain_matrix, codomain_matrix, domain_coords, codomain_coords = holonomy.compute_similarity_optimization_domain(similarity_metric, shear_basis_matrix)
+        domain_matrix, codomain_matrix, domain_coords, codomain_coords = penner.compute_similarity_optimization_domain(similarity_metric, shear_basis_matrix)
         optimized_metric_coords = opt.optimize_domain_coordinates(similarity_metric, opt_energy, domain_matrix, codomain_matrix, domain_coords, codomain_coords, proj_params, opt_params)
         optimized_similarity_metric = similarity_metric.set_metric_coordinates(optimized_metric_coords)
 
@@ -81,7 +80,7 @@ def optimize_similarity_one(args, fname):
 
     # Get overlay and write to file
     cut_h = []
-    _, V_o, F_o, uv_o, FT_o, is_cut_h, _, fn_to_f, endpoints = holonomy.generate_VF_mesh_from_similarity_metric(V, F, Th_hat, optimized_similarity_metric, cut_h)
+    _, V_o, F_o, uv_o, FT_o, is_cut_h, _, fn_to_f, endpoints = penner.generate_VF_mesh_from_similarity_metric(V, F, Th_hat, optimized_similarity_metric, cut_h)
 
     # Save new meshes
     uv_mesh_path = os.path.join(output_dir, name + '_overlay_with_uv.obj')

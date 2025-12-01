@@ -1,6 +1,6 @@
 import numpy as np
 import script_util
-import optimization_py as opt
+import penner
 import os
 import sys
 script_dir = os.path.dirname(__file__)
@@ -14,7 +14,7 @@ def interpolate_metric(
     lambdas_end,
     output_dir,
     num_steps=5,
-    proj_params=opt.ProjectionParameters()
+    proj_params=penner.ProjectionParameters()
 ):
     """
     Interpolate the metric given by lambdas_start to the metric given by lambdas_end, projecting
@@ -32,7 +32,7 @@ def interpolate_metric(
     for i, s in enumerate(steps):
         lambdas = s * lambdas_end + (1 - s) * lambdas_start
         interpolated_metric = C.set_metric_coordinates(lambdas)
-        projected_metric = opt.project_metric_to_constraint(
+        projected_metric = penner.project_metric_to_constraint(
             interpolated_metric, proj_params, "")
         lambdas = projected_metric.get_reduced_metric_coordinates()
         np.savetxt(os.path.join(output_dir, 'lambdas_' + str(i)), lambdas)

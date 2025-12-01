@@ -47,6 +47,45 @@ std::vector<Type> convert_vector(const Eigen::Matrix<Type, Eigen::Dynamic, 1>& v
     return std::vector<Type>(v.data(), v.data() + v.size());
 }
 
+/**
+ * @brief Check if two vectors are equal, up to numerical tolerance.
+ * 
+ * @tparam VectorType 
+ * @param v: first vector
+ * @param w: second vector
+ * @return true if equal
+ * @return false otherwise
+ */
+template <typename VectorType>
+bool vector_equal(const VectorType& v, const VectorType& w)
+{
+    int n = v.size();
+    int m = w.size();
+
+    // check for consistent sizes
+    if (n != m) return false;
+
+    // check all entries
+    for (int i = 0; i < n; ++i)
+    {
+        if (!float_equal(v[i], w[i])) return false;
+    }
+
+    return true;
+}
+
+template <typename VectorType>
+Scalar compute_total_sum(const VectorType& v)
+{
+    Scalar total_sum = 0.;
+    int n = v.size();
+    for (int i = 0; i < n; ++i)
+    {
+        total_sum += v[i];
+    }
+    return total_sum;
+}
+
 /// Convert standard template library vector to an Eigen vector.
 ///
 /// @param[in] vector_std: standard template library vector to copy
@@ -96,6 +135,43 @@ void convert_std_to_eigen_matrix(
     }
 }
 
+template <typename VectorScalar, typename MatrixScalar, std::size_t Dimension>
+void convert_std_to_eigen_matrix(
+    const std::vector<std::array<VectorScalar, Dimension>>& matrix_vec,
+    Eigen::Matrix<MatrixScalar, Eigen::Dynamic, Eigen::Dynamic>& matrix)
+{
+    matrix.setZero(0, 0);
+    if (matrix_vec.empty()) return;
+
+    // Get dimensions of matrix
+    int rows = matrix_vec.size();
+    matrix.resize(rows, Dimension);
+
+    // Copy matrix by row
+    for (int i = 0; i < rows; ++i) {
+        for (std::size_t j = 0; j < Dimension; ++j) {
+            matrix(i, j) = MatrixScalar(matrix_vec[i][j]);
+        }
+    }
+}
+
+template <typename Scalar, std::size_t Dimension>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+convert_std_to_eigen_matrix(const std::vector<std::array<Scalar, Dimension>>& lol_matrix)
+{
+    int num_rows = lol_matrix.size();
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix(num_rows, Dimension);
+    for (int i = 0; i < num_rows; ++i)
+    {
+        for (std::size_t j = 0; j < Dimension; ++j)
+        {
+            eigen_matrix(i, j) = lol_matrix[i][j];
+        }
+    }
+
+    return eigen_matrix;
+}
+
 /// Convert Eigen dense vector to sparse.
 ///
 /// @param[in] vector_dense: input dense vector
@@ -121,6 +197,31 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> convert_scalar_to_double_vector(
 /// @return vector of vector of scalars cast to doubles
 std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> convert_scalar_to_double_vector(
     const std::vector<VectorX>& vector_scalar);
+
+template <typename OldScalar, typename NewScalar>
+Eigen::Matrix<NewScalar, Eigen::Dynamic, 1> convert_vector_type(
+    const Eigen::Matrix<OldScalar, Eigen::Dynamic, 1>& vector)
+{
+    int num_entries = vector.size();
+    Eigen::Matrix<NewScalar, Eigen::Dynamic, 1> vector_converted(num_entries);
+    for (int i = 0; i < num_entries; ++i) {
+        vector_converted[i] = (NewScalar)(vector[i]);
+    }
+
+    return vector_converted;
+}
+
+template <typename OldScalar, typename NewScalar>
+std::vector<NewScalar> convert_vector_type(const std::vector<OldScalar>& vector)
+{
+    int num_entries = vector.size();
+    std::vector<NewScalar> vector_converted(num_entries);
+    for (int i = 0; i < num_entries; ++i) {
+        vector_converted[i] = (NewScalar)(vector[i]);
+    }
+
+    return vector_converted;
+}
 
 /// Fill a vector with some value.
 ///

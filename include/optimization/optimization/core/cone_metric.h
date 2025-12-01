@@ -64,6 +64,7 @@ namespace Optimization {
 class DifferentiableConeMetric : public Mesh<Scalar>
 {
 public:
+    DifferentiableConeMetric() {};
     DifferentiableConeMetric(const Mesh<Scalar>& m);
 
     std::vector<int> he2e; // map from halfedge to edge
@@ -92,6 +93,7 @@ public:
     /// @param[out] he2angle: per-corner angle vector
     /// @param[out] he2cot: per-corner angle cotangent vector
     virtual void get_corner_angles(VectorX& he2angle, VectorX& he2cot) const;
+    std::tuple<VectorX, VectorX> get_corner_angles() const;
 
     // **********************************************************
     // Flip method: need to be able to flip edge counterclockwise
@@ -257,6 +259,7 @@ protected:
 class PennerConeMetric : public DifferentiableConeMetric
 {
 public:
+    PennerConeMetric();
     PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords);
 
     // ****************************************************

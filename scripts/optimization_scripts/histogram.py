@@ -6,7 +6,7 @@ module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
 import seaborn as sns
-import optimization_py as opt
+import penner
 import optimize_impl.energies as energies
 import optimize_impl.analysis as analysis
 import script_util
@@ -84,7 +84,7 @@ def histogram_one(args, fname):
     try:
         m, _, _, _, _, _, C_embed, _ = script_util.generate_mesh(args, fname)
         lambdas_target = C_embed.get_reduced_metric_coordinates()
-        reduction_maps = opt.ReductionMaps(C_embed)
+        reduction_maps = penner.ReductionMaps(C_embed)
         proj = np.array(reduction_maps.proj)
         he2e = np.array(reduction_maps.he2e)
     except:
@@ -137,7 +137,7 @@ def histogram_one(args, fname):
 
     # Scale factors
     if (args['histogram_choice'] == 'scale_factors'):
-        X = opt.best_fit_conformal(C_embed, lambdas[proj[he2e]])
+        X = penner.best_fit_conformal(C_embed, lambdas[proj[he2e]])
 
         label = 'scale factors'
         output_path = os.path.join(
@@ -149,8 +149,8 @@ def histogram_one(args, fname):
 
     # Scale factor residuals
     if (args['histogram_choice'] == 'scale_residuals'):
-        B = opt.conformal_scaling_matrix(C_embed)
-        u = opt.best_fit_conformal(C_embed, lambdas[proj[he2e]])
+        B = penner.conformal_scaling_matrix(C_embed)
+        u = penner.best_fit_conformal(C_embed, lambdas[proj[he2e]])
         X = (lambdas[proj[he2e]] - lambdas_target[proj[he2e]]) - B @ u
 
         label = 'scale residuals'
@@ -175,7 +175,7 @@ def histogram_one(args, fname):
 
     # Symmetric dirichlet
     if (args['histogram_choice'] == 'sym_dirichlet'):
-        X, _ = opt.symmetric_dirichlet_energy(C_embed, lambdas[proj[he2e]], False)
+        X, _ = penner.symmetric_dirichlet_energy(C_embed, lambdas[proj[he2e]], False)
         X = np.array(X) - 4
 
         label = 'symmetric dirichlet'
@@ -188,8 +188,8 @@ def histogram_one(args, fname):
 
     # Scale factor comparison
     if (args['histogram_choice'] == 'compare_scale_factors'):
-        X_conf = opt.best_fit_conformal(C_embed, lambdas_conf[proj[he2e]])
-        X_opt = opt.best_fit_conformal(C_embed, lambdas[proj[he2e]])
+        X_conf = penner.best_fit_conformal(C_embed, lambdas_conf[proj[he2e]])
+        X_opt = penner.best_fit_conformal(C_embed, lambdas[proj[he2e]])
         X = {"conformal": X_conf, args['comparison_label']: X_opt}
 
         label = 'scale factors'
@@ -202,10 +202,10 @@ def histogram_one(args, fname):
     
     # Scale residual comparison
     if (args['histogram_choice'] == 'compare_scale_residuals'):
-        B = opt.conformal_scaling_matrix(C_embed)
-        u_conf = opt.best_fit_conformal(C_embed, lambdas_conf[proj[he2e]])
+        B = penner.conformal_scaling_matrix(C_embed)
+        u_conf = penner.best_fit_conformal(C_embed, lambdas_conf[proj[he2e]])
         X_conf = (lambdas_conf[proj[he2e]] - lambdas_target[proj[he2e]]) - B @ u_conf
-        u_opt = opt.best_fit_conformal(C_embed, lambdas[proj[he2e]])
+        u_opt = penner.best_fit_conformal(C_embed, lambdas[proj[he2e]])
         X_opt = (lambdas[proj[he2e]] - lambdas_target[proj[he2e]]) - B @ u_opt
         X = {"conformal": X_conf, args['comparison_label']: X_opt}
 

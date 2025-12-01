@@ -15,7 +15,9 @@ def generate_histogram(
     width=7,
     height=5,
     use_percentage=True,
-    log=False
+    log=False,
+    bins=21,
+    logy=False
 ):
     # Set width and height of figure
     matplotlib.rcParams['figure.figsize'] = (width, height)
@@ -23,11 +25,12 @@ def generate_histogram(
     # Set percentage or absolute scale for y axis
     fig, ax = plt.subplots(1)
     if use_percentage:
-        hist = seaborn.histplot(X, bins = 21, stat='percent', binrange=binrange, ax=ax)
+        hist = seaborn.histplot(X, bins = bins, stat='percent', binrange=binrange, ax=ax)
         hist.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
         ax.set_ylim(0, ylim)
     else:
-        hist = seaborn.histplot(X, bins = 21, binrange=binrange)
+        hist = seaborn.histplot(X, bins = bins, binrange=binrange)
+        ax.set_ylim(0, ylim)
 
     # Set axes labels
     hist.set_xlabel(label, fontsize=50)
@@ -37,6 +40,8 @@ def generate_histogram(
     # Optionally use log scale
     if log:
         hist.set_xscale('log')
+    if logy:
+        hist.set_yscale('log')
 
     # Save figure to file
     fig.savefig(output_path, bbox_inches='tight')

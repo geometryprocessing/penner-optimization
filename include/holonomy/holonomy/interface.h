@@ -1,7 +1,7 @@
 #pragma once
 
 #include "holonomy/core/common.h"
-#include "holonomy/core/field.h"
+#include "holonomy/field/field.h"
 #include "holonomy/holonomy/rotation_form.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
@@ -25,6 +25,8 @@ struct MarkedMetricParameters
     Weighting weighting = Weighting::minimal_homotopy; // weighting for tree-cotree
     bool remove_symmetry = false; // remove symmetry structure from doubled mesh
     bool free_interior = false; // remove interior cone constraints
+    bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
+    bool use_connectivity = true; // use connectivity structure for markings
 };
 
 /**
@@ -122,7 +124,8 @@ std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refine
 MarkedPennerConeMetric generate_marked_metric_from_mesh(
     const Mesh<Scalar>& m,
     const VectorX& rotation_form,
-    MarkedMetricParameters marked_mesh_params = MarkedMetricParameters());
+    MarkedMetricParameters marked_mesh_params = MarkedMetricParameters(),
+    std::vector<int> marked_halfedges = {});
 
 /**
  * @brief Generate a similarity metric from a VF mesh, cones, and rotation form.
@@ -184,16 +187,8 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
-    MarkedMetricParameters marked_metric_params);
-
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi>
-parameterize_components(
-    const MarkedPennerConeMetric& embedding_metric,
-    const MarkedPennerConeMetric& original_metric,
-    const MarkedPennerConeMetric& marked_metric,
-    const Eigen::MatrixXd& V_cut,
-    const std::vector<int>& vtx_reindex
-);
+    MarkedMetricParameters marked_metric_params,
+    std::vector<int> marked_halfedges={});
 
 std::vector<int> extend_vtx_reindex(
     const Mesh<Scalar>& m,
@@ -204,6 +199,11 @@ std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const FieldParameters& field_params);
+
+std::vector<Scalar> compute_kappa(
+    const Mesh<Scalar>& discrete_metric,
+    const VectorX& rotation_form,
+    const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
 
 } // namespace Holonomy
 } // namespace Penner

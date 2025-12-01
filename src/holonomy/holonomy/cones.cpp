@@ -1,7 +1,7 @@
 #include "holonomy/holonomy/cones.h"
 
 #include "util/boundary.h"
-#include "holonomy/core/forms.h"
+#include "holonomy/field/forms.h"
 #include "holonomy/holonomy/holonomy.h"
 
 #include "optimization/core/constraint.h"
@@ -41,7 +41,7 @@ bool validate_cones_from_rotation_form(
 
         // Special treatment for vertices in interior of doubled mesh
         if ((is_symmetric) && (!is_boundary_vertex[vi])) {
-            if (!float_equal(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
                 spdlog::warn(
                     "Inconsistent interior cones {} and {}",
                     Th_hat[m.v_rep[vi]] / 2.,
@@ -51,7 +51,7 @@ bool validate_cones_from_rotation_form(
         }
         // General case
         else {
-            if (!float_equal(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
                 spdlog::warn(
                     "Inconsistent cones {} and {}",
                     Th_hat[m.v_rep[vi]],
@@ -87,6 +87,10 @@ std::vector<Scalar> generate_cones_from_rotation_form(
         Th_hat[m.v_rep[m.to[h]]] += rotation_form[h];
     }
     assert(validate_cones_from_rotation_form(m, rotation_form, Th_hat));
+
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        Th_hat[vi] = round(Th_hat[vi] / (M_PI / 2.)) * (M_PI / 2.);
+    }
 
     return Th_hat;
 }
@@ -129,10 +133,9 @@ bool contains_small_cones(const std::vector<Scalar>& Th_hat, int min_cone_index)
 
 bool contains_zero_cones(const std::vector<Scalar>& Th_hat)
 {
-    return contains_small_cones(Th_hat, 0.);
+    return contains_small_cones(Th_hat, 1);
 }
 
-// Count negative and positive cones
 std::pair<int, int> count_cones(const Mesh<Scalar>& m)
 {
     const auto& Th_hat = m.Th_hat;
@@ -297,7 +300,7 @@ int get_flat_vertex(const Mesh<Scalar>& m, bool only_interior)
         }
         if (only_interior) continue;
 
-        if ((m.type[h] == 1) && (m.R[m.opp[h]] == h) && float_equal(m.Th_hat[vi], 2. * M_PI)) {
+        if ((m.type[h] == 1) && (m.R[m.opp[h]] == h) && float_equal<Scalar>(m.Th_hat[vi], 2. * M_PI)) {
             return vi;
         }
     }
@@ -305,20 +308,54 @@ int get_flat_vertex(const Mesh<Scalar>& m, bool only_interior)
     return -1;
 }
 
-void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior)
+void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior, int offset)
 {
     bool is_symmetric = (m.type[0] != 0);
     Scalar angle_delta = (is_symmetric) ? M_PI : (M_PI / 2.);
 
-    // Add 5 cone
-    int vi = get_flat_vertex(m, only_interior);
-    spdlog::debug("Adding positive cone at {}", vi);
-    m.Th_hat[vi] += angle_delta;
+    int num_vertices = m.n_vertices();
+    for (int i = 0; i < num_vertices; ++i)
+    {
+        int vi = (i + offset) % num_vertices;
+        // check if vertex is valid
+        int Vi = m.v_rep[vi];
+        if (!float_equal(m.Th_hat[Vi], 4. * angle_delta)) continue;
+        if ((only_interior) && (!is_interior(m, vi))) continue;
 
-    // Add 3 cone
-    int vj = get_flat_vertex(m, only_interior);
-    spdlog::debug("Adding negative cone at {}", vj);
-    m.Th_hat[vj] -= angle_delta;
+        // try to find valid adjacent vertex
+        int hik = m.out[vi];
+        int hij = hik;
+        int vj = m.to[hij];
+        do {
+            hij = m.n[m.opp[hij]];
+            vj = m.to[hij];
+            if ((only_interior) && (!is_interior(m, vj))) continue;
+            if (!float_equal(m.Th_hat[m.v_rep[vj]], 4. * angle_delta)) continue;
+            break;
+        }
+        while (hij != hik);
+
+        // check if valid adjacent vertex found
+        int Vj = m.v_rep[vj];
+        if ((only_interior) && (!is_interior(m, vj))) continue;
+        if (!float_equal(m.Th_hat[Vj], 4. * angle_delta)) continue;
+
+        // add cones
+        spdlog::info("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);
+        spdlog::info("Adding positive cone at {} with angle {}", Vj, m.Th_hat[Vj]);
+        m.Th_hat[m.v_rep[vi]] -= angle_delta;
+        m.Th_hat[m.v_rep[vj]] += angle_delta;
+        return;
+    }
+
+    // try again with interior if fails
+    if (only_interior)
+    {
+        spdlog::warn("Cannot add cone pair in interior");
+        add_random_cone_pair(m, false);
+    } else {
+        spdlog::error("Cannot add cone pair");
+    }
 }
 
 std::tuple<int, int> get_constraint_outliers(
@@ -384,7 +421,8 @@ void fix_cones(Mesh<Scalar>& m, int min_cone_index)
 
     // Add another cone pair to torus with a cone pair
     if (is_torus_with_cone_pair(m)) {
-        add_random_cone_pair(m);
+        add_random_cone_pair(m, true, m.n_vertices() / 4);
+        add_random_cone_pair(m, true, m.n_vertices() / 2);
     }
 }
 
@@ -408,7 +446,7 @@ void remove_trivial_boundaries(
             h = m.opp[h];
 
             int vi = vtx_reindex[m.v_rep[m.to[h]]];
-            if (!float_equal(Th_hat[vi], M_PI)) {
+            if (!float_equal<Scalar>(Th_hat[vi], M_PI)) {
                 is_trivial = false;
                 break;
             }

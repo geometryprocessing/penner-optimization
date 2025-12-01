@@ -109,4 +109,41 @@ std::vector<bool> compute_boundary_vertices(const Eigen::MatrixXi& F, int num_ve
 Eigen::MatrixXd
 inflate_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, double inflation_distance = 1e-8);
 
+/**
+ * @brief Generate a matrix mapping vertex pairs to halfedges.
+ * 
+ * @param F: list of faces of the mesh
+ * @param he_to_corner: map from halfedge indices to face corners
+ * @return VV to halfedge matrix
+ */
+Eigen::SparseMatrix<int> generate_VV_to_halfedge_map(
+    const Eigen::MatrixXi& F,
+    const std::vector<std::pair<int, int>>& he_to_corner);
+
+/**
+ * @brief Generate a matrix mapping vertex pairs to the face containing the halfedge.
+ * 
+ * @param F: list of faces of the mesh
+ * @return VV to face matrix
+ */
+Eigen::SparseMatrix<int> generate_VV_to_face_map(const Eigen::MatrixXi& F);
+
+VectorX compute_cone_angles(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT);
+
+/// Reindex mesh such that V[i] = V[vtx_reindex[i]]
+///
+/// @param[in] V: mesh vertices
+/// @param[in] F: mesh faces
+/// @param[in] vtx_reindex: vertex reindexing
+/// @return reindex mesh vertices
+/// @return reindex mesh faces
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<int>& vtx_reindex);
+
 } // namespace Penner

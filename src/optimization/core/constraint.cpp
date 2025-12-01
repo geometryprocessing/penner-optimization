@@ -37,6 +37,18 @@
 namespace Penner {
 namespace Optimization {
 
+VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha)
+{
+    // Sum up angles around vertices
+    VectorX t(m.n_ind_vertices());
+    t.setZero();
+    for (int h = 0; h < m.n_halfedges(); h++) {
+        t[m.v_rep[m.to[m.n[h]]]] += alpha[h];
+    }
+    SPDLOG_DEBUG("Cone angles with mean {} and norm {}", t.mean(), t.norm());
+    return t;
+}
+
 bool satisfies_triangle_inequality(const Mesh<Scalar>& cone_metric)
 {
     int num_halfedges = cone_metric.n_halfedges();
@@ -290,6 +302,25 @@ Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric)
         need_jacobian,
         only_free_vertices);
     return sup_norm(constraint);
+}
+
+VectorX compute_cone_angles(const DifferentiableConeMetric& cone_metric)
+{
+    // Make mesh into discrete metric
+    spdlog::debug("Making metric discrete");
+        std::unique_ptr<DifferentiableConeMetric> cone_metric_copy =
+            cone_metric.clone_cone_metric();
+        cone_metric_copy->make_discrete_metric();
+
+    // Generate corner angles
+    spdlog::debug("Computing corner angles");
+    VectorX he2angle;
+    VectorX cotangents;
+    cone_metric_copy->get_corner_angles(he2angle, cotangents);
+
+    // Generate cones and cone errors
+    spdlog::debug("Computing cones and errors");
+    return Theta(*cone_metric_copy, he2angle);
 }
 
 } // namespace Optimization

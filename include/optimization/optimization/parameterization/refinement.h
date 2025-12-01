@@ -181,25 +181,25 @@ public:
     ///
     /// @param[in] vertex_index: index of the vertex in the mesh
     /// @return vertex position
-    Eigen::VectorXd get_vertex(Index vertex_index) const;
+    Eigen::Vector3d get_vertex(Index vertex_index) const;
 
     /// Get the parametric domain coordinates of a vertex
     ///
     /// @param[in] vertex_index: index of the vertex in the mesh
     /// @return parametric domain coordinates of the vertex
-    Eigen::VectorXd get_uv_vertex(Index vertex_index) const;
+    Eigen::Vector2d get_uv_vertex(Index vertex_index) const;
 
     /// Get the positions in space of the vertices of a face
     ///
     /// @param[in] face_index: index of the face in the mesh
     /// @return list of face vertex positions
-    void get_face_vertices(Index face_index, std::vector<Eigen::VectorXd>& vertices) const;
+    void get_face_vertices(Index face_index, std::vector<Eigen::Vector3d>& vertices) const;
 
     /// Get the parametric domain coordinates of the vertices of a face
     ///
     /// @param[in] face_index: index of the face in the mesh
     /// @return list of face vertex parametric coordinates
-    void get_face_uv_vertices(Index face_index, std::vector<Eigen::VectorXd>& uv_vertices) const;
+    void get_face_uv_vertices(Index face_index, std::vector<Eigen::Vector2d>& uv_vertices) const;
 
     /// Clear the data of the mesh
     void clear();
@@ -251,6 +251,9 @@ private:
     std::vector<std::vector<std::array<int, 3>>> m_overlay_face_triangles;
     std::vector<std::vector<std::array<int, 3>>> m_overlay_uv_face_triangles;
 
+    // parameters    
+    double area_threshold;
+
     // Constructor helper functions
 
     void build_connectivity(
@@ -285,6 +288,40 @@ private:
 
     bool is_valid_refinement_mesh() const;
 };
+
+/**
+ * @brief Reconstruct the original mesh from an overlay mesh with halfedge
+ * 
+ * Halfedges are indexed by opposite corner, and -1 corresponds to an inserted edge.
+ * 
+ * @param F: overlay mesh faces
+ * @param F_uv: overlay mesh parametric domain faces
+ * @param F_to_Fn: list of overlay subfaces of the original mesh faces
+ * @param endpoints: map from overlay vertices to the endpoints of their containing edge
+ * @param F_orig: reconstructed original mesh faces
+ * @param corner_v_points: list of halfedge vertices opposite a corner
+ * @param F_uv_orig: reconstructed original mesh parametric domain faces
+ * @param corner_uv_points: list of halfedge uv vertices opposite a corner
+ * @param halfedge_map: map from refined halfedges to parent halfedges 
+ */
+void build_faces(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& F_uv,
+    const std::vector<std::vector<int>>& F_to_Fn,
+    const std::vector<std::pair<int, int>>& endpoints,
+    Eigen::MatrixXi& F_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_v_points,
+    Eigen::MatrixXi& F_uv_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points,
+    Eigen::MatrixXi& halfedge_map);
+
+/**
+ * @brief Construct list of subfaces from the overlay to original face map
+ * 
+ * @param Fn_to_F: map from overlay faces to the original face containing it
+ * @return list of overlay subfaces of the original mesh faces
+ */
+std::vector<std::vector<int>> build_F_to_Fn(const std::vector<int>& Fn_to_F);
 
 } // namespace Optimization
 } // namespace Penner

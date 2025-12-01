@@ -1,41 +1,14 @@
 #include "holonomy/holonomy/rotation_form.h"
 
-#include "holonomy/core/field.h"
-#include "holonomy/core/intrinsic_field.h"
-#include "holonomy/core/forms.h"
+#include "holonomy/field/field.h"
+#include "holonomy/field/intrinsic_field.h"
+#include "holonomy/field/forms.h"
 
 #include <igl/boundary_facets.h>
 #include <igl/per_face_normals.h>
 
 namespace Penner {
 namespace Holonomy {
-
-// Dot product of vectors in R3
-template <typename VectorType>
-double dot_prod(const VectorType& v1, const VectorType& v2)
-{
-    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-}
-
-// Cross product of vectors in R3
-template <typename VectorType>
-VectorType cross_prod(const VectorType& v1, const VectorType& v2)
-{
-    return VectorType(
-        v1[1] * v2[2] - v1[2] * v2[1],
-        v1[2] * v2[0] - v1[0] * v2[2],
-        v1[0] * v2[1] - v1[1] * v2[0]);
-}
-
-// Angle between v1 and v2 around an axis defined by normal
-template <typename VectorType>
-double signed_angle(const VectorType& v1, const VectorType& v2, const VectorType& normal)
-{
-    double s = dot_prod(normal, cross_prod(v1, v2));
-    double c = dot_prod(v1, v2);
-    const double angle = (s == 0 && c == 0) ? 0.0 : atan2(s, c);
-    return angle;
-}
 
 // Priority function for halfedges
 // Assumes that vertex indices are unique

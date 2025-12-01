@@ -1,6 +1,6 @@
 # Script to optimize parameterization with free boundary using SLIM
 
-import optimization_py as opt
+import penner
 import optimize_impl.targets as targets
 import script_util
 import igl
@@ -71,7 +71,7 @@ def slim_one(args, fname):
     mesh_path = os.path.join(
         args['output_dir'], m + '_output', name+'_slim_init.obj')
     logger.info("Saving initial mesh at {}".format(mesh_path))
-    opt.write_obj_with_uv(mesh_path, v3d, f, uv, f)
+    penner.write_obj_with_uv(mesh_path, v3d, f, uv, f)
 
     # Generate SLIM optimizer using chosen energy
     b = []
@@ -105,7 +105,7 @@ def slim_one(args, fname):
     mesh_path = os.path.join(
         args['output_dir'], m + '_output', name+'_slim.obj')
     logger.info("Saving initial mesh at {}".format(mesh_path))
-    opt.write_obj_with_uv(mesh_path, v3d, f, uv_slim, f)
+    penner.write_obj_with_uv(mesh_path, v3d, f, uv_slim, f)
 
 
 def slim_many(args):

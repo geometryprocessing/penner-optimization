@@ -28,10 +28,7 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "optimization/pybind.h"
 
 #include "optimization/core/common.h"
 
@@ -235,7 +232,7 @@ void init_classes_pybind(pybind11::module& m)
     pybind11::class_<LogScaleEnergy, EnergyFunctor>(m, "LogScaleEnergy")
         .def(pybind11::init<const DifferentiableConeMetric&>());
 
-    pybind11::class_<InterpolationMesh>(m, "InterpolationMesh")
+    pybind11::class_<InterpolationMesh<Scalar>>(m, "InterpolationMesh")
         .def(pybind11::init<
              const Eigen::MatrixXd&, // V
              const Eigen::MatrixXi&, // F
@@ -245,7 +242,7 @@ void init_classes_pybind(pybind11::module& m)
              >())
         .def(
             "get_overlay_mesh",
-            &InterpolationMesh::get_overlay_mesh,
+            &InterpolationMesh<Scalar>::get_overlay_mesh,
             pybind11::return_value_policy::copy);
 
     pybind11::
@@ -254,8 +251,16 @@ void init_classes_pybind(pybind11::module& m)
             "DifferentiableConeMetric")
             .def("get_metric_coordinates", &DifferentiableConeMetric::get_metric_coordinates)
             .def(
+                "get_corner_angles",
+                static_cast<
+                std::tuple<
+                    VectorX,
+                    VectorX
+                > (DifferentiableConeMetric::*)() const>(&DifferentiableConeMetric::get_corner_angles))
+            .def(
                 "get_reduced_metric_coordinates",
                 &DifferentiableConeMetric::get_reduced_metric_coordinates)
+            .def("get_expansion_matrix", &DifferentiableConeMetric::get_expansion_matrix)
             .def("set_metric_coordinates", &DifferentiableConeMetric::set_metric_coordinates);
 
     pybind11::class_<DiscreteMetric, DifferentiableConeMetric>(m, "DiscreteMetric")
@@ -374,9 +379,14 @@ void init_energies_pybind(pybind11::module& m)
         "Get the best fit conformal map for a metric map",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def(
+        "root_mean_square_relative_error",
+        &root_mean_square_relative_error,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
 
-void init_optimization_pybind(pybind11::module& m)
+void init_opt_pybind(pybind11::module& m)
 {
     m.def(
         "correct_cone_angles",
@@ -434,19 +444,22 @@ void init_parameterization_pybind(pybind11::module& m)
 {
     m.def(
         "add_overlay",
-        &add_overlay,
+        &add_overlay<Scalar>,
         "Make mesh into overlay mesh",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(
         "make_tufted_overlay",
-        &make_tufted_overlay,
+        &make_tufted_overlay<Scalar>,
         "Make overlay mesh a tufted cover",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def(
         "compute_uv_length_error",
         &compute_uv_length_error,
+        pybind11::
+            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
+    m.def("compute_layout_VF", &compute_layout_VF<double>, 
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
@@ -510,17 +523,13 @@ load_simplify_overlay_output(std::string fname)
 }
 #endif
 
-
-// wrap as Python module
-PYBIND11_MODULE(optimization_py, m)
+void init_optimization_pybind(pybind11::module& m)
 {
-    m.doc() = "pybind for optimization module";
-
     init_classes_pybind(m);
     init_conformal_pybind(m);
 
     init_energies_pybind(m);
-    init_optimization_pybind(m);
+    init_opt_pybind(m);
     init_parameterization_pybind(m);
 
 #ifdef USE_HIGHFIVE
@@ -545,6 +554,7 @@ PYBIND11_MODULE(optimization_py, m)
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 }
+
 #endif
 #endif
 

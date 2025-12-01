@@ -2,7 +2,7 @@
 
 import script_util
 import pickle
-import optimization_py as opt
+import penner
 import numpy as np
 import os
 import sys
@@ -25,13 +25,13 @@ def optimize_one(args, fname):
     os.makedirs(output_dir, exist_ok=True)
 
     # Create the logging file handler
-    log_path = os.path.join(output_dir, m+'_opt.log')
+    log_path = os.path.join(output_dir, m+'_penner.log')
     logger = script_util.get_logger(log_path)
     logger.info("Optimizing {}".format(m))
 
     # Save initial conformal lambdas to file
     logger.info("Running conformal method")
-    C_conf = opt.project_metric_to_constraint(
+    C_conf = penner.project_metric_to_constraint(
         C,
         proj_params,
         opt_params.output_dir
@@ -43,13 +43,13 @@ def optimize_one(args, fname):
     np.savetxt(output_lambdas_path, lambdas_conf)
 
     logger.info("Running implicit metric optimization method")
-    C_opt = opt.optimize_metric(
+    C_opt = penner.optimize_metric(
         C,
         opt_energy,
         proj_params,
         opt_params
     )
-    lambdas = C_opt.get_reduced_metric_coordinates()
+    lambdas = C_penner.get_reduced_metric_coordinates()
 
     # Save final lambdas to file
     output_lambdas_path = os.path.join(output_dir, 'lambdas_opt')

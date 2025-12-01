@@ -33,19 +33,8 @@ std::vector<int> find_primal_boundary_halfedges(const Mesh<Scalar>& m)
     boundary_halfedges.reserve(m.n_ind_vertices());
     for (int hij = 0; hij < num_halfedges; ++hij)
     {
-        // TODO Handle flipped case
-        if (m.type[hij] == 3)
-        {
-            spdlog::error("Cannot find boundary vertices for flipped mesh");
-            return {};
-        }
-
-        // Only process primal edges
-        if (m.type[hij] != 1) continue;
-
-        // Check for edges on symmetry line and add tip
-        if (m.opp[m.R[hij]] == hij)
-        {
+        int hji = m.opp[hij];
+        if ((m.type[hij] == 1) && (m.type[hji] == 2)) {
             boundary_halfedges.push_back(hij);
         }
     }

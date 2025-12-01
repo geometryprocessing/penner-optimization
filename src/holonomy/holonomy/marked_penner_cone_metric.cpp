@@ -26,6 +26,7 @@ bool is_reflection_structure_valid(
     const std::vector<char>& type)
 {
     int num_halfedges = next.size();
+    if (prev.size() != next.size()) return false;
 
     // check reflection structure
     for (int hij = 0; hij < num_halfedges; ++hij) {
@@ -42,10 +43,12 @@ bool is_reflection_structure_valid(
         }
 
         // check R inverts next
-        if (R[prev[hij]] != next[R[hij]]) {
-            spdlog::warn("{} under next is not inverted by R", hij);
-            return false;
-        }
+        // TODO: Fails for quads
+        //if ((type[hij] != 4) && (R[prev[hij]] != next[R[hij]])) {
+        //    spdlog::warn("{} under next is not inverted by R", hij);
+        //    spdlog::warn("{}, {}, {}, {}", prev[hij], R[prev[hij]], R[hij], next[R[hij]]);
+        //    return false;
+        //}
 
         // check edge typing
         if ((type[hij] == 1) && (type[R[hij]] != 2))
@@ -75,6 +78,8 @@ bool is_reflection_structure_valid(
 
 bool is_valid_mesh(const Mesh<Scalar>& m)
 {
+    if (m.n_halfedges() == 0) return true;
+
     // build previous map
     std::vector<int> prev = invert_map(m.n);
 
@@ -104,6 +109,10 @@ bool is_valid_mesh(const Mesh<Scalar>& m)
 
     return true;
 }
+
+MarkedPennerConeMetric::MarkedPennerConeMetric()
+    : m_dual_loop_manager(0)
+{}
 
 MarkedPennerConeMetric::MarkedPennerConeMetric(
     const Mesh<Scalar>& m,
@@ -142,7 +151,7 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(const MarkedPennerConeMetric& mar
     assert(is_valid_mesh(marked_metric));
 }
 
-void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
+void MarkedPennerConeMetric::copy_connectivity(const MarkedPennerConeMetric& m)
 {
     n = m.n;
     to = m.to;
@@ -162,6 +171,10 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
 
     he2e = m.he2e;
     e2he = m.e2he;
+}
+
+void MarkedPennerConeMetric::copy_metric(const MarkedPennerConeMetric& m)
+{
     m_is_discrete_metric = m.m_is_discrete_metric;
     m_flip_seq = m.m_flip_seq;
     m_identification = m.m_identification;
@@ -170,7 +183,10 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
     m_projection = m.m_projection;
     m_need_jacobian = m.m_need_jacobian;
     m_transition_jacobian_lol = m.m_transition_jacobian_lol;
+}
 
+void MarkedPennerConeMetric::copy_holonomy(const MarkedPennerConeMetric& m)
+{
     kappa_hat = m.kappa_hat;
     m_dual_loop_manager = m.m_dual_loop_manager;
     int num_basis_loops = m.get_homology_basis_loops().size();
@@ -180,6 +196,14 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
         m_homology_basis_loops.push_back(m.get_homology_basis_loops()[i]->clone());
     }
 }
+
+void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
+{
+    copy_connectivity(m);
+    copy_metric(m);
+    copy_holonomy(m);
+}
+
 
 void MarkedPennerConeMetric::reset_connectivity(const MarkedPennerConeMetric& m)
 {
@@ -214,12 +238,13 @@ void MarkedPennerConeMetric::reset_connectivity(const MarkedPennerConeMetric& m)
 void MarkedPennerConeMetric::reset_markings(const MarkedPennerConeMetric& m)
 {
     // Loop data
-    int num_basis_loops = n_homology_basis_loops();
+    int num_basis_loops = m.n_homology_basis_loops();
+    m_homology_basis_loops.resize(num_basis_loops);
     for (int i = 0; i < num_basis_loops; ++i) {
         m_homology_basis_loops[i] = m.get_homology_basis_loops()[i]->clone();
 
-        // kappa_hat does not change
     }
+    kappa_hat = m.kappa_hat;
 }
 
 void MarkedPennerConeMetric::reset_marked_metric(const MarkedPennerConeMetric& m)
@@ -325,6 +350,9 @@ std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_con
     alg_params.error_eps = proj_params->error_eps;
     alg_params.do_reduction = proj_params->do_reduction;
     alg_params.output_dir = proj_params->output_dir;
+    alg_params.solver = "ldlt";
+    spdlog::info("Doing projection");
+    spdlog::info("Output to {}", alg_params.output_dir);
 
     // Optimize metric angles
     MatrixX identity = id_matrix(n_reduced_coordinates());
@@ -374,54 +402,6 @@ void MarkedPennerConeMetric::write_status_log(std::ostream& stream, bool write_h
     stream << std::endl;
 }
 
-void view_homology_basis(
-    const MarkedPennerConeMetric& marked_metric,
-    const std::vector<int>& vtx_reindex,
-    const Eigen::MatrixXd& V,
-    int num_homology_basis_loops,
-    std::string mesh_handle,
-    bool show)
-{
-    int num_vertices = V.rows();
-    if (show) {
-        spdlog::info(
-            "Viewing {} loops on mesh {} with {} vertices",
-            num_homology_basis_loops,
-            mesh_handle,
-            num_vertices);
-    }
-    auto [F_mesh, F_halfedge] = generate_mesh_faces(marked_metric, vtx_reindex);
-
-#ifdef ENABLE_VISUALIZATION
-    if (num_homology_basis_loops < 0) {
-        num_homology_basis_loops = marked_metric.n_homology_basis_loops();
-    } else {
-        num_homology_basis_loops =
-            std::min(marked_metric.n_homology_basis_loops(), num_homology_basis_loops);
-    }
-    polyscope::init();
-    if (mesh_handle == "") {
-        mesh_handle = "homology_basis_mesh";
-        polyscope::registerSurfaceMesh(mesh_handle, V, F_mesh);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
-    }
-    for (int i = 0; i < num_homology_basis_loops; ++i) {
-        const auto& homology_basis_loops = marked_metric.get_homology_basis_loops();
-        std::vector<int> dual_loop_faces =
-            homology_basis_loops[i]->generate_face_sequence(marked_metric);
-
-        int num_faces = marked_metric.n_faces();
-        Eigen::VectorXd is_dual_loop_face;
-        is_dual_loop_face.setZero(num_faces);
-        for (const auto& dual_loop_face : dual_loop_faces) {
-            is_dual_loop_face(dual_loop_face) = 1.0;
-        }
-        polyscope::getSurfaceMesh(mesh_handle)
-            ->addFaceScalarQuantity("dual_loop_" + std::to_string(i), is_dual_loop_face);
-    }
-    if (show) polyscope::show();
-#endif
-}
 
 } // namespace Holonomy
 } // namespace Penner

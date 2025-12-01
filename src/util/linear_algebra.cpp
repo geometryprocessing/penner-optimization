@@ -102,7 +102,8 @@ Scalar compute_condition_number(const Eigen::MatrixXd matrix)
 VectorX solve_psd_system(const MatrixX& A, const VectorX& b)
 {
 #ifdef USE_SUITESPARSE
-    Eigen::CholmodSupernodalLLT<MatrixX> solver;
+    //Eigen::CholmodSupernodalLLT<MatrixX> solver;
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
 #else
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
 #endif
@@ -114,7 +115,8 @@ VectorX solve_psd_system(const MatrixX& A, const VectorX& b)
 VectorX solve_linear_system(const MatrixX& A, const VectorX& b)
 {
 #ifdef WITH_MPFR
-    Eigen::SparseQR<MatrixX, Eigen::COLAMDOrdering<int>> solver;
+    //Eigen::SparseQR<MatrixX, Eigen::COLAMDOrdering<int>> solver;
+    Eigen::SparseLU<MatrixX> solver;
 #else
     Eigen::SparseLU<MatrixX> solver;
 #endif

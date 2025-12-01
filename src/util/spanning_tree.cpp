@@ -7,53 +7,49 @@
 
 namespace Penner {
 
-void cut_boundary_edges(const Mesh<Scalar>& m, std::vector<bool>& is_cut) {
+void cut_boundary_edges(const Mesh<Scalar>& m, std::vector<bool>& is_cut)
+{
     // Do nothing if not doubled mesh
     if (m.type[0] == 0) return;
 
     int num_halfedges = m.n_halfedges();
-    for (int hij = 0; hij < num_halfedges; ++hij)
-    {
-        if (m.opp[m.R[hij]] == hij)
-        {
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        if (m.opp[m.R[hij]] == hij) {
             is_cut[hij] = true;
         }
     }
-
 }
 
-void cut_copy_edges(const Mesh<Scalar>& m, std::vector<bool>& is_cut) {
+void cut_copy_edges(const Mesh<Scalar>& m, std::vector<bool>& is_cut)
+{
     // Do nothing if not doubled mesh
     if (m.type[0] == 0) return;
 
     int num_halfedges = m.n_halfedges();
-    for (int hij = 0; hij < num_halfedges; ++hij)
-    {
-        if ((m.type[hij] == 2) && (m.type[m.opp[hij]] == 2))
-        {
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        if ((m.type[hij] == 2) && (m.type[m.opp[hij]] == 2)) {
             is_cut[hij] = true;
         }
     }
-
 }
 
 
 bool Forest::is_valid_forest(const Mesh<Scalar>& m) const
 {
-    int num_edges = m_edges.size();
+    int num_edges = m_halfedges.size();
     int num_vertices = m_out.size();
-    if (m_to.size() != m_edges.size()) {
+    if (m_to.size() != m_halfedges.size()) {
         spdlog::error(
             "to and edges have inconsistent sizes {} and {}",
             m_to.size(),
-            m_edges.size());
+            m_halfedges.size());
         return false;
     }
-    if (m_from.size() != m_edges.size()) {
+    if (m_from.size() != m_halfedges.size()) {
         spdlog::error(
             "from and edges have inconsistent sizes {} and {}",
             m_from.size(),
-            m_edges.size());
+            m_halfedges.size());
         return false;
     }
 
@@ -77,7 +73,7 @@ bool Forest::is_valid_forest(const Mesh<Scalar>& m) const
         }
 
         // Check edges are all in tree
-        if (!m_edge_is_in_forest[m_edges[eij]]) {
+        if (!m_edge_is_in_forest[he2e[m_halfedges[eij]]]) {
             spdlog::error("Edge {} not marked in tree", eij);
             return false;
         }
@@ -111,13 +107,11 @@ void PrimalTree::initialize_primal_tree(
     const std::vector<int>& halfedge_from_vertex)
 {
     // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
     build_edge_maps(m, he2e, e2he);
 
     // Initialize data structures
     int num_vertices = m.n_vertices();
-    m_edges.reserve(num_vertices);
+    m_halfedges.reserve(num_vertices);
     m_from.reserve(num_vertices);
     m_to.reserve(num_vertices);
     m_out = std::vector<int>(num_vertices, -1);
@@ -131,10 +125,10 @@ void PrimalTree::initialize_primal_tree(
         int vi = m.to[m.opp[hij]];
 
         // Add the edge to the spanning tree
-        m_out[vj] = m_edges.size();
+        m_out[vj] = m_halfedges.size();
         m_from.push_back(vj);
         m_to.push_back(vi);
-        m_edges.push_back(eij);
+        m_halfedges.push_back(hij);
         m_edge_is_in_forest[eij] = true;
     }
 }
@@ -143,16 +137,10 @@ bool PrimalTree::is_valid_primal_tree(const Mesh<Scalar>& m) const
 {
     if (!is_valid_forest(m)) return false;
 
-    // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
-    build_edge_maps(m, he2e, e2he);
-
     // Check edge conditions
-    int num_edges = m_edges.size();
+    int num_edges = m_halfedges.size();
     for (int i = 0; i < num_edges; ++i) {
-        int ei = m_edges[i];
-        int h0 = e2he[ei];
+        int h0 = m_halfedges[i];
         int h1 = m.opp[h0];
 
         // Check vertices adjacent to each edge are actually adjacent to the edge
@@ -191,13 +179,11 @@ void DualTree::initialize_dual_tree(
     const std::vector<int>& halfedge_from_face)
 {
     // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
     build_edge_maps(m, he2e, e2he);
 
     // Initialize dual tree data structures
     int num_faces = m.n_faces();
-    m_edges.reserve(num_faces);
+    m_halfedges.reserve(num_faces);
     m_from.reserve(num_faces);
     m_to.reserve(num_faces);
     m_out = std::vector<int>(num_faces, -1);
@@ -211,10 +197,10 @@ void DualTree::initialize_dual_tree(
         int fi = m.f[hij];
 
         // Add the edge to the spanning tree
-        m_out[fj] = m_edges.size();
+        m_out[fj] = m_halfedges.size();
         m_from.push_back(fj);
         m_to.push_back(fi);
-        m_edges.push_back(eij);
+        m_halfedges.push_back(hij);
         m_edge_is_in_forest[eij] = true;
     }
 }
@@ -223,16 +209,10 @@ bool DualTree::is_valid_dual_tree(const Mesh<Scalar>& m) const
 {
     if (!is_valid_forest(m)) return false;
 
-    // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
-    build_edge_maps(m, he2e, e2he);
-
     // Check edge conditions
-    int num_edges = m_edges.size();
+    int num_edges = m_halfedges.size();
     for (int i = 0; i < num_edges; ++i) {
-        int ei = m_edges[i];
-        int h0 = e2he[ei];
+        int h0 = m_halfedges[i];
         int h1 = m.opp[h0];
 
         // Check dual vertices adjacent to each dual edge are actually adjacent to the edge
@@ -255,8 +235,6 @@ PrimalCotree::PrimalCotree(
     bool use_shortest_path)
 {
     // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
     build_edge_maps(m, he2e, e2he);
 
     // Generate maximal spanning tree data that does not intersect the primal tree
@@ -306,8 +284,6 @@ DualCotree::DualCotree(
     bool use_shortest_path)
 {
     // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
     build_edge_maps(m, he2e, e2he);
 
     // Generate maximal spanning tree data that does not intersect the primal tree
@@ -468,6 +444,24 @@ std::vector<int> build_dual_forest(
 
     // Use generic forest constructor
     return build_forest(circ, f2h, h2f, weights, is_cut, f_start, use_shortest_path);
+}
+
+std::vector<int> find_shortest_path(const Mesh<Scalar>& m, int v_start, int v_end)
+{
+    // build primal tree with shortest path from all vertices to the target end
+    bool use_shortest_path = true;
+    PrimalTree primal_tree(m, m.l, v_end, use_shortest_path);
+
+    // build the path from the start vertex to the end vertex
+    int v_curr = v_start;
+    std::vector<int> path = {};
+    while (!primal_tree.is_root(v_curr)) {
+        int e = primal_tree.out(v_curr);
+        path.push_back(primal_tree.halfedge(e));
+        v_curr = primal_tree.to(e);
+    }
+
+    return path;
 }
 
 } // namespace Penner

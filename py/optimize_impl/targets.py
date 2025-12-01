@@ -2,7 +2,7 @@
 
 import igl, math
 import numpy as np
-import optimization_py as opt
+import penner
 
 
 def map_to_disk(v, f):

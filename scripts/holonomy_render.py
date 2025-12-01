@@ -8,11 +8,13 @@ import os, sys
 script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
+opt_script_dir = os.path.join(script_dir, 'optimization_scripts')
+sys.path.append(opt_script_dir)
 import numpy as np
 import igl
 import pickle
-import optimization_py as opt
 import render as render
+import penner
 import optimize_impl.energies as energies
 from conformal_impl.halfedge import *
 from matplotlib import cm, colors
@@ -67,25 +69,6 @@ def render_uv_one(args, fname):
     build_double = (np.sum(is_bd) != 0)
     logger.info("Is double: {}".format(build_double))
 
-	# FIXME Add option to use conversion directly
-    # Load vn_to_v from simplification
-    try:
-        vertex_map_path = os.path.join(uv_dir, m + "_output", name + '_vn_to_v')
-        logger.info("Loading vertex map at {}".format(vertex_map_path))
-        vn_to_v = np.loadtxt(vertex_map_path, dtype=int)
-    except:
-        logger.error("Could not load vertex map")
-        vn_to_v = np.arange(len(v3d))
-
-    # Load endpoints from simplification
-    try:
-        endpoints_path = os.path.join(uv_dir, m + "_output", name + '_endpoints')
-        logger.info("Loading endpoints at {}".format(endpoints_path))
-        endpoints = np.loadtxt(endpoints_path, dtype=int)
-    except:
-        logger.error("Could not load endpoints")
-        endpoints = np.full((len(v3d), 2), -1)
-
     # Load camera information
     try:
         camera_path = os.path.join(args['camera_dir'], m+'_camera.pickle')
@@ -120,8 +103,8 @@ def render_uv_one(args, fname):
 
     # Get point matrices
     logger.info("Getting point matrices")
-    fid_mat, bc_mat = opt.get_pt_mat(cam, v3d, f, vc, fc, red_size, blue_size, W, H)
-    fid_mat_sin, bc_mat_sin = opt.get_pt_mat(
+    fid_mat, bc_mat = penner.get_pt_mat(cam, v3d, f, vc, fc, red_size, blue_size, W, H)
+    fid_mat_sin, bc_mat_sin = penner.get_pt_mat(
         cam,
         v3d_orig,
         f_orig,

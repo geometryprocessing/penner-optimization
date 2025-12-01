@@ -74,7 +74,7 @@ bool is_valid_dual_path_distance_to_root(
     for (int fi = 0; fi < num_faces; ++fi) {
         Scalar distance_to_root =
             compute_dual_path_distance_to_root(m, weights, dual_tree, e2he, fi);
-        if (!float_equal(distances[fi], distance_to_root, 1e-6)) {
+        if (!float_equal<Scalar>(distances[fi], distance_to_root, 1e-6)) {
             spdlog::error(
                 "computed distance {} and actual distance {} for {} differ",
                 distances[fi],

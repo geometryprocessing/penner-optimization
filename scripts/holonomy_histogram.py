@@ -11,7 +11,7 @@ sys.path.append(module_dir)
 import igl
 import numpy as np
 import seaborn as sns
-import holonomy_py as holonomy
+import penner
 import optimize_impl.energies as energies
 import optimize_impl.analysis as analysis
 from conformal_impl.halfedge import *
@@ -94,8 +94,8 @@ def similarity_histogram_one(args, fname):
 
     # Generate initial similarity metric
     free_cones = []
-    marked_metric_params = holonomy.MarkedMetricParameters()
-    marked_metric, _ = holonomy.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
+    marked_metric_params = penner.MarkedMetricParameters()
+    marked_metric, _ = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
 
     # get target metric
     num_homology_loops = marked_metric.n_homology_basis_loops()

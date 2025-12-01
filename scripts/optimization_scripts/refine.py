@@ -8,7 +8,7 @@ import numpy as np
 import igl
 import script_util
 import subprocess
-import optimization_py as opt
+import penner
 
 def add_refine_arguments(parser):
     # Parse arguments for the script
@@ -67,13 +67,13 @@ def refine_one(args, fname):
 
     # Refine original mesh using overlay
     logger.info("Running refinement")
-    refinement_mesh = opt.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
+    refinement_mesh = penner.RefinementMesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o)
     V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r = refinement_mesh.get_VF_mesh()
 
     # Write combined refined mesh with uv
     uv_mesh_path = os.path.join(output_dir, name + '_refined.obj')
     logger.info("Saving refined uv mesh at {}".format(uv_mesh_path))
-    opt.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
+    penner.write_obj_with_uv(uv_mesh_path, V_r, F_r, uv_r, FT_r)
 
     # Write face map to file
     face_map_path = os.path.join(output_dir, name + '_refined_fn_to_f')

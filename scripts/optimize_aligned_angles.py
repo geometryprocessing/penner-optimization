@@ -5,8 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
-import holonomy_py as holonomy
-import optimization_py as opt 
+import penner
 import igl
 import math
 import optimization_scripts.script_util as script_util
@@ -108,7 +107,7 @@ def run_many(args):
 
 def add_arguments(parser):
     alg_params = holonomy.NewtonParameters()
-    ls_params = opt.LineSearchParameters()
+    ls_params = penner.LineSearchParameters()
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")

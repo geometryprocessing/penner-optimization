@@ -42,7 +42,8 @@ namespace Optimization {
 ///
 /// @param[in, out] m_o: mesh to reparametrize
 /// @param[in] tau: per halfeedge hyperbolic translation distances
-void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau);
+template <typename OverlayScalar>
+void bc_reparametrize_eq(OverlayMesh<OverlayScalar>& m_o, const VectorX& tau);
 
 /// Reparametrize points contained in equilateral reference triangles by
 /// translating a constant hyperbolic distance along each halfedge. If the sum
@@ -53,8 +54,9 @@ void bc_reparametrize_eq(OverlayMesh<Scalar>& m_o, const VectorX& tau);
 /// @param[in] n: next halfedge array for mesh
 /// @param[in] h: face to halfedge array for mesh
 /// @param[in] tau: per halfeedge hyperbolic translation distances
+template <typename OverlayScalar>
 void reparametrize_equilateral(
-    std::vector<Pt<Scalar>>& pts,
+    std::vector<Pt<OverlayScalar>>& pts,
     const std::vector<int>& n,
     const std::vector<int>& h,
     const VectorX& tau);

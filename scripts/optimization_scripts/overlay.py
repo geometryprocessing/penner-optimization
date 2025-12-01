@@ -5,7 +5,7 @@ import math
 import pickle
 import optimize_impl.render as render
 import script_util
-import optimization_py as opt
+import penner
 import igl
 import numpy as np
 import os
@@ -53,7 +53,7 @@ def overlay_one(args, fname):
     # Get mesh information
     is_bd = igl.is_border_vertex(v3d, f)
     build_double = (np.sum(is_bd) != 0)
-    _, vtx_reindex = opt.fv_to_double(v3d, f, v3d, f, Th_hat, [], False)
+    _, vtx_reindex = penner.fv_to_double(v3d, f, v3d, f, Th_hat, [], False)
 
     # Get cones
     cones = np.array([id for id in range(len(Th_hat)) if np.abs(
@@ -74,7 +74,7 @@ def overlay_one(args, fname):
     # Get overlay
     if args['use_edge_lengths']:
         logger.info("Using edge lengths")
-        parametrize_res = opt.generate_VF_mesh_from_discrete_metric(
+        parametrize_res = penner.generate_VF_mesh_from_discrete_metric(
             v3d,
             f,
             Th_hat,
@@ -84,7 +84,7 @@ def overlay_one(args, fname):
         v_o, f_o, uvt_o, ft_o, is_cut_h = parametrize_res
     else:
         logger.info("Using Penner coordinates")
-        parametrize_res = opt.generate_VF_mesh_from_metric(
+        parametrize_res = penner.generate_VF_mesh_from_metric(
             v3d,
             f,
             Th_hat,
@@ -108,7 +108,7 @@ def overlay_one(args, fname):
     # Save new meshes
     uv_mesh_path = os.path.join(output_dir, name + '_overlay.obj')
     logger.info("Saving uv mesh at {}".format(uv_mesh_path))
-    opt.write_obj_with_uv(uv_mesh_path, v_o, f_o, uvt_o, ft_o)
+    penner.write_obj_with_uv(uv_mesh_path, v_o, f_o, uvt_o, ft_o)
 
     # Save cut information
     simp_path = os.path.join(output_dir, name + '_is_cut_h')

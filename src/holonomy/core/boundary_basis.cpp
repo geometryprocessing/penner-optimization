@@ -2,6 +2,7 @@
 
 #include "holonomy/core/dual_lengths.h"
 #include "util/boundary.h"
+#include "util/vector.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -26,6 +27,60 @@ BoundaryBasisGenerator::BoundaryBasisGenerator(const Mesh<Scalar>& m)
     std::vector<Scalar> dual_edge_lengths = compute_dual_edge_lengths(m);
     m_dual_tree = DualTree(m, dual_edge_lengths, root, true);
 };
+
+bool BoundaryBasisGenerator::avoid_marked_halfedges(const std::vector<int>& marked_halfedges)
+{
+    std::vector<bool> is_marked_halfedge;
+    convert_index_vector_to_boolean_array(marked_halfedges, m_mesh.n_halfedges(), is_marked_halfedge);
+    
+    // fix root
+    if (is_marked_halfedge[m_root_boundary_handle])
+    {
+        std::vector<int> component = build_boundary_component(m_mesh, m_root_boundary_handle);
+        for (int h : component)
+        {
+            if (!is_marked_halfedge[h])
+            {
+                m_root_boundary_handle = h;
+                std::vector<Scalar> dual_edge_lengths = compute_dual_edge_lengths(m_mesh);
+                m_dual_tree = DualTree(m_mesh, dual_edge_lengths, m_mesh.f[h], true);
+                break;
+            }
+        }
+
+        if (is_marked_halfedge[m_root_boundary_handle])
+        {
+            spdlog::error("Could not find unmarked root on boundary of size {}", component.size());
+            return false;
+        }
+    }
+
+    // fix other boundary handles
+    for (int i = 0; i < n_basis_boundaries(); ++i)
+    {
+        int basis_boundary_handle = m_basis_boundary_handles[i];
+        if (is_marked_halfedge[basis_boundary_handle])
+        {
+            std::vector<int> component = build_boundary_component(m_mesh, basis_boundary_handle);
+            for (int h : component)
+            {
+                if (!is_marked_halfedge[h])
+                {
+                    m_basis_boundary_handles[i] = h;
+                    break;
+                }
+            }
+
+            if (is_marked_halfedge[m_basis_boundary_handles[i]])
+            {
+                spdlog::error("Could not find unmarked basis boundary edge for component {} of size {}", i, component.size());
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
 
 std::vector<int> BoundaryBasisGenerator::construct_boundary_basis_loop(int index) const
 {

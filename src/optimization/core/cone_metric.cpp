@@ -66,6 +66,12 @@ void DifferentiableConeMetric::get_corner_angles(VectorX& he2angle, VectorX& he2
         corner_angles(*this, he2angle, he2cot);
     }
 }
+std::tuple<VectorX, VectorX> DifferentiableConeMetric::get_corner_angles() const
+{
+    VectorX he2angle, he2cot;
+    get_corner_angles(he2angle, he2cot);
+    return std::make_tuple(he2angle, he2cot);
+}
 
 std::unique_ptr<DifferentiableConeMetric> DifferentiableConeMetric::project_to_constraint(
     std::shared_ptr<ProjectionParameters> proj_params) const
@@ -150,6 +156,10 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     return halfedge_jacobian * J_transition;
 }
 
+PennerConeMetric::PennerConeMetric()
+    : m_transition_jacobian_lol(0)
+{}
+
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
     : DifferentiableConeMetric(m)
     , m_need_jacobian(true)
@@ -210,8 +220,8 @@ bool PennerConeMetric::flip_ccw(int halfedge_index, bool Ptolemy)
         // The matrix Pd corresponding to flipping edge ed is the identity except for
         // the row corresponding to edge ed, which has entries defined by Pd_scalars
         // in the column corresponding to the edge with the same index in Pd_edges
-        std::vector<int> Pd_edges = {ed, ea, ebo, eao, eb};
-        std::vector<Scalar> Pd_scalars =
+        std::array<int, 5> Pd_edges = {ed, ea, ebo, eao, eb};
+        std::array<Scalar, 5> Pd_scalars =
             {-1.0, x / (1.0 + x), x / (1.0 + x), 1.0 / (1.0 + x), 1.0 / (1.0 + x)};
         m_transition_jacobian_lol.multiply_by_matrix(Pd_edges, Pd_scalars, ed);
     }

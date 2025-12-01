@@ -5,8 +5,7 @@ script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
 import numpy as np
-import holonomy_py as holonomy
-import optimization_py as opt 
+import penner
 import igl
 import math
 import optimization_scripts.script_util as script_util
@@ -48,9 +47,10 @@ def constrain_similarity_one(args, fname):
     # get precomputed form, or generate on the fly
     if args['fit_field']:
         logger.info("Fitting cross field")
-        field_params = holonomy.FieldParameters()
+        field_params = penner.FieldParameters()
         field_params.min_angle = np.pi
-        rotation_form, Th_hat = holonomy.generate_intrinsic_rotation_form(V, F, field_params)
+        rotation_form, Th_hat = penner.generate_intrinsic_rotation_form(V, F, field_params)
+        Th_hat = np.array(Th_hat)
     else:
         try:
             Th_hat = np.loadtxt(os.path.join(args['input_dir'], name + "_Th_hat"), dtype=float)
@@ -59,32 +59,34 @@ def constrain_similarity_one(args, fname):
             logger.info("Could not open rotation form")
             return
 
+    # Generate initial similarity metric
+    free_cones = []
+    marked_metric_params = penner.MarkedMetricParameters()
+    marked_metric_params.use_initial_zero = args['use_initial_zero']
+    marked_metric_params.remove_loop_constraints = args['remove_holonomy_constraints']
+    marked_metric_params.free_interior = args['free_interior']
+    marked_metric, vtx_reindex = penner.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
+
+    # optionally fix cones
+    if args['do_fix_cones']:
+        logger.info("Fixing cones")
+        penner.fix_cones(marked_metric, args['min_cone_index'])
+
     # save form to output file
+    Th_hat[vtx_reindex] = np.array(marked_metric.Th_hat)
     output_path = os.path.join(output_dir, name + '_Th_hat')
     np.savetxt(output_path, Th_hat)
     output_path = os.path.join(output_dir, name + '_kappa_hat')
     np.savetxt(output_path, rotation_form)
 
-    # Generate initial similarity metric
-    free_cones = []
-    marked_metric_params = holonomy.MarkedMetricParameters()
-    marked_metric_params.use_initial_zero = args['use_initial_zero']
-    marked_metric_params.remove_loop_constraints = args['remove_holonomy_constraints']
-    marked_metric_params.free_interior = args['free_interior']
-    marked_metric, _ = holonomy.generate_marked_metric(V, F, V, F, Th_hat, rotation_form, free_cones, marked_metric_params)
-
-    # optionally fix cones
-    if args['do_fix_cones']:
-        logger.info("Fixing cones")
-        holonomy.fix_cones(marked_metric, args['min_cone_index'])
 
     # Optionally refine initial metric to avoid spanning triangles
     if (args['refine']):
-        refinement_mesh = holonomy.IntrinsicRefinementMesh(marked_metric)
+        refinement_mesh = penner.IntrinsicRefinementMesh(marked_metric)
         refinement_mesh.refine_spanning_faces()
         marked_metric = refinement_mesh.generate_marked_metric(marked_metric.kappa_hat)
         if (args['free_interior']):
-            holonomy.make_interior_free(marked_metric)
+            penner.make_interior_free(marked_metric)
 
     # Optionally make initial mesh delaunay
     flip_seq = np.array([])
@@ -104,12 +106,12 @@ def constrain_similarity_one(args, fname):
         reduced_metric_coords = marked_metric.get_reduced_metric_coordinates()
 
         #  Compute quality metrics
-        mesh_quality = holonomy.compute_mesh_quality(marked_metric)
+        mesh_quality = penner.compute_mesh_quality(marked_metric)
         logger.info("Initial quality is {}".format(np.max(mesh_quality)))
 
         discrete_metric = marked_metric.clone_cone_metric()
         discrete_metric.make_discrete_metric()
-        min_angle = (360 / (2 * math.pi)) * holonomy.compute_min_angle(discrete_metric)
+        min_angle = (360 / (2 * math.pi)) * penner.compute_min_angle(discrete_metric)
         logger.info("Initial min angle is {}".format(min_angle))
 
         num_edges = marked_metric.n_edges()
@@ -127,8 +129,8 @@ def constrain_similarity_one(args, fname):
             marked_metric = marked_metric.set_metric_coordinates(reduced_metric_coords)
             discrete_metric = marked_metric.clone_cone_metric()
             discrete_metric.make_discrete_metric()
-            min_angle = (360 / (2 * math.pi)) * holonomy.compute_min_angle(discrete_metric)
-            mesh_quality = holonomy.compute_mesh_quality(marked_metric)
+            min_angle = (360 / (2 * math.pi)) * penner.compute_min_angle(discrete_metric)
+            mesh_quality = penner.compute_mesh_quality(marked_metric)
             logger.info("Quality is {}".format(np.max(mesh_quality)))
             logger.info("min angle is {}".format(min_angle))
 
@@ -136,12 +138,12 @@ def constrain_similarity_one(args, fname):
         if changed:
             reduced_metric_coords[:num_edges] += (average_initial_coord - np.average(reduced_metric_coords[:num_edges]))
             marked_metric = marked_metric.set_metric_coordinates(reduced_metric_coords)
-            mesh_quality = holonomy.compute_mesh_quality(marked_metric)
+            mesh_quality = penner.compute_mesh_quality(marked_metric)
             logger.info("Final quality is {}".format(np.max(mesh_quality)))
             logger.info("Final average is {}".format(np.average(reduced_metric_coords)))
 
     # Initialize parameters
-    alg_params = holonomy.NewtonParameters()
+    alg_params = penner.NewtonParameters()
     alg_params.error_eps = args['conf_error_eps']
     alg_params.max_itr = args['conf_max_itr']
     alg_params.do_reduction = args['do_reduction']
@@ -156,18 +158,18 @@ def constrain_similarity_one(args, fname):
     # Project to constraint, undoing flips to restore initial connectivity
     if (args['optimization_method'] == 'metric'):
         logger.info("Optimizing metric")
-        marked_metric = holonomy.optimize_metric_angles(marked_metric, alg_params)
+        marked_metric = penner.optimize_metric_angles(marked_metric, alg_params)
     elif (args['optimization_method'] == 'metric_subspace'):
         logger.info("Optimizing metric subspace")
-        subspace_basis = holonomy.compute_jump_newton_optimization_basis(marked_metric)
-        marked_metric = holonomy.optimize_subspace_metric_angles(marked_metric, subspace_basis, alg_params)
+        subspace_basis = penner.compute_jump_newton_optimization_basis(marked_metric)
+        marked_metric = penner.optimize_subspace_metric_angles(marked_metric, subspace_basis, alg_params)
 
     # try adding cones if failure
     for i in np.arange(args['cone_pair_corrections']):
         if (marked_metric.max_constraint_error() < 1e-12):
             break
-        holonomy.add_optimal_cone_pair(marked_metric)
-        marked_metric = holonomy.optimize_metric_angles(marked_metric, alg_params)
+        penner.add_optimal_cone_pair(marked_metric)
+        marked_metric = penner.optimize_metric_angles(marked_metric, alg_params)
 
     # Undo flips
     if flip_seq.size != 0:
@@ -195,8 +197,8 @@ def constrain_similarity_many(args):
     script_util.run_many(constrain_similarity_one, args)
 
 def add_constrain_similarity_arguments(parser):
-    alg_params = holonomy.NewtonParameters()
-    ls_params = opt.LineSearchParameters()
+    alg_params = penner.NewtonParameters()
+    ls_params = penner.LineSearchParameters()
     parser.add_argument("-f", "--fname",         help="filenames of the obj file", 
                                                      nargs='+')
     parser.add_argument("-i", "--input_dir",     help="input folder that stores obj files and Th_hat")

@@ -7,6 +7,7 @@ set(OptimizationCoreSrc
   core/projection.cpp
   core/reparametrization.cpp
   core/shear.cpp
+  core/viewer.cpp
 )
 
 set(MetricOptimizationSrc
@@ -34,6 +35,7 @@ set(OptimizationUtilSrc
 
 add_library(PennerOptimizationLib
   interface.cpp
+  pybind.cpp
   ${OptimizationCoreSrc}
   ${MetricOptimizationSrc}
   ${ParameterizationSrc}
@@ -42,31 +44,14 @@ add_library(PennerOptimizationLib
 target_include_directories(PennerOptimizationLib PUBLIC ../../include/optimization)
 target_link_libraries(PennerOptimizationLib PUBLIC
   PennerUtilLib
+  ${RENDER_LIBRARIES}
+  ${PYBIND_LIBRARIES}
 )
 target_compile_definitions(PennerOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
-target_compile_options(PennerOptimizationLib PRIVATE
-  -Wall -Wpedantic -Wextra -Werror
-)
-
-if(USE_PYBIND)
-  add_library(optimization_py MODULE
-    pybind.cpp
-  )
-
-  # Link libraries
-  target_link_libraries(optimization_py PUBLIC
-    PennerOptimizationLib
-    pybind11::module
-    ${RENDER_LIBRARIES}
-  )
-
-  # Set pybinding settings
-  set_target_properties(optimization_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-    ${PROJECT_SOURCE_DIR}/py
-  )
-  set_target_properties(optimization_py PROPERTIES PREFIX
-    "${PYTHON_MODULE_PREFIX}"
-  )
+if ((NOT USE_MULTIPRECISION) AND (DEBUG_WARNINGS))
+    target_compile_options(PennerOptimizationLib PRIVATE
+      -Wall -Wpedantic -Wextra -Werror
+    )
 endif()

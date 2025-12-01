@@ -118,6 +118,7 @@ public:
 	 */
     const DualTree& get_dual_tree() const { return m_dual_tree; }
 
+    std::vector<DualSegment> construct_homology_basis_dual_path(int index) const;
 
 private:
     Mesh<Scalar> m_mesh;

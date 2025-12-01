@@ -8,7 +8,7 @@ sys.path.append(module_dir)
 
 import script_util
 import optimize_impl.optimization as optimization
-import optimization_py as opt
+import penner
 import pandas as pd
 import numpy as np
 
@@ -31,7 +31,7 @@ def optimize_shear_one(args, fname):
 
     # Save initial conformal metric coordinates to file
     logger.info("Running conformal method")
-    C_conf = opt.project_metric_to_constraint(
+    C_conf = penner.project_metric_to_constraint(
         C,
         proj_params,
         opt_params.output_dir
@@ -44,17 +44,17 @@ def optimize_shear_one(args, fname):
     # Get initial shear coordinates
     if args['use_primal_shear']:
         logger.info("Using primal shear")
-        shear_basis_matrix, _ = opt.compute_shear_coordinate_basis(C)
+        shear_basis_matrix, _ = penner.compute_shear_coordinate_basis(C)
     else:
         logger.info("Using dual shear")
-        shear_basis_matrix, _ = opt.compute_shear_dual_basis(C)
+        shear_basis_matrix, _ = penner.compute_shear_dual_basis(C)
 
     # Run shear optimization method
     if (args['optimization_method'] == 'custom'):
         logger.info("Using custom optimization")
 
         # Custom gradient descent
-        reduced_metric_coords = opt.optimize_shear_basis_coordinates(
+        reduced_metric_coords = penner.optimize_shear_basis_coordinates(
             C,
             opt_energy,
             shear_basis_matrix,

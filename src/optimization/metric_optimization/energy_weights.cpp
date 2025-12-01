@@ -136,7 +136,7 @@ VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric)
     // Closed meshes
     if (reduction_maps.bd_e.empty()) {
         for (int v = 0; v < num_vertices; ++v) {
-            if (!float_equal(m.Th_hat[v], 2 * M_PI)) {
+            if (!float_equal<Scalar>(m.Th_hat[v], 2 * M_PI)) {
                 cone_vertices.push_back(v);
             }
         }
@@ -160,8 +160,8 @@ VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric)
             int v_fr = m.to[ho];
 
             // Regular interior vertices have doubled angle 4 pi
-            is_cone_vertex[v_to] = (!float_equal(m.Th_hat[v_to], 4 * M_PI));
-            is_cone_vertex[v_fr] = (!float_equal(m.Th_hat[v_fr], 4 * M_PI));
+            is_cone_vertex[v_to] = (!float_equal<Scalar>(m.Th_hat[v_to], 4 * M_PI));
+            is_cone_vertex[v_fr] = (!float_equal<Scalar>(m.Th_hat[v_fr], 4 * M_PI));
         }
 
         // Iterate over boundary edges
@@ -178,8 +178,8 @@ VectorX compute_edge_area_weights(const DifferentiableConeMetric& cone_metric)
             int v_fr = m.to[ho];
 
             // Regular boundary vertices have angle 2 pi
-            is_cone_vertex[v_to] = (!float_equal(m.Th_hat[v_to], 2 * M_PI));
-            is_cone_vertex[v_fr] = (!float_equal(m.Th_hat[v_fr], 2 * M_PI));
+            is_cone_vertex[v_to] = (!float_equal<Scalar>(m.Th_hat[v_to], 2 * M_PI));
+            is_cone_vertex[v_fr] = (!float_equal<Scalar>(m.Th_hat[v_fr], 2 * M_PI));
         }
 
         // Convert boolean list to index vector

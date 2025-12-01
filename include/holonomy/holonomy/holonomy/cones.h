@@ -66,7 +66,7 @@ bool validate_cones(const Mesh<Scalar>& m);
  */
 void fix_cones(Mesh<Scalar>& m, int min_cone_index=1);
 
-void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=false);
+void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=true, int offset=0);
 
 std::tuple<int, int> get_constraint_outliers(
     MarkedPennerConeMetric& marked_metric,
@@ -75,6 +75,9 @@ std::tuple<int, int> get_constraint_outliers(
 std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric);
 
 void make_interior_free(Mesh<Scalar>& m);
+
+std::pair<int, int> count_cones(const Mesh<Scalar>& m);
+bool is_interior(const Mesh<Scalar>& m, int vi);
 
 } // namespace Holonomy
 } // namespace Penner

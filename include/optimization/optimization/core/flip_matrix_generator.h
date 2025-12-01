@@ -56,8 +56,8 @@ public:
     /// @param[in] values: values v for row ed of the matrix Di
     /// @param[in] ed: edge index for the nontrivial row of the matrix Di
     void multiply_by_matrix(
-        const std::vector<int>& column_indices,
-        const std::vector<Scalar>& values,
+        const std::array<int, 5>& column_indices,
+        const std::array<Scalar, 5>& values,
         int ed);
 
     /// Generate a standard sparse representation of the current matrix
@@ -94,8 +94,8 @@ public:
     /// @param[in] values: values v for row ed of the matrix Di
     /// @param[in] ed: edge index for the nontrivial row of the matrix Di
     void multiply_by_matrix(
-        const std::vector<int>& column_indices,
-        const std::vector<Scalar>& values,
+        const std::array<int, 5>& column_indices,
+        const std::array<Scalar, 5>& values,
         int ed);
 
     /// Generate a standard sparse representation of the current matrix
