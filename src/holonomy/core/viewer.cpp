@@ -488,8 +488,8 @@ void view_seamless_parameterization(
 
     // Add cut mesh with
     polyscope::registerSurfaceMesh(mesh_handle, V_cut, FT);
-    polyscope::registerSurfaceMesh2D(mesh_handle +"_layout", uv, FT)
-        ->setEnabled(false);
+    //polyscope::registerSurfaceMesh2D(mesh_handle +"_layout", uv, FT)
+    //    ->setEnabled(false);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexParameterizationQuantity("uv", uv)
         ->setStyle(polyscope::ParamVizStyle::GRID)
