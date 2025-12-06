@@ -90,6 +90,48 @@ void write_frame_field(
     const Eigen::MatrixXi& period_jump);
 
 /**
+ * @brief Write a rosy field to file.
+ * 
+ * The format is
+ * ```
+ * <num_faces>
+ * 4
+ * <dx> <dy> <dz>
+ * ...
+ * ```
+ * where d is a representative direction on the face.
+ * 
+ * @param output_filename: file location to serialize the frame field
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param reference_field: per-face reference tangent direction matrix
+ * @param theta: offset angles of a representative cross field direction relative to the reference
+ */
+void write_rosy_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta);
+
+/**
+ * @brief Load a rosy field from file.
+ * 
+ * The format is
+ * ```
+ * <num_faces>
+ * 4
+ * <dx> <dy> <dz>
+ * ...
+ * ```
+ * where d is a representative direction on the face.
+ * 
+ * @param input_filename: file location of the rosy field
+ * @return per-face representative field direction
+ */
+Eigen::MatrixXd load_rosy_field(const std::string& input_filename);
+
+/**
  * @brief Load a frame field from file.
  * 
  * The format is

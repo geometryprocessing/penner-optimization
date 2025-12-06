@@ -315,6 +315,14 @@ std::tuple<Mesh<Scalar>, std::vector<int>> generate_mesh(
     const std::vector<Scalar>& Th_hat,
     std::vector<int> free_cones)
 {
+    // set all flat cones if no cones given
+    std::vector<Scalar> Th_hat_temp = Th_hat;
+    if (Th_hat.empty())
+    {
+        Th_hat_temp = std::vector<Scalar>(V.rows(), 2 * PI);
+    }
+
+
     // Convert VF mesh to halfedge
     bool fix_boundary = false;
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
@@ -323,7 +331,7 @@ std::tuple<Mesh<Scalar>, std::vector<int>> generate_mesh(
         F,
         uv,
         F_uv,
-        Th_hat,
+        Th_hat_temp,
         vtx_reindex,
         indep_vtx,
         dep_vtx,

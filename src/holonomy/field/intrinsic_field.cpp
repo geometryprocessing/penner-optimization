@@ -1686,7 +1686,6 @@ std::vector<Scalar> generate_cones_from_rotation_form_FIXME(
 void IntrinsicNRosyField::compute_principal_matchings(const Mesh<Scalar>& m)
 {
     int num_halfedges = m.n_halfedges();
-    VectorX rotation_form(num_halfedges);
     for (int hij = 0; hij < num_halfedges; ++hij) {
         if (hij < m.opp[hij]) continue;
         int hji = m.opp[hij];
@@ -2549,6 +2548,59 @@ void IntrinsicNRosyField::set_field(
             hij = m.n[hij];
         }
     }
+}
+
+void IntrinsicNRosyField::set_theta(
+    const Mesh<Scalar>& m,
+    const Eigen::VectorXd& face_theta)
+{
+    int num_faces = m.n_faces();
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        // get reference halfedge
+        int hij = m.h[fijk];
+
+        // only process original faces
+        if (m.type[hij] == 2) continue;
+
+        // record face angles
+        theta[fijk] = Scalar(face_theta[fijk]);
+
+        // skip doubling on closed mesh
+        if (m.type[hij] == 0) continue;
+
+        // invert theta on reflected face
+        int fjik = m.f[m.R[hij]];
+        theta[fjik] = M_PI - theta[fijk];
+    }
+}
+
+
+void IntrinsicNRosyField::set_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const Eigen::VectorXd& face_theta,
+    const Eigen::MatrixXd& corner_kappa,
+    const Eigen::MatrixXi& corner_period_jump)
+{
+    std::vector<int> face_reindex;
+    arange(F.rows(), face_reindex);
+    set_field(m, vtx_reindex, F, face_reindex, face_theta, corner_kappa, corner_period_jump);
+}
+
+void IntrinsicNRosyField::get_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    Eigen::VectorXi& reference_corner,
+    Eigen::VectorXd& face_theta,
+    Eigen::MatrixXd& corner_kappa,
+    Eigen::MatrixXi& corner_period_jump) const
+{
+    std::vector<int> face_reindex;
+    arange(F.rows(), face_reindex);
+    get_field(m, vtx_reindex, F, face_reindex, reference_corner, face_theta, corner_kappa, corner_period_jump);
 }
 
 } // namespace Holonomy

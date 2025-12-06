@@ -42,6 +42,14 @@ public:
         Eigen::VectorXd& face_angle,
         Eigen::MatrixXd& corner_kappa,
         Eigen::MatrixXi& corner_period_jump) const;
+    void get_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXi& F,
+        Eigen::VectorXi& reference_corner,
+        Eigen::VectorXd& face_angle,
+        Eigen::MatrixXd& corner_kappa,
+        Eigen::MatrixXi& corner_period_jump) const;
 
     void get_fixed_faces(
         const Mesh<Scalar>& m,
@@ -61,6 +69,16 @@ public:
         const Eigen::VectorXd& face_theta,
         const Eigen::MatrixXd& corner_kappa,
         const Eigen::MatrixXi& corner_period_jump);
+    void set_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXi& F, 
+        const Eigen::VectorXd& face_theta,
+        const Eigen::MatrixXd& corner_kappa,
+        const Eigen::MatrixXi& corner_period_jump);
+    void set_theta(
+        const Mesh<Scalar>& m,
+        const Eigen::VectorXd& face_theta);
 
     Scalar min_angle = 0.;
 

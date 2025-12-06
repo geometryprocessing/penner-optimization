@@ -73,6 +73,31 @@ Eigen::MatrixXd generate_frame_field(
     return igl::rotate_vectors(reference_field, theta, B1, B2);
 }
 
+void write_rosy_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta)
+{
+    Eigen::MatrixXd rosy_field = generate_frame_field(V, F, reference_field, theta);
+
+    std::ofstream field_file(output_filename, std::ios::out | std::ios::trunc);
+    field_file << F.rows() << std::endl;
+    field_file << "4" << std::endl;
+    for (int f = 0; f < F.rows(); ++f)
+    {
+        for (int j : {0 , 1, 2})
+        {
+            field_file << std::fixed << std::setprecision(17) << rosy_field(f, j) << " ";
+        }
+
+        field_file << std::endl;
+    }
+
+    field_file.close();
+}
+
 void write_frame_field(
     const std::string& output_filename,
     const Eigen::MatrixXd& reference_field,
@@ -113,6 +138,48 @@ void write_frame_field(
     // close output file
     field_file.close();
 }
+
+Eigen::MatrixXd load_rosy_field(const std::string& input_filename)
+{
+    // Open file
+    spdlog::debug("opening field at {}", input_filename);
+    std::ifstream input_file(input_filename);
+    if (!input_file) return {};
+
+    // get number of faces
+    std::string line;
+    std::getline(input_file, line);
+    std::istringstream iss(line);
+    int num_faces;
+    iss >> num_faces;
+    spdlog::debug("{} faces", num_faces);
+    std::getline(input_file, line); // skip start line
+
+    // initialize vectors
+    Eigen::MatrixXd frame_field(num_faces, 3);
+
+    // Read file one face at a time
+    int f = 0;
+    while ((f < num_faces) && (std::getline(input_file, line))) {
+        std::istringstream iss(line);
+        for (int i : {0 , 1, 2})
+        {
+            iss >> frame_field(f, i);
+        }
+
+        ++f;
+    }
+
+    if (num_faces != f)
+    {
+        spdlog::error("Number of faces inconsistent with number of lines");
+    }
+
+    // Close file
+    input_file.close();
+    return frame_field;
+}
+
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
 load_frame_field(const std::string& filename)
