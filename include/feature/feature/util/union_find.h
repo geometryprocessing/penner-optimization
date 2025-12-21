@@ -101,6 +101,28 @@ public:
     }
 
     /**
+     * @brief Get a representative element for each set.
+     * 
+     * @return vector of one element per set
+     */
+    std::vector<int> get_representative_elements()
+    {
+        // Make map from roots to sets
+        int count = 0;
+        int num_sets = count_sets();
+        int num_elements = count_elements();
+        std::vector<int> roots(num_sets, -1);
+        for (int i = 0; i < num_elements; ++i) {
+            if (is_root(i)) {
+                roots[count] = i;
+                count++;
+            }
+        }
+
+        return roots;
+    }
+
+    /**
      * @brief Build labels for the set elements.
      * 
      * @return map from elements to set index

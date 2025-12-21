@@ -48,6 +48,21 @@ std::vector<Type> convert_vector(const Eigen::Matrix<Type, Eigen::Dynamic, 1>& v
 }
 
 /**
+ * @brief Convert an Eigen vector to a std vector
+ *
+ * @tparam Type of the vector data
+ * @param v: Eigen vector
+ * @return std vector
+ */
+template <typename Type>
+std::vector<Type> reverse_vector(const std::vector<Type>& v)
+{
+    std::vector<Type> w = v;
+    std::reverse(w.begin(), w.end());
+    return w;
+}
+
+/**
  * @brief Check if two vectors are equal, up to numerical tolerance.
  * 
  * @tparam VectorType 
@@ -72,6 +87,29 @@ bool vector_equal(const VectorType& v, const VectorType& w)
     }
 
     return true;
+}
+
+/**
+ * @brief Check if a vector contains a value
+ * 
+ * @tparam VectorType 
+ * @tparam ElemType
+ * @param v: vector
+ * @param x: value to check for
+ * @return true iff v contains x
+ */
+template <typename VectorType, typename ElemType>
+bool vector_contains(const VectorType& v, const ElemType& x)
+{
+    int n = v.size();
+
+    // check all entries
+    for (int i = 0; i < n; ++i)
+    {
+        if (v[i] == x) return true;
+    }
+
+    return false;
 }
 
 template <typename VectorType>

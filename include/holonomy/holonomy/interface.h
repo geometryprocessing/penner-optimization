@@ -205,5 +205,7 @@ std::vector<Scalar> compute_kappa(
     const VectorX& rotation_form,
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
 
+Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
+
 } // namespace Holonomy
 } // namespace Penner
