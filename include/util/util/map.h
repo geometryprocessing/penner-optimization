@@ -16,7 +16,7 @@ namespace Penner {
 template <typename Type>
 Type vector_max(const std::vector<Type>& v)
 {
-    if (v.empty()) return 0.0;
+    if (v.empty()) return Type();
 
     Type max_value = v[0];
     for (const auto& vi : v) {
@@ -24,6 +24,25 @@ Type vector_max(const std::vector<Type>& v)
     }
 
     return max_value;
+}
+
+/**
+ * @brief Compute the min of a std vector.
+ *
+ * @param[in] v: vector
+ * @return min of v
+ */
+template <typename Type>
+Type vector_min(const std::vector<Type>& v)
+{
+    if (v.empty()) return Type();
+
+    Type min_value = v[0];
+    for (const auto& vi : v) {
+        min_value = min(min_value, vi);
+    }
+
+    return min_value;
 }
 
 /**
