@@ -91,7 +91,7 @@ public:
         
         if ((is_tip_cone) && (is_base_cone))
         {
-            spdlog::error("Cone at both tip and base of period jump halfedge");
+            spdlog::trace("Cone at both tip and base of period jump halfedge");
             return rounded_value;
         }
         if (is_tip_cone)

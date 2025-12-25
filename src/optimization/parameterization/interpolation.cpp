@@ -261,6 +261,17 @@ void interpolate_vertex_positions(
     // Get the vertex map between the forward and reverse maps
     OverlayMesh<OverlayScalar> overlay_mesh = interpolation_mesh.get_overlay_mesh();
     OverlayMesh<OverlayScalar> reverse_overlay_mesh = reverse_interpolation_mesh.get_overlay_mesh();
+    interpolate_vertex_positions(V, vtx_reindex, overlay_mesh, reverse_overlay_mesh, V_overlay);
+}
+
+template <typename OverlayScalar>
+void interpolate_vertex_positions(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    OverlayMesh<OverlayScalar>& overlay_mesh,
+    OverlayMesh<OverlayScalar>& reverse_overlay_mesh,
+    Eigen::MatrixXd& V_overlay)
+{
     if ((overlay_mesh.bypass_overlay) || (reverse_overlay_mesh.bypass_overlay))
     {
         spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
@@ -1044,6 +1055,12 @@ template void interpolate_vertex_positions<Scalar>(
     const InterpolationMesh<Scalar>& interpolation_mesh,
     const InterpolationMesh<Scalar>& reverse_interpolation_mesh,
     Eigen::MatrixXd& V_overlay);
+template void interpolate_vertex_positions(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    OverlayMesh<Scalar>& interpolation_mesh,
+    OverlayMesh<Scalar>& reverse_interpolation_mesh,
+    Eigen::MatrixXd& V_overlay);
 
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
@@ -1056,6 +1073,12 @@ template void interpolate_penner_coordinates<mpfr::mpreal>(
     InterpolationMesh<mpfr::mpreal>& interpolation_mesh,
     InterpolationMesh<mpfr::mpreal>& reverse_interpolation_mesh);
 template void interpolate_vertex_positions<mpfr::mpreal>(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    OverlayMesh<mpfr::mpreal>& interpolation_mesh,
+    OverlayMesh<mpfr::mpreal>& reverse_interpolation_mesh,
+    Eigen::MatrixXd& V_overlay);
+template void interpolate_vertex_positions(
     const Eigen::MatrixXd& V,
     const std::vector<int> vtx_reindex,
     const InterpolationMesh<mpfr::mpreal>& interpolation_mesh,

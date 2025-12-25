@@ -299,6 +299,14 @@ void interpolate_vertex_positions(
     Eigen::MatrixXd& V_overlay);
 
 template <typename OverlayScalar>
+void interpolate_vertex_positions(
+    const Eigen::MatrixXd& V,
+    const std::vector<int> vtx_reindex,
+    OverlayMesh<OverlayScalar>& overlay_mesh,
+    OverlayMesh<OverlayScalar>& reverse_overlay_mesh,
+    Eigen::MatrixXd& V_overlay);
+
+template <typename OverlayScalar>
 bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo);
 
 } // namespace Optimization
