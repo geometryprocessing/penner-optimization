@@ -23,6 +23,7 @@ target_link_libraries(PennerUtilLib PUBLIC
   ${SUITESPARSE_LIBS}
   ${POLYSCOPE_LIBRARIES}
 )
+target_compile_features(PennerUtilLib PUBLIC cxx_std_17)
 
 target_compile_definitions(PennerUtilLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

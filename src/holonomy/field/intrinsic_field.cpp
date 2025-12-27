@@ -1931,7 +1931,7 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
         if (cones[vi] < 4) pos_cone = vi;
     }
     int size = (4 - cones[pos_cone]);
-    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone);
+    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone, size);
 
     // move curvature
     move_cone(m, pos_cone, neg_cone, size);

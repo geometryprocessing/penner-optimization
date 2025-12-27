@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(PennerOptimization)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
@@ -106,6 +105,8 @@ add_library(DirectionalLib INTERFACE)
 target_include_directories(DirectionalLib SYSTEM INTERFACE 
   ${directional_SOURCE_DIR}/include
 )
+target_compile_features(DirectionalLib INTERFACE cxx_std_20)
+
 
 # Optionally create rendering library
 if(RENDER_TEXTURE)
