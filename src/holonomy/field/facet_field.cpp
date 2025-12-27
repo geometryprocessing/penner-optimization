@@ -607,7 +607,7 @@ else {
         is >> id[0] >> id[1] >> id[2] >> m[0] >> m[1] >> m[2];
         if (load_sharp) is >> sh[0] >> sh[1] >> sh[2];
         if (!fin || !is) {
-            spdlog::error("{} facet {}: unable to read matchings. File partially loaded.", fname);
+            spdlog::error("{} facet {}: unable to read matchings. File partially loaded.", fname, i);
             return empty_output;
         }
 
