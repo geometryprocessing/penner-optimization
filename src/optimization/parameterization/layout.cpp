@@ -214,7 +214,7 @@ double signed_area(
 // find the previous halfedge of a halfedge in a mesh
 template <typename Scalar>
 int prev_halfedge(
-    const OverlayMesh<Scalar>& m,
+    const Mesh<Scalar>& m,
     int hij)
 {
     int hli = hij;
@@ -235,7 +235,7 @@ Scalar triangle_area(
     int hij)
 {
     int hjk = m.n[hij];
-    int hli = prev_halfedge(dynamic_cast<const OverlayMesh<Scalar>&>(m), hij);
+    int hli = prev_halfedge(m, hij);
     Eigen::Vector2d A = {u[hli], v[hli]};
     Eigen::Vector2d B = {u[hij], v[hij]};
     Eigen::Vector2d C = {u[hjk], v[hjk]};
@@ -278,8 +278,8 @@ Scalar compute_uv_length_error(
         int hji = m.opp[hij];
 
         // get other halfedges in the face for vertex computation
-        int hki = prev_halfedge(dynamic_cast<const OverlayMesh<Scalar>&>(m), hij);
-        int hlj = prev_halfedge(dynamic_cast<const OverlayMesh<Scalar>&>(m), hji);
+        int hki = prev_halfedge(m, hij);
+        int hlj = prev_halfedge(m, hji);
 
         // get uv vertices on the edge
         Eigen::Vector2d uv0i = {u[hki], v[hki]};
