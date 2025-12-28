@@ -6,3 +6,5 @@ FetchContent_Declare(
     GIT_TAG penner_optimization
 )
 FetchContent_MakeAvailable(conformal_ideal_delaunay)
+target_compile_features(conformal_cpp PRIVATE cxx_std_20)
+
