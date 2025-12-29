@@ -14,14 +14,22 @@ namespace Penner {
 namespace Feature {
 
 ComponentMesh::ComponentMesh(const Mesh<Scalar>& m)
+ : ComponentMesh(m, find_mesh_face_components(m))
+{
+}
+
+ComponentMesh::ComponentMesh(
+    const Mesh<Scalar>& m,
+    const Eigen::VectorXi& components)
     : m_mesh_components({})
     , m_v_maps({})
     , m_f_maps({})
+    , m_he_maps({})
+    , m_f_proj({})
+    , m_v_proj({})
+    , m_he_proj({})
     , m_num_vertices(m.n_ind_vertices())
 {
-    // get manifold components
-    Eigen::VectorXi components = find_mesh_face_components(m);
-
     // construct each component individually
     int num_components = components.maxCoeff() + 1;
     for (int i = 0; i < num_components; ++i) {
@@ -40,6 +48,7 @@ bool ComponentMesh::is_valid_component_mesh() const
 void ComponentMesh::build_halfedge_data(
     Mesh<Scalar>& component_mesh,
     const Mesh<Scalar>& m,
+    const std::vector<bool>& he_in_component,
     const std::vector<int>& component_he,
     const std::vector<int>& he_map,
     const std::vector<int>& v_map,
@@ -56,10 +65,11 @@ void ComponentMesh::build_halfedge_data(
     component_mesh.l.resize(n_component_he);
     for (int chij = 0; chij < n_component_he; ++chij) {
         int hij = component_he[chij]; // halfedge index in original mesh
+        int hji = m.opp[hij];
         component_mesh.n[chij] = he_map[m.n[hij]];
         component_mesh.to[chij] = v_map[m.to[hij]];
         component_mesh.f[chij] = f_map[m.f[hij]];
-        component_mesh.opp[chij] = he_map[m.opp[hij]];
+        component_mesh.opp[chij] = (he_in_component[hji]) ? he_map[m.opp[hij]] : -1;
         component_mesh.R[chij] = he_map[m.R[hij]];
         component_mesh.type[chij] = m.type[hij];
         component_mesh.type_input[chij] = m.type_input[hij];
@@ -156,7 +166,7 @@ void ComponentMesh::build_mesh_component(
     std::vector<int> ind_v_map = index_subset(n_ind_v, component_ind_v);
 
     // build component data
-    build_halfedge_data(component_mesh, m, component_he, he_map, v_map, f_map);
+    build_halfedge_data(component_mesh, m, he_in_component, component_he, he_map, v_map, f_map);
     build_face_data(component_mesh, m, component_f, he_map);
     build_vertex_data(component_mesh, m, component_v, he_map, ind_v_map);
     build_independent_vertex_data(component_mesh, m, component_ind_v);
@@ -166,6 +176,9 @@ void ComponentMesh::build_mesh_component(
     m_he_maps.push_back(component_he);
     m_f_maps.push_back(component_f);
     m_v_maps.push_back(component_ind_v);
+    m_he_proj.push_back(he_map);
+    m_f_proj.push_back(f_map);
+    m_v_proj.push_back(v_map);
 }
 
 // partial validity check

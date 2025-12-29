@@ -91,24 +91,24 @@ ReductionMaps::ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths)
 void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::vector<int>& e2he)
 {
     int num_halfedges = opp.size();
-    int num_edges = num_halfedges / 2;
     he2e.resize(num_halfedges);
     e2he.clear();
-    e2he.reserve(num_edges);
+    e2he.reserve(num_halfedges / 2);
 
     // First build map from edges to the lower index halfedges, which is a
     // bijection
     for (int h = 0; h < num_halfedges; ++h) {
-        if (h < opp[h]) {
+        if ((opp[h] >= 0) && (h < opp[h])) {
             e2he.push_back(h);
         }
     }
 
     // Construct 2-to-1 map from halfedges to edges
+    int num_edges = e2he.size();
     for (int e = 0; e < num_edges; ++e) {
         int h = e2he[e];
         he2e[h] = e;
-        he2e[opp[h]] = e;
+        if (opp[h] >= 0) he2e[opp[h]] = e;
     }
 }
 
