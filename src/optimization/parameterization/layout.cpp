@@ -1038,7 +1038,7 @@ get_consistent_layout(
       int current_seg = m_o.first_segment[hij];
       while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
       {
-        std::vector<Scalar> tmp = m_o.seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = m_o.seg_bcs[current_seg];
         lambdas.push_back(tmp[1]);
         current_seg = m_o.next_segment(current_seg);
       }
@@ -1048,7 +1048,7 @@ get_consistent_layout(
       int cnt = lambdas.size() - 1;
       while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
       {
-        std::vector<Scalar> tmp = m_o.seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = m_o.seg_bcs[current_seg];
         if (abs(lambdas[cnt] - tmp[0]) > 1e-10)
         {
           spdlog::error("alignment problem: {}, {}", lambdas[cnt], tmp[0]);
