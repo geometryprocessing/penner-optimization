@@ -43,6 +43,12 @@ public:
         Eigen::MatrixXd& corner_kappa,
         Eigen::MatrixXi& corner_period_jump) const;
 
+    void get_halfedge_field(
+        const Mesh<Scalar>& m,
+        Eigen::VectorXd& face_theta,
+        Eigen::VectorXd& halfedge_kappa,
+        Eigen::VectorXi& halfedge_period_jump);
+
     void get_fixed_faces(
         const Mesh<Scalar>& m,
         const std::vector<int>& vtx_reindex,
@@ -62,6 +68,12 @@ public:
         const Eigen::MatrixXd& corner_kappa,
         const Eigen::MatrixXi& corner_period_jump);
 
+    void set_halfedge_field(
+        const Mesh<Scalar>& m,
+        const Eigen::VectorXd& face_theta,
+        const Eigen::VectorXd& halfedge_kappa,
+        const Eigen::VectorXi& halfedge_period_jump);
+
     Scalar min_angle = 0.;
 
     void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
@@ -73,6 +85,7 @@ public:
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
     void concentrate_curvature(const Mesh<Scalar>& m);
+    void infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -141,6 +154,7 @@ private:
 };
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m);
+std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m, const std::vector<int> roots);
 
 } // namespace Holonomy
 } // namespace Penner

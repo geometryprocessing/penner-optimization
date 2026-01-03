@@ -20,6 +20,7 @@ target_link_libraries(PennerUtilLib PUBLIC
   igl::predicates
   spdlog::spdlog
   conformal_cpp
+  #CoMISo
   ${MPFR_LIBRARIES}
   ${SUITESPARSE_LIBS}
   ${POLYSCOPE_LIBRARIES}

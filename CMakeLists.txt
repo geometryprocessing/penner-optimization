@@ -97,6 +97,7 @@ include(spectra)
 include(cli11)
 include(json)
 include(geometry-central)
+#include(comiso)
 
 include(directional)
 add_library(DirectionalLib INTERFACE)

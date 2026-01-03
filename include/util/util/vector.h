@@ -48,11 +48,11 @@ std::vector<Type> convert_vector(const Eigen::Matrix<Type, Eigen::Dynamic, 1>& v
 }
 
 /**
- * @brief Convert an Eigen vector to a std vector
+ * @brief Reverse the entries in a vector
  *
  * @tparam Type of the vector data
- * @param v: Eigen vector
- * @return std vector
+ * @param v: vector
+ * @return reversed vector
  */
 template <typename Type>
 std::vector<Type> reverse_vector(const std::vector<Type>& v)
@@ -60,6 +60,23 @@ std::vector<Type> reverse_vector(const std::vector<Type>& v)
     std::vector<Type> w = v;
     std::reverse(w.begin(), w.end());
     return w;
+}
+
+/**
+ * @brief Concatenate two vectors together
+ *
+ * @tparam Type of the vector data
+ * @param v: first vector
+ * @param w: second vector
+ * @return std vector
+ */
+template <typename Type>
+std::vector<Type> concatenate_vector(const std::vector<Type>& v, const std::vector<Type>& w)
+{
+    std::vector<Type> concat = v;
+    concat.reserve(v.size() + w.size());
+    concat.insert(concat.end(), w.begin(), w.end());
+    return concat;
 }
 
 /**

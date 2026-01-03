@@ -182,7 +182,8 @@ void view_rotation_form(
 
     // Generate cones
     spdlog::info("{} vertices", Th_hat.size());
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, vtx_reindex, m);
+    //auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, vtx_reindex, m);
+    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, Th_hat);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();

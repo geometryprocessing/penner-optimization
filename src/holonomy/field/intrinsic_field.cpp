@@ -1617,11 +1617,17 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     {
         min_cones = generate_min_cones(m);
     }
-    Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
-    ConeMISolver cs;
-    cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
-    //COMISO::MISolver cs;
-    //cs.solve(Acsc, x, gmm_b, var_edges);
+    if (false)
+    {
+        Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
+        ConeMISolver cs;
+        cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
+    }
+    else
+    {
+        COMISO::MISolver cs;
+        cs.solve(Acsc, x, gmm_b, var_edges);
+    }
 
     // Copy the face angles
     int num_faces = m.n_faces();
@@ -1985,6 +1991,66 @@ std::vector<int> IntrinsicNRosyField::generate_cones(const Mesh<Scalar>& m) cons
     return base_cones;
 }
 
+void IntrinsicNRosyField::infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form)
+{
+    int num_faces = m.n_faces();
+    int num_halfedges = m.n_halfedges();
+    std::vector<bool> is_processed_face(num_faces, false);
+
+    // Remove interior double edges, but leave boundary edges
+    // TODO: meshes with boundary
+    if (m.type[0] != 0)
+    {
+        spdlog::error("field inference not implemented for open meshes");
+        return;
+    }
+
+    // Initialize queue with boundary faces to process
+    std::deque<int> faces_to_process;
+    int fi = 0;
+    theta[fi] = 0.;
+    is_processed_face[fi] = true;
+    faces_to_process.push_back(fi);
+
+    // Perform BFS, not crossing variable period jump edges
+    while (!faces_to_process.empty()) {
+        // Get the next face to process
+        int fi = faces_to_process.front();
+        faces_to_process.pop_front();
+
+        // Iterate over the face circulator via halfedges
+        int h_start = m.h[fi];
+        int hij = h_start;
+        do {
+            // Get the face opposite the edge
+            int fj = m.f[m.opp[hij]];
+
+            // Check if the edge to the tip face is the best seen so far
+            if ((!is_processed_face[fj]) && (is_period_jump_fixed[hij]))
+            {
+                theta[fj] = theta[fi] + kappa[hij] + period_value[hij] * period_jump[hij] - rotation_form[hij];
+                is_processed_face[fj] = true;
+                faces_to_process.push_back(fj);
+            }
+
+            // Progress to the next halfedge in the face circulator
+            hij = m.n[hij];
+        } while (hij != h_start);
+    }
+
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        if (is_period_jump_fixed[hij]) continue;
+        int hji = m.opp[hij];
+        if (hji < hij) continue;
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        Scalar jump_value = rotation_form[hij] - (theta[f0] - theta[f1] + kappa[hij]);
+        period_jump[hij] = round(jump_value / period_value[hij]);
+        period_jump[hji] = -period_jump[hij];
+    }
+}
+
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
 {
     int num_halfedges = m.n_halfedges();
@@ -2264,6 +2330,17 @@ void IntrinsicNRosyField::get_field(
     }
 }
 
+void IntrinsicNRosyField::get_halfedge_field(
+    const Mesh<Scalar>& m,
+    Eigen::VectorXd& face_theta,
+    Eigen::VectorXd& halfedge_kappa,
+    Eigen::VectorXi& halfedge_period_jump)
+{
+    face_theta = theta;
+    halfedge_kappa = kappa;
+    halfedge_period_jump = period_jump;
+}
+
 void IntrinsicNRosyField::get_fixed_faces(
     const Mesh<Scalar>& m,
     const std::vector<int>& face_reindex,
@@ -2340,6 +2417,17 @@ void IntrinsicNRosyField::set_field(
             hij = m.n[hij];
         }
     }
+}
+
+void IntrinsicNRosyField::set_halfedge_field(
+    const Mesh<Scalar>& m,
+    const Eigen::VectorXd& face_theta,
+    const Eigen::VectorXd& halfedge_kappa,
+    const Eigen::VectorXi& halfedge_period_jump)
+{
+    theta = face_theta;
+    kappa = halfedge_kappa;
+    period_jump = halfedge_period_jump;
 }
 
 } // namespace Holonomy
