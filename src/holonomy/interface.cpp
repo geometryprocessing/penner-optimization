@@ -112,6 +112,7 @@ VectorX generate_penner_coordinates(const Mesh<Scalar>& m)
     VectorX metric_coords(num_halfedges);
     for (int h = 0; h < num_halfedges; ++h) {
         metric_coords[h] = 2.0 * log(m_copy.l[h]);
+        if (isnan(metric_coords[h])) spdlog::warn("generating NaN Penner coordinate");
     }
 
     return metric_coords;
