@@ -1617,7 +1617,6 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     {
         min_cones = generate_min_cones(m);
     }
-    bool use_roundings = true;
     if (use_roundings)
     {
         Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);

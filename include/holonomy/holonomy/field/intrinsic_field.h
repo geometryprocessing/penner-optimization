@@ -75,6 +75,7 @@ public:
         const Eigen::VectorXi& halfedge_period_jump);
 
     Scalar min_angle = 0.;
+    bool use_roundings = true;
 
     void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
     void initialize(const Mesh<Scalar>& m);
