@@ -72,6 +72,7 @@ public:
     void remove_greedy_cone_pairs(const Mesh<Scalar>& m);
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
+    void move_nearby_cones(const Mesh<Scalar>& m);
     void collapse_adjacent_cones(const Mesh<Scalar>& m);
     void collapse_nearby_cones(const Mesh<Scalar>& m);
 

@@ -1818,6 +1818,114 @@ void IntrinsicNRosyField::collapse_adjacent_cones(const Mesh<Scalar>& m)
     }
 }
 
+void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
+{
+    // compute initial cones
+    std::vector<int> cones = generate_cones(m);
+
+    // generate list of boundary vertices
+    int num_vertices = cones.size();
+    std::vector<bool> is_boundary = compute_boundary_vertices(m);
+    std::vector<bool> is_cone(cones.size(), false);
+    std::vector<bool> is_one_away(cones.size(), false);
+    std::vector<bool> is_two_away(m.n_ind_vertices(), false);
+
+    auto adjust_adacent = [&](int wi)
+    {
+        int vi = m.v_rep[wi];
+        is_cone[vi] = true;
+
+        // set one ring
+        int hij = m.out[wi];
+        do
+        {
+            int vj = m.v_rep[m.to[hij]];
+            is_one_away[vj] = true;
+            hij = m.n[m.opp[hij]];
+        } while (hij != m.out[wi]);
+
+        // now set two ring
+        do
+        {
+            int hji = m.opp[hij];
+            int hjk = hji;
+            do
+            {
+                int vk = m.v_rep[m.to[hij]];
+                if ((vk != vi) && (!is_one_away[vk]))
+                {
+                    is_two_away[vk] = true;
+                }
+                hjk = m.n[m.opp[hjk]];
+            } while (hjk != hji);
+
+            hij = m.n[m.opp[hij]];
+        } while (hij != m.out[wi]);
+    };
+
+    // get all interior cones to place
+    std::vector<std::pair<int, int>> cones_to_place = {};
+    for (int wi = 0; wi < m.n_vertices(); ++wi)
+    {
+        int vi = m.v_rep[wi];
+
+        // check for interior cone
+        if ((cones[vi] == 4) || (is_boundary[wi])) continue;
+        cones_to_place.push_back({wi, 1});
+    }
+
+    // place cones, ensuring sufficient distance throughout
+    int num_cones = cones_to_place.size();
+    for (int i = 0; i < num_cones; ++i)
+    {
+        auto [wi, cone_index] = cones_to_place[i];
+        int vi = m.v_rep[wi];
+        int defect = (4 - cones[vi]);
+
+        // if adjacent, try to move two away 
+        if (is_one_away[vi])
+        {
+            int hij = m.out[wi];
+            do
+            {
+                int wj =  m.to[hij];
+                int vj =  m.v_rep[wj];
+
+                // check for vertex adjacent to only vi
+                if ((!is_cone[vj]) && (!is_one_away[vj]))
+                {
+                    move_cone(m, vi, vj, defect);
+                    wi = wj;
+                    vi = vj;
+                    break;
+                }
+            } while (hij != m.out[wi]);
+        }
+
+        // if two away, try to move to free spot
+        if (is_two_away[vi])
+        {
+            int hij = m.out[wi];
+            do
+            {
+                int wj =  m.to[hij];
+                int vj =  m.v_rep[wj];
+
+                // check for vertex adjacent to only vi
+                if ((!is_cone[vj]) && (!is_one_away[vj]) && (!is_two_away[vj]))
+                {
+                    move_cone(m, vi, vj, defect);
+                    wi = wj;
+                    vi = vj;
+                    break;
+                }
+            } while (hij != m.out[wi]);
+        }
+
+        // mark region around cone
+        adjust_adacent(wi);
+    }
+}
 
 void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
 {
@@ -1879,19 +1987,35 @@ void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
             // modify cones
             if (adjacent_cones.size() > 1)
             {
-                int hij = adjacent_cones.front();
+                // get arbitrary cone to remove
                 int hik = adjacent_cones.back();
-                int vj =  m.v_rep[m.to[hij]];
                 int vk =  m.v_rep[m.to[hik]];
-                spdlog::info("collapsing cones {} and {}", cones[vj], cones[vk]);
+                adjacent_cones.pop_back();
+
+                // get defect for removing vk
                 Scalar defect = 4 - cones[vk];
                 if (is_boundary[m.to[hik]]) defect = 2 - cones[vk];
-                set_period_jump(m, hij, period_jump[hij] - defect);
-                set_period_jump(m, hik, period_jump[hik] + defect);
-                cones[vk] += defect;
-                cones[vj] -= defect;
-                spdlog::info("new cones {} and {}", cones[vj], cones[vk]);
-                collapsed = true;
+                while (true)
+                {
+                    if (adjacent_cones.empty()) break;
+
+                    int hij = adjacent_cones.back();
+                    adjacent_cones.pop_back();
+                    int vj =  m.v_rep[m.to[hij]];
+
+                    // cannot collapse cone to below pi/2
+                    if ((cones[vj] - defect) < 1) continue;
+
+                    // collapse cone
+                    spdlog::info("collapsing cones {} and {}", cones[vj], cones[vk]);
+                    set_period_jump(m, hij, period_jump[hij] - defect);
+                    set_period_jump(m, hik, period_jump[hik] + defect);
+                    cones[vk] += defect;
+                    cones[vj] -= defect;
+                    spdlog::info("new cones {} and {}", cones[vj], cones[vk]);
+                    collapsed = true;
+                    break;
+                }
             }
                 
         }

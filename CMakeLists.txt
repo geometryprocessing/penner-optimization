@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.30)
 project(PennerOptimization)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
+add_compile_options(-Wno-register)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
 # Set options if top level
@@ -33,8 +34,8 @@ endif()
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+#include(eigen)
 include(boost)
-include(eigen)
 
 # Optionally get multiprecision libraries
 if(USE_MULTIPRECISION OR USE_MULTIPRECISION_OVERLAY)
@@ -92,7 +93,7 @@ if(USE_SUITESPARSE)
 endif()
 
 # Get external libraries
-include(boost)
+#include(boost)
 include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)

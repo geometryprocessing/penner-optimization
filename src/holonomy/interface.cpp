@@ -407,8 +407,8 @@ std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
         use_discrete_metric);
 
     // compute rotation form
-    VectorX rotation_form = generate_intrinsic_rotation_form(*cone_metric, field_params);
     //VectorX rotation_form = generate_intrinsic_rotation_form(*cone_metric, vtx_reindex, V, field_params);
+    VectorX rotation_form = generate_intrinsic_rotation_form(*cone_metric, field_params);
 
     // generate cones from the rotation form
     bool has_bd = (cone_metric->type[0] != 0);

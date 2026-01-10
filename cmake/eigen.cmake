@@ -31,7 +31,7 @@ else()
     )
     FetchContent_GetProperties(eigen)
     if(NOT eigen_POPULATED)
-        FetchContent_Populate(eigen)
+        FetchContent_MakeAvailable(eigen)
     endif()
     set(EIGEN_INCLUDE_DIRS ${eigen_SOURCE_DIR})
 
