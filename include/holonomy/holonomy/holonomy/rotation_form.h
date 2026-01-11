@@ -15,6 +15,7 @@ struct FieldParameters
     bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
     bool collapse_cones = false; // collapse as many cones as possible TODO
     bool use_roundings = true; // round away from zero
+    bool use_principal_directions = false; // round away from zero
 };
 
 /**
