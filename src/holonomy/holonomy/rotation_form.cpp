@@ -109,7 +109,7 @@ VectorX generate_rotation_form_from_cross_field(
 VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params)
 {
     IntrinsicNRosyField field_generator;
-    field_generator.min_angle = field_params.min_angle;
+    field_generator.min_cone = field_params.min_cone;
     field_generator.use_roundings = field_params.use_roundings;
     
     return field_generator.run(m);
@@ -123,7 +123,7 @@ VectorX generate_intrinsic_rotation_form(
 {
     IntrinsicNRosyField field_generator;
     field_generator.use_roundings = field_params.use_roundings;
-    field_generator.min_angle = field_params.min_angle;
+    field_generator.min_cone = field_params.min_cone;
 
     return field_generator.run_with_viewer(m, vtx_reindex, V);
 }

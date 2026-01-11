@@ -72,7 +72,7 @@ void init_holonomy_pybind(pybind11::module& m)
 
     pybind11::class_<FieldParameters, std::shared_ptr<FieldParameters>>(m, "FieldParameters")
         .def(pybind11::init<>())
-        .def_readwrite("min_angle", &FieldParameters::min_angle);
+        .def_readwrite("min_cone", &FieldParameters::min_cone);
 
     pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
         .def(pybind11::init<

@@ -1,22 +1,10 @@
 #pragma once
 
 #include "holonomy/core/common.h"
+#include "holonomy/field/intrinsic_field.h"
 
 namespace Penner {
 namespace Holonomy {
-
-/**
- * @brief Parameters for cross field generation
- *
- */
-struct FieldParameters
-{
-    Scalar min_angle = 0.; // minimum allowed cone angle in the cross field
-    bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
-    bool collapse_cones = false; // collapse as many cones as possible TODO
-    bool use_roundings = true; // round away from zero
-    bool use_principal_directions = false; // round away from zero
-};
 
 /**
  * @brief Given a mesh with a per-face frame field, 

@@ -210,11 +210,11 @@ void CutMetricGenerator::generate_fields(
 
         // TODO: make parameter
         Holonomy::FieldParameters field_params;
-        field_params.min_angle = M_PI / 2.;
+        field_params.min_cone = 1;
 
         // initialize field data for component (needed to generate reference corners)
         Holonomy::IntrinsicNRosyField field_generator;
-        field_generator.min_angle = field_params.min_angle;
+        field_generator.min_cone = field_params.min_cone;
         if (V_map.size() > 0)
         {
             field_generator.set_min_cones(generate_glued_min_cones(m, vtx_reindex, V_map));
@@ -278,7 +278,7 @@ void CutMetricGenerator::set_fields(
 
         // initialize feild generator with the given field
         Holonomy::IntrinsicNRosyField field_generator;
-        field_generator.min_angle = M_PI / 2.;
+        field_generator.min_cone = 1;
         field_generator.use_trivial_boundary = true;
         field_generator.initialize(m);
         field_generator.set_field(m, vtx_reindex, F_cut, face_map, theta, kappa, period_jump);

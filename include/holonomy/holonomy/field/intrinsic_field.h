@@ -10,6 +10,19 @@
 namespace Penner {
 namespace Holonomy {
 
+/**
+ * @brief Parameters for cross field generation
+ *
+ */
+struct FieldParameters
+{
+    int min_cone = 0; // minimum allowed cone angle in the cross field
+    bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
+    bool collapse_cones = false; // collapse as many cones as possible TODO
+    bool use_roundings = true; // round away from zero
+    bool use_principal_directions = false; // round away from zero
+};
+
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 compute_facet_principal_curvature(
     const Eigen::MatrixXd& V,
@@ -21,6 +34,10 @@ class IntrinsicNRosyField
 public:
     IntrinsicNRosyField() {
         use_trivial_boundary = false;
+    };
+    IntrinsicNRosyField(const FieldParameters& field_params) {
+        min_cone = field_params.min_cone;
+        use_roundings = field_params.use_roundings;
     };
     VectorX run(const Mesh<Scalar>& m);
     VectorX run_with_viewer(
@@ -74,7 +91,7 @@ public:
         const Eigen::VectorXd& halfedge_kappa,
         const Eigen::VectorXi& halfedge_period_jump);
 
-    Scalar min_angle = 0.;
+    int min_cone = 1;
     bool use_roundings = true;
 
     void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
@@ -154,7 +171,7 @@ private:
 
 };
 
-std::vector<int> generate_min_cones(const Mesh<Scalar>& m);
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone=1);
 std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m, const std::vector<int> roots);
 
 } // namespace Holonomy

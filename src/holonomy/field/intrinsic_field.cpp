@@ -686,7 +686,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_kappa_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
     std::vector<int> var2he_temp, halfedge_var_id_temp;
     arange(num_halfedges, var2he_temp);
@@ -834,7 +834,7 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_kappa_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
     std::vector<int> var2he_temp, halfedge_var_id_temp;
     arange(num_halfedges, var2he_temp);
@@ -1547,23 +1547,25 @@ public:
 
 };
 
-std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone)
 {
     int num_vertices = m.n_ind_vertices();
     if (m.type[0] == 0)
     {
-        return std::vector<int>(num_vertices, 1);
+        return std::vector<int>(num_vertices, min_cone);
     }
-
-    std::vector<int> min_cones(num_vertices, 4);
-    for (int hij = 0; hij < m.n_halfedges(); hij++) {
-        if (m.opp[m.R[hij]] == hij)
-        {
-            min_cones[m.v_rep[m.to[hij]]] = 2;
+    else
+    {
+        std::vector<int> min_cones(num_vertices, 2 * min_cone);
+        for (int hij = 0; hij < m.n_halfedges(); hij++) {
+            if (m.opp[m.R[hij]] == hij)
+            {
+                min_cones[m.v_rep[m.to[hij]]] = 2;
+            }
         }
+        
+        return min_cones;
     }
-
-    return min_cones;
 }
 
 void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
@@ -1615,7 +1617,7 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_base_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
     if (use_roundings)
     {
@@ -2075,6 +2077,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     std::vector<Scalar> Th_hat = generate_cones_from_rotation_form_FIXME(m, rotation_form);
 
     int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
+    Scalar min_angle = min_cone * (M_PI / 2.);
     Scalar targetsum = M_PI * (2 * m.n_vertices() - 2 * (2 - double_genus));
     Scalar th_hat_sum = 0.0;
     for(auto t: Th_hat)

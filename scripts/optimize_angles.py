@@ -48,7 +48,7 @@ def constrain_similarity_one(args, fname):
     if args['fit_field']:
         logger.info("Fitting cross field")
         field_params = penner.FieldParameters()
-        field_params.min_angle = np.pi
+        field_params.min_cone = 2
         rotation_form, Th_hat = penner.generate_intrinsic_rotation_form(V, F, field_params)
         Th_hat = np.array(Th_hat)
     else:
