@@ -246,6 +246,57 @@ void generate_translation_constraint_system(
 }
 
 template <typename OverlayScalar>
+void generate_edge_translation_constraint_system(
+    const Mesh<OverlayScalar>& m,
+    const VectorX& halfedge_shear_change,
+    Eigen::SparseMatrix<OverlayScalar>& constraint_matrix,
+    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1>& right_hand_side)
+{
+    // Get edge maps
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    build_edge_maps(change_mesh_type<OverlayScalar, Scalar>(m), he2e, e2he);
+
+    // Get number of halfedges, edges, and faces
+    int n_h = m.n.size();
+    int n_e = e2he.size();
+    int n_f = m.h.size();
+
+    // Initialize matrix entry list
+    std::vector<Eigen::Triplet<OverlayScalar>> tripletList;
+    right_hand_side.setZero(n_f - 1);
+    tripletList.reserve(3 * n_f);
+
+    // Add face sum constraints (leaving one out due to redundancy)
+    for (int f = 0; f < n_f - 1; ++f) {
+        int hij = m.h[f];
+        int hjk = m.n[hij];
+        int hki = m.n[hjk];
+
+        // Add face sum block
+        for (int h : {hij, hjk, hki})
+        {
+            int e = he2e[h];
+            if (h == e2he[e])
+            {
+                tripletList.push_back(Eigen::Triplet<OverlayScalar>(f, e, OverlayScalar(1.0)));
+                right_hand_side[f] -= halfedge_shear_change[h] / 2.;
+            }
+            else
+            {
+                tripletList.push_back(Eigen::Triplet<OverlayScalar>(f, e, OverlayScalar(-1.0)));
+                right_hand_side[f] -= halfedge_shear_change[h] / 2.;
+            }
+        }
+    }
+
+    // Build matrix
+    constraint_matrix.resize(n_f - 1, n_e);
+    constraint_matrix.reserve(tripletList.size());
+    constraint_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+template <typename OverlayScalar>
 void compute_as_symmetric_as_possible_translations(
     const Mesh<OverlayScalar>& m,
     const VectorX& he_metric_coords,
@@ -268,25 +319,60 @@ void compute_as_symmetric_as_possible_translations(
         he_shear_change.maxCoeff());
 
     // Build the constraint for the problem
-    spdlog::trace("Computing constraint system");
-    Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
-    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> right_hand_side;
-    generate_translation_constraint_system(m, he_shear_change, constraint_matrix, right_hand_side);
+    bool use_edge_system = false;
+    // WARNING: edge sytem is faster, but produces low quality values and may be buggy
+    if (use_edge_system)
+    {
+        spdlog::trace("Computing constraint system");
+        Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> right_hand_side;
+        generate_edge_translation_constraint_system(m, he_shear_change, constraint_matrix, right_hand_side);
 
-    // Compute the solution of the constraint
-    spdlog::debug(
-        "Computing solution for {}x{} system with length {} rhs",
-        constraint_matrix.rows(),
-        constraint_matrix.cols(),
-        right_hand_side.size());
-    Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
-    //gram_matrix.makeCompressed();
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
-    solver.compute(gram_matrix);
-    Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
+        // Compute the solution of the constraint
+        Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
+        Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
+        solver.compute(gram_matrix);
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
 
-    // The desired translations are at the head of the solution vector
-    he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+        // The desired translations are at the head of the solution vector
+        VectorX e_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+
+        // Get edge maps
+        std::vector<int> he2e;
+        std::vector<int> e2he;
+        build_edge_maps(change_mesh_type<OverlayScalar, Scalar>(m), he2e, e2he);
+        he_translations.resize(m.n_halfedges());
+        for (int e = 0; e < e2he.size(); ++e)
+        {
+            int hij = e2he[e];
+            int hji = m.opp[hij];
+            he_translations[hij] = he_shear_change[hij] + e_translations[e];
+            he_translations[hji] = he_shear_change[hij] - e_translations[e];
+        }
+    }
+    else
+    {
+        // Build the constraint for the problem
+        spdlog::trace("Computing constraint system");
+        Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> right_hand_side;
+        generate_translation_constraint_system(m, he_shear_change, constraint_matrix, right_hand_side);
+
+        // Compute the solution of the constraint
+        spdlog::debug(
+            "Computing solution for {}x{} system with length {} rhs",
+            constraint_matrix.rows(),
+            constraint_matrix.cols(),
+            right_hand_side.size());
+        Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
+        //gram_matrix.makeCompressed();
+        Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
+        solver.compute(gram_matrix);
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
+
+        // The desired translations are at the head of the solution vector
+        he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+    }
 
     // use zero coordinates as fallback for nans
     if (isnan(he_translations.maxCoeff()))
