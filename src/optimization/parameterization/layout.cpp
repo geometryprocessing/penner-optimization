@@ -474,6 +474,27 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     return is_cut_h_gen;
 }
 
+void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std::vector<bool>& is_cut)
+{
+  bool any_trimmed = true;
+  while (any_trimmed)
+  {
+    any_trimmed = false;
+    for (int hi = 0; hi < m.n.size(); hi++)
+    {
+      if (!is_cut[hi]) continue;
+      int v0 = m.to[hi];
+      if ((count_valence(m.n, m.opp, hi, is_cut) == 1) && (!is_cone[v0]))
+      {
+        is_cut[hi] = false;
+        is_cut[m.opp[hi]] = false;
+        any_trimmed = true;
+        continue;
+      }
+    }
+  }
+}
+
 Eigen::Matrix<Scalar, 1, 2> perp_l(Eigen::Matrix<Scalar, 1, 2> a) {
     Eigen::Matrix<Scalar, 1, 2> b;
     b[0] = -a[1];

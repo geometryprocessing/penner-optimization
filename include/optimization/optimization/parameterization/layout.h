@@ -100,6 +100,8 @@ bool check_uv(
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h = -1);
 
+void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std::vector<bool>& is_cut);
+
 /// Given a cut defined on the original or current mesh, pull it back to a cut defined on
 /// an overlay mesh for the given mesh (possibly after flips)
 ///
