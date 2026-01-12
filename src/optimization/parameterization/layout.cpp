@@ -474,6 +474,31 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     return is_cut_h_gen;
 }
 
+Eigen::Matrix<Scalar, 1, 2> perp_l(Eigen::Matrix<Scalar, 1, 2> a) {
+    Eigen::Matrix<Scalar, 1, 2> b;
+    b[0] = -a[1];
+    b[1] = a[0];
+    return b;
+};
+
+Scalar area_from_len_l(Scalar l1, Scalar l2, Scalar l3) {
+    auto s = 0.5 * (l1 + l2 + l3);
+    return sqrt(s * (s - l1) * (s - l2) * (s - l3));
+}
+
+Scalar square_l(Scalar x) { return x * x; };
+
+Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
+    const Eigen::Matrix<Scalar, 1, 2>& p1,
+    const Eigen::Matrix<Scalar, 1, 2>& p2,
+    Scalar l0,
+    Scalar l1,
+    Scalar l2)
+{
+    return p1 + (p2 - p1) * (1 + square_l(l2 / l0) - square_l(l1 / l0)) / 2 +
+                                    perp_l(p2 - p1) * 2 * area_from_len_l(1.0, l1 / l0, l2 / l0);
+}
+
 // FIXME Remove once fix halfedge origin
 template <typename Scalar>
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(

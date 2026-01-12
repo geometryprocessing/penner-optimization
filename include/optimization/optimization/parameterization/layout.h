@@ -113,6 +113,13 @@ std::vector<bool> pullback_cut_to_overlay(
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
 
+Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
+    const Eigen::Matrix<Scalar, 1, 2>& p1,
+    const Eigen::Matrix<Scalar, 1, 2>& p2,
+    Scalar l0,
+    Scalar l1,
+    Scalar l2);
+
 // TODO: Document this technical function
 // Exposed for usage in other libraries
 template <typename OverlayScalar>

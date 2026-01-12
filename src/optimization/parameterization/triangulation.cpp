@@ -153,9 +153,6 @@ bool is_self_overlapping_polygon(
                 if (!is_self_overlapping_subpolygon[i][k]) continue;
                 if (!is_self_overlapping_subpolygon[k][j]) continue;
 
-                // Otherwise, k is a splitting vertex and (i, j) is self overlapping
-                is_self_overlapping_subpolygon[i][j] = true;
-
                 // Compute minimum of uv and 3D triangle areas for the subpolygon ij with
                 // splitting vertex k
                 Scalar uv_triangle_area = compute_face_area(uv_triangle);
@@ -167,6 +164,12 @@ bool is_self_overlapping_polygon(
                 if (j != (k + 1) % face_size) {
                     min_area = std::min(min_area, min_face_areas[k][j]);
                 }
+
+                // check if the triangle areas are too small
+                if (min_area < threshold) continue;
+
+                // Otherwise, k is a splitting vertex and (i, j) is self overlapping
+                is_self_overlapping_subpolygon[i][j] = true;
 
                 // Set splitting vertex, overwriting existing values iff it increase the min area
                 if ((splitting_vertices[i][j] < 0) || (min_face_areas[i][j] < min_area)) {
@@ -263,6 +266,7 @@ void triangulate_self_overlapping_polygon(
     }
 
     // Call recursive subroutine on the whole polygon for the optimal edge (j, i)
+    if (max_min_area < 1e-10) spdlog::warn("triangle area {}", max_min_area);
     int j = optimal_j;
     int i = (j + 1) % face_size; // j = i - 1
     triangulate_self_overlapping_subpolygon(
