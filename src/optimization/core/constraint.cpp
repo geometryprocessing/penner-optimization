@@ -72,6 +72,29 @@ bool satisfies_triangle_inequality(const Mesh<Scalar>& cone_metric)
     return true;
 }
 
+std::array<Scalar, 3> compute_triangle_angles(Scalar l12, Scalar l23, Scalar l31)
+{
+    std::array<Scalar, 3> he2angle = {0, 0, 0};
+    const Scalar t31 = +l12 + l23 - l31, t23 = +l12 - l23 + l31, t12 = -l12 + l23 + l31;
+    // valid triangle
+    if (t31 > 0 && t23 > 0 && t12 > 0) {
+        const Scalar l123 = l12 + l23 + l31;
+        const Scalar denom = sqrt(t12 * t23 * t31 * l123);
+        he2angle[0] = 2 * atan2(t12 * t31, denom); // a1 l23
+        he2angle[1] = 2 * atan2(t23 * t12, denom); // a2 l31
+        he2angle[2] = 2 * atan2(t31 * t23, denom); // a3 l12
+    } else if (t31 <= 0)
+        he2angle[1] = PI;
+    else if (t23 <= 0)
+        he2angle[0] = PI;
+    else if (t12 <= 0)
+        he2angle[2] = PI;
+    else
+        he2angle[0] = PI;
+
+    return he2angle;
+}
+
 void corner_angles(const Mesh<Scalar>& cone_metric, VectorX& he2angle, VectorX& he2cot)
 {
     int num_halfedges = cone_metric.n_halfedges();

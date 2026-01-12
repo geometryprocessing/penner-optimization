@@ -438,6 +438,24 @@ void view_mesh_quality(
     igl::doublearea(V, F, double_area);
     Eigen::VectorXd he2angle = convert_scalar_to_double_vector(compute_corner_angles(V, F));
 
+    std::vector<int> degenerate = {};
+    for (int f = 0; f < F.rows(); ++f)
+    {
+        int hij = 3 * f + 1;
+        int hjk = 3 * f + 2;
+        int hki = 3 * f;
+        Scalar min_angle = min(he2angle[hij], min(he2angle[hjk], he2angle[hki]));
+        if (min_angle <= 1e-8)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                int vi = F(f, i);
+                degenerate.push_back(vi);
+            }
+        }
+    }
+    Eigen::MatrixXd V_degenerate = subset_vertices(V, degenerate);
+
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
     if (mesh_handle == "") {
@@ -447,6 +465,7 @@ void view_mesh_quality(
     }
     polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("double_area", double_area);
     polyscope::getSurfaceMesh(mesh_handle)->addHalfedgeScalarQuantity("angles", he2angle);
+    polyscope::registerPointCloud(mesh_handle + " degenerate", V_degenerate);
     if (show) polyscope::show();
 #endif
 }

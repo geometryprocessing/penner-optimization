@@ -48,8 +48,9 @@ Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices);
 ///
 /// @param[in] vertices: three triangle vertices
 /// @param[in] threshold: (optional) minimum allowed area to allow before considering numerically inverted
+/// @param[in] use_angles: (optional) use corner angles instead of areas
 /// @return true iff the triangle is inverted in the uv plane
-bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold=0.);
+bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold=0., bool use_angles=false);
 
 /// Given a list of vertices in the plane, determine if the polygon they
 /// determine is self-overlapping.
@@ -65,6 +66,7 @@ bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double
 ///     overlapping subpolygons
 /// @param[out] min_face_areas: table of minimum areas of subpolygon areas
 /// @param[in] threshold: (optional) minimum allowed area to allow before considering numerically inverted
+/// @param[in] use_angles: (optional) use corner angles instead of areas
 /// @return true iff the polygon is self-overlapping
 bool is_self_overlapping_polygon(
     const std::vector<Eigen::Vector2d>& uv_vertices,
@@ -72,7 +74,8 @@ bool is_self_overlapping_polygon(
     std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
     std::vector<std::vector<int>>& splitting_vertices,
     std::vector<std::vector<Scalar>>& min_face_areas,
-    double threshold=0.);
+    double threshold=0.,
+    bool use_angles=false);
 
 /// Given a table indicating if the subpolygons of a polygon with vertices
 /// (i,...,j) are self overlapping and the corresponding splitting vertices,

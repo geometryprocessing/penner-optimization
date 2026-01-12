@@ -44,6 +44,7 @@
 #include "optimization/core/area.h"
 #include "util/io.h"
 #include "optimization/parameterization/refinement.h"
+#include "optimization/core/constraint.h"
 #include "util/vector.h"
 #include "optimization/util/viewers.h"
 
@@ -56,6 +57,7 @@
 
 namespace Penner {
 namespace Optimization {
+
 
 template <typename Vector>
 Scalar compute_face_area(const std::array<Vector, 3>& vertices)
@@ -74,10 +76,25 @@ Scalar compute_face_area(const std::array<Eigen::VectorXd, 3>& vertices)
     return compute_face_area<Eigen::VectorXd>(vertices);
 }
 
-bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold)
+template <typename Vector>
+Scalar compute_min_face_angle(const std::array<Vector, 3>& vertices)
+{
+    // Get edge lengths for triangle
+    Scalar li = (vertices[1] - vertices[0]).norm();
+    Scalar lj = (vertices[2] - vertices[1]).norm();
+    Scalar lk = (vertices[0] - vertices[2]).norm();
+
+    // Compute area from lengths
+    std::array<Scalar, 3> angles = compute_triangle_angles(li, lj, lk);
+    return min(angles[0], min(angles[1], angles[2]));
+}
+
+bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold, bool use_angles)
 {
     // check robust predicate
     if (igl::predicates::orient2d(vertices[0], vertices[1], vertices[2]) != igl::predicates::Orientation::POSITIVE) return true;
+
+    return (compute_min_face_angle(vertices) < threshold);
 
     // Build matrix of triangle homogenous coordinates
     Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
@@ -97,7 +114,8 @@ bool is_self_overlapping_polygon(
     std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
     std::vector<std::vector<int>>& splitting_vertices,
     std::vector<std::vector<Scalar>>& min_face_areas,
-    double threshold)
+    double threshold,
+    bool use_angles)
 {
     is_self_overlapping_subpolygon.clear();
     splitting_vertices.clear();
@@ -155,9 +173,19 @@ bool is_self_overlapping_polygon(
 
                 // Compute minimum of uv and 3D triangle areas for the subpolygon ij with
                 // splitting vertex k
-                Scalar uv_triangle_area = compute_face_area(uv_triangle);
-                Scalar triangle_area = compute_face_area(triangle);
-                Scalar min_area = std::min(uv_triangle_area, triangle_area);
+                Scalar min_area;
+                if (use_angles)
+                {
+                    Scalar uv_triangle_area = compute_min_face_angle(uv_triangle);
+                    Scalar triangle_area = compute_min_face_angle(triangle);
+                    min_area = std::min(uv_triangle_area, triangle_area);
+                }
+                else
+                {
+                    Scalar uv_triangle_area = compute_face_area(uv_triangle);
+                    Scalar triangle_area = compute_face_area(triangle);
+                    min_area = std::min(uv_triangle_area, triangle_area);
+                }
                 if (k != (i + 1) % face_size) {
                     min_area = std::min(min_area, min_face_areas[i][k]);
                 }
@@ -266,7 +294,7 @@ void triangulate_self_overlapping_polygon(
     }
 
     // Call recursive subroutine on the whole polygon for the optimal edge (j, i)
-    if (max_min_area < 1e-10) spdlog::warn("triangle area {}", max_min_area);
+    if (max_min_area <= 0) spdlog::warn("triangle area {}", max_min_area);
     int j = optimal_j;
     int i = (j + 1) % face_size; // j = i - 1
     triangulate_self_overlapping_subpolygon(
