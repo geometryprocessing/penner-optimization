@@ -89,22 +89,32 @@ Scalar compute_min_face_angle(const std::array<Vector, 3>& vertices)
     return min(angles[0], min(angles[1], angles[2]));
 }
 
+bool is_inverted_triangle_fast(const std::array<Eigen::Vector2d, 3>& vertices)
+{
+    return (igl::predicates::orient2d(vertices[0], vertices[1], vertices[2]) != igl::predicates::Orientation::POSITIVE);
+}
+
 bool is_inverted_triangle(const std::array<Eigen::Vector2d, 3>& vertices, double threshold, bool use_angles)
 {
     // check robust predicate
     if (igl::predicates::orient2d(vertices[0], vertices[1], vertices[2]) != igl::predicates::Orientation::POSITIVE) return true;
 
-    return (compute_min_face_angle(vertices) < threshold);
+    if (use_angles)
+    {
+        return (compute_min_face_angle(vertices) < threshold);
+    }
+    else
+    {
+        // Build matrix of triangle homogenous coordinates
+        Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
+        tri_homogenous_coords.col(0) << vertices[0][0], vertices[0][1], 1.0;
+        tri_homogenous_coords.col(1) << vertices[1][0], vertices[1][1], 1.0;
+        tri_homogenous_coords.col(2) << vertices[2][0], vertices[2][1], 1.0;
 
-    // Build matrix of triangle homogenous coordinates
-    Eigen::Matrix<Scalar, 3, 3> tri_homogenous_coords;
-    tri_homogenous_coords.col(0) << vertices[0][0], vertices[0][1], 1.0;
-    tri_homogenous_coords.col(1) << vertices[1][0], vertices[1][1], 1.0;
-    tri_homogenous_coords.col(2) << vertices[2][0], vertices[2][1], 1.0;
-
-    // Triangle is flipped iff the determinant is negative
-    Scalar det = tri_homogenous_coords.determinant();
-    return (det <= threshold);
+        // Triangle is flipped iff the determinant is negative
+        Scalar det = tri_homogenous_coords.determinant();
+        return (det <= threshold);
+    }
 }
 
 
@@ -165,7 +175,8 @@ bool is_self_overlapping_polygon(
                     uv_vertices[k],
                     uv_vertices[j]};
                 std::array<Eigen::Vector3d, 3> triangle = {vertices[i], vertices[k], vertices[j]};
-                if (is_inverted_triangle(uv_triangle, threshold)) continue;
+                //if (is_inverted_triangle(uv_triangle, threshold)) continue;
+                if (is_inverted_triangle_fast(uv_triangle)) continue;
 
                 // Check if the two subpolygons (i, k) and (k, j) are self overlapping
                 if (!is_self_overlapping_subpolygon[i][k]) continue;
