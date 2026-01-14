@@ -1800,8 +1800,12 @@ void IntrinsicNRosyField::collapse_adjacent_cones(const Mesh<Scalar>& m)
         if ((!is_boundary[wj]) && (cones[vj] == 4)) continue;
 
         // modify cones
-        spdlog::info("collapsing cones {} and {}", cones[vi], cones[vj]);
         Scalar defect = 4 - cones[vi];
+
+        if ((cones[vi] + defect) < 1) continue;
+        if ((cones[vj] - defect) < 1) continue;
+
+        spdlog::info("collapsing adjacent cones {} and {}", cones[vi], cones[vj]);
         set_period_jump(m, hij, period_jump[hij] - defect);
         cones[vi] += defect;
         cones[vj] -= defect;
@@ -1826,8 +1830,8 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
     // generate list of boundary vertices
     int num_vertices = cones.size();
     std::vector<bool> is_boundary = compute_boundary_vertices(m);
-    std::vector<bool> is_cone(cones.size(), false);
-    std::vector<bool> is_one_away(cones.size(), false);
+    std::vector<bool> is_cone(m.n_ind_vertices(), false);
+    std::vector<bool> is_one_away(m.n_ind_vertices(), false);
     std::vector<bool> is_two_away(m.n_ind_vertices(), false);
 
     auto adjust_adacent = [&](int wi)
@@ -1851,7 +1855,7 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
             int hjk = hji;
             do
             {
-                int vk = m.v_rep[m.to[hij]];
+                int vk = m.v_rep[m.to[hjk]];
                 if ((vk != vi) && (!is_one_away[vk]))
                 {
                     is_two_away[vk] = true;
@@ -1872,6 +1876,7 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
         // check for interior cone
         if ((cones[vi] == 4) || (is_boundary[wi])) continue;
         cones_to_place.push_back({wi, 1});
+        is_cone[vi] = true;
     }
 
     // place cones, ensuring sufficient distance throughout
@@ -1881,10 +1886,12 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
         auto [wi, cone_index] = cones_to_place[i];
         int vi = m.v_rep[wi];
         int defect = (4 - cones[vi]);
+        is_cone[vi] = false;
 
         // if adjacent, try to move two away 
         if (is_one_away[vi])
         {
+            spdlog::info("moving adjacent cone {}", vi);
             int hij = m.out[wi];
             do
             {
@@ -1895,16 +1902,20 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
                 if ((!is_cone[vj]) && (!is_one_away[vj]))
                 {
                     move_cone(m, vi, vj, defect);
+                    spdlog::info("moved cone to {}", vj);
                     wi = wj;
                     vi = vj;
                     break;
                 }
+
+                hij = m.n[m.opp[hij]];
             } while (hij != m.out[wi]);
         }
 
         // if two away, try to move to free spot
         if (is_two_away[vi])
         {
+            spdlog::info("moving two away cone {}", vi);
             int hij = m.out[wi];
             do
             {
@@ -1915,14 +1926,18 @@ void IntrinsicNRosyField::move_nearby_cones(const Mesh<Scalar>& m)
                 if ((!is_cone[vj]) && (!is_one_away[vj]) && (!is_two_away[vj]))
                 {
                     move_cone(m, vi, vj, defect);
+                    spdlog::info("moved cone to {}", vj);
                     wi = wj;
                     vi = vj;
                     break;
                 }
+
+                hij = m.n[m.opp[hij]];
             } while (hij != m.out[wi]);
         }
 
         // mark region around cone
+        spdlog::info("placed cone at {}", vi);
         adjust_adacent(wi);
     }
 }
@@ -2004,10 +2019,11 @@ void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
                     int vj =  m.v_rep[m.to[hij]];
 
                     // cannot collapse cone to below pi/2
+                    if ((cones[vk] + defect) < 1) continue;
                     if ((cones[vj] - defect) < 1) continue;
 
                     // collapse cone
-                    spdlog::info("collapsing cones {} and {}", cones[vj], cones[vk]);
+                    spdlog::info("collapsing nearby cones {} and {}", cones[vj], cones[vk]);
                     set_period_jump(m, hij, period_jump[hij] - defect);
                     set_period_jump(m, hik, period_jump[hik] + defect);
                     cones[vk] += defect;
@@ -2024,6 +2040,10 @@ void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
         std::vector<int> final_cones = generate_cones(m);
         for (int vi = 0; vi < num_vertices; ++vi)
         {
+            if (cones[vi] == 0)
+            {
+                spdlog::error("zero cone at {}", vi);
+            }
             if (cones[vi] != final_cones[vi])
             {
                 spdlog::error("inconsistent cones {} and {}", cones[vi], final_cones[vi]);

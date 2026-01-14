@@ -17,6 +17,7 @@ namespace Feature {
  * @param V: mesh vertices
  * @param F: mesh faces
  * @param use_minimal_forest: (optional) if true, use minimal feature forest instead of spanning tree
+ * @param target_angle: (optional) dihedral angle for features
  * @return refined vertex positions
  * @return refined face indices
  * @return refined feature edges
@@ -26,7 +27,8 @@ namespace Feature {
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>> generate_refined_feature_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    bool use_minimal_forest=false);
+    bool use_minimal_forest=false,
+    Scalar target_angle=60.);
 
 /**
  * @brief Generate a parameterization aligned to features and the given cross field.

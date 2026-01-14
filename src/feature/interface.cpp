@@ -194,11 +194,12 @@ std::tuple<std::vector<Mesh<Scalar>>, std::vector<Eigen::VectorXi>> generate_com
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vector<VertexEdge>, std::vector<int>> generate_refined_feature_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    bool use_minimal_forest)
+    bool use_minimal_forest,
+    Scalar target_angle)
 {
     // generate default features
     FeatureFinder feature_finder(V, F);
-    feature_finder.mark_dihedral_angle_features(60.);
+    feature_finder.mark_dihedral_angle_features(target_angle);
     feature_finder.prune_small_components(4);
     feature_finder.prune_small_features(5);
 
