@@ -207,7 +207,7 @@ void generate_translation_constraint_system(
         tripletList.push_back(Eigen::Triplet<OverlayScalar>(mu_count, ho, OverlayScalar(1.0)));
 
         // Add constrained sum values to RHS
-        rhs_vec.push_back(halfedge_shear_change[h]);
+        rhs_vec.push_back(-halfedge_shear_change[h]);
 
         // Increment number of constraints by 1
         mu_count += 1;
@@ -318,10 +318,16 @@ void compute_as_symmetric_as_possible_translations(
         he_shear_change.minCoeff(),
         he_shear_change.maxCoeff());
 
+
     // Build the constraint for the problem
-    bool use_edge_system = false;
-    // WARNING: edge sytem is faster, but produces low quality values and may be buggy
-    if (use_edge_system)
+    bool use_zero_translations = false;
+    bool use_edge_system = true;
+    // WARNING: edge sytem is faster, but less well tested
+    if (use_zero_translations)
+    {
+        he_translations.setZero(m.n_halfedges());
+    }
+    else if (use_edge_system)
     {
         spdlog::trace("Computing constraint system");
         Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
@@ -332,7 +338,7 @@ void compute_as_symmetric_as_possible_translations(
         Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
         solver.compute(gram_matrix);
-        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(right_hand_side);
 
         // The desired translations are at the head of the solution vector
         VectorX e_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
@@ -346,8 +352,8 @@ void compute_as_symmetric_as_possible_translations(
         {
             int hij = e2he[e];
             int hji = m.opp[hij];
-            he_translations[hij] = he_shear_change[hij] + e_translations[e];
-            he_translations[hji] = he_shear_change[hij] - e_translations[e];
+            he_translations[hij] = (-he_shear_change[hij] / 2.) - e_translations[e];
+            he_translations[hji] = (-he_shear_change[hij] / 2.) + e_translations[e];
         }
     }
     else
@@ -368,10 +374,22 @@ void compute_as_symmetric_as_possible_translations(
         //gram_matrix.makeCompressed();
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
         solver.compute(gram_matrix);
-        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(-right_hand_side);
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(right_hand_side);
 
         // The desired translations are at the head of the solution vector
         he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
+    }
+
+    bool check_translations = true;
+    if (check_translations)
+    {
+        Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> right_hand_side;
+        generate_translation_constraint_system(m, he_shear_change, constraint_matrix, right_hand_side);
+        Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> he_translations_overlay = convert_vector_type<Scalar, OverlayScalar>(he_translations);
+        VectorX error = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix * he_translations_overlay - right_hand_side);
+        spdlog::info("translation error is {}", error.norm());
+        spdlog::info("translation error is {},...,{}", error[0], error[error.size() - 1]);
     }
 
     // use zero coordinates as fallback for nans
