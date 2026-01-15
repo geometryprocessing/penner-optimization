@@ -95,19 +95,6 @@ RefinementMesh::RefinementMesh(
         return;
     }
 #endif
-
-    // Refine the mesh as necessary and greedily simplify the refinement
-    refine_mesh();
-    simplify_mesh();
-
-    // Check for validity after refining and simplifying
-#if CHECK_VALIDITY
-    if (!is_valid_refinement_mesh()) {
-        spdlog::error("Final refinement mesh is invalid");
-        clear();
-        return;
-    }
-#endif
 }
 
 void RefinementMesh::get_VF_mesh(
@@ -933,7 +920,7 @@ bool RefinementMesh::refine_halfedge(Index halfedge_index)
     Index uvki = uvji;
     for (int k = 0; k < num_new_vertices; ++k) {
         // Terminate early if face containing the halfedge is small and self overlapping
-        if ((compute_face_size(f0) < 50) && (is_self_overlapping_face(f0))) {
+        if ((add_incremental) && (compute_face_size(f0) < 50) && (is_self_overlapping_face(f0))) {
             return false;
         }
 
