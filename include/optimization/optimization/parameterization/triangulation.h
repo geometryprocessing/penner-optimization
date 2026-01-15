@@ -76,6 +76,13 @@ bool is_self_overlapping_polygon(
     std::vector<std::vector<Scalar>>& min_face_areas,
     double threshold=0.,
     bool use_angles=false);
+bool is_self_overlapping_polygon(
+    const std::vector<Eigen::Vector2d>& uv_vertices,
+    std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
+    std::vector<std::vector<int>>& splitting_vertices,
+    std::vector<std::vector<Scalar>>& min_face_areas,
+    double threshold=0.,
+    bool use_angles=false);
 
 /// Given a table indicating if the subpolygons of a polygon with vertices
 /// (i,...,j) are self overlapping and the corresponding splitting vertices,

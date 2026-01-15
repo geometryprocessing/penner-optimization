@@ -35,6 +35,92 @@
 namespace Penner {
 
 /**
+ * @brief Compute the max of a std vector.
+ *
+ * @param[in] v: vector
+ * @return max of v
+ */
+
+template <typename Type>
+Type vector_max(const std::vector<Type>& v)
+{
+    if (v.empty()) return Type();
+
+    Type max_value = v[0];
+    for (const auto& vi : v) {
+        max_value = max(max_value, vi);
+    }
+
+    return max_value;
+}
+
+/**
+ * @brief Compute the min of a std vector.
+ *
+ * @param[in] v: vector
+ * @return min of v
+ */
+template <typename Type>
+Type vector_min(const std::vector<Type>& v)
+{
+    if (v.empty()) return Type();
+
+    Type min_value = v[0];
+    for (const auto& vi : v) {
+        min_value = min(min_value, vi);
+    }
+
+    return min_value;
+}
+
+/**
+ * @brief Negate every value of a vector of scalars
+ *
+ * @param[in] v: vector
+ * @return negation of v
+ */
+std::vector<Scalar> vector_negate(const std::vector<Scalar>& v);
+
+template <typename VectorType>
+int argmax(const VectorType& v)
+{
+    int size = v.size();
+    if (size == 0) return -1;
+    int max_index = 0;
+    for (int i = 1; i < size; ++i) {
+        if (v[i] > v[max_index]) {
+            max_index = i;
+        }
+    }
+
+    return max_index;
+}
+
+template <typename VectorType>
+int argmin(const VectorType& v)
+{
+    int size = v.size();
+    if (size == 0) return -1;
+    int min_index = 0;
+    for (int i = 1; i < size; ++i) {
+        if (v[i] < v[min_index]) {
+            min_index = i;
+        }
+    }
+
+    return min_index;
+}
+
+/**
+ * @brief Determine if a vector contains a NaN
+ *
+ * @param v: vector to check
+ * @return true if the vector contains a NaN
+ * @return false otherwise
+ */
+bool vector_contains_nan(const VectorX& v);
+
+/**
  * @brief Convert an Eigen vector to a std vector
  *
  * @tparam Type of the vector data
@@ -413,7 +499,6 @@ void index_vector_complement(
     }
 }
 
-
 /// Given a boolean array, enumerate the true and false entries.
 ///
 /// @param[in] boolean_array: array of boolean values
@@ -426,5 +511,12 @@ void enumerate_boolean_array(
     std::vector<int>& false_entry_list,
     std::vector<int>& array_to_list_map);
 std::vector<int> enumerate_boolean_array(const std::vector<bool>& boolean_array);
+
+/// @brief From a vector of indices, remove the unreferenced values
+///
+/// @param[in] index_vector: list of indices
+/// @return vector with unreferenced values removed
+std::vector<int> remove_unreferenced_indices(const std::vector<int>& index_vector);
+
 
 } // namespace Penner

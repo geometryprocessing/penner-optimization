@@ -231,6 +231,108 @@ bool is_self_overlapping_polygon(
     return false;
 }
 
+bool is_self_overlapping_polygon(
+    const std::vector<Eigen::Vector2d>& uv_vertices,
+    std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,
+    std::vector<std::vector<int>>& splitting_vertices,
+    std::vector<std::vector<Scalar>>& min_face_areas,
+    double threshold,
+    bool use_angles)
+{
+    is_self_overlapping_subpolygon.clear();
+    splitting_vertices.clear();
+    min_face_areas.clear();
+
+    // Build a table to record if the subpolygon between vertex i and j is self
+    // overlapping and the corresponding splitting vertex indices
+    int face_size = uv_vertices.size();
+    is_self_overlapping_subpolygon.resize(face_size);
+    splitting_vertices.resize(face_size);
+    min_face_areas.resize(face_size);
+    for (int i = 0; i < face_size; ++i) {
+        is_self_overlapping_subpolygon[i] = std::vector<bool>(face_size, false);
+        splitting_vertices[i] = std::vector<int>(face_size, -1);
+        min_face_areas[i] = std::vector<Scalar>(face_size, 0.0);
+    }
+
+    // Set diagonal and superdiagonal to true as trivial polygons with less than 3 faces can be
+    // triangulated with positive orientation (by convention)
+    for (int i = 0; i < face_size; ++i) {
+        is_self_overlapping_subpolygon[i][i] = true;
+        is_self_overlapping_subpolygon[i][(i + 1) % face_size] = true;
+    }
+
+    // Check for degenerate (line, point, empty) polygons
+    if (face_size < 3) {
+        spdlog::warn("Checking if trivial polygon is self overlapping");
+        return true;
+    }
+
+    // Build table iteratively by distance between vertices in ccw order
+    for (int d = 2; d < face_size; ++d) {
+        for (int i = 0; i < face_size; ++i) {
+            // Checking for subpolygon between i and the vertex d away ccw around
+            // the polygon
+            int j = (i + d) % face_size;
+
+            // Look for a splitting vertex k between i and j
+            for (int k = (i + 1) % face_size; k != j; k = (k + 1) % face_size) {
+                // Check if triangle T_ikj is positively oriented
+                std::array<Eigen::Vector2d, 3> uv_triangle = {
+                    uv_vertices[i],
+                    uv_vertices[k],
+                    uv_vertices[j]};
+                if (is_inverted_triangle_fast(uv_triangle)) continue;
+
+                // Check if the two subpolygons (i, k) and (k, j) are self overlapping
+                if (!is_self_overlapping_subpolygon[i][k]) continue;
+                if (!is_self_overlapping_subpolygon[k][j]) continue;
+
+                // Compute minimum of uv and 3D triangle areas for the subpolygon ij with
+                // splitting vertex k
+                Scalar min_area;
+                if (use_angles)
+                {
+                    min_area = compute_min_face_angle(uv_triangle);
+                }
+                else
+                {
+                    min_area = compute_face_area(uv_triangle);
+                }
+                if (k != (i + 1) % face_size) {
+                    min_area = std::min(min_area, min_face_areas[i][k]);
+                }
+                if (j != (k + 1) % face_size) {
+                    min_area = std::min(min_area, min_face_areas[k][j]);
+                }
+
+                // check if the triangle areas are too small
+                if (min_area < threshold) continue;
+
+                // Otherwise, k is a splitting vertex and (i, j) is self overlapping
+                is_self_overlapping_subpolygon[i][j] = true;
+
+                // Set splitting vertex, overwriting existing values iff it increase the min area
+                if ((splitting_vertices[i][j] < 0) || (min_face_areas[i][j] < min_area)) {
+                    splitting_vertices[i][j] = k;
+                    min_face_areas[i][j] = min_area;
+                }
+            }
+        }
+    }
+
+    // Check if a subdiagonal element is true (and thus the polygon is self overlapping)
+    for (int j = 0; j < face_size; ++j) {
+        int i = (j + 1) % face_size; // j = i - 1
+        if (is_self_overlapping_subpolygon[i][j]) {
+            return true;
+        }
+    }
+
+    // Polygon is not self overlapping otherwise
+    return false;
+}
+
 // Helper function to triangulate subpolygons
 void triangulate_self_overlapping_subpolygon(
     const std::vector<std::vector<bool>>& is_self_overlapping_subpolygon,

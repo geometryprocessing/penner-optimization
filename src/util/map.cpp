@@ -7,25 +7,6 @@
 
 namespace Penner {
 
-std::vector<Scalar> vector_negate(const std::vector<Scalar>& v)
-{
-    int n = v.size();
-    std::vector<Scalar> w(n);
-    for (int i = 0; i < n; ++i) {
-        w[i] = -v[i];
-    }
-
-    return w;
-}
-
-bool vector_contains_nan(const VectorX& v)
-{
-    for (Eigen::Index i = 0; i < v.size(); ++i) {
-        if (isnan(v(i))) return true;
-    }
-
-    return false;
-}
 
 std::vector<int> index_subset(size_t set_size, const std::vector<int>& subset_indices)
 {

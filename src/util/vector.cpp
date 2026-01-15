@@ -32,6 +32,26 @@
 
 namespace Penner {
 
+std::vector<Scalar> vector_negate(const std::vector<Scalar>& v)
+{
+    int n = v.size();
+    std::vector<Scalar> w(n);
+    for (int i = 0; i < n; ++i) {
+        w[i] = -v[i];
+    }
+
+    return w;
+}
+
+bool vector_contains_nan(const VectorX& v)
+{
+    for (Eigen::Index i = 0; i < v.size(); ++i) {
+        if (isnan(v(i))) return true;
+    }
+
+    return false;
+}
+
 void convert_dense_vector_to_sparse(const VectorX& vector_dense, MatrixX& vector_sparse)
 {
     // Copy the vector to a triplet list
@@ -162,6 +182,27 @@ void enumerate_boolean_array(
     for (int i = 0; i < num_false_entries; ++i) {
         array_to_list_map[false_entry_list[i]] = i;
     }
+}
+
+std::vector<int> remove_unreferenced_indices(const std::vector<int>& index_vector)
+{
+    int num_indices = vector_max(index_vector) + 1;
+
+    // Build index boolean array
+    std::vector<bool> is_referenced;
+    convert_index_vector_to_boolean_array(index_vector, num_indices, is_referenced);
+
+    // get mappings between original and reduced indices
+    std::vector<int> removed, new2old, old2new;
+    enumerate_boolean_array(is_referenced, new2old, removed, old2new);
+
+    // Build complement
+    std::vector<int> reduced_vector(index_vector.size());
+    for (int i = 0; i < index_vector.size(); ++i) {
+        reduced_vector[i] = old2new[index_vector[i]];
+    }
+
+    return reduced_vector;
 }
 
 } // namespace Penner
