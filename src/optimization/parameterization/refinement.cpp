@@ -375,6 +375,120 @@ void RefinementMesh::view_uv_face(Index face_index) const
 #endif // ENABLE_VISUALIZATION
 }
 
+
+void build_faces(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    const std::vector<int>& Fn_to_F,
+    const std::vector<std::pair<int, int>>& endpoints,
+    Eigen::MatrixXi& F_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_v_points,
+    Eigen::MatrixXi& F_uv_orig,
+    std::vector<std::array<std::vector<int>, 3>>& corner_uv_points,
+    Eigen::MatrixXi& halfedge_map)
+{
+    // Build halfedges for the faces
+    std::vector<int> next_he;
+    std::vector<int> opposite;
+    std::vector<int> vtx_reindex;
+    std::vector<int> bnd_loops;
+    std::vector<std::vector<int>> corner_to_he;
+    std::vector<std::pair<int, int>> he_to_corner;
+    Connectivity m;
+    FV_to_NOB(F, next_he, opposite, bnd_loops, vtx_reindex, corner_to_he, he_to_corner);
+    NOB_to_connectivity(next_he, opposite, bnd_loops, m);
+
+    // get original vertices
+    int num_vertices = m.out.size();
+    std::vector<bool> is_original_vertex(num_vertices, false);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        int Vi = vtx_reindex[vi];
+        if ((endpoints[Vi].first == -1) || (endpoints[Vi].second == -1)) {
+            is_original_vertex[vi] = true;
+        }
+    } 
+
+    // get start and end halfedges for each original edge
+    int num_halfedges = m.n.size();
+    std::vector<bool> is_start_halfedge(num_halfedges, false);
+    std::vector<bool> is_end_halfedge(num_halfedges, false);
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        // check if interior edge
+        if (Fn_to_F[m.f[hij]] == Fn_to_F[m.f[m.opp[hij]]]) continue;
+
+        int vi = m.to[m.opp[hij]];
+        int vj = m.to[hij];
+        if (is_original_vertex[vi]) is_start_halfedge[hij] = true;
+        if (is_original_vertex[vj]) is_end_halfedge[hij] = true;
+    }
+
+    // build next connectivity for boundary traversal
+    std::vector<int> next_bd(num_halfedges, -1);
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        // check if interior edge
+        if (Fn_to_F[m.f[hij]] == Fn_to_F[m.f[m.opp[hij]]]) continue;
+
+        // check if terminal
+        //if (is_original_vertex[m.to[hij]]) continue;
+
+        // iterate until find next boundary edge
+        int hjk = m.n[hij];
+        while (Fn_to_F[m.f[hjk]] == Fn_to_F[m.f[m.opp[hjk]]])
+        {
+            hjk = m.n[m.opp[hjk]];
+        }
+        next_bd[hij] = hjk;
+    }
+
+    // traverse halfedges
+    int num_orig_faces = vector_max(Fn_to_F) + 1;
+    std::vector<bool> is_face_done(num_orig_faces, false);
+    F_orig.resize(num_orig_faces, 3);
+    F_uv_orig.resize(num_orig_faces, 3);
+    halfedge_map.resize(F.rows(), 3);
+    corner_v_points.resize(num_orig_faces);
+    corner_uv_points.resize(num_orig_faces);
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        if (!is_start_halfedge[hij]) continue;
+
+        // get current face
+        int Fijk = Fn_to_F[m.f[hij]];
+        if (is_face_done[Fijk]) continue;
+
+        int h = hij;
+        for (int I = 0; I < 3; ++I)
+        {
+            // add halfdges vertices to list
+            corner_v_points[Fijk][I] = {};
+            corner_uv_points[Fijk][I] = {};
+            while (!is_end_halfedge[h])
+            {
+                auto [f, i] = he_to_corner[h];
+                int j = (i + 2) % 3;
+                corner_v_points[Fijk][I].push_back(F(f, j));
+                corner_uv_points[Fijk][I].push_back(F_uv(f, j));
+                halfedge_map(Fijk, i) = I;
+                h = next_bd[h];
+            }
+
+            // add end vertices to FV structure
+            auto [f, i] = he_to_corner[h];
+            int j = (i + 2) % 3;
+            F_orig(Fijk, (I + 2) % 3) = F(f, j);
+            F_uv_orig(Fijk, (I + 2) % 3) = F_uv(f, j);
+
+            h = next_bd[h];
+        }
+    }
+}
+
+
 void build_face(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_uv,
@@ -596,7 +710,7 @@ void RefinementMesh::build_connectivity(
     // For each original face, get the overlay vertices corresponding to the face
     Eigen::MatrixXi F_orig, F_uv_orig, halfedge_map;
     std::vector<std::array<std::vector<int>, 3>> corner_v_points, corner_uv_points;
-    build_faces(F, F_uv, F_to_Fn, endpoints, F_orig, corner_v_points, F_uv_orig, corner_uv_points, halfedge_map);
+    build_faces(m_V, F, m_uv, F_uv, Fn_to_F, endpoints, F_orig, corner_v_points, F_uv_orig, corner_uv_points, halfedge_map);
 
     // Record the original overlay triangulations
     m_overlay_face_triangles.resize(num_faces);
