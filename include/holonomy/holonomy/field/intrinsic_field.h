@@ -21,6 +21,9 @@ struct FieldParameters
     bool collapse_cones = false; // collapse as many cones as possible TODO
     bool use_roundings = true; // round away from zero
     bool use_principal_directions = false; // round away from zero
+    Scalar min_cone_pair_distance = 0.; // minimum relative cone pair distance for fitting
+    Scalar rel_anisotropy=0.9;
+    Scalar abs_anisotropy=0.2;
 };
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
@@ -103,6 +106,7 @@ public:
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
     void concentrate_curvature(const Mesh<Scalar>& m);
+    void remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar rel_edge_length=1e-3);
     void infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(

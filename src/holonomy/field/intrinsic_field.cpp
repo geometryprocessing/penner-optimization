@@ -1889,6 +1889,39 @@ void IntrinsicNRosyField::remove_greedy_cone_pairs(const Mesh<Scalar>& m)
     }
 }
 
+void IntrinsicNRosyField::remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar rel_edge_length)
+{
+    // get pos and neg cone
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+
+    // get average edge length
+    Scalar avg_length = std::accumulate(m.l.begin(), m.l.end(), 0.) / m.l.size();
+    Scalar abs_edge_length = rel_edge_length * avg_length;
+    spdlog::info("collapsing cone pairs shorter than {}", abs_edge_length);
+    
+    // check for close cone pairs to collapse
+    int count = 0;
+    for (int hij = 0; hij < m.n_halfedges(); ++hij)
+    {
+        // skip if long enough
+        if (m.l[hij] > abs_edge_length) continue;
+
+        // check if cone pair with negative cone at vi
+        int vi = m.v_rep[m.to[m.opp[hij]]];
+        int vj = m.v_rep[m.to[hij]];
+        if ((cones[vi] > 4) && (cones[vj] + cones[vi] == 8))
+        {
+            // move curvature if cone pair found
+            move_cone(m, vj, vi, cones[vi] - 4);
+            cones[vi] = 4;
+            cones[vj] = 4;
+            ++count;
+        }
+    }
+    spdlog::info("collapsed {} cones", count);
+}
+
 void IntrinsicNRosyField::concentrate_curvature(const Mesh<Scalar>& m)
 {
     // get cones
