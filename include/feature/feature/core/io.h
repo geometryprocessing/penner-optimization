@@ -70,5 +70,10 @@ void write_boundary(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_uv);
 
+void write_edges(
+    const std::string& filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E);
+
 } // namespace Feature
 } // namespace Penner
