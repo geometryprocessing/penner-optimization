@@ -798,9 +798,9 @@ void RefinementMesh::build_connectivity(
         //	spdlog::trace("Face {} has nontrivial refinement", fi);
         //}
 
-        // Store endpoints
-        m_endpoints = endpoints;
     }
+    // Store endpoints
+    m_endpoints = endpoints;
 
     // FIXME
     // int num_vertices = C.out.size();;
