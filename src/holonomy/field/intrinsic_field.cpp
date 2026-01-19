@@ -1896,7 +1896,10 @@ void IntrinsicNRosyField::remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar 
     int num_vertices = cones.size();
 
     // get average edge length
-    Scalar avg_length = std::accumulate(m.l.begin(), m.l.end(), 0.) / m.l.size();
+    //Scalar avg_length = std::accumulate(m.l.begin(), m.l.end(), 0.) / m.l.size();
+    Scalar total_length = 0.;
+    for (const Scalar& length : m.l) total_length += length;
+    Scalar avg_length = total_length / m.l.size();
     Scalar abs_edge_length = rel_edge_length * avg_length;
     spdlog::info("collapsing cone pairs shorter than {}", abs_edge_length);
     
@@ -2081,7 +2084,7 @@ void IntrinsicNRosyField::infer_field_from_rotation_form(const Mesh<Scalar>& m, 
         int f0 = m.f[hij];
         int f1 = m.f[hji];
         Scalar jump_value = rotation_form[hij] - (theta[f0] - theta[f1] + kappa[hij]);
-        period_jump[hij] = round(jump_value / period_value[hij]);
+        period_jump[hij] = (int)(round(jump_value / period_value[hij]));
         period_jump[hji] = -period_jump[hij];
     }
 }
@@ -2372,8 +2375,8 @@ void IntrinsicNRosyField::get_halfedge_field(
     Eigen::VectorXd& halfedge_kappa,
     Eigen::VectorXi& halfedge_period_jump)
 {
-    face_theta = theta;
-    halfedge_kappa = kappa;
+    face_theta = convert_vector_type<Scalar, double>(theta);
+    halfedge_kappa = convert_vector_type<Scalar, double>(kappa);
     halfedge_period_jump = period_jump;
 }
 
@@ -2461,8 +2464,8 @@ void IntrinsicNRosyField::set_halfedge_field(
     const Eigen::VectorXd& halfedge_kappa,
     const Eigen::VectorXi& halfedge_period_jump)
 {
-    theta = face_theta;
-    kappa = halfedge_kappa;
+    theta = convert_vector_type<double, Scalar>(face_theta);
+    kappa = convert_vector_type<double, Scalar>(halfedge_kappa);
     period_jump = halfedge_period_jump;
 }
 
