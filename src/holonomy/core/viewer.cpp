@@ -42,7 +42,8 @@ void view_frame_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& frame_field,
     const std::vector<Scalar>& Th_hat,
-    std::string mesh_handle)
+    std::string mesh_handle,
+    Scalar scale)
 {
     spdlog::info("Viewing mesh {}", mesh_handle);
     int num_vertices = V.rows();
@@ -68,15 +69,16 @@ void view_frame_field(
     polyscope::init();
     if (mesh_handle == "") {
         mesh_handle = "frame_field_mesh";
-        polyscope::registerSurfaceMesh(mesh_handle, V, F);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     }
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     for (int i : {0, 1, 2, 3}) {
         polyscope::getSurfaceMesh(mesh_handle)
             ->addFaceVectorQuantity("field_" + std::to_string(i), cross_field[i])
-            ->setVectorColor((i == 0) ? FOREST_GREEN : BLACK_BROWN)
-            ->setVectorRadius(0.0005)
-            ->setVectorLengthScale(0.005)
+            ->setVectorColor((i == 0) ? BLACK_BROWN : BLACK_BROWN)
+            //->setVectorColor((i == 0) ? FOREST_GREEN : BLACK_BROWN)
+            ->setVectorRadius(scale)
+            ->setVectorLengthScale(scale / 10.)
             ->setEnabled(true);
     }
     polyscope::registerPointCloud("cross_field_cones", cone_positions);
