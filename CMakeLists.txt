@@ -85,7 +85,7 @@ endif()
 # conformal ideal delaunay library
 if(USE_SUITESPARSE)
   add_compile_definitions(USE_SUITESPARSE)
-  set(SUITESPARSE_LIBS
+  list(APPEND SUITESPARSE_LIBS
     SuiteSparse::SuiteSparseConfig
     SuiteSparse::SPQR
     SuiteSparse::CHOLMOD
