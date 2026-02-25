@@ -166,6 +166,7 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("write_frame_field", &write_frame_field, default_call_guard);
     m.def("refine_frame_field", &refine_frame_field, default_call_guard);
     m.def("compute_loop_holonomy_matrix", &compute_loop_holonomy_matrix, default_call_guard);
+    m.def("compute_field_direction", &compute_field_direction, default_call_guard);
 
 }
 

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "holonomy/core/common.h"
+#include "holonomy/field/intrinsic_field.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -58,11 +59,49 @@ Eigen::MatrixXd generate_reference_field(
  * @param theta: offset angles of a representative cross field direction relative to the reference
  * @return per-face representative direction matrix
  */
-Eigen::MatrixXd generate_frame_field(
+Eigen::MatrixXd generate_field(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& reference_field,
     const Eigen::VectorXd& theta);
+
+/**
+ * @brief Compute salient geometry aligned field directions for a mesh.
+ * 
+ * The parabolic anisotropy used for the relative threshold is ||k2| - |k1|| / max(|k1|, |k2|)
+ * This measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param radius: (optional) vertex radius for fitting a smooth surface for field estimation
+ * @param abs_threshold: (optional) minimum threshold for mean anisotropy of principal curvatures
+ * @param rel_threshold: (optional) minimum threshold for parabolic anisotropy of principal curvatures
+ * @return |F|x3 matrix of per face directions
+ * @return per face mask indicating whether a direction is salient or not
+ */
+std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    int radius=5,
+    Scalar abs_threshold=1.,
+    Scalar rel_threshold=0.9);
+    
+/**
+ * @brief Optimize a cross field on a mesh.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param field_params: parameters for the field optimization
+ * @return field reference directions in R3
+ * @return field angles relative to the reference directions
+ * @return angles across edges between reference directions
+ * @return jump in period across edges
+ */
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
+generate_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const FieldParameters& field_params);
 
 /**
  * @brief Write a frame field to file.

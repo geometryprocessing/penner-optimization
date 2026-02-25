@@ -79,6 +79,54 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     return std::make_tuple(marked_metric, vtx_reindex);
 }
 
+std::tuple<MarkedPennerConeMetric, std::vector<int>, VectorX, std::vector<Scalar>>
+generate_metric_from_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    MarkedMetricParameters marked_metric_params)
+{
+    // convert VF mesh to halfedge
+    std::vector<Scalar> flat_Th_hat(V.rows(), 2. * M_PI);
+    std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
+    std::vector<int> free_cones(0);
+    bool fix_boundary = false;
+    Mesh<Scalar> m = FV_to_double<Scalar>(
+        V,
+        F,
+        V,
+        F,
+        flat_Th_hat,
+        vtx_reindex,
+        indep_vtx,
+        dep_vtx,
+        v_rep,
+        bnd_loops,
+        free_cones,
+        fix_boundary);
+    std::vector<int> face_map = generate_face_map(m);
+
+    // build field
+    // TODO: make field setting check for validity of field
+    Holonomy::IntrinsicNRosyField field_generator;
+    field_generator.initialize(m);
+    field_generator.set_field(m, vtx_reindex, F, face_map, theta, kappa, period_jump);
+    VectorX rotation_form = field_generator.compute_rotation_form(m);
+
+    // build cones
+    bool has_boundary = bnd_loops.size() >= 1;
+    std::vector<Scalar> Th_hat =
+        Holonomy::generate_cones_from_rotation_form(m, vtx_reindex, rotation_form, has_boundary);
+
+    // build marked metric
+    m.Th_hat = Holonomy::generate_cones_from_rotation_form(m, rotation_form);
+    MarkedPennerConeMetric marked_metric = generate_marked_metric_from_mesh(m, rotation_form, marked_metric_params);
+
+    return std::make_tuple(marked_metric, vtx_reindex, rotation_form, Th_hat);
+}
+
 VectorX generate_penner_coordinates(const Mesh<Scalar>& m)
 {
     // Make copy of mesh delaunay

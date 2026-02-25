@@ -9,9 +9,7 @@
 #include <igl/local_basis.h>
 #include <igl/rotate_vectors.h>
 #include <igl/internal_angles.h>
-#include <igl/comb_cross_field.h>
-#include <igl/cross_field_mismatch.h>
-#include <igl/find_cross_field_singularities.h>
+#include <igl/bounding_box_diagonal.h>
 
 // TODO: Cleaning pass
 
@@ -62,7 +60,7 @@ Eigen::MatrixXd generate_reference_field(
     return reference_field;
 }
 
-Eigen::MatrixXd generate_frame_field(
+Eigen::MatrixXd generate_field(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& reference_field,
@@ -72,6 +70,155 @@ Eigen::MatrixXd generate_frame_field(
     igl::local_basis(V, F, B1, B2, B3);
     return igl::rotate_vectors(reference_field, theta, B1, B2);
 }
+
+// difference of principal curvatures relative to their total magnitude
+Scalar compute_relative_anisotropy(Scalar max_val, Scalar min_val)
+{
+    return abs(max_val - min_val) / (abs(max_val) + abs(min_val));
+}
+
+
+// absolute difference of principal curvatures
+Scalar compute_absolute_anisotropy(Scalar max_val, Scalar min_val)
+{
+    return abs(max_val - min_val);
+}
+
+
+// mean of two principal curvatures
+Scalar compute_mean_anisotropy(Scalar max_val, Scalar min_val)
+{
+    return (max_val + min_val) / 2.;
+}
+
+
+// this measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
+Scalar compute_parabolic_anisotropy(Scalar max_val, Scalar min_val)
+{
+    return abs(abs(max_val) - abs(min_val)) / max(abs(max_val), abs(min_val));
+}
+
+std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    int radius,
+    Scalar abs_threshold,
+    Scalar rel_threshold)
+{
+    //auto[max_direction, min_direction, _max_curvature, _min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
+    //auto[_max_direction, _min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, 3);
+    auto[max_direction, min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
+    int num_faces = F.rows();
+    std::vector<bool> is_fixed_direction(num_faces, false);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        Scalar kmax = max_curvature[fijk];
+        Scalar kmin = min_curvature[fijk];
+        if (compute_mean_anisotropy(kmax, kmin) < abs_threshold) continue;
+        is_fixed_direction[fijk] = (compute_parabolic_anisotropy(kmax, kmin) > rel_threshold);
+    }
+
+    return std::make_tuple(max_direction, is_fixed_direction);
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
+generate_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const FieldParameters& field_params)
+{
+    // Convert VF mesh to halfedge
+    std::vector<Scalar> flat_Th_hat(V.rows(), 2. * M_PI);
+    std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
+    std::vector<int> free_cones(0);
+    bool fix_boundary = false;
+    Mesh<Scalar> m = FV_to_double<Scalar>(
+        V,
+        F,
+        V,
+        F,
+        flat_Th_hat,
+        vtx_reindex,
+        indep_vtx,
+        dep_vtx,
+        v_rep,
+        bnd_loops,
+        free_cones,
+        fix_boundary);
+    std::vector<int> face_map = generate_face_map(m);
+
+    // initalize field generator
+    Holonomy::IntrinsicNRosyField field_generator;
+    field_generator.min_cone = field_params.min_cone;
+    field_generator.use_roundings= field_params.use_roundings;
+    field_generator.initialize(m);
+
+    // set initial field
+    int num_faces = F.rows();
+    Eigen::VectorXi reference_corner(num_faces);
+    Eigen::VectorXd theta(num_faces);
+    Eigen::MatrixXd kappa(num_faces, 3);
+    Eigen::MatrixXi period_jump(num_faces, 3);
+
+    // (optionally) fit principal directions
+    if (field_params.use_principal_directions)
+    {
+        field_generator.get_field(m, vtx_reindex, F, face_map, reference_corner, theta, kappa, period_jump);
+
+        // fit field directions
+        int radius = 5;
+        Scalar bb_diag = igl::bounding_box_diagonal(V);
+        auto [direction, is_fixed_direction] = compute_field_direction(
+            V,
+            F,
+            radius,
+            field_params.abs_anisotropy / bb_diag,
+            field_params.rel_anisotropy);
+
+        // compute normals for angle computations
+        Eigen::MatrixXd N;
+        igl::per_face_normals(V, F, N);
+
+        // get fixed angles from input direction field
+        std::vector<Scalar> target_theta(num_faces);
+        std::vector<bool> is_fixed(num_faces);
+        for (int i = 0; i < num_faces; ++i)
+        {
+            int fijk = face_map[i];
+            is_fixed[i] = is_fixed_direction[fijk];
+
+            // convert extrinsic direction to intrinsic angle
+            Eigen::Vector3d reference_direction = Holonomy::generate_reference_direction(V, F, fijk, reference_corner[fijk]);
+            target_theta[i] = -Holonomy::signed_angle<Eigen::Vector3d>(direction.row(fijk), reference_direction, N.row(fijk));
+        }
+
+        // set fixed directions 
+        field_generator.set_fixed_directions(m, target_theta, is_fixed);
+    }
+
+    // find initial field
+    field_generator.solve(m);
+
+    // change period jups to fix invalid configuration
+    if (field_params.fix_cone_pair) field_generator.fix_cone_pair(m);
+    if (field_params.fix_cone_pair) field_generator.fix_zero_cones(m);
+
+    // optionally remove nearby cones
+    if (field_params.min_cone_pair_distance > 0.) field_generator.remove_close_cone_pairs(m, field_params.min_cone_pair_distance);
+
+    // optionally collapse all curvature
+    if (field_params.collapse_cones) field_generator.remove_greedy_cone_pairs(m);
+    if (field_params.collapse_cones) field_generator.concentrate_curvature(m);
+
+    // get field from generator
+    field_generator.get_field(m, vtx_reindex, F, face_map, reference_corner, theta, kappa, period_jump);
+
+    // convert face corner to tangent direction
+    Eigen::MatrixXd reference_field = Holonomy::generate_reference_field(V, F, reference_corner);
+
+    return std::make_tuple(reference_field, theta, kappa, period_jump);
+}
+
 
 void write_frame_field(
     const std::string& output_filename,

@@ -9,6 +9,7 @@
 
 #if USE_COMISO
 #include <igl/copyleft/comiso/nrosy.h>
+//#include <comiso/nrosy.h>
 #endif
 
 namespace Penner {

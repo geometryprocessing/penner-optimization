@@ -355,4 +355,18 @@ bool is_valid_symmetry(const Mesh<Scalar>& m)
     return is_valid;
 }
 
+std::vector<int> generate_face_map(const Mesh<Scalar>& m)
+{
+    // build face map
+		// TODO: remove dependence on implementation
+    std::vector<int> face_map(m.n_faces());
+    for (int i = 0; i < m.n_faces(); ++i)
+    {
+        int f = (m.type[m.h[i]] > 1) ? m.f[m.R[m.h[i]]] : i;
+        face_map[i] = f;
+    }
+
+    return face_map;
+}
+
 } // namespace Penner

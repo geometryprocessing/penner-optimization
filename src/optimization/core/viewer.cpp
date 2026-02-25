@@ -460,9 +460,9 @@ void view_mesh_quality(
     polyscope::init();
     if (mesh_handle == "") {
         mesh_handle = "quality_analysis_mesh";
-        polyscope::registerSurfaceMesh(mesh_handle, V, F);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     }
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("double_area", double_area);
     polyscope::getSurfaceMesh(mesh_handle)->addHalfedgeScalarQuantity("angles", he2angle);
     polyscope::registerPointCloud(mesh_handle + " degenerate", V_degenerate);
