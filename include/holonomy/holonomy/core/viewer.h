@@ -20,7 +20,8 @@ void view_frame_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& frame_field,
     const std::vector<Scalar>& Th_hat,
-    std::string mesh_handle="");
+    std::string mesh_handle="",
+    Scalar scale=0.005);
 
 /**
  * @brief View a cross field on a mesh.

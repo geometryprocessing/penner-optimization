@@ -266,4 +266,12 @@ bool is_valid_halfedge(const Mesh<Scalar>& m);
 /// @param[in] m: underlying mesh
 bool is_valid_symmetry(const Mesh<Scalar>& m);
 
+/**
+ * @brief Generate a map from possibly closed cover mesh faces to original mesh faces.
+ * 
+ * @param m: closed cover mesh
+ * @return map from closed to original mesh faces
+ */
+std::vector<int> generate_face_map(const Mesh<Scalar>& m);
+
 } // namespace Penner

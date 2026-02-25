@@ -56,6 +56,11 @@ target_link_libraries(PennerHolonomyLib PRIVATE
   DirectionalLib
   ${COMISO_LIBS}
 )
+
+# GMM headers are inside getfem/src/gmm
+#target_include_directories(PennerHolonomyLib PUBLIC
+#    ${gmm_SOURCE_DIR}/src
+#)
 target_compile_definitions(PennerHolonomyLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )

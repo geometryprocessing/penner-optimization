@@ -75,6 +75,30 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     MarkedMetricParameters marked_mesh_params = MarkedMetricParameters());
 
 /**
+ * @brief Generate a marked metric object from a mesh with holonomy constraints inferred from a cross field.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param theta: field angles relative to the reference directions
+ * @param kappa: angles across edges between reference directions
+ * @param period_jump: jump in period across edges
+ * @param marked_metric_params: parameters for the metric object
+ * @return marked metric for the mesh with field holonomy constraints
+ * @return vertex reindexing from the halfedge to VF mesh
+ * @return field rotations across halfedges
+ * @return inferred cones from the field on the VF mesh
+ * 
+ */
+std::tuple<MarkedPennerConeMetric, std::vector<int>, VectorX, std::vector<Scalar>>
+generate_metric_from_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    MarkedMetricParameters marked_metric_params = MarkedMetricParameters());
+
+/**
  * @brief Generate a marked metric from a VF mesh using the embedding metric and holonomy
  * constraints inferred from a fit cross-field.
  *

@@ -51,10 +51,13 @@ endif()
 if (USE_COMISO)
   add_compile_definitions(USE_COMISO)
   set(LIBIGL_COPYLEFT_CORE   ON CACHE BOOL "" FORCE)
-  set(LIBIGL_COPYLEFT_COMISO   ON CACHE BOOL "" FORCE)
+ #se. (LIBIGL_COPYLEFT_COMISO   ON CACHE BOOL "" FORCE)
   #option(LIBIGL_COPYLEFT_COMISO "Use COSIMO" ON)
+  #set(COMISO_ENABLE_SUITESPARSE_DEFAULT OFF)
+  set(COMISO_NO_INSTALL ON)
   set(COMISO_LIBS
-    igl_copyleft::comiso
+    #igl_copyleft::comiso
+    CoMISo
   )
 endif()
 
@@ -97,7 +100,7 @@ include(spectra)
 include(cli11)
 include(json)
 include(geometry-central)
-#include(comiso)
+include(comiso)
 
 include(directional)
 add_library(DirectionalLib INTERFACE)

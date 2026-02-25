@@ -34,58 +34,6 @@ std::vector<int> generate_vertex_one_ring(const Mesh<Scalar>& m, int vertex_inde
 }
 
 
-// difference of principal curvatures relative to their total magnitude
-Scalar compute_relative_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(max_val - min_val) / (abs(max_val) + abs(min_val));
-}
-
-
-// absolute difference of principal curvatures
-Scalar compute_absolute_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(max_val - min_val);
-}
-
-
-// mean of two principal curvatures
-Scalar compute_mean_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return (max_val + min_val) / 2.;
-}
-
-
-// this measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
-Scalar compute_parabolic_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(abs(max_val) - abs(min_val)) / max(abs(max_val), abs(min_val));
-}
-
-
-std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int radius,
-    Scalar abs_threshold,
-    Scalar rel_threshold)
-{
-    //auto[max_direction, min_direction, _max_curvature, _min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
-    //auto[_max_direction, _min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, 3);
-    auto[max_direction, min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
-    int num_faces = F.rows();
-    std::vector<bool> is_fixed_direction(num_faces, false);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        Scalar kmax = max_curvature[fijk];
-        Scalar kmin = min_curvature[fijk];
-        if (compute_mean_anisotropy(kmax, kmin) < abs_threshold) continue;
-        is_fixed_direction[fijk] = (compute_parabolic_anisotropy(kmax, kmin) > rel_threshold);
-    }
-
-    return std::make_tuple(max_direction, is_fixed_direction);
-}
-
-
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
