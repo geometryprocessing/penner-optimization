@@ -7,7 +7,8 @@ Scalar compute_triangle_quality(Scalar lij, Scalar ljk, Scalar lki)
 {
     Scalar numer = 2 * lij * ljk * lki;
     Scalar denom = ((-lij + ljk + lki) * (lij - ljk + lki) * (lij + ljk - lki));
-    return (!float_equal<Scalar>(denom, 0.)) ? numer / denom : 1e10;
+    //return (!float_equal<Scalar>(denom, 0.)) ? numer / denom : 1e10;
+    return (denom > 0.) ? numer / denom : 1e10;
 }
 
 // Helper function to compute face quality for a triangle mesh face
