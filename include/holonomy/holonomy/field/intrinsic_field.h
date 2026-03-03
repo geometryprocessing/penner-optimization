@@ -41,6 +41,7 @@ public:
     IntrinsicNRosyField(const FieldParameters& field_params) {
         min_cone = field_params.min_cone;
         use_roundings = field_params.use_roundings;
+        fix_cones = field_params.fix_cone_pair;
     };
     VectorX run(const Mesh<Scalar>& m);
     VectorX run_with_viewer(
@@ -96,6 +97,7 @@ public:
 
     int min_cone = 1;
     bool use_roundings = true;
+    bool fix_cones = false;
 
     void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
     void initialize(const Mesh<Scalar>& m);

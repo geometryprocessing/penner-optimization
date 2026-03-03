@@ -1658,6 +1658,8 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
             }
         }
     }
+    
+    if (fix_cones) fix_cone_pair(m);
 }
 
 std::vector<Scalar> generate_cones_from_rotation_form_FIXME(
