@@ -95,6 +95,19 @@ public:
         const Eigen::VectorXd& halfedge_kappa,
         const Eigen::VectorXi& halfedge_period_jump);
 
+
+    /**
+     * @brief Build system Ax - b measuring rotation across edges in terms of face angles
+     * theta for current period jumps.
+     * 
+     * @param m: underlying halfedge
+     * @return matrix mapping face angles to their difference across an oriented edge
+     * @return rotation across the edge induced by the base field and current period jumps
+     */
+    std::tuple<MatrixX, VectorX> build_theta_system(const Mesh<Scalar>& m) const;
+
+    void optimize_theta(const Mesh<Scalar>& m);
+
     int min_cone = 1;
     bool use_roundings = true;
     bool fix_cones = false;

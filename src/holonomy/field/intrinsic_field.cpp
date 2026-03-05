@@ -656,7 +656,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     int num_halfedges = m.n_halfedges();
 
     // Initialize period jumps of value pi/2 to 0 and mark dual tree edges as fixed
-    //build_edge_maps(m, he2e, e2he);
+    build_edge_maps(m, he2e, e2he);
     //DualTree dual_tree(m, std::vector<Scalar>(num_halfedges, 0.0));
     //period_jump.setZero(num_halfedges);
     period_value = VectorX::Constant(num_halfedges, M_PI / 2.);
@@ -2089,6 +2089,38 @@ void IntrinsicNRosyField::infer_field_from_rotation_form(const Mesh<Scalar>& m, 
         period_jump[hij] = (int)(round(jump_value / period_value[hij]));
         period_jump[hji] = -period_jump[hij];
     }
+}
+
+std::tuple<MatrixX, VectorX> IntrinsicNRosyField::build_theta_system(const Mesh<Scalar>& m) const
+{
+    // TODO: doubled mesh system
+    int num_edges = e2he.size();
+    int num_faces = m.n_faces();
+    std::vector<T> A_trips = {};
+    VectorX b = VectorX::Zero(num_edges);
+    for (int eij = 0; eij < num_edges; ++eij) {
+        int hij = e2he[eij];
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        A_trips.push_back(T(eij, f0, 1.));
+        A_trips.push_back(T(eij, f1, -1.));
+        b[eij] = -kappa[hij] - (period_value[hij] * period_jump[hij]);
+    }
+
+    MatrixX A(num_edges, num_faces);
+    A.reserve(A_trips.size());
+    A.setFromTriplets(A_trips.begin(), A_trips.end());
+
+    return std::make_tuple(A, b);
+}
+
+void IntrinsicNRosyField::optimize_theta(const Mesh<Scalar>& m)
+{
+    auto [A, b] = build_theta_system(m);
+    MatrixX L = A.transpose() * A;
+    VectorX y = A.transpose() * b;
+    theta = solve_linear_system(L, y);
 }
 
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
