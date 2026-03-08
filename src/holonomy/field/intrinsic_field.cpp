@@ -12,6 +12,7 @@
 
 #include "holonomy/field/field.h"
 #include "util/spanning_tree.h"
+#include "util/boundary.h"
 #include "holonomy/core/viewer.h"
 #include "holonomy/field/forms.h"
 
@@ -792,6 +793,17 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
 }
 */
 
+void IntrinsicNRosyField::set_period_jump(const Mesh<Scalar>& m, int hij, Scalar jump_value)
+{
+    period_jump[hij] = jump_value;
+    period_jump[m.opp[hij]] = -period_jump[hij];
+    if (m.type[hij] > 0)
+    {
+        period_jump[m.R[hij]] = -period_jump[hij];
+        period_jump[m.opp[m.R[hij]]] = period_jump[hij];
+    }
+}
+
 void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
 {
     // Get edge maps
@@ -850,10 +862,8 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
         int fi = m.f[hij];
         int fj = m.f[hij];
         //period_jump[hij] = (int)(lround((theta[fi] - theta[fj] - kappa[hij])/period_value[hij]));
-        period_jump[hij] = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
-        period_jump[hji] = -period_jump[hij];
-        period_jump[m.R[hij]] = -period_jump[hij];
-        period_jump[m.opp[m.R[hij]]] = period_jump[hij];
+        Scalar jump_value = rounder.commit_round(hij, (theta[fi] - theta[fj] - kappa[hij])/period_value[hij]);
+        set_period_jump(m, hij, jump_value);
     }
 
     // TODO: Handle multiple fixed faces and boundary constraints
@@ -1385,7 +1395,8 @@ void IntrinsicNRosyField::initialize_double_mixed_integer_system(const Mesh<Scal
     // TODO: Soft constraints
 }
 
-
+// TODO Make option and make cone rounder code public
+#if ROUND_CONES
 class ConeMISolver : public COMISO::MISolver
 {
 public:
@@ -1546,6 +1557,7 @@ public:
     }
 
 };
+#endif
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone)
 {
@@ -1622,8 +1634,12 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     if (use_roundings)
     {
         Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
+#if ROUND_CONES
         ConeMISolver cs;
         cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
+#else
+        spdlog::error("rounding not compiled");
+#endif
     }
     else
     {
@@ -1646,16 +1662,7 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     int num_halfedges = m.n_halfedges();
     for (int hij = 0; hij < num_halfedges; ++hij) {
         if (halfedge_var_id[hij] != -1) {
-            //if ((m.type[hij] == 2) || (m.type[m.opp[hij]] == 2)) continue;
-            int hji = m.opp[hij];
-            period_jump[hij] = lround(x[halfedge_var_id[hij]]);
-            period_jump[hji] = -period_jump[hij];
-
-            if (m.type[hij] > 0)
-            {
-                period_jump[m.R[hij]] = -period_jump[hij];
-                period_jump[m.opp[m.R[hij]]] = period_jump[hij];
-            }
+            set_period_jump(m, hij, lround(x[halfedge_var_id[hij]]));
         }
     }
     
@@ -1773,12 +1780,144 @@ void IntrinsicNRosyField::move_cone(const Mesh<Scalar>& m, int origin_v, int des
     std::vector<int> path = find_shortest_path(m, origin_v, destination_v);
 
     // adjust period jumps on path
-    for (int hij : path)
+    for (int hij : path) set_period_jump(m, hij, period_jump[hij] + size);
+}
+
+void IntrinsicNRosyField::collapse_adjacent_cones(const Mesh<Scalar>& m)
+{
+    // compute initial cones
+    std::vector<int> cones = generate_cones(m);
+
+    // generate list of boundary vertices
+    int num_vertices = cones.size();
+    std::vector<bool> is_boundary = compute_boundary_vertices(m);
+
+    // collapse adjacent vertices
+    for (int hij = 0; hij < m.n_halfedges(); ++hij)
     {
+        if (m.type[hij] == 2) continue;
         int hji = m.opp[hij];
-        period_jump[hij] += size;
-        period_jump[hji] -= size;
+
+        // get edge endpoints (in double and original)
+        int wi = m.to[hji];
+        int wj = m.to[hij];
+        int vi = m.v_rep[wi];
+        int vj = m.v_rep[wj];
+
+        // check for flat vertices
+        if ((is_boundary[wi]) && (cones[vi] == 2)) continue;
+        if ((is_boundary[wj]) && (cones[vj] == 2)) continue;
+        if ((!is_boundary[wi]) && (cones[vi] == 4)) continue;
+        if ((!is_boundary[wj]) && (cones[vj] == 4)) continue;
+
+        // modify cones
+        spdlog::info("collapsing cones {} and {}", cones[vi], cones[vj]);
+        Scalar defect = 4 - cones[vi];
+        set_period_jump(m, hij, period_jump[hij] - defect);
+        cones[vi] += defect;
+        cones[vj] -= defect;
+        spdlog::info("new cones {} and {}", cones[vi], cones[vj]);
     }
+
+    std::vector<int> final_cones = generate_cones(m);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (cones[vi] != final_cones[vi])
+        {
+            spdlog::error("inconsistent cones {} and {}", cones[vi], final_cones[vi]);
+        }
+    }
+}
+
+
+void IntrinsicNRosyField::collapse_nearby_cones(const Mesh<Scalar>& m)
+{
+    // first collapse adjacent cones
+    collapse_adjacent_cones(m);
+
+    // compute initial cones
+    std::vector<int> cones = generate_cones(m);
+
+    // generate list of boundary vertices
+    int num_vertices = cones.size();
+    std::vector<bool> is_boundary = compute_boundary_vertices(m);
+
+    // collapse vertices with distance 2
+    bool collapsed = false;
+    bool collapse_boundary_cones = false; // should only collapse nearby interior cones
+    do
+    {
+        collapsed = false;
+        for (int wi = 0; wi < m.n_vertices(); ++wi)
+        {
+            std::vector<int> adjacent_cones = {};
+            int hij = m.out[wi];
+
+            // rotate clockwise to boundary edge if boundary vertex
+            if (is_boundary[wi])
+            {
+                while (true)
+                {
+                    hij = m.n[m.opp[hij]];
+                    if ((m.type[hij] == 1) && (m.type[m.opp[hij]] == 2)) break;
+                }
+            }
+
+            // sweep counterclockwise
+            int hik = hij;
+            do
+            {
+                // get edge endpoints (in double and original)
+                int wk = m.to[hik];
+                int vk = m.v_rep[wk];
+
+                // check for cone vertices on boundary
+                if ((is_boundary[wk]) && (cones[vk] != 2))
+                {
+                    if (collapse_boundary_cones) adjacent_cones.push_back(hik);
+                }
+                // check for cone vertices in interior
+                else if ((!is_boundary[wk]) && (cones[vk] != 4))
+                {
+                    adjacent_cones.push_back(hik);
+                }
+
+                // rotate counterclockwise
+                hik = m.opp[m.n[m.n[hik]]];
+                if (m.type[m.opp[hik]] == 2) break;
+            } while (hij != hik);
+
+            // modify cones
+            if (adjacent_cones.size() > 1)
+            {
+                int hij = adjacent_cones.front();
+                int hik = adjacent_cones.back();
+                int vj =  m.v_rep[m.to[hij]];
+                int vk =  m.v_rep[m.to[hik]];
+                spdlog::info("collapsing cones {} and {}", cones[vj], cones[vk]);
+                Scalar defect = 4 - cones[vk];
+                if (is_boundary[m.to[hik]]) defect = 2 - cones[vk];
+                set_period_jump(m, hij, period_jump[hij] - defect);
+                set_period_jump(m, hik, period_jump[hik] + defect);
+                cones[vk] += defect;
+                cones[vj] -= defect;
+                spdlog::info("new cones {} and {}", cones[vj], cones[vk]);
+                collapsed = true;
+            }
+                
+        }
+
+        // check computations of cones
+        std::vector<int> final_cones = generate_cones(m);
+        for (int vi = 0; vi < num_vertices; ++vi)
+        {
+            if (cones[vi] != final_cones[vi])
+            {
+                spdlog::error("inconsistent cones {} and {}", cones[vi], final_cones[vi]);
+            }
+        }
+    } while (collapsed);
+
 }
 
 void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
@@ -1803,7 +1942,7 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
         if (cones[vi] < 4) pos_cone = vi;
     }
     int size = (4 - cones[pos_cone]);
-    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone);
+    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone, size);
 
     // move curvature
     move_cone(m, pos_cone, neg_cone, size);
@@ -2022,10 +2161,11 @@ std::vector<int> IntrinsicNRosyField::generate_cones(const Mesh<Scalar>& m) cons
         Th_hat[m.v_rep[m.to[hij]]] += period_value[hij] * period_jump[hij];
     }
 
+    Scalar unit = (m.type[0] > 0) ? PI : PI / 2.;
     std::vector<int> base_cones(num_vertices, 0);
     for (int vi = 0; vi < num_vertices; ++vi)
     {
-        base_cones[vi] = lround(Th_hat[vi] / (M_PI / 2.));
+        base_cones[vi] = lround(Th_hat[vi] / unit);
     }
 
     return base_cones;
@@ -2268,11 +2408,15 @@ VectorX IntrinsicNRosyField::run(const Mesh<Scalar>& m)
     return compute_rotation_form(m);
 }
 
-void IntrinsicNRosyField::view(
+void IntrinsicNRosyField::update_viewer(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V) const
 {
+    // Compute the corner angles
+    VectorX he2angle, he2cot;
+    Optimization::corner_angles(m, he2angle, he2cot);
+
     // Initialize viewer
     auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
     Optimization::view_dual_graph(V, m, vtx_reindex, is_period_jump_fixed);
@@ -2281,6 +2425,8 @@ void IntrinsicNRosyField::view(
     int num_halfedges = m.n_halfedges();
     VectorX rotation_form(num_halfedges);
     VectorX reference_rotation_form(num_halfedges);
+    VectorX to(num_halfedges);
+    VectorX l(num_halfedges);
     for (int hij = 0; hij < period_jump.size(); ++hij)
     {
         period_jump_scaled[hij] = period_value[hij] * period_jump[hij];
@@ -2291,59 +2437,123 @@ void IntrinsicNRosyField::view(
         rotation_form[hij] =
             theta[f0] - theta[f1] + kappa[hij] + period_value[hij] * period_jump[hij];
         reference_rotation_form[hij] = theta[f0] - theta[f1] + kappa[hij];
+        to[hij] = m.to[hij];
+        l[hij] = m.l[hij];
     }
-    std::vector<int> base_cones = generate_base_cones(m);
+    //std::vector<int> base_cones = generate_base_cones(m);
+    std::vector<int> cones = generate_cones(m);
     VectorX period_jump_mesh = generate_FV_halfedge_data(F_halfedge, period_jump_scaled);
     VectorX period_value_mesh = generate_FV_halfedge_data(F_halfedge, period_value);
     VectorX rotation_form_mesh = generate_FV_halfedge_data(F_halfedge, rotation_form);
     VectorX ref_rotation_form_mesh = generate_FV_halfedge_data(F_halfedge, reference_rotation_form);
+    VectorX to_mesh = generate_FV_halfedge_data(F_halfedge, to);
+    VectorX angle_mesh = generate_FV_halfedge_data(F_halfedge, he2angle);
+
+    std::vector<Scalar> Th_hat = generate_cones_from_rotation_form_FIXME(m, rotation_form);
+    std::vector<bool> is_boundary = compute_boundary_vertices(m);
+
+    int num_vertices = cones.size();
+    std::vector<int> cone_indices;
+    std::vector<Scalar> cone_values;
+    cone_indices.reserve(num_vertices);
+    cone_values.reserve(num_vertices);
+    for (int vi = 0; vi < m.n_vertices(); ++vi) {
+        int cone = cones[m.v_rep[vi]];
+        int defect = (is_boundary[vi]) ? 2 - cone : 4 - cone;
+        if (defect == 0) continue;
+        cone_indices.push_back(m.v_rep[vi]);
+        cone_values.push_back(defect);
+    }
+
+    int num_cones = cone_indices.size();
+    Eigen::MatrixXd cone_positions(num_cones, 3);
+    for (int i = 0; i < num_cones; ++i) {
+        int vi = cone_indices[i];
+        cone_positions.row(i) = V.row(vtx_reindex[vi]);
+    }
+    
 #ifdef ENABLE_VISUALIZATION
-polyscope::init();
-std::string mesh_handle = "intrinsic_field_mesh";
-polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->setBackFacePolicy(polyscope::BackFacePolicy::Cull);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addHalfedgeScalarQuantity(
-        "kappa",
-        convert_scalar_to_double_vector(kappa))
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addHalfedgeScalarQuantity(
-        "period jump",
-        convert_scalar_to_double_vector(period_jump_mesh))
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addVertexScalarQuantity("base_cones", base_cones)
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addHalfedgeScalarQuantity(
-        "period value",
-        convert_scalar_to_double_vector(period_value_mesh))
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addHalfedgeScalarQuantity(
-        "rotation form",
-        convert_scalar_to_double_vector(rotation_form_mesh))
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addHalfedgeScalarQuantity(
-        "reference rotation form",
-        convert_scalar_to_double_vector(ref_rotation_form_mesh))
-    ->setColorMap("coolwarm")
-    ->setEnabled(false);
-polyscope::getSurfaceMesh(mesh_handle)
-    ->addFaceScalarQuantity(
-        "theta",
-        convert_scalar_to_double_vector(theta))
-    ->setColorMap("coolwarm")
-    ->setEnabled(true);
-polyscope::show();
+    polyscope::init();
+    std::string mesh_handle = "intrinsic_field_mesh";
+    polyscope::registerSurfaceMesh(mesh_handle, V_double, F_mesh);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->setBackFacePolicy(polyscope::BackFacePolicy::Cull);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "kappa",
+            convert_scalar_to_double_vector(kappa))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "period jump",
+            convert_scalar_to_double_vector(period_jump_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "edge length",
+            convert_scalar_to_double_vector(l))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "corner angle",
+            convert_scalar_to_double_vector(angle_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity("to", convert_scalar_to_double_vector(to_mesh))
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addVertexScalarQuantity("vertex", m.v_rep)
+        ->setEnabled(false);
+    //polyscope::getSurfaceMesh(mesh_handle)
+    //    ->addVertexScalarQuantity("base_cones", base_cones)
+    //    ->setColorMap("coolwarm")
+    //    ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "period value",
+            convert_scalar_to_double_vector(period_value_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "rotation form",
+            convert_scalar_to_double_vector(rotation_form_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity(
+            "reference rotation form",
+            convert_scalar_to_double_vector(ref_rotation_form_mesh))
+        ->setColorMap("coolwarm")
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "theta",
+            convert_scalar_to_double_vector(theta))
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    polyscope::registerPointCloud("cones", cone_positions);
+    polyscope::getPointCloud("cones")
+        ->addScalarQuantity("index", cone_values)
+        ->setColorMap("coolwarm")
+        ->setMapRange({-M_PI, M_PI})
+        ->setEnabled(true);
+#endif
+}
+
+void IntrinsicNRosyField::view(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V)
+{
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    update_viewer(m, vtx_reindex, V);
+    polyscope::show();
 #endif
 }
 

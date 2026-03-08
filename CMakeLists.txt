@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(PennerOptimization)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
@@ -37,7 +36,7 @@ include(boost)
 include(eigen)
 
 # Optionally get multiprecision libraries
-if(USE_MULTIPRECISION)
+if(USE_MULTIPRECISION OR USE_MULTIPRECISION_OVERLAY)
   # Turning this on activates mpfr in the conformal code
   option(LIBIGL_COPYLEFT_CGAL "Use CGAL" ON)
   add_compile_definitions(WITH_MPFR)
@@ -45,6 +44,9 @@ if(USE_MULTIPRECISION)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})
+endif()
+if(USE_MULTIPRECISION) 
+  add_compile_definitions(MULTIPRECISION)
 endif()
 
 # Optionally get frame field libraries
@@ -94,6 +96,7 @@ if(USE_SUITESPARSE)
 endif()
 
 # Get external libraries
+include(boost)
 include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)
@@ -107,6 +110,8 @@ add_library(DirectionalLib INTERFACE)
 target_include_directories(DirectionalLib SYSTEM INTERFACE 
   ${directional_SOURCE_DIR}/include
 )
+target_compile_features(DirectionalLib INTERFACE cxx_std_20)
+
 
 # Optionally create rendering library
 if(RENDER_TEXTURE)

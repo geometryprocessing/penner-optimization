@@ -120,6 +120,9 @@ public:
     void remove_greedy_cone_pairs(const Mesh<Scalar>& m);
     void fix_cone_pair(const Mesh<Scalar>& m);
     void fix_zero_cones(const Mesh<Scalar>& m);
+    void collapse_adjacent_cones(const Mesh<Scalar>& m);
+    void collapse_nearby_cones(const Mesh<Scalar>& m);
+
     void concentrate_curvature(const Mesh<Scalar>& m);
     void remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar rel_edge_length=1e-3);
     void infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form);
@@ -130,10 +133,14 @@ public:
         const Eigen::MatrixXi& F, 
         const std::vector<int>& face_reindex,
         const Eigen::VectorXi& reference_corner);
-void view(
+void update_viewer(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V) const;
+void view(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V);
 void initialize_priority_kappa(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex);
@@ -188,6 +195,8 @@ private:
     void initialize_double_period_jump(const Mesh<Scalar>& m);
     void initialize_double_mixed_integer_system(const Mesh<Scalar>& m);
 
+
+    void set_period_jump(const Mesh<Scalar>& m, int hij, Scalar jump_value);
 };
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone=1);

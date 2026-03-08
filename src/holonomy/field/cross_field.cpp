@@ -2,7 +2,6 @@
 
 // TODO: not compiling. directional seems to be broken and missing
 // the IntrinsicFaceTangentBundle
-/*
 #include <directional/TriMesh.h>
 #include <directional/IntrinsicFaceTangentBundle.h>
 #include <directional/CartesianField.h>
@@ -247,4 +246,3 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
 
 } // namespace Holonomy
 } // namespace Penner
-*/

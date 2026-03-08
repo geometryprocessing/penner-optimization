@@ -7,6 +7,17 @@
 namespace Penner {
 namespace Feature {
 
+void write_feature_edges(
+    const std::string& fe_filename,
+    const std::vector<VertexEdge>& feature_edges) {
+    std::ofstream output_file(fe_filename, std::ios::out | std::ios::trunc);
+    int n = feature_edges.size();
+    for (int i = 0; i < n; ++i) {
+        output_file << feature_edges[i][0] << " " << feature_edges[i][1] << std::endl;
+    }
+    output_file.close();
+}
+
 std::vector<VertexEdge> load_feature_edges(const std::string& fe_filename) {
     // try to open mesh
 	std::ifstream inf(fe_filename);
@@ -61,6 +72,18 @@ std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename) {
 	}
 
 	return feature_edges;
+}
+
+void write_mesh_edges(
+    const std::string& fe_filename,
+    const std::vector<VertexEdge>& feature_edges) {
+    std::ofstream output_file(fe_filename, std::ios::out | std::ios::app);
+    int n = feature_edges.size();
+    for (int i = 0; i < n; ++i) {
+        output_file << "l " << feature_edges[i][0] + 1;
+        output_file << " " << feature_edges[i][1] + 1 << std::endl;
+    }
+    output_file.close();
 }
 
 

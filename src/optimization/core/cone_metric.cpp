@@ -156,6 +156,10 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     return halfedge_jacobian * J_transition;
 }
 
+PennerConeMetric::PennerConeMetric()
+    : m_transition_jacobian_lol(0)
+{}
+
 PennerConeMetric::PennerConeMetric(const Mesh<Scalar>& m, const VectorX& metric_coords)
     : DifferentiableConeMetric(m)
     , m_need_jacobian(true)

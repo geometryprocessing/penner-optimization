@@ -8,6 +8,8 @@ import os, sys
 script_dir = os.path.dirname(__file__)
 module_dir = os.path.join(script_dir, '..', 'py')
 sys.path.append(module_dir)
+opt_script_dir = os.path.join(script_dir, 'optimization_scripts')
+sys.path.append(opt_script_dir)
 import numpy as np
 import igl
 import pickle

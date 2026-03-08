@@ -6,9 +6,20 @@ namespace Penner {
 namespace Feature {
 
 /**
- * @brief Load feature edges from a 0-indexed list in the following format:
- * <edge count>
+ * @brief Write feature edges to a 0-indexed list in the following format:
+ * <e00> <e01>
+ * <e10> <101>
  * ...
+ * 
+ * @param fe_filename: filepath to edge list
+ * @param feature_edges: list of edges
+ */
+void write_feature_edges(
+    const std::string& fe_filename,
+    const std::vector<VertexEdge>& feature_edges);
+
+/**
+ * @brief Load feature edges from a 0-indexed list in the following format:
  * <e00> <e01>
  * <e10> <101>
  * ...
@@ -17,6 +28,16 @@ namespace Feature {
  * @return list of edges
  */
 std::vector<VertexEdge> load_feature_edges(const std::string& fe_filename);
+
+/**
+ * @brief Write edges to an obj file
+ * 
+ * @param fe_filename: filepath to obj mesh
+ * @return list of edges
+ */
+void write_mesh_edges(
+    const std::string& fe_filename,
+    const std::vector<VertexEdge>& feature_edges);
 
 /**
  * @brief Load edges from an obj file

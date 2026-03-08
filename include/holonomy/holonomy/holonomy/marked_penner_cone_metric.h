@@ -32,6 +32,8 @@ public:
     // TODO move
     VectorX original_coords;
 
+    MarkedPennerConeMetric();
+
     /**
      * @brief Construct a new Marked Penner Cone Metric object with given metric coordinates
      * and dual loop markings with holonomy constraints.
