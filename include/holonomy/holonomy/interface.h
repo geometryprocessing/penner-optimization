@@ -206,6 +206,7 @@ void regularize_metric(MarkedPennerConeMetric& marked_metric, double max_triangl
  */
 void optimize_triangle_quality(MarkedPennerConeMetric& marked_metric, double max_triangle_quality = 50);
 
+VectorX generate_log_edge_lengths(const Mesh<Scalar>& m);
 VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
 
 void generate_basis_loops(

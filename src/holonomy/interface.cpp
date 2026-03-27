@@ -127,6 +127,20 @@ generate_metric_from_field(
     return std::make_tuple(marked_metric, vtx_reindex, rotation_form, Th_hat);
 }
 
+VectorX generate_log_edge_lengths(const Mesh<Scalar>& m)
+{
+    // Make copy of mesh delaunay
+    // Get metric coordinates from copy
+    int num_halfedges = m.n_halfedges();
+    VectorX metric_coords(num_halfedges);
+    for (int h = 0; h < num_halfedges; ++h) {
+        metric_coords[h] = 2.0 * log(m.l[h]);
+        if (isnan(metric_coords[h])) spdlog::warn("generating NaN Penner coordinate");
+    }
+
+    return metric_coords;
+}
+
 VectorX generate_penner_coordinates(const Mesh<Scalar>& m)
 {
     // Make copy of mesh delaunay

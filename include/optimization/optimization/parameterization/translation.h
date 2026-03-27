@@ -47,7 +47,7 @@ namespace Optimization {
 /// @param[in] he_metric_target: target metric coordinates for m
 /// @param[out] he_translations: per halfedge translations
 template <typename OverlayScalar>
-void compute_as_symmetric_as_possible_translations(
+bool compute_as_symmetric_as_possible_translations(
     const Mesh<OverlayScalar>& m,
     const VectorX& he_metric_coords,
     const VectorX& he_metric_target,

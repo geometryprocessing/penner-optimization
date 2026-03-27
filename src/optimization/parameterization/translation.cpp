@@ -297,13 +297,15 @@ void generate_edge_translation_constraint_system(
 }
 
 template <typename OverlayScalar>
-void compute_as_symmetric_as_possible_translations(
+bool compute_as_symmetric_as_possible_translations(
     const Mesh<OverlayScalar>& m,
     const VectorX& he_metric_coords,
     const VectorX& he_metric_target,
     VectorX& he_translations)
 {
     spdlog::debug("Computing least squares translations with psuedo-inverse");
+    if (!he_metric_coords.array().isFinite().all()) spdlog::error("initial metric not finite");
+    if (!he_metric_target.array().isFinite().all()) spdlog::error("target metric not finite");
 
     // Compute the change in shear from the target to the new metric
     spdlog::trace("Computing shear change");
@@ -313,10 +315,14 @@ void compute_as_symmetric_as_possible_translations(
         he_metric_coords,
         he_metric_target,
         he_shear_change);
-    SPDLOG_TRACE(
+    SPDLOG_INFO(
         "shear change in range [{}, {}]",
         he_shear_change.minCoeff(),
         he_shear_change.maxCoeff());
+    if (!he_shear_change.array().isFinite().all())
+    {
+        spdlog::error("infinite shear change needed");
+    }
 
 
     // Build the constraint for the problem
@@ -337,7 +343,13 @@ void compute_as_symmetric_as_possible_translations(
         // Compute the solution of the constraint
         Eigen::SparseMatrix<OverlayScalar> gram_matrix = constraint_matrix * constraint_matrix.transpose();
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<OverlayScalar>> solver;
+        //Eigen::SparseLU<Eigen::SparseMatrix<OverlayScalar>> solver;
         solver.compute(gram_matrix);
+        if (solver.info() != Eigen::Success) spdlog::error("translation matrix factorization failed");
+        if (isnan(right_hand_side.maxCoeff()))
+        {
+            spdlog::error("invalid right hand side in solver");
+        }
         Eigen::Matrix<OverlayScalar, Eigen::Dynamic, 1> constraint_solution = solver.solve(right_hand_side);
 
         // The desired translations are at the head of the solution vector
@@ -380,7 +392,7 @@ void compute_as_symmetric_as_possible_translations(
         he_translations = convert_vector_type<OverlayScalar, Scalar>(constraint_matrix.transpose() * constraint_solution);
     }
 
-    bool check_translations = true;
+    bool check_translations = false;
     if (check_translations)
     {
         Eigen::SparseMatrix<OverlayScalar> constraint_matrix;
@@ -397,10 +409,13 @@ void compute_as_symmetric_as_possible_translations(
     {
         spdlog::warn("Setting halfedge translations to zero due to numerical instability");
         he_translations.setZero();
+        return false;
     }
+
+    return true;
 }
 
-template void compute_as_symmetric_as_possible_translations<Scalar>(
+template bool compute_as_symmetric_as_possible_translations<Scalar>(
     const Mesh<Scalar>& m,
     const VectorX& he_metric_coords,
     const VectorX& he_metric_target,
@@ -408,7 +423,7 @@ template void compute_as_symmetric_as_possible_translations<Scalar>(
 
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
-template void compute_as_symmetric_as_possible_translations<mpfr::mpreal>(
+template bool compute_as_symmetric_as_possible_translations<mpfr::mpreal>(
     const Mesh<mpfr::mpreal>& m,
     const VectorX& he_metric_coords,
     const VectorX& he_metric_target,

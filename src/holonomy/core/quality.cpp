@@ -22,9 +22,9 @@ Scalar compute_face_quality(
     int hki = cone_metric.n[hjk];
 
     // Get edge log lengths and average
-    Scalar llij = metric_coords[cone_metric.he2e[hij]];
-    Scalar lljk = metric_coords[cone_metric.he2e[hjk]];
-    Scalar llki = metric_coords[cone_metric.he2e[hki]];
+    Scalar llij = metric_coords[hij];
+    Scalar lljk = metric_coords[hjk];
+    Scalar llki = metric_coords[hki];
     Scalar llijk = (llij + lljk + llki) / 3.0;
 
     // Compute lengths scaled by average (triangle quality is scale invariant)
