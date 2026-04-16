@@ -128,6 +128,39 @@ void write_frame_field(
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+comb_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& thetas,
+    const Eigen::MatrixXi& period_jumps);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
+load_combed_field(const std::string& ffield_file);
+
+/**
+ * @brief Write a combed frame field to file.
+ * 
+ * The format is
+ * ```
+ * <num_faces>
+ * <d1x> <d1y> <d1z> <d2x> <d2y> <d2z>
+ * ...
+ * ```
+ * where d1 and d2 are the two combed field direction
+ * 
+ * @param output_filename: file location to serialize the frame field
+ * @param PD1: per-face u direction matrix
+ * @param PD2: per-face b direction matrix
+ */
+void write_combed_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2);
+
 /**
  * @brief Load a frame field from file.
  * 

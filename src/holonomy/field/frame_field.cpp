@@ -10,6 +10,7 @@
 #include <igl/rotate_vectors.h>
 #include <igl/internal_angles.h>
 #include <igl/bounding_box_diagonal.h>
+#include <igl/triangle_triangle_adjacency.h>
 
 // TODO: Cleaning pass
 
@@ -260,6 +261,212 @@ void write_frame_field(
     // close output file
     field_file.close();
 }
+
+Eigen::VectorXd rotate_vector(
+                    const Eigen::VectorXd& vec,
+                    double angle,
+                    const Eigen::VectorXd& B1,
+                    const Eigen::VectorXd& B2)
+{
+    double norm = vec.norm();
+
+    // project onto the tangent plane and convert to angle
+    double a = atan2(B2.dot(vec), B1.dot(vec));
+
+    // rotate
+    a += angle;
+
+    // move it back to global coordinates
+    return norm*cos(a) * B1 + norm*sin(a) * B2;
+}
+
+std::tuple<int, int>
+find_u_aligned_edges(
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT)
+{
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(FT, TT, TTi);
+    Eigen::ArrayXX<bool> is_boundary_edge = (TT.array() < 0);
+
+    double min_v_diff = 1e10;
+    int min_face = -1;
+    int min_edge = -1;
+    for (int fijk = 0; fijk < FT.rows(); ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            if (!is_boundary_edge(fijk, i)) continue;
+
+            int vi = FT(fijk, (i + 0) % 3);
+            int vj = FT(fijk, (i + 1) % 3);
+            double signed_u_diff = uv(vj, 0) - uv(vi, 0);
+            if (signed_u_diff < 0.) continue;
+
+            double v_diff = abs(uv(vj, 1) - uv(vi, 1));
+            if (v_diff < min_v_diff) {
+                min_v_diff = v_diff;
+                min_face = fijk;
+                min_edge = i;
+            }
+        }
+    }
+
+    return std::make_tuple(min_face, min_edge);
+}
+
+std::tuple<Eigen::VectorXi, std::deque<int>, Eigen::VectorXi> initialize_matchings(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& frame_field, 
+    const Eigen::MatrixXd& B1,
+    const Eigen::MatrixXd& B2)
+{   
+    Eigen::VectorXi matchings = Eigen::VectorXi::Constant(FT.rows(), 0);
+    std::deque<int> d;
+    Eigen::VectorXi mark = Eigen::VectorXi::Constant(FT.rows(), 0);
+
+    auto [fijk, i] = find_u_aligned_edges(uv, FT);
+    int vi = F(fijk, (i + 0) % 3);
+    int vj = F(fijk, (i + 1) % 3);
+    Eigen::VectorXd dij = V.row(vj) - V.row(vi);
+    dij.normalize();
+    double min = (frame_field.row(fijk) - dij.transpose()).norm();
+    for (int i = 1; i < 4; ++i)
+    {
+        Eigen::VectorXd rot_dfijk = rotate_vector(frame_field.row(fijk), i * (PI / 2.0), B1.row(fijk), B2.row(fijk));
+        double curr_diff = (rot_dfijk - dij).norm();
+        if (curr_diff < min)
+        {
+            min = curr_diff;
+            matchings[fijk] = i;
+        }
+    }
+    d.push_back(fijk);
+    mark[fijk] = 1;
+
+    return { matchings, d, mark };
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+comb_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& thetas,
+    const Eigen::MatrixXi& period_jumps)
+{
+    // get local basis for rotations
+    Eigen::MatrixXd B1, B2, B3;
+    igl::local_basis(V, F, B1, B2, B3);
+
+    // rotate initial reference field to a field direction
+    Eigen::MatrixXd frame_field = igl::rotate_vectors(reference_field, thetas, B1, B2);
+
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(FT, TT, TTi);
+
+    auto [ matchings, d, mark ] = initialize_matchings(V, F, uv, FT, frame_field, B1, B2);
+    while (!d.empty())
+    {
+        int fijk = d.at(0);
+        d.pop_front();
+        for (int local_hij = 0; local_hij < 3; ++local_hij)
+        {
+            int fjil = TT(fijk, (local_hij + 1) % 3);
+            if ((fjil >= 0) && (mark[fjil] == 0))
+            {
+                matchings[fjil] = matchings[fijk] - period_jumps(fijk, local_hij);
+                while (matchings[fjil] < 0)
+                {
+                    matchings[fjil] += 4;
+                }
+                matchings[fjil] = matchings[fjil] % 4;
+                mark[fjil] = 1;
+                d.push_back(fjil);
+            }
+        }
+    }
+    Eigen::VectorXd u_angles = (matchings.cast<double>().array()) * (PI / 2.0);
+    Eigen::VectorXd v_angles = (matchings.cast<double>().array() + 1) * (PI / 2.0);
+    Eigen::MatrixXd PD1 = igl::rotate_vectors(frame_field, u_angles, B1, B2);
+    Eigen::MatrixXd PD2 = igl::rotate_vectors(frame_field, v_angles, B1, B2);
+
+    return { PD1, PD2 };
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
+load_combed_field(const std::string& ffield_file)
+{
+    std::ifstream inf(ffield_file);
+    if (!inf) {
+        spdlog::error("Failed to load frame field file\n");
+        exit(EXIT_FAILURE);
+    }
+    spdlog::info("aligning to frame field file\n");
+    
+    int i = 0;
+    int num_vectors;
+    inf >> num_vectors;
+    Eigen::MatrixXd PD1(num_vectors, 3);
+    Eigen::MatrixXd PD2(num_vectors, 3);
+    inf.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::string line{};
+    while (std::getline(inf, line)) {
+        std::istringstream iss(line);
+        double d1x;
+        double d1y;
+        double d1z;
+        double d2x;
+        double d2y;
+        double d2z;
+
+        iss >> d1x >> d1y >> d1z >> d2x >> d2y >> d2z;
+        PD1.row(i) << d1x, d1y, d1z;
+        PD2.row(i) << d2x, d2y, d2z;
+
+        ++i;
+    }
+
+    return {PD1, PD2};
+}
+
+
+void write_combed_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2)
+{
+    std::ofstream field_file(output_filename, std::ios::out | std::ios::trunc);
+
+    // write all feature edge vertices
+    int num_faces = PD1.rows();
+    field_file << num_faces << std::endl;
+    for (int f = 0; f < PD1.rows(); ++f)
+    {
+        // write first direction
+        for (int i : {0 , 1, 2})
+        {
+            field_file << std::fixed << std::setprecision(17) << PD1(f, i) << " ";
+        }
+
+        // write second direction
+        for (int i : {0 , 1, 2})
+        {
+            field_file << std::fixed << std::setprecision(17) << PD2(f, i) << " ";
+        }
+
+        field_file << std::endl;
+    }
+
+    // close output file
+    field_file.close();
+}
+
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
 load_frame_field(const std::string& filename)
