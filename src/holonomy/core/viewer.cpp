@@ -495,8 +495,8 @@ void view_seamless_parameterization(
     //    ->setEnabled(false);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addVertexParameterizationQuantity("uv", uv)
-        ->setStyle(polyscope::ParamVizStyle::GRID)
-        ->setGridColors(std::make_pair(DARK_TEAL, TEAL))
+        //->setStyle(polyscope::ParamVizStyle::GRID)
+        //->setGridColors(std::make_pair(DARK_TEAL, TEAL))
         ->setEnabled(true);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addFaceScalarQuantity(
