@@ -104,6 +104,7 @@ include(cli11)
 include(json)
 include(geometry-central)
 include(comiso)
+find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 include(directional)
 add_library(DirectionalLib INTERFACE)

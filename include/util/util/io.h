@@ -173,6 +173,39 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, st
 
 Eigen::MatrixXd read_matrix(const std::string& filename);
 
+void write_hdf5_mesh(const std::string& path,
+                const Eigen::MatrixXd& V,
+                const Eigen::MatrixXi& F);
+
+void write_hdf5_mesh_with_uv(const std::string& path,
+                const Eigen::MatrixXd& V,
+                const Eigen::MatrixXi& F,
+                const Eigen::MatrixXd& uv,
+                const Eigen::MatrixXi& FT);
+
+void read_hdf5_mesh(const std::string& path,
+                Eigen::MatrixXd& V,
+                Eigen::MatrixXi& F);
+
+void read_hdf5_mesh_with_uv(const std::string& path,
+                Eigen::MatrixXd& V,
+                Eigen::MatrixXi& F,
+                Eigen::MatrixXd& uv,
+                Eigen::MatrixXi& FT);
+
+void write_hdf5_vector_field(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXd& vector_field);
+void write_hdf5_integer_matrix(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXi& vector_field);
+
+Eigen::MatrixXd read_hdf5_vector_field(const std::string& path,
+                                   const std::string& name);
+Eigen::MatrixXi read_hdf5_integer_matrix(const std::string& path,
+                                   const std::string& name);
+
+
 /// Write a sparse matrix to file in i,j,v format.
 ///
 /// @param[in] matrix: matrix to serialize
