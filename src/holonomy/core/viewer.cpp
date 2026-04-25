@@ -95,6 +95,34 @@ void view_frame_field(
 #endif
 }
 
+void view_vector_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& vector_field,
+    std::string mesh_handle)
+{
+    spdlog::info("Viewing mesh {}", mesh_handle);
+    int num_vertices = V.rows();
+    int num_faces = F.rows();
+    int num_field = vector_field.rows();
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    if (mesh_handle == "") {
+        mesh_handle = "vector_field_mesh";
+    }
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceVectorQuantity("field", vector_field)
+        ->setEnabled(true);
+
+    polyscope::show();
+#else
+    spdlog::info("Viewer disabled for mesh (|V|={}, |F|={})", num_vertices, num_faces);
+#endif
+}
+
 void view_cross_field(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,

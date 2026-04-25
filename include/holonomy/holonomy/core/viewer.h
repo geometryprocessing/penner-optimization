@@ -43,6 +43,11 @@ void view_cross_field(
     const Eigen::MatrixXi& period_jump,
     std::string mesh_handle = "intrinsic_field_mesh");
 
+void view_vector_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& vector_field,
+    std::string mesh_handle="");
 
 void view_rotation_form(
     const Mesh<Scalar>& m,

@@ -2706,6 +2706,5 @@ void IntrinsicNRosyField::set_halfedge_field(
     kappa = convert_vector_type<double, Scalar>(halfedge_kappa);
     period_jump = halfedge_period_jump;
 }
-
 } // namespace Holonomy
 } // namespace Penner

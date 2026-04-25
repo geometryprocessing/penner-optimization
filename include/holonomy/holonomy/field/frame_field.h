@@ -129,6 +129,15 @@ void write_frame_field(
     const Eigen::MatrixXi& period_jump);
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+maximize_combed_frame_alignment(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
 comb_frame_field(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -225,12 +234,23 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> r
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+Eigen::VectorXd rotate_vector(
+                    const Eigen::VectorXd& vec,
+                    double angle,
+                    const Eigen::VectorXd& B1,
+                    const Eigen::VectorXd& B2);
+
 std::vector<Scalar> compute_cone_angle( 
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+Eigen::VectorXi transfer_period_jumps_to_halfedge(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const Eigen::MatrixXi& corner_period_jump);
 
 } // namespace Feature 
 } // namespace Penner

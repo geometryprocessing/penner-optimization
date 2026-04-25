@@ -4,6 +4,7 @@
 #include "holonomy/holonomy/holonomy.h"
 #include "optimization/parameterization/refinement.h"
 #include "holonomy/core/viewer.h"
+#include "util/vf_mesh.h"
 
 #include <igl/per_face_normals.h>
 #include <igl/local_basis.h>
@@ -11,6 +12,8 @@
 #include <igl/internal_angles.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/triangle_triangle_adjacency.h>
+#include <igl/grad.h>
+#include <igl/doublearea.h>
 
 // TODO: Cleaning pass
 
@@ -350,6 +353,84 @@ std::tuple<Eigen::VectorXi, std::deque<int>, Eigen::VectorXi> initialize_matchin
     return { matchings, d, mark };
 }
 
+Eigen::SparseMatrix<double> compute_area_weight_matrix(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F
+)
+{
+    Eigen::VectorXd dblarea;
+    igl::doublearea(V, F, dblarea);
+    int num_faces = dblarea.size();
+    Eigen::SparseMatrix<double> weights(3 * num_faces, 3 * num_faces);
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(3 * num_faces);
+    double total_area = dblarea.sum();
+
+    for (int f = 0; f < num_faces; ++f)
+    {
+        double area_f = dblarea[f] / total_area;
+        for (int i = 0; i < 3; ++i)
+        {
+            int j = f + (i * num_faces);
+            triplets.emplace_back(j, j, area_f);
+        }
+    }
+
+    weights.setFromTriplets(triplets.begin(), triplets.end());
+    return weights;
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+maximize_combed_frame_alignment(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2)
+{
+    // get local basis for rotations
+    Eigen::MatrixXd B1, B2, B3;
+    igl::local_basis(V, F, B1, B2, B3);
+
+    // get gradient of uv coordinates
+    Eigen::MatrixXd V_cut;
+    cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
+    Eigen::SparseMatrix<double> Grad;
+    igl::grad(V_cut, FT, Grad);
+    Eigen::MatrixXd Guv = Grad * uv;
+
+    // minimize misalignment
+    Eigen::SparseMatrix<double> weights = compute_area_weight_matrix(V, F);
+    Eigen::VectorXd right_angles = Eigen::VectorXd::Constant(F.rows(), PI / 2.);
+    double min_energy = 1e10;
+    int j = 0;
+    for (int i = 0; i < 4; ++i)
+    {
+        // rotate field
+        Eigen::MatrixXd RPD1 = igl::rotate_vectors(PD1, i * right_angles, B1, B2);
+        Eigen::MatrixXd RPD2 = igl::rotate_vectors(PD2, i * right_angles, B1, B2);
+
+        // compute energy for current rotation
+        Eigen::MatrixXd uT_vT(3*F.rows(), 2);
+        uT_vT.col(0) = Eigen::Map<const Eigen::VectorXd>(RPD1.data(), 3 * FT.rows());
+        uT_vT.col(1) = Eigen::Map<const Eigen::VectorXd>(RPD2.data(), 3 * FT.rows());
+        Eigen::MatrixXd R = Guv - uT_vT;
+        double energy = (R.transpose() * (weights * R)).trace();
+        if (energy < min_energy)
+        {
+            min_energy = energy;
+            j = i;
+        }
+        spdlog::info("energy for rotation {} is {}", i * PI / 2., energy);
+    }
+
+    // rotate field with minimizing angle
+    Eigen::MatrixXd RPD1 = igl::rotate_vectors(PD1, j * right_angles, B1, B2);
+    Eigen::MatrixXd RPD2 = igl::rotate_vectors(PD2, j * right_angles, B1, B2);
+    return { RPD1, RPD2 };
+}
+
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
 comb_frame_field(
     const Eigen::MatrixXd& V,
@@ -396,7 +477,7 @@ comb_frame_field(
     Eigen::MatrixXd PD1 = igl::rotate_vectors(frame_field, u_angles, B1, B2);
     Eigen::MatrixXd PD2 = igl::rotate_vectors(frame_field, v_angles, B1, B2);
 
-    return { PD1, PD2 };
+    return maximize_combed_frame_alignment(V, F, uv, FT, PD1, PD2);
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
@@ -641,6 +722,53 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> r
 
     return std::make_tuple(reference_vector_r, theta_r, kappa_r, period_jump_r);
 }
+
+Eigen::VectorXi transfer_period_jumps_to_halfedge(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const Eigen::MatrixXi& corner_period_jump)
+{
+    int num_halfedges = m.n_halfedges();
+    int num_faces = F.rows();
+    Eigen::VectorXi period_jump = Eigen::VectorXi::Zero(num_halfedges);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        // get reference halfedge
+        int hij = m.h[fijk];
+
+        // get local vertex index opposite reference halfedge
+        int vk = vtx_reindex[m.v_rep[m.to[m.n[hij]]]];
+        int k = 0;
+        while (F(fijk, k) != vk)
+        {
+            k = (k + 1) % 3;
+        }
+
+
+        // get period jumps and rotations across edges
+        for (int i = 0; i < 3; ++i)
+        {
+            period_jump[hij] = corner_period_jump(fijk, k);
+
+            // increment local index and halfedge
+            k = (k + 1) % 3;
+            hij = m.n[hij];
+        }
+
+        // Mirror data onto reflected boundary halfedges on doubled meshes.
+        if (m.type[hij] == 0) continue;
+        hij = m.h[fijk];
+        for (int i = 0; i < 3; ++i)
+        {
+            period_jump[m.R[hij]] = -period_jump[hij];
+            hij = m.n[hij];
+        }
+    }
+
+    return period_jump;
+}
+
 
 } // namespace Holonomy
 } // namespace Penner
