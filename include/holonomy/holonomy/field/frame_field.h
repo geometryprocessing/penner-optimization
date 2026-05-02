@@ -84,7 +84,8 @@ std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
     const Eigen::MatrixXi& F,
     int radius=5,
     Scalar abs_threshold=1.,
-    Scalar rel_threshold=0.9);
+    Scalar rel_threshold=0.9,
+    Scalar sample_rate=1.);
     
 /**
  * @brief Optimize a cross field on a mesh.

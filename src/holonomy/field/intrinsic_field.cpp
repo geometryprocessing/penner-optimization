@@ -601,6 +601,24 @@ void IntrinsicNRosyField::set_reference_halfedge(
     }
 }
 
+Eigen::MatrixXd IntrinsicNRosyField::generate_reference_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V) const
+{
+    int num_faces = m.n_faces();
+    Eigen::MatrixXd reference_field(num_faces, 3);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        int hij = face_reference_halfedge[fijk];
+        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
+        int vi = vtx_reindex[m.v_rep[m.to[m.opp[hij]]]];
+        reference_field.row(fijk) = (V.row(vj) - V.row(vi)).stableNormalized();
+    }
+
+    return reference_field;
+}
+
 void IntrinsicNRosyField::initialize_double_kappa(const Mesh<Scalar>& m)
 {
     // Compute corner angles
@@ -2249,13 +2267,85 @@ std::tuple<MatrixX, VectorX> IntrinsicNRosyField::build_theta_system(const Mesh<
     return std::make_tuple(A, b);
 }
 
-void IntrinsicNRosyField::optimize_theta(const Mesh<Scalar>& m)
+void IntrinsicNRosyField::optimize_theta(const Mesh<Scalar>& m, Scalar reg_factor)
 {
     auto [A, b] = build_theta_system(m);
     MatrixX L = A.transpose() * A;
     VectorX y = A.transpose() * b;
+    if (reg_factor > 0)
+    {
+        int n = L.rows();
+        MatrixX I(n, n);
+        I.setIdentity();
+        L = L + reg_factor * I;
+        y = y + reg_factor * theta;
+    }
     theta = solve_linear_system(L, y);
 }
+
+void IntrinsicNRosyField::smooth_theta(const Mesh<Scalar>& m, int iterations)
+{
+    int num_halfedges = m.n_halfedges();
+    VectorX b = VectorX::Zero(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        b[hij] = -kappa[hij] - (period_value[hij] * period_jump[hij]);
+    }
+
+    bool periodic = true;
+    int num_faces = m.n_faces();
+    for (int i = 0; i < iterations; ++i)
+    {
+        for (int f = 0; f < num_faces; ++f)
+        {
+            Scalar theta_curr = theta[f];
+            if (periodic)
+            {
+                theta_curr += PI;
+                while (theta_curr < 0) theta_curr += 2 * PI;
+                theta_curr = pos_fmod(theta_curr, 2 * PI);
+                theta_curr -= PI;
+            }
+            spdlog::debug("face theta is {}", theta_curr);
+
+            int hij = m.h[f];
+            int hjk = hij;
+            Scalar avg_theta = 0.;
+            int count = 0;
+            do
+            {
+                // update average
+                int fo = m.f[m.opp[hjk]];
+                Scalar theta_opp = theta[fo] + b[hjk];
+
+                // in some cases, only resolve period up to 2 PI
+                if (periodic)
+                {
+                    // add pi to remove ambiguity near 0
+                    theta_opp += (PI - theta_curr);
+
+                    while (theta_opp < 0) theta_opp += 2 * PI;
+                    theta_opp = pos_fmod(theta_opp, 2 * PI);
+
+                    theta_opp -= (PI - theta_curr);
+                }
+                spdlog::debug("adjacent face theta in current frame is {}", theta_opp);
+
+                avg_theta += theta_opp;
+                ++count;
+
+                // iterate
+                hjk = m.n[hjk];
+            } while (hij != hjk);
+
+            // update theta for face
+            theta[f] = avg_theta / count;
+        }
+    }
+}
+
 
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
 {

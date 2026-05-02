@@ -107,7 +107,8 @@ std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
     const Eigen::MatrixXi& F,
     int radius,
     Scalar abs_threshold,
-    Scalar rel_threshold)
+    Scalar rel_threshold,
+    Scalar sample_rate)
 {
     //auto[max_direction, min_direction, _max_curvature, _min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
     //auto[_max_direction, _min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, 3);
@@ -119,7 +120,28 @@ std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
         Scalar kmax = max_curvature[fijk];
         Scalar kmin = min_curvature[fijk];
         if (compute_mean_anisotropy(kmax, kmin) < abs_threshold) continue;
-        is_fixed_direction[fijk] = (compute_parabolic_anisotropy(kmax, kmin) > rel_threshold);
+        if (compute_parabolic_anisotropy(kmax, kmin) < rel_threshold) continue;
+        is_fixed_direction[fijk] = true;
+    }
+
+    if (sample_rate < 1)
+    {
+        // shuffle directions
+        std::vector<int> fixed_directions;
+        convert_boolean_array_to_index_vector(is_fixed_direction, fixed_directions);
+        std::vector<int> shuffled_directions = shuffle_map_image(fixed_directions);
+
+        // compute number of sampled directions
+        int num_fixed_directions = fixed_directions.size();
+        int num_sampled_directions = sample_rate * num_fixed_directions;
+        num_sampled_directions = std::min<int>(num_sampled_directions, num_fixed_directions);
+
+        // get first n shuffled directions
+        is_fixed_direction = std::vector<bool>(num_faces, false);
+        for (int i = 0; i < num_sampled_directions; ++i)
+        {
+            is_fixed_direction[shuffled_directions[i]] = true;
+        }
     }
 
     return std::make_tuple(max_direction, is_fixed_direction);

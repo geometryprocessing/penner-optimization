@@ -95,6 +95,11 @@ public:
         const Eigen::VectorXd& halfedge_kappa,
         const Eigen::VectorXi& halfedge_period_jump);
 
+    Eigen::MatrixXd generate_reference_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXd& V) const;
+
 
     /**
      * @brief Build system Ax - b measuring rotation across edges in terms of face angles
@@ -106,7 +111,13 @@ public:
      */
     std::tuple<MatrixX, VectorX> build_theta_system(const Mesh<Scalar>& m) const;
 
-    void optimize_theta(const Mesh<Scalar>& m);
+    void optimize_theta(const Mesh<Scalar>& m, Scalar reg_factor=0.);
+    void smooth_theta(const Mesh<Scalar>& m, int iterations=0);
+
+    void set_fixed_directions(const std::vector<bool>& is_fixed_direction)
+    {
+        is_face_fixed = is_fixed_direction;
+    }
 
     int min_cone = 1;
     bool use_roundings = true;
