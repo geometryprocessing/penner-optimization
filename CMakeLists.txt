@@ -15,6 +15,8 @@ if (PROJECT_IS_TOP_LEVEL)
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   option(USE_COMISO "Use Comiso for field generation" ON)
+  
+  option(USE_UV_OPTIMIZATION "Add uv optimization library" ON)
 
   # Visualization options
   option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
@@ -101,10 +103,17 @@ include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)
 include(cli11)
-include(json)
 include(geometry-central)
 include(comiso)
 find_package(HDF5 REQUIRED COMPONENTS CXX)
+
+# get optimization library
+if (USE_UV_OPTIMIZATION)
+    add_compile_definitions(USE_UV_OPTIMIZATION)
+    include(symmetric-dirichlet)
+else()
+    include(json)
+endif()
 
 include(directional)
 add_library(DirectionalLib INTERFACE)
