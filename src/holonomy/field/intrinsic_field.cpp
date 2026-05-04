@@ -2069,9 +2069,13 @@ void IntrinsicNRosyField::remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar 
         if ((cones[vi] > 4) && (cones[vj] + cones[vi] == 8))
         {
             // move curvature if cone pair found
-            move_cone(m, vj, vi, cones[vi] - 4);
-            cones[vi] = 4;
-            cones[vj] = 4;
+            Scalar defect = 4 - cones[vi];
+            set_period_jump(m, hij, period_jump[hij] - defect);
+            cones[vi] += defect;
+            cones[vj] -= defect;
+            //move_cone(m, vj, vi, cones[vi] - 4); this is slow
+            assert(cones[vi] == 4);
+            assert(cones[vj] == 4);
             ++count;
         }
     }
