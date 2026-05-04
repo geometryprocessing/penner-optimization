@@ -199,7 +199,8 @@ generate_frame_field(
             F,
             radius,
             field_params.abs_anisotropy / bb_diag,
-            field_params.rel_anisotropy);
+            field_params.rel_anisotropy,
+            0.05);
 
         // compute normals for angle computations
         Eigen::MatrixXd N;
