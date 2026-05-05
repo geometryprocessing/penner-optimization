@@ -66,6 +66,18 @@ public:
         }
     }
 
+    int compute_cone_correction(int hij)
+    {
+        int vj = to[hij];
+        int cone = base_cones[vj];
+        for (int h : cone_period_jumps[vj])
+        {
+            cone += (is_double) ? (2 * values[h]) : values[h];
+        }
+
+        return (min_cones[vj] - cone);
+    }
+
     bool is_zero_cone(int hij)
     {
         int vj = to[hij];
@@ -92,18 +104,24 @@ public:
         
         if ((is_tip_cone) && (is_base_cone))
         {
-            spdlog::trace("Cone at both tip and base of period jump halfedge");
+            spdlog::warn("Cone at both tip and base of period jump halfedge");
             return rounded_value;
         }
         if (is_tip_cone)
         {
             spdlog::trace("Cone at tip of period jump halfedge");
-            return rounded_value + 1;
+            int n = compute_cone_correction(hij);
+            if (n > 1) spdlog::trace("correction at tip is {}", n);
+            if (n < 0) spdlog::error("correction at tip is {}", n);
+            return rounded_value + n;
         }
         if (is_base_cone)
         {
             spdlog::trace("Cone at base of period jump halfedge");
-            return rounded_value - 1;
+            int n = compute_cone_correction(hji);
+            if (n > 1) spdlog::trace("correction at base is {}", n);
+            if (n < 0) spdlog::error("correction at tip is {}", n);
+            return rounded_value - n;
         }
 
         return rounded_value;
@@ -716,6 +734,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     for (int hij = 0; hij < num_halfedges; ++hij) {
         int hji = m.opp[hij];
         if (hij < hji) continue; // only process each edge once
+        if ((!is_face_fixed[m.f[hij]]) || (!is_face_fixed[m.f[hji]])) continue;
         
         int fi = m.f[hij];
         int fj = m.f[hij];
