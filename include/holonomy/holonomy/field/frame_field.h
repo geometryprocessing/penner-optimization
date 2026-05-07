@@ -129,7 +129,7 @@ void write_frame_field(
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+std::tuple<int, Eigen::MatrixXd, Eigen::MatrixXd>
 maximize_combed_frame_alignment(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,

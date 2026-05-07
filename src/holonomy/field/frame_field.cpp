@@ -403,7 +403,7 @@ Eigen::SparseMatrix<double> compute_area_weight_matrix(
     return weights;
 }
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+std::tuple<int, Eigen::MatrixXd, Eigen::MatrixXd>
 maximize_combed_frame_alignment(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -451,7 +451,7 @@ maximize_combed_frame_alignment(
     // rotate field with minimizing angle
     Eigen::MatrixXd RPD1 = igl::rotate_vectors(PD1, j * right_angles, B1, B2);
     Eigen::MatrixXd RPD2 = igl::rotate_vectors(PD2, j * right_angles, B1, B2);
-    return { RPD1, RPD2 };
+    return { j, RPD1, RPD2 };
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
@@ -500,7 +500,9 @@ comb_frame_field(
     Eigen::MatrixXd PD1 = igl::rotate_vectors(frame_field, u_angles, B1, B2);
     Eigen::MatrixXd PD2 = igl::rotate_vectors(frame_field, v_angles, B1, B2);
 
-    return maximize_combed_frame_alignment(V, F, uv, FT, PD1, PD2);
+    auto [phase, PD1_r, PD2_r] = maximize_combed_frame_alignment(V, F, uv, FT, PD1, PD2);
+    
+    return {PD1_r, PD2_r};
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
