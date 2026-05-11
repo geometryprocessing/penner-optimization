@@ -211,11 +211,37 @@ int IntrinsicRefinementMesh::refine_halfedge(int halfedge_index)
 }
 
 
+// void IntrinsicRefinementMesh::refine_spanning_faces()
+// {
+//     // get mask for boundary vertices
+//     const auto& m = get_mesh();
+//     std::vector<bool> is_bd_vertex = compute_boundary_vertices(m);
+
+//     // check all faces
+//     for (int f = 0; f < m.n_faces(); ++f) {
+//         // skip double faces
+//         if (m.type[m.h[f]] == 2) continue;
+
+//         // get face vertices
+//         const auto& to = m.to;
+//         const auto& next = m.n;
+//         int h = m.h[f];
+//         int vi = to[h];
+//         int vj = to[next[h]];
+//         int vk = to[next[next[h]]];
+
+//         // refie face if all vertices are boundary
+//         if ((is_bd_vertex[vi]) && (is_bd_vertex[vj]) && (is_bd_vertex[vk])) {
+//             refine_face(f);
+//         }
+//     }
+// }
+
+
 void IntrinsicRefinementMesh::refine_spanning_faces()
 {
     // get mask for boundary vertices
     const auto& m = get_mesh();
-    std::vector<bool> is_bd_vertex = compute_boundary_vertices(m);
 
     // check all faces
     for (int f = 0; f < m.n_faces(); ++f) {
@@ -223,15 +249,22 @@ void IntrinsicRefinementMesh::refine_spanning_faces()
         if (m.type[m.h[f]] == 2) continue;
 
         // get face vertices
-        const auto& to = m.to;
+        const auto& opp = m.opp;
         const auto& next = m.n;
         int h = m.h[f];
-        int vi = to[h];
-        int vj = to[next[h]];
-        int vk = to[next[next[h]]];
+        int num_bd = 0;
+        for (int i = 0; i < 3; ++i)
+        {
+            if ((m.type[h] == 1) && (m.type[opp[h]] == 2))
+            {
+                num_bd++;
+            }
+
+            h = next[h];
+        }
 
         // refie face if all vertices are boundary
-        if ((is_bd_vertex[vi]) && (is_bd_vertex[vj]) && (is_bd_vertex[vk])) {
+        if (num_bd > 1) {
             refine_face(f);
         }
     }
