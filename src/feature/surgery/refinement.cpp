@@ -512,25 +512,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     }
 
     // refine feature faces
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        // count number of feature vertices in face
-        int num_feature_vertices = 0;
-        int hij = m.h[fijk];
-        for (int h : {hij, m.n[hij], m.n[m.n[hij]]})
-        {
-            if (is_feature_vertex[m.to[h]])
-            {
-                ++num_feature_vertices;
-            }
-        }
-
-        // refine if all vertices are features
-        if (num_feature_vertices == 3)
-        {
-            refinement_mesh.refine_face(fijk);
-        }
-    }
+    refinement_mesh.refine_spanning_faces();
 
     // build list of feature edges
     const auto& vtx_reindex = feature_finder.get_vertex_reindex();
