@@ -12,7 +12,7 @@ namespace Holonomy {
 
 // Priority function for halfedges
 // Assumes that vertex indices are unique
-bool has_priority(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex, int h)
+bool has_priority_2(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex, int h)
 {
     assert(m.to[h] != m.to[m.opp[h]]);
     return h < m.opp[h];
@@ -50,7 +50,7 @@ Scalar compute_cross_field_edge_angle(
     // if (m.type[h] > 1) { FIXME
     //    return -compute_cross_field_edge_angle(m, vtx_reindex, V, R, N, m.R[h]);
     //}
-    if (!has_priority(m, vtx_reindex, h)) {
+    if (!has_priority_2(m, vtx_reindex, h)) {
         return -compute_cross_field_edge_angle(m, vtx_reindex, V, R, N, m.opp[h]);
     }
 

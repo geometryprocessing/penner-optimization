@@ -461,39 +461,39 @@ void CutMetricGenerator::generate_marked_metrics(MarkedMetricParameters marked_m
 }
 
 // (untested) field optimization
-void CutMetricGenerator::optimize_fields(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const Eigen::MatrixXi& F_cut)
-{
-    // generate cross field from current field
-    std::array<Eigen::MatrixXd, 4> cross_field = Holonomy::generate_cross_field(V, F, reference_field, theta);
-
-    // optimize cross field
-    std::vector<int> fixed_faces;
-    convert_boolean_array_to_index_vector(is_fixed_face, fixed_faces);
-    cross_field = Holonomy::reduce_curl(V, F, cross_field, fixed_faces);
-
-    // build glued mesh
-    spdlog::info("Generating uncut mesh");
-    std::vector<Scalar> Th_hat_flat(V.rows(), 2. * M_PI);
-    std::vector<int> face_reindex_uncut;
-    arange(F.rows(), face_reindex_uncut);
-    auto [m, vtx_reindex_uncut] = Holonomy::generate_mesh(V, F, V, F, Th_hat_flat);
-
-    // set field with optimized cross field
-    spdlog::info("Setting field");
-    Eigen::VectorXi reference_corner(F.rows());
-    Holonomy::IntrinsicNRosyField field_generator;
-    field_generator.initialize(m);
-    field_generator.get_field(m, vtx_reindex_uncut, F, face_reindex_uncut, reference_corner, theta, kappa, period_jump);
-    theta = Holonomy::infer_theta(V, F, reference_corner, cross_field[0]);
-    reference_field = Holonomy::generate_reference_field(V, F, reference_corner);
-    field_generator.set_field(m, vtx_reindex_uncut, F, face_reindex_uncut, theta, kappa, period_jump);
-
-    // set principal matchings
-    spdlog::info("Generating principal matchings");
-    field_generator.compute_principal_matchings(m);
-    field_generator.get_field(m, vtx_reindex_uncut, F, face_reindex_uncut, reference_corner, theta, kappa, period_jump);
-    set_fields(F_cut, reference_field, theta, kappa, period_jump);
-}
+//void CutMetricGenerator::optimize_fields(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const Eigen::MatrixXi& F_cut)
+//{
+//    // generate cross field from current field
+//    std::array<Eigen::MatrixXd, 4> cross_field = Holonomy::generate_cross_field(V, F, reference_field, theta);
+//
+//    // optimize cross field
+//    std::vector<int> fixed_faces;
+//    convert_boolean_array_to_index_vector(is_fixed_face, fixed_faces);
+//    cross_field = Holonomy::reduce_curl(V, F, cross_field, fixed_faces);
+//
+//    // build glued mesh
+//    spdlog::info("Generating uncut mesh");
+//    std::vector<Scalar> Th_hat_flat(V.rows(), 2. * M_PI);
+//    std::vector<int> face_reindex_uncut;
+//    arange(F.rows(), face_reindex_uncut);
+//    auto [m, vtx_reindex_uncut] = Holonomy::generate_mesh(V, F, V, F, Th_hat_flat);
+//
+//    // set field with optimized cross field
+//    spdlog::info("Setting field");
+//    Eigen::VectorXi reference_corner(F.rows());
+//    Holonomy::IntrinsicNRosyField field_generator;
+//    field_generator.initialize(m);
+//    field_generator.get_field(m, vtx_reindex_uncut, F, face_reindex_uncut, reference_corner, theta, kappa, period_jump);
+//   theta = Holonomy::infer_theta(V, F, reference_corner, cross_field[0]);
+//    reference_field = Holonomy::generate_reference_field(V, F, reference_corner);
+//    field_generator.set_field(m, vtx_reindex_uncut, F, face_reindex_uncut, theta, kappa, period_jump);
+//
+//    // set principal matchings
+//    spdlog::info("Generating principal matchings");
+//    field_generator.compute_principal_matchings(m);
+//   field_generator.get_field(m, vtx_reindex_uncut, F, face_reindex_uncut, reference_corner, theta, kappa, period_jump);
+//    set_fields(F_cut, reference_field, theta, kappa, period_jump);
+//}
 
 
 } // namespace Feature

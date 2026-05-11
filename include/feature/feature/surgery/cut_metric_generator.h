@@ -166,10 +166,10 @@ private:
 
     void generate_marked_metrics(MarkedMetricParameters marked_metric_params);
 
-    void optimize_fields(
-        const Eigen::MatrixXd& V,
-        const Eigen::MatrixXi& F,
-        const Eigen::MatrixXi& F_cut);
+//    void optimize_fields(
+//        const Eigen::MatrixXd& V,
+//        const Eigen::MatrixXi& F,
+//        const Eigen::MatrixXi& F_cut);
 
 };
 

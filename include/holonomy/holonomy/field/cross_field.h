@@ -41,11 +41,11 @@ void write_cross_field(
  * @param theta: offset angles of a representative cross field direction relative to the reference
  * @return four per-face tangent direction matrices
  */
-std::array<Eigen::MatrixXd, 4> generate_cross_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta);
+//std::array<Eigen::MatrixXd, 4> generate_cross_field(
+//    const Eigen::MatrixXd& V,
+//    const Eigen::MatrixXi& F,
+//    const Eigen::MatrixXd& reference_field,
+//    const Eigen::VectorXd& theta);
 
 /**
  * @brief Reduce the curl of a cross field
@@ -58,11 +58,11 @@ std::array<Eigen::MatrixXd, 4> generate_cross_field(
  * @param fixed_faces 
  * @return std::array<Eigen::MatrixXd, 4> 
  */
-std::array<Eigen::MatrixXd, 4> reduce_curl(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::array<Eigen::MatrixXd, 4>& cross_field,
-    const std::vector<int>& fixed_faces);
+//std::array<Eigen::MatrixXd, 4> reduce_curl(
+//    const Eigen::MatrixXd& V,
+//    const Eigen::MatrixXi& F,
+//    const std::array<Eigen::MatrixXd, 4>& cross_field,
+//    const std::vector<int>& fixed_faces);
 
 } // namespace Feature 
 } // namespace Penner
