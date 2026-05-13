@@ -113,7 +113,7 @@ public:
             int n = compute_cone_correction(hij);
             if (n > 1) spdlog::trace("correction at tip is {}", n);
             if (n < 0) spdlog::error("correction at tip is {}", n);
-            return rounded_value + 1;
+            return rounded_value + n;
         }
         if (is_base_cone)
         {
@@ -121,7 +121,7 @@ public:
             int n = compute_cone_correction(hji);
             if (n > 1) spdlog::trace("correction at base is {}", n);
             if (n < 0) spdlog::error("correction at tip is {}", n);
-            return rounded_value - 1;
+            return rounded_value - n;
         }
 
         return rounded_value;
