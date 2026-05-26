@@ -25,36 +25,28 @@
 
 namespace Penner {
 
-#ifdef ENABLE_VISUALIZATION
-glm::vec3 BEIGE(0.867, 0.765, 0.647);
-glm::vec3 BLACK_BROWN(0.125, 0.118, 0.125);
-glm::vec3 TAN(0.878, 0.663, 0.427);
-glm::vec3 MUSTARD(0.890, 0.706, 0.282);
-glm::vec3 FOREST_GREEN(0.227, 0.420, 0.208);
-glm::vec3 TEAL(0., 0.375, 0.5);
-glm::vec3 DARK_TEAL(0., 0.5*0.375, 0.5*0.5);
-#endif
-
 namespace Optimization {
 
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_mesh_faces(
-    const Mesh<Scalar>& m,
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_halfedge_faces(
+    const std::vector<int>& next,
+    const std::vector<int>& f2h,
+    const std::vector<int>& to,
     const std::vector<int>& vtx_reindex)
 {
-    int num_faces = m.n_faces();
+    int num_faces = f2h.size();
     Eigen::MatrixXi F(num_faces, 3);
     Eigen::MatrixXi F_halfedge(num_faces, 3);
 
     for (int fijk = 0; fijk < num_faces; ++fijk) {
         // Get halfedges of face
-        int hij = m.h[fijk];
-        int hjk = m.n[hij];
-        int hki = m.n[hjk];
+        int hij = f2h[fijk];
+        int hjk = next[hij];
+        int hki = next[hjk];
 
         // Get vertices of face
-        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
-        int vk = vtx_reindex[m.v_rep[m.to[hjk]]];
-        int vi = vtx_reindex[m.v_rep[m.to[hki]]];
+        int vj = vtx_reindex[to[hij]];
+        int vk = vtx_reindex[to[hjk]];
+        int vi = vtx_reindex[to[hki]];
 
         // Write face with halfedge and opposite vertex data
         F_halfedge(fijk, 0) = hij;
@@ -66,6 +58,14 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_mesh_faces(
     }
 
     return std::make_tuple(F, F_halfedge);
+}
+
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_mesh_faces(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex)
+{
+    std::vector<int> to_rep = vector_compose(m.v_rep, m.to);
+    return generate_halfedge_faces(m.n, m.h, to_rep, vtx_reindex);
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXi> generate_doubled_mesh(
@@ -438,15 +438,34 @@ void view_mesh_quality(
     igl::doublearea(V, F, double_area);
     Eigen::VectorXd he2angle = convert_scalar_to_double_vector(compute_corner_angles(V, F));
 
+    std::vector<int> degenerate = {};
+    for (int f = 0; f < F.rows(); ++f)
+    {
+        int hij = 3 * f + 1;
+        int hjk = 3 * f + 2;
+        int hki = 3 * f;
+        Scalar min_angle = min(he2angle[hij], min(he2angle[hjk], he2angle[hki]));
+        if (min_angle <= 1e-8)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                int vi = F(f, i);
+                degenerate.push_back(vi);
+            }
+        }
+    }
+    Eigen::MatrixXd V_degenerate = subset_vertices(V, degenerate);
+
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
     if (mesh_handle == "") {
         mesh_handle = "quality_analysis_mesh";
-        polyscope::registerSurfaceMesh(mesh_handle, V, F);
-        polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     }
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)->setSurfaceColor(MUSTARD);
     polyscope::getSurfaceMesh(mesh_handle)->addFaceScalarQuantity("double_area", double_area);
     polyscope::getSurfaceMesh(mesh_handle)->addHalfedgeScalarQuantity("angles", he2angle);
+    polyscope::registerPointCloud(mesh_handle + " degenerate", V_degenerate);
     if (show) polyscope::show();
 #endif
 }

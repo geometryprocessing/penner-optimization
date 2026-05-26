@@ -134,6 +134,10 @@ VectorX compute_cone_angles(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& FT);
 
+Eigen::MatrixXd subset_vertices(
+    const Eigen::MatrixXd& V,
+    const std::vector<int>& subset_vertices);
+
 /// Reindex mesh such that V[i] = V[vtx_reindex[i]]
 ///
 /// @param[in] V: mesh vertices

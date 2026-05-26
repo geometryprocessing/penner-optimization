@@ -10,6 +10,22 @@
 namespace Penner {
 namespace Holonomy {
 
+/**
+ * @brief Parameters for cross field generation
+ *
+ */
+struct FieldParameters
+{
+    int min_cone = 0; // minimum allowed cone angle in the cross field
+    bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
+    bool collapse_cones = false; // collapse as many cones as possible TODO
+    bool use_roundings = true; // round away from zero
+    bool use_principal_directions = false; // round away from zero
+    Scalar min_cone_pair_distance = 0.; // minimum relative cone pair distance for fitting
+    Scalar rel_anisotropy=0.9;
+    Scalar abs_anisotropy=0.2;
+};
+
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 compute_facet_principal_curvature(
     const Eigen::MatrixXd& V,
@@ -21,6 +37,11 @@ class IntrinsicNRosyField
 public:
     IntrinsicNRosyField() {
         use_trivial_boundary = false;
+    };
+    IntrinsicNRosyField(const FieldParameters& field_params) {
+        min_cone = field_params.min_cone;
+        use_roundings = field_params.use_roundings;
+        fix_cones = field_params.fix_cone_pair;
     };
     VectorX run(const Mesh<Scalar>& m);
     VectorX run_with_viewer(
@@ -43,6 +64,12 @@ public:
         Eigen::MatrixXd& corner_kappa,
         Eigen::MatrixXi& corner_period_jump) const;
 
+    void get_halfedge_field(
+        const Mesh<Scalar>& m,
+        Eigen::VectorXd& face_theta,
+        Eigen::VectorXd& halfedge_kappa,
+        Eigen::VectorXi& halfedge_period_jump);
+
     void get_fixed_faces(
         const Mesh<Scalar>& m,
         const std::vector<int>& vtx_reindex,
@@ -62,7 +89,39 @@ public:
         const Eigen::MatrixXd& corner_kappa,
         const Eigen::MatrixXi& corner_period_jump);
 
-    Scalar min_angle = 0.;
+    void set_halfedge_field(
+        const Mesh<Scalar>& m,
+        const Eigen::VectorXd& face_theta,
+        const Eigen::VectorXd& halfedge_kappa,
+        const Eigen::VectorXi& halfedge_period_jump);
+
+    Eigen::MatrixXd generate_reference_field(
+        const Mesh<Scalar>& m,
+        const std::vector<int>& vtx_reindex,
+        const Eigen::MatrixXd& V) const;
+
+
+    /**
+     * @brief Build system Ax - b measuring rotation across edges in terms of face angles
+     * theta for current period jumps.
+     * 
+     * @param m: underlying halfedge
+     * @return matrix mapping face angles to their difference across an oriented edge
+     * @return rotation across the edge induced by the base field and current period jumps
+     */
+    std::tuple<MatrixX, VectorX> build_theta_system(const Mesh<Scalar>& m) const;
+
+    void optimize_theta(const Mesh<Scalar>& m, Scalar reg_factor=0.);
+    void smooth_theta(const Mesh<Scalar>& m, int iterations=0);
+
+    void set_fixed_directions(const std::vector<bool>& is_fixed_direction)
+    {
+        is_face_fixed = is_fixed_direction;
+    }
+
+    int min_cone = 1;
+    bool use_roundings = true;
+    bool fix_cones = false;
 
     void move_cone(const Mesh<Scalar>& m, int origin_v, int destination_v, int size);
     void initialize(const Mesh<Scalar>& m);
@@ -76,6 +135,8 @@ public:
     void collapse_nearby_cones(const Mesh<Scalar>& m);
 
     void concentrate_curvature(const Mesh<Scalar>& m);
+    void remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar rel_edge_length=1e-3);
+    void infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form);
     VectorX compute_rotation_form(const Mesh<Scalar>& m);
     void set_reference_halfedge(
         const Mesh<Scalar>& m,  
@@ -149,7 +210,8 @@ private:
     void set_period_jump(const Mesh<Scalar>& m, int hij, Scalar jump_value);
 };
 
-std::vector<int> generate_min_cones(const Mesh<Scalar>& m);
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone=1);
+std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m, const std::vector<int> roots);
 
 } // namespace Holonomy
 } // namespace Penner

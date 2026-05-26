@@ -141,12 +141,25 @@ void log_mesh_information(const Mesh<Scalar>& m, const std::string& log_name);
  * @param output_filename: filename for writing
  */
 template <typename VectorType>
-void write_vector(const VectorType& v, const std::string& output_filename, int precision = 17)
+void write_vector(
+    const VectorType& v,
+    const std::string& output_filename,
+    int precision = 17,
+    std::string sep = "\n",
+    bool append = false)
 {
-    std::ofstream output_file(output_filename, std::ios::out | std::ios::trunc);
+    std::ofstream output_file;
+    if (append)
+    {
+        output_file = std::ofstream(output_filename, std::ios::out | std::ios::app);
+    }
+    else
+    {
+        output_file = std::ofstream(output_filename, std::ios::out | std::ios::trunc);
+    }
     int n = v.size();
     for (int i = 0; i < n; ++i) {
-        output_file << std::setprecision(precision) << v[i] << std::endl;
+        output_file << std::setprecision(precision) << v[i] << sep;
     }
     output_file.close();
 }
@@ -159,6 +172,39 @@ void write_vector(const VectorType& v, const std::string& output_filename, int p
 void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, std::string separator=",");
 
 Eigen::MatrixXd read_matrix(const std::string& filename);
+
+void write_hdf5_mesh(const std::string& path,
+                const Eigen::MatrixXd& V,
+                const Eigen::MatrixXi& F);
+
+void write_hdf5_mesh_with_uv(const std::string& path,
+                const Eigen::MatrixXd& V,
+                const Eigen::MatrixXi& F,
+                const Eigen::MatrixXd& uv,
+                const Eigen::MatrixXi& FT);
+
+void read_hdf5_mesh(const std::string& path,
+                Eigen::MatrixXd& V,
+                Eigen::MatrixXi& F);
+
+void read_hdf5_mesh_with_uv(const std::string& path,
+                Eigen::MatrixXd& V,
+                Eigen::MatrixXi& F,
+                Eigen::MatrixXd& uv,
+                Eigen::MatrixXi& FT);
+
+void write_hdf5_vector_field(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXd& vector_field);
+void write_hdf5_integer_matrix(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXi& vector_field);
+
+Eigen::MatrixXd read_hdf5_vector_field(const std::string& path,
+                                   const std::string& name);
+Eigen::MatrixXi read_hdf5_integer_matrix(const std::string& path,
+                                   const std::string& name);
+
 
 /// Write a sparse matrix to file in i,j,v format.
 ///

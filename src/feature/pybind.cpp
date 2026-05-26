@@ -175,7 +175,6 @@ void init_feature_pybind(pybind11::module& m)
     m.def("prune_redundant_edge_corners", &prune_redundant_edge_corners, default_call_guard);
     m.def("compute_seamless_error", &Holonomy::compute_seamless_error, default_call_guard);
     m.def("compute_angle_error", &Holonomy::compute_angle_error, default_call_guard);
-    m.def("compute_field_direction", &compute_field_direction, default_call_guard);
     m.def("reduce_relaxed_edges", &reduce_relaxed_edges, default_call_guard);
     m.def("transfer_corner_function_to_halfedge", &transfer_corner_function_to_halfedge, default_call_guard);
     m.def("transfer_halfedge_function_to_corner", &transfer_halfedge_function_to_corner, default_call_guard);

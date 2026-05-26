@@ -85,6 +85,21 @@ int IntrinsicRefinementMesh::refine_face(int face_index)
     if (m.type[0] == 0)
     {
         int vl = refine_single_face(face_index);
+
+        // set trivial reflection
+        int h = m.n[m.out[vl]];
+        for (int i = 0; i < 3; ++i) {
+            int prev_Rh = m.n[m.n[m.R[h]]];
+            int next_h = m.n[h];
+            m.R[prev_Rh] = 0;
+            m.R[next_h] = 0;
+            m.R[m.opp[prev_Rh]] = 0;
+            m.R[m.opp[next_h]] = 0;
+
+            // iterate to next outer halfedge
+            h = m.n[m.opp[m.n[h]]];
+        }
+
         return get_new_independent_vertex(vl);
     }
     // handle doubled mesh by refining both paired faces and fix symmetry structure

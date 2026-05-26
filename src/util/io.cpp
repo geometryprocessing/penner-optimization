@@ -32,10 +32,27 @@
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
+#include <H5Cpp.h>
 
 #include "util/vector.h"
 
 namespace Penner {
+
+namespace {
+
+H5::DSetCreatPropList create_matrix_props(hsize_t rows, hsize_t cols)
+{
+    H5::DSetCreatPropList props;
+    hsize_t chunk_dims[2] = {
+        std::max<hsize_t>(1, std::min<hsize_t>(rows, 1024)),
+        std::max<hsize_t>(1, cols)
+    };
+    props.setChunk(2, chunk_dims);
+    props.setDeflate(6);
+    return props;
+}
+
+}
 
 void create_log(const std::filesystem::path& log_dir, const std::string& log_name)
 {
@@ -118,6 +135,241 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, st
     input_file.close();
 
     return convert_std_to_eigen_matrix(matrix_vec);
+}
+
+void write_hdf5_mesh(const std::string& path,
+                const Eigen::MatrixXd& V,   // Nx3
+                const Eigen::MatrixXi& F)   // Mx3
+{
+    H5::H5File file(path, H5F_ACC_TRUNC);
+
+    // Vertices
+    hsize_t v_dims[2] = {(hsize_t)V.rows(), 3};
+    H5::DataSpace v_space(2, v_dims);
+    H5::DataSet v_set = file.createDataSet(
+        "vertices", H5::PredType::NATIVE_DOUBLE, v_space, create_matrix_props(v_dims[0], v_dims[1]));
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> V_row_major = V;
+    v_set.write(V_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+
+    // Faces
+    hsize_t f_dims[2] = {(hsize_t)F.rows(), 3};
+    H5::DataSpace f_space(2, f_dims);
+    H5::DataSet f_set = file.createDataSet(
+        "faces", H5::PredType::NATIVE_INT, f_space, create_matrix_props(f_dims[0], f_dims[1]));
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> F_row_major = F;
+    f_set.write(F_row_major.data(), H5::PredType::NATIVE_INT);
+}
+
+void write_hdf5_mesh_with_uv(const std::string& path,
+                const Eigen::MatrixXd& V,
+                const Eigen::MatrixXi& F,
+                const Eigen::MatrixXd& uv,
+                const Eigen::MatrixXi& FT)
+{
+    H5::H5File file(path, H5F_ACC_TRUNC);
+
+    // Vertices
+    hsize_t v_dims[2] = {(hsize_t)V.rows(), 3};
+    H5::DataSpace v_space(2, v_dims);
+    H5::DataSet v_set = file.createDataSet(
+        "vertices", H5::PredType::NATIVE_DOUBLE, v_space, create_matrix_props(v_dims[0], v_dims[1]));
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> V_row_major = V;
+    v_set.write(V_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+
+    // Faces
+    hsize_t f_dims[2] = {(hsize_t)F.rows(), 3};
+    H5::DataSpace f_space(2, f_dims);
+    H5::DataSet f_set = file.createDataSet(
+        "faces", H5::PredType::NATIVE_INT, f_space, create_matrix_props(f_dims[0], f_dims[1]));
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> F_row_major = F;
+    f_set.write(F_row_major.data(), H5::PredType::NATIVE_INT);
+
+    // uv Vertices
+    hsize_t uv_dims[2] = {(hsize_t)uv.rows(), 2};
+    H5::DataSpace uv_space(2, uv_dims);
+    H5::DataSet uv_set = file.createDataSet(
+        "uv_vertices", H5::PredType::NATIVE_DOUBLE, uv_space, create_matrix_props(uv_dims[0], uv_dims[1]));
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> uv_row_major = uv;
+    uv_set.write(uv_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+
+    // Faces
+    hsize_t ft_dims[2] = {(hsize_t)FT.rows(), 3};
+    H5::DataSpace ft_space(2, ft_dims);
+    H5::DataSet ft_set = file.createDataSet(
+        "uv_faces", H5::PredType::NATIVE_INT, ft_space, create_matrix_props(ft_dims[0], ft_dims[1]));
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> FT_row_major = FT;
+    ft_set.write(FT_row_major.data(), H5::PredType::NATIVE_INT);
+}
+
+void write_hdf5_scalar_field(const std::string& path,
+                        const std::string& name,
+                        const Eigen::VectorXd& scalar_field)
+{
+    // Open existing file in read/write mode (no truncation)
+    H5::H5File file(path, H5F_ACC_RDWR);
+
+    // Open or create attributes group
+    H5::Group attrs;
+    if (file.exists("attributes"))
+        attrs = file.openGroup("attributes");
+    else
+        attrs = file.createGroup("attributes");
+
+    hsize_t dims[1] = {(hsize_t)scalar_field.size()};
+    H5::DataSet dset = attrs.createDataSet(
+        name, H5::PredType::NATIVE_DOUBLE, H5::DataSpace(1, dims));
+    dset.write(scalar_field.data(), H5::PredType::NATIVE_DOUBLE);
+}
+
+void write_hdf5_vector_field(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXd& vector_field)
+{
+    // Open existing file in read/write mode (no truncation)
+    H5::H5File file(path, H5F_ACC_RDWR);
+
+    // Open or create attributes group
+    H5::Group attrs;
+    if (file.exists("attributes"))
+        attrs = file.openGroup("attributes");
+    else
+        attrs = file.createGroup("attributes");
+
+    hsize_t dims[2] = {(hsize_t)vector_field.rows(), (hsize_t)vector_field.cols()};
+    H5::DataSpace space(2, dims);
+    H5::DataSet dset = attrs.createDataSet(
+        name, H5::PredType::NATIVE_DOUBLE, space, create_matrix_props(dims[0], dims[1]));
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> vector_field_rm = vector_field;
+    dset.write(vector_field_rm.data(), H5::PredType::NATIVE_DOUBLE);
+}
+
+void write_hdf5_integer_matrix(const std::string& path,
+                        const std::string& name,
+                        const Eigen::MatrixXi& vector_field)
+{
+    // Open existing file in read/write mode (no truncation)
+    H5::H5File file(path, H5F_ACC_RDWR);
+
+    // Open or create attributes group
+    H5::Group attrs;
+    if (file.exists("attributes"))
+        attrs = file.openGroup("attributes");
+    else
+        attrs = file.createGroup("attributes");
+
+    hsize_t dims[2] = {(hsize_t)vector_field.rows(), (hsize_t)vector_field.cols()};
+    H5::DataSpace space(2, dims);
+    H5::DataSet dset = attrs.createDataSet(
+        name, H5::PredType::NATIVE_INT, space, create_matrix_props(dims[0], dims[1]));
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> vector_field_rm = vector_field;
+    dset.write(vector_field_rm.data(), H5::PredType::NATIVE_INT);
+}
+
+Eigen::MatrixXd read_hdf5_vector_field(const std::string& path,
+                                   const std::string& name)
+{
+    H5::H5File file(path, H5F_ACC_RDONLY);
+
+    H5::DataSet dset = file.openDataSet("attributes/" + name);
+    hsize_t dims[2];
+    dset.getSpace().getSimpleExtentDims(dims);
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> vector_field_rm(dims[0], dims[1]);
+    dset.read(vector_field_rm.data(), H5::PredType::NATIVE_DOUBLE);
+
+    return vector_field_rm;
+}
+
+Eigen::MatrixXi read_hdf5_integer_matrix(const std::string& path,
+                                   const std::string& name)
+{
+    H5::H5File file(path, H5F_ACC_RDONLY);
+
+    H5::DataSet dset = file.openDataSet("attributes/" + name);
+    hsize_t dims[2];
+    dset.getSpace().getSimpleExtentDims(dims);
+
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> vector_field_rm(dims[0], dims[1]);
+    dset.read(vector_field_rm.data(), H5::PredType::NATIVE_INT);
+
+    return vector_field_rm;
+}
+
+
+void read_hdf5_mesh(const std::string& path,
+               Eigen::MatrixXd& V,
+               Eigen::MatrixXi& F)
+{
+    H5::H5File file(path, H5F_ACC_RDONLY);
+
+    // Vertices
+    H5::DataSet v_set = file.openDataSet("vertices");
+    H5::DataSpace v_space = v_set.getSpace();
+    hsize_t v_dims[2];
+    v_space.getSimpleExtentDims(v_dims);
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> V_row_major(v_dims[0], v_dims[1]);
+    v_set.read(V_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+    V = V_row_major;
+
+    // Faces
+    H5::DataSet f_set = file.openDataSet("faces");
+    H5::DataSpace f_space = f_set.getSpace();
+    hsize_t f_dims[2];
+    f_space.getSimpleExtentDims(f_dims);
+
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> F_row_major(f_dims[0], f_dims[1]);
+    f_set.read(F_row_major.data(), H5::PredType::NATIVE_INT);
+    F = F_row_major;
+}
+
+void read_hdf5_mesh_with_uv(const std::string& path,
+               Eigen::MatrixXd& V,
+               Eigen::MatrixXi& F,
+               Eigen::MatrixXd& uv,
+               Eigen::MatrixXi& FT)
+{
+    H5::H5File file(path, H5F_ACC_RDONLY);
+
+    // Vertices
+    H5::DataSet v_set = file.openDataSet("vertices");
+    H5::DataSpace v_space = v_set.getSpace();
+    hsize_t v_dims[2];
+    v_space.getSimpleExtentDims(v_dims);
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> V_row_major(v_dims[0], v_dims[1]);
+    v_set.read(V_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+    V = V_row_major;
+
+    // Faces
+    H5::DataSet f_set = file.openDataSet("faces");
+    H5::DataSpace f_space = f_set.getSpace();
+    hsize_t f_dims[2];
+    f_space.getSimpleExtentDims(f_dims);
+
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> F_row_major(f_dims[0], f_dims[1]);
+    f_set.read(F_row_major.data(), H5::PredType::NATIVE_INT);
+    F = F_row_major;
+
+    // UV vertices
+    H5::DataSet uv_set = file.openDataSet("uv_vertices");
+    H5::DataSpace uv_space = uv_set.getSpace();
+    hsize_t uv_dims[2];
+    uv_space.getSimpleExtentDims(uv_dims);
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> uv_row_major(uv_dims[0], uv_dims[1]);
+    uv_set.read(uv_row_major.data(), H5::PredType::NATIVE_DOUBLE);
+    uv = uv_row_major;
+
+    // UV faces
+    H5::DataSet ft_set = file.openDataSet("uv_faces");
+    H5::DataSpace ft_space = ft_set.getSpace();
+    hsize_t ft_dims[2];
+    ft_space.getSimpleExtentDims(ft_dims);
+
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> FT_row_major(ft_dims[0], ft_dims[1]);
+    ft_set.read(FT_row_major.data(), H5::PredType::NATIVE_INT);
+    FT = FT_row_major;
 }
 
 void write_sparse_matrix(const MatrixX& matrix, const std::string& filename, std::string format)

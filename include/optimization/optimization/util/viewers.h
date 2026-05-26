@@ -63,6 +63,11 @@ view_halfedge_mesh_layout(
   const std::vector<Scalar>& u_vec,
   const std::vector<Scalar>& v_vec
 );
+void view_halfedge_mesh_layout(
+    const std::vector<int>& next,
+    const std::vector<int>& f2h,
+    const std::vector<Scalar>& u_vec,
+    const std::vector<Scalar>& v_vec);
 
 /// View a mesh with parameterization grid
 ///

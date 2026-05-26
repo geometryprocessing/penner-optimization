@@ -31,6 +31,7 @@
 #pragma once
 
 #include "util/common.h"
+#include <Eigen/SparseLU>
 
 namespace Penner {
 
@@ -79,6 +80,27 @@ VectorX solve_psd_system(const MatrixX& A, const VectorX& b);
 /// @param[in] b: right hand side of the system Ax = b
 /// @return solution x to Ax = b
 VectorX solve_linear_system(const MatrixX& A, const VectorX& b);
+
+template <typename PreciseScalar, int Cols>
+Eigen::Matrix<PreciseScalar, Eigen::Dynamic, Cols> solve_high_precision(
+    const MatrixX& A,
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, Cols>& b
+)
+{
+    typedef Eigen::SparseMatrix<PreciseScalar> MatrixXp;
+    typedef Eigen::Matrix<PreciseScalar, Eigen::Dynamic, Cols> VectorXp;
+
+    MatrixXp Ap = A.cast<PreciseScalar>();
+    VectorXp bp = b.template cast<PreciseScalar>();
+    Eigen::SparseLU<MatrixXp> solver;
+    solver.compute(Ap);
+    if (solver.info() != Eigen::Success) spdlog::error("matrix factorization failed");
+    VectorXp xp = solver.solve(bp);
+    Scalar solver_error = (Scalar)((Ap * xp - bp).norm());
+    spdlog::trace("precise tutte solver error is {}", solver_error);
+
+    return xp;
+}
 
 /**
  * @brief Solve a linear system with matrix valued right hand side

@@ -66,6 +66,7 @@ void init_holonomy_pybind(pybind11::module& m)
         .def_readwrite("do_reduction", &NewtonParameters::do_reduction)
         .def_readwrite("lambda0", &NewtonParameters::lambda0)
         .def_readwrite("error_eps", &NewtonParameters::error_eps)
+        .def_readwrite("bound_norm_thres", &NewtonParameters::bound_norm_thres)
         .def_readwrite("max_itr", &NewtonParameters::max_itr)
         .def_readwrite("max_time", &NewtonParameters::max_time)
         .def_readwrite("min_lambda", &NewtonParameters::min_lambda)
@@ -85,7 +86,7 @@ void init_holonomy_pybind(pybind11::module& m)
 
     pybind11::class_<FieldParameters, std::shared_ptr<FieldParameters>>(m, "FieldParameters")
         .def(pybind11::init<>())
-        .def_readwrite("min_angle", &FieldParameters::min_angle);
+        .def_readwrite("min_cone", &FieldParameters::min_cone);
 
     pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
         .def(pybind11::init<
@@ -178,6 +179,8 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("load_frame_field", &load_frame_field, default_call_guard);
     m.def("write_frame_field", &write_frame_field, default_call_guard);
     m.def("refine_frame_field", &refine_frame_field, default_call_guard);
+    m.def("compute_loop_holonomy_matrix", &compute_loop_holonomy_matrix, default_call_guard);
+    m.def("compute_field_direction", &compute_field_direction, default_call_guard);
     m.def("write_obj", writeOBJ, default_call_guard);
 
 }

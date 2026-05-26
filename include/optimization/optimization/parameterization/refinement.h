@@ -44,6 +44,7 @@ class RefinementMesh
 {
 public:
     typedef int Index;
+    bool add_incremental = false; // add halfedge vertices one at a time; may be faster
 
     /// Constructor for the refinement mesh from an overlay VF mesh and a corresponding
     /// parameterization with overlay face to original face and endpoint annotation.
@@ -62,6 +63,9 @@ public:
         const Eigen::MatrixXi& F_uv,
         const std::vector<int>& Fn_to_F,
         const std::vector<std::pair<int, int>>& endpoints);
+
+    void refine_mesh();
+    void simplify_mesh();
 
     /// Get a VF representation of the refinement mesh with uv coordinates with overlay face
     /// to original face and endpoint annotation.
@@ -264,11 +268,8 @@ private:
 
     void build_vertex_points(const Eigen::MatrixXd& V, const Eigen::MatrixXd& uv);
 
-    void refine_mesh();
 
     bool simplify_vertex(Index halfedge_index);
-
-    void simplify_mesh();
 
     // Mesh manipulation
 

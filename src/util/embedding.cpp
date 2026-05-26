@@ -91,25 +91,33 @@ ReductionMaps::ReductionMaps(const Mesh<Scalar>& m, bool fix_bd_lengths)
 void build_edge_maps(const std::vector<int>& opp, std::vector<int>& he2e, std::vector<int>& e2he)
 {
     int num_halfedges = opp.size();
-    int num_edges = num_halfedges / 2;
     he2e.resize(num_halfedges);
     e2he.clear();
-    e2he.reserve(num_edges);
+    e2he.reserve(num_halfedges / 2);
 
     // First build map from edges to the lower index halfedges, which is a
     // bijection
     for (int h = 0; h < num_halfedges; ++h) {
-        if (h < opp[h]) {
+        if ((opp[h] >= 0) && (h < opp[h])) {
             e2he.push_back(h);
         }
     }
 
     // Construct 2-to-1 map from halfedges to edges
+    int num_edges = e2he.size();
     for (int e = 0; e < num_edges; ++e) {
         int h = e2he[e];
         he2e[h] = e;
-        he2e[opp[h]] = e;
+        if (opp[h] >= 0) he2e[opp[h]] = e;
     }
+}
+
+std::vector<int> build_edge_map(const std::vector<int>& opp)
+{
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    build_edge_maps(opp, he2e, e2he);
+    return he2e;
 }
 
 void build_edge_maps(const Mesh<Scalar>& m, std::vector<int>& he2e, std::vector<int>& e2he)
@@ -345,6 +353,20 @@ bool is_valid_symmetry(const Mesh<Scalar>& m)
     }
 
     return is_valid;
+}
+
+std::vector<int> generate_face_map(const Mesh<Scalar>& m)
+{
+    // build face map
+		// TODO: remove dependence on implementation
+    std::vector<int> face_map(m.n_faces());
+    for (int i = 0; i < m.n_faces(); ++i)
+    {
+        int f = (m.type[m.h[i]] > 1) ? m.f[m.R[m.h[i]]] : i;
+        face_map[i] = f;
+    }
+
+    return face_map;
 }
 
 } // namespace Penner

@@ -12,7 +12,7 @@ namespace Holonomy {
 
 // Priority function for halfedges
 // Assumes that vertex indices are unique
-bool has_priority(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex, int h)
+bool halfedge_has_priority(const Mesh<Scalar>& m, const std::vector<int>& vtx_reindex, int h)
 {
     assert(m.to[h] != m.to[m.opp[h]]);
     return h < m.opp[h];
@@ -50,7 +50,7 @@ Scalar compute_cross_field_edge_angle(
     // if (m.type[h] > 1) { FIXME
     //    return -compute_cross_field_edge_angle(m, vtx_reindex, V, R, N, m.R[h]);
     //}
-    if (!has_priority(m, vtx_reindex, h)) {
+    if (!halfedge_has_priority(m, vtx_reindex, h)) {
         return -compute_cross_field_edge_angle(m, vtx_reindex, V, R, N, m.opp[h]);
     }
 
@@ -109,7 +109,8 @@ VectorX generate_rotation_form_from_cross_field(
 VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params)
 {
     IntrinsicNRosyField field_generator;
-    field_generator.min_angle = field_params.min_angle;
+    field_generator.min_cone = field_params.min_cone;
+    field_generator.use_roundings = field_params.use_roundings;
     
     return field_generator.run(m);
 }
@@ -121,7 +122,8 @@ VectorX generate_intrinsic_rotation_form(
     const FieldParameters& field_params)
 {
     IntrinsicNRosyField field_generator;
-    field_generator.min_angle = field_params.min_angle;
+    field_generator.use_roundings = field_params.use_roundings;
+    field_generator.min_cone = field_params.min_cone;
 
     return field_generator.run_with_viewer(m, vtx_reindex, V);
 }

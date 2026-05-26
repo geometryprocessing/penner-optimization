@@ -214,7 +214,7 @@ double signed_area(
 // find the previous halfedge of a halfedge in a mesh
 template <typename Scalar>
 int prev_halfedge(
-    const OverlayMesh<Scalar>& m,
+    const Mesh<Scalar>& m,
     int hij)
 {
     int hli = hij;
@@ -472,6 +472,52 @@ compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h
     spdlog::debug("{}/{} vertices seen", num_found_vertices, m.n_vertices());
 
     return is_cut_h_gen;
+}
+
+void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std::vector<bool>& is_cut)
+{
+  bool any_trimmed = true;
+  while (any_trimmed)
+  {
+    any_trimmed = false;
+    for (int hi = 0; hi < m.n.size(); hi++)
+    {
+      if (!is_cut[hi]) continue;
+      int v0 = m.to[hi];
+      if ((count_valence(m.n, m.opp, hi, is_cut) == 1) && (!is_cone[v0]))
+      {
+        is_cut[hi] = false;
+        is_cut[m.opp[hi]] = false;
+        any_trimmed = true;
+        continue;
+      }
+    }
+  }
+}
+
+Eigen::Matrix<Scalar, 1, 2> perp_l(Eigen::Matrix<Scalar, 1, 2> a) {
+    Eigen::Matrix<Scalar, 1, 2> b;
+    b[0] = -a[1];
+    b[1] = a[0];
+    return b;
+};
+
+Scalar area_from_len_l(Scalar l1, Scalar l2, Scalar l3) {
+    auto s = 0.5 * (l1 + l2 + l3);
+    return sqrt(s * (s - l1) * (s - l2) * (s - l3));
+}
+
+Scalar square_l(Scalar x) { return x * x; };
+
+Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
+    const Eigen::Matrix<Scalar, 1, 2>& p1,
+    const Eigen::Matrix<Scalar, 1, 2>& p2,
+    Scalar l0,
+    Scalar l1,
+    Scalar l2)
+{
+    return p1 + (p2 - p1) * (1 + square_l(l2 / l0) - square_l(l1 / l0)) / 2 +
+                                    perp_l(p2 - p1) * 2 * area_from_len_l(1.0, l1 / l0, l2 / l0);
 }
 
 // FIXME Remove once fix halfedge origin
@@ -1038,7 +1084,7 @@ get_consistent_layout(
       int current_seg = m_o.first_segment[hij];
       while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
       {
-        auto tmp = m_o.seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = m_o.seg_bcs[current_seg];
         lambdas.push_back(tmp[1]);
         current_seg = m_o.next_segment(current_seg);
       }
@@ -1048,7 +1094,7 @@ get_consistent_layout(
       int cnt = lambdas.size() - 1;
       while (m_o.vertex_type[m_o.to[current_seg]] != ORIGINAL_VERTEX)
       {
-        auto tmp = m_o.seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = m_o.seg_bcs[current_seg];
         if (abs(lambdas[cnt] - tmp[0]) > 1e-10)
         {
           spdlog::error("alignment problem: {}, {}", lambdas[cnt], tmp[0]);
@@ -1452,6 +1498,12 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     std::vector<bool>& is_cut_h,
     int start_h = -1);
 
+template
+std::vector<bool> pullback_cut_to_overlay(
+    OverlayMesh<Scalar>& m_o,
+    const std::vector<bool>& is_cut_h,
+    bool is_original_cut);
+
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 
@@ -1489,6 +1541,12 @@ std::tuple<
     Eigen::MatrixXd,
     Eigen::MatrixXi>
 compute_layout_VF(const Mesh<mpfr::mpreal>& m_o);
+
+template
+std::vector<bool> pullback_cut_to_overlay(
+    OverlayMesh<mpfr::mpreal>& m_o,
+    const std::vector<bool>& is_cut_h,
+    bool is_original_cut);
 
 template
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi> build_layout_VF(
