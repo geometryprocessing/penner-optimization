@@ -456,32 +456,22 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
     int num_halfedges = m.n_halfedges();
     IntrinsicRefinementMesh refinement_mesh(m);
 
-    // tag feature vertices
-    std::vector<bool> is_feature_vertex(m.n_vertices(), false);
-    for (int hij = 0; hij < num_halfedges; ++hij)
-    {
-        if (feature_finder.is_feature_halfedge(hij))
-        {
-            is_feature_vertex[m.to[hij]] = true;
-        }
-    }
-
     // refine feature faces
     for (int fijk = 0; fijk < num_faces; ++fijk)
     {
         // count number of feature vertices in face
-        int num_feature_vertices = 0;
+        int num_feature_edges = 0;
         int hij = m.h[fijk];
         for (int h : {hij, m.n[hij], m.n[m.n[hij]]})
         {
-            if (is_feature_vertex[m.to[h]])
+            if (feature_finder.is_feature_halfedge(h))
             {
-                ++num_feature_vertices;
+                ++num_feature_edges;
             }
         }
 
-        // refine if all vertices are features
-        if (num_feature_vertices == 3)
+        // refine if multiple edges are features
+        if (num_feature_edges > 1)
         {
             refinement_mesh.refine_face(fijk);
         }

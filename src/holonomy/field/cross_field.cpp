@@ -1,5 +1,6 @@
 #include "holonomy/field/cross_field.h"
 
+#include <numbers>
 #include <directional/TriMesh.h>
 #include <directional/IntrinsicFaceTangentBundle.h>
 #include <directional/CartesianField.h>
