@@ -158,7 +158,7 @@ public:
     // get the output metric
     Eigen::MatrixXd get_metric() const;
 
-    void parameterize(bool use_high_precision=false);
+    void parameterize(bool use_high_precision=false, bool use_uniform_bc=false);
 
     // get the output parameterization
     std::tuple<

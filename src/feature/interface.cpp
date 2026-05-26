@@ -319,7 +319,7 @@ Eigen::MatrixXd AlignedMetricGenerator::get_metric() const
         opt_dirichlet_metric.get_metric_coordinates());
 }
 
-void AlignedMetricGenerator::parameterize(bool use_high_precision)
+void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_uniform_bc)
 {
     Eigen::MatrixXd V_o, uv_o;
     Eigen::MatrixXi F_o, FT_o;
@@ -327,7 +327,6 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     std::vector<std::pair<int, int>> endpoints;
 
     // parameterize the cut mesh in low precision
-    bool use_uniform_bc = false;
     if (use_high_precision) {
 #ifdef WITH_MPFR
         mpfr::mpreal::set_default_prec(100);
@@ -362,7 +361,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
         if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || Optimization::matrix_contains_nan(uv_o) || Optimization::matrix_contains_nan(V_o))
         {
             spdlog::warn("Falling back to high precision");
-            return parameterize(true);
+            return parameterize(true, use_uniform_bc);
        } 
     }
 
@@ -380,9 +379,19 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     auto [V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s, F_s_is_feature] =
         stitch_cut_overlay(V_o, F_o, uv_o, FT_o, fn_to_f, endpoints, F_o_is_feature, V_map, use_uniform_bc);
 
-    // refine mesh
-    Optimization::RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
-    refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+    // simplify mesh using minimal refinement
+    bool simplify = true;
+    if (simplify)
+    {
+        //Optimization::view_triangulation(V_s, F_s, fn_to_f_s, endpoints_s, "stitched mesh");
+        Optimization::RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
+        refinement_mesh.refine_mesh();
+        refinement_mesh.simplify_mesh();
+        refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+    }
+    else {
+        std::tie(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r) = std::tie(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
+    }
 
     // check error and fallback to high precision if high
     // if using low precision, check if sufficiently accurate

@@ -9,6 +9,7 @@
 #include <igl/facet_components.h>
 #include <igl/local_basis.h>
 #include <igl/rotate_vectors.h>
+#include <igl/flipped_triangles.h>
 
 #include <random>
 
@@ -491,6 +492,9 @@ void view_seamless_parameterization(
     Eigen::MatrixXd V_cut;
     cut_mesh_along_parametrization_seams(V, F, uv, FT, V_cut);
     auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = compute_seamless_error(F, uv, FT);
+    Eigen::VectorXi flipped_f;
+    igl::flipped_triangles(uv, FT, flipped_f);
+    int num_flipped = flipped_f.size();
     VectorX area, uv_area;
     igl::doublearea(V_cut, FT, area);
     igl::doublearea(uv, FT, uv_area);
@@ -500,6 +504,7 @@ void view_seamless_parameterization(
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
     spdlog::info("Min embedding area: {}", area.minCoeff());
     spdlog::info("Min uv area: {}", uv_area.minCoeff());
+    spdlog::info("{} flipped faces", num_flipped);
 
     // Generate cones
     VectorX cone_angles = compute_cone_angles(V, F, uv, FT);
