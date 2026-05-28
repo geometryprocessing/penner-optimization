@@ -356,6 +356,13 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     if (marked_metric_params.free_interior) make_free_interior(m);
     if (marked_metric_params.remove_symmetry) remove_symmetry(_m, m);
 
+    // if set to free cones, instead mark all free cones
+    if (marked_metric_params.use_free_cones)
+    {
+        std::vector<int> cones = Optimization::enumerate_cone_vertices(m);
+        convert_index_vector_to_boolean_array(cones, m.n_ind_vertices(), m.fixed_dof);
+    }
+
     // Build initial metric coordinates
     VectorX metric_coords;
     if (marked_metric_params.use_initial_zero) {

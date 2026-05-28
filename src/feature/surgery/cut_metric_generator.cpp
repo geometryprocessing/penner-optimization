@@ -1,5 +1,6 @@
 #include "feature/surgery/cut_metric_generator.h"
 
+#include "optimization/core/constraint.h"
 #include "holonomy/field/cross_field.h"
 #include "holonomy/field/frame_field.h"
 #include "holonomy/field/intrinsic_field.h"

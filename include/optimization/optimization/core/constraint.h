@@ -36,6 +36,20 @@
 namespace Penner {
 namespace Optimization {
 
+
+/**
+ * @brief Enumerate all cone vertices of a mesh, i.e., vertices whose target angle Th_hat
+ * differs from the flat angle at that vertex type.
+ *
+ * A vertex is flat if its target angle equals the expected angle for a smooth surface point:
+ * - Closed mesh: interior vertices are flat at 2*pi
+ * - Open (doubled) mesh: interior vertices are flat at 4*pi; boundary vertices are flat at 2*pi
+ *
+ * @param[in] m: mesh with target angles Th_hat
+ * @return indices of all cone vertices
+ */
+std::vector<int> enumerate_cone_vertices(const Mesh<Scalar>& m);
+
 /**
  * @brief Compute vertex holonomy angles for a mesh with given angles
  *

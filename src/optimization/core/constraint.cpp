@@ -32,10 +32,41 @@
 
 #include "util/embedding.h"
 #include "util/linear_algebra.h"
+#include "util/boundary.h"
 #include "optimization/core/area.h"
 
 namespace Penner {
 namespace Optimization {
+
+std::vector<int> enumerate_cone_vertices(const Mesh<Scalar>& m)
+{
+    bool is_closed = (m.type[0] == 0);
+    std::vector<bool> is_boundary_vertex = compute_boundary_vertices(m);
+
+    int num_vertices = m.n_ind_vertices();
+    std::vector<int> cone_indices;
+    cone_indices.reserve(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        // closed mesh case
+        if (is_closed)
+        {
+            if (float_equal<Scalar>(m.Th_hat[vi], 2 * M_PI)) continue;
+            cone_indices.push_back(vi);
+        }
+        // open mesh case
+        else
+        {
+            // check for interior and boundary cones
+            if ((!is_boundary_vertex[vi]) && (float_equal<Scalar>(m.Th_hat[vi], 4 * M_PI))) continue;
+            //if (is_boundary_vertex[vi]) continue;
+            if ((is_boundary_vertex[vi]) && (float_equal<Scalar>(m.Th_hat[vi], 2 * M_PI))) continue;
+            //spdlog::info("cone angle {}", m.Th_hat[vi]);
+            cone_indices.push_back(vi);
+        }
+    }
+
+    return cone_indices;
+}
 
 VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha)
 {
