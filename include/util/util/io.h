@@ -171,6 +171,13 @@ void write_vector(
 /// @param[in] separator: (optional) separator for columns
 void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, std::string separator=",");
 
+/// Write matrix of integers to file.
+///
+/// @param[in] matrix: matrix to serialize
+/// @param[in] filename: file to write the matrix to
+/// @param[in] separator: (optional) separator for columns
+void write_integer_matrix(const Eigen::MatrixXi& matrix, const std::string& filename, std::string separator=",");
+
 Eigen::MatrixXd read_matrix(const std::string& filename);
 
 void write_hdf5_mesh(const std::string& path,

@@ -113,6 +113,35 @@ void write_matrix(const Eigen::MatrixXd& matrix, const std::string& filename, st
     output_file.close();
 }
 
+void write_integer_matrix(const Eigen::MatrixXi& matrix, const std::string& filename, std::string separator)
+{
+    if (matrix.cols() == 0) {
+        return;
+    }
+
+    // Open file
+    std::ofstream output_file;
+    output_file.open(filename);
+
+    // Iterate over rows
+    for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
+        // Iterate over columns of row i
+        Scalar v = matrix(i, 0);
+        output_file << v;
+        for (Eigen::Index j = 1; j < matrix.cols(); ++j) {
+            Scalar v = matrix(i, j);
+            output_file << separator << v;
+        }
+
+        // Add newline to end of row
+        output_file << std::endl;
+    }
+
+    // Close file
+    output_file.close();
+}
+
+
  Eigen::MatrixXd read_matrix(const std::string& filename)
 {
     Eigen::MatrixXd matrix;
