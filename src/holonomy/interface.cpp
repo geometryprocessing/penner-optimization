@@ -360,7 +360,10 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     if (marked_metric_params.use_free_cones)
     {
         std::vector<int> cones = Optimization::enumerate_cone_vertices(m);
-        convert_index_vector_to_boolean_array(cones, m.n_ind_vertices(), m.fixed_dof);
+        if (!cones.empty())
+        {
+            convert_index_vector_to_boolean_array(cones, m.n_ind_vertices(), m.fixed_dof);
+        }
     }
 
     // Build initial metric coordinates

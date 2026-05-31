@@ -449,7 +449,7 @@ void convert_index_vector_to_boolean_array(
     Index num_indices,
     std::vector<bool>& boolean_array)
 {
-    boolean_array.resize(num_indices, false);
+    boolean_array = std::vector<bool>(num_indices, false);
     for (size_t i = 0; i < index_vector.size(); ++i) {
         boolean_array[index_vector[i]] = true;
     }
