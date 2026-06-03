@@ -53,7 +53,21 @@ void init_holonomy_pybind(pybind11::module& m)
     pybind11::class_<IntrinsicNRosyField>(m, "IntrinsicNRosyField")
         .def(pybind11::init<>())
         .def("initialize", &IntrinsicNRosyField::initialize)
-        .def("set_field", &IntrinsicNRosyField::set_field)
+        .def("set_field", pybind11::overload_cast<
+            const Mesh<Scalar>&,
+            const std::vector<int>&,
+            const Eigen::MatrixXi&,
+            const std::vector<int>&,
+            const Eigen::VectorXd&,
+            const Eigen::MatrixXd&,
+            const Eigen::MatrixXi&>(&IntrinsicNRosyField::set_field))
+        .def("set_field", pybind11::overload_cast<
+            const Mesh<Scalar>&,
+            const std::vector<int>&,
+            const Eigen::MatrixXi&,
+            const Eigen::VectorXd&,
+            const Eigen::MatrixXd&,
+            const Eigen::MatrixXi&>(&IntrinsicNRosyField::set_field))
         .def("compute_principal_matchings", &IntrinsicNRosyField::compute_principal_matchings)
         .def("fix_inconsistent_matchings", &IntrinsicNRosyField::fix_inconsistent_matchings)
         .def("compute_rotation_form", &IntrinsicNRosyField::compute_rotation_form);
