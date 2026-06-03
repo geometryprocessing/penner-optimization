@@ -55,3 +55,10 @@ if ((NOT USE_MULTIPRECISION) AND (DEBUG_WARNINGS))
       -Wall -Wpedantic -Wextra -Werror
     )
 endif()
+
+if(BUILD_CURVATURE_METRIC_TESTS)
+  add_executable(penner_tests tests/tests.cpp)
+  target_link_libraries(penner_tests PRIVATE PennerOptimizationLib Catch2::Catch2WithMain)
+  target_include_directories(penner_tests PRIVATE tests)
+  add_test(NAME penner_tests COMMAND penner_tests)
+endif()

@@ -26,6 +26,11 @@ if (PROJECT_IS_TOP_LEVEL)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
   option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
+  if(BUILD_CURVATURE_METRIC_TESTS)
+    include(Catch2)
+    include(CTest)
+  endif()
+
   # Set default libigl and suitesparse options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
