@@ -214,6 +214,20 @@ double signed_area(
 // find the previous halfedge of a halfedge in a mesh
 template <typename Scalar>
 int prev_halfedge(
+    const Mesh<Scalar>& m,
+    int hij)
+{
+    int hli = hij;
+    while (m.n[hli] != hij)
+    {
+        hli = m.n[hli];
+    }
+
+    return hli;
+}
+
+template <typename Scalar>
+int prev_halfedge(
     const OverlayMesh<Scalar>& m,
     int hij)
 {
