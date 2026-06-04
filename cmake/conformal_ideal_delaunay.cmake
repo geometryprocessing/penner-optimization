@@ -6,3 +6,7 @@ FetchContent_Declare(
     GIT_TAG penner_optimization
 )
 FetchContent_MakeAvailable(conformal_ideal_delaunay)
+
+if(TARGET conformal_ideal_delaunay AND APPLE)
+    target_compile_options(conformal_ideal_delaunay PRIVATE -Wno-extra-tokens)
+endif()
