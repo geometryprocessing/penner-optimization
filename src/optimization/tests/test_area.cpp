@@ -30,12 +30,13 @@
 *********************************************************************************/
 #include <catch2/catch_test_macros.hpp>
 
-#include "area.hh"
-#include "shapes.hh"
-#include "common.hh"
-#include "cone_metric.hh"
+#include "optimization/core/area.h"
+#include "optimization/util/shapes.h"
+#include "optimization/core/common.h"
+#include "optimization/core/cone_metric.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 TEST_CASE( "The squared area of a triangle can be computed", "[area]" )
 {

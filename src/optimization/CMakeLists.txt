@@ -60,5 +60,8 @@ if(BUILD_CURVATURE_METRIC_TESTS)
   add_executable(penner_tests tests/tests.cpp)
   target_link_libraries(penner_tests PRIVATE PennerOptimizationLib Catch2::Catch2WithMain)
   target_include_directories(penner_tests PRIVATE tests)
+  target_compile_definitions(penner_tests PRIVATE
+    TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/regression"
+  )
   add_test(NAME penner_tests COMMAND penner_tests)
 endif()

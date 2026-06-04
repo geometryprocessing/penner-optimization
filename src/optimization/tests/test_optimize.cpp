@@ -30,13 +30,14 @@
 *********************************************************************************/
 #include <catch2/catch_test_macros.hpp>
 
-#include "implicit_optimization.hh"
-#include "shapes.hh"
-#include "common.hh"
-#include "cone_metric.hh"
-#include "energy_functor.hh"
+#include "optimization/metric_optimization/implicit_optimization.h"
+#include "optimization/util/shapes.h"
+#include "optimization/core/common.h"
+#include "optimization/core/cone_metric.h"
+#include "optimization/metric_optimization/energy_functor.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 TEST_CASE("The optimium edge length for a triangle can be computed", "[optimize]")
 {

@@ -32,12 +32,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <igl/readOBJ.h>
 
-#include "common.hh"
-#include "penner_optimization_interface.hh"
-#include "io.hh"
-#include "vector.hh"
+#include "optimization/core/common.h"
+#include "optimization/interface.h"
+#include "util/io.h"
+#include "util/vector.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 namespace
 {
