@@ -3,6 +3,12 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Methods to compute cones on a surface from field data, as well as various
+ * queries and methods to modify invalid or challenging cone configurations.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

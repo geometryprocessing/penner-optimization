@@ -9,15 +9,6 @@ set(HolonomyCoreSrc
   core/viewer.cpp
 )
 
-set(FieldSrc
-  field/field.cpp
-  field/frame_field.cpp
-  field/cross_field.cpp
-  field/facet_field.cpp
-  field/forms.cpp
-  field/intrinsic_field.cpp
-)
-
 set(HolonomySrc
   holonomy/cones.cpp
   holonomy/constraint.cpp
@@ -39,12 +30,14 @@ add_library(PennerHolonomyLib
   interface.cpp
   pybind.cpp
   ${HolonomyCoreSrc}
-  ${FieldSrc}
   ${HolonomySrc}
   ${SimilaritySrc}
   ${DirichletSrc}
 )
-target_include_directories(PennerHolonomyLib PUBLIC ../../include/holonomy)
+target_include_directories(PennerHolonomyLib PUBLIC
+  ../../include/holonomy
+  ../../include/field
+)
 target_link_libraries(PennerHolonomyLib PUBLIC
   PennerUtilLib
   PennerOptimizationLib

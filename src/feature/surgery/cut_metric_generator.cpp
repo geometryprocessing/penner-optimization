@@ -1,8 +1,8 @@
 #include "feature/surgery/cut_metric_generator.h"
 
-#include "holonomy/field/cross_field.h"
-#include "holonomy/field/frame_field.h"
-#include "holonomy/field/intrinsic_field.h"
+#include "field/cross_field.h"
+#include "field/frame_field.h"
+#include "field/intrinsic_field.h"
 #include "holonomy/holonomy/cones.h"
 
 #include "feature/core/component_mesh.h"

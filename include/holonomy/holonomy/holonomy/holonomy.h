@@ -3,6 +3,12 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Methods to compute the holonomy of dual loops on a surface with metric data,
+ * as well as the rotation of a field under the dual loop.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

@@ -81,6 +81,38 @@ To engender future work in this exciting direction, we provide a library `Penner
 2.  Various energy functionals and constrained optimization methods for meshes with Penner coordinates
 3.  Layout and refinement methods to generate a parameterization for a mesh from arbitrary Penner coordinates, i.e., the parameterization is an embedding in the uv plane of the metric defined by the Penner coordinate.
 
+### Library Structure
+
+- Metric
+	- Utility
+	- Core
+	- Parametrization
+- Field
+- Optimization
+	- Core:
+	- Metric Optimization:
+	- Parameterization: (TODO: move to top level. This is fundamental and common code.)
+- Holonomy: Library for parametrizing surfaces with full seamless constraints with arbitrary holonomy signatures
+	- Core: Basic utilities for tracking dual loops on a surface
+		- Boundary Basis: Basis loops for boundary alignment constraints
+		- Common: Assorted utilities
+		- Dual Lengths: Compute lengths of dual edges on a surface (TODO: move)
+		- Dual Loop: Data structures for representing dual loops on a surface with efficient queries of edge and path intersections
+		- Dual Segment: Minimal representation of dual paths on a surface as list of atomic face crossings
+		- Homology Basis: Construct homology basis loops for a surface.
+		- Quality: Compute triangle quality measures on a mesh (TODO: move)
+		- Viewer: Assorted viewers
+	- Holonomy: 
+		- Cones: Compute cones, as well as related queries and modification heuristics (TODO: move to field, and consolidate cone code here)
+		- Constraints: Holonomy angle constraints, including cone and dual loop constraints.
+		- Holonomy: Compute holonomy of dual loops on a surface with metric
+		- Marked Penner Cone Metric: Differentiable cone metric with full holonomy signature constraints
+		- Newton: Modified least squares Newton method for holonomy angle constraints
+		- Rotation Form: Method to compute the rotation of a field across edges from a cross field (TODO: integrate with field code)
+	- Similarity: TODO. It makes sense to keep this here, since it can satisfy full holonomy signature constraints, but is not integral to the codebase
+- Feature: Library for parametrizing surfaces with both seamless and feature alignment constraints
+	- 
+
 ## Citation
 
 ```

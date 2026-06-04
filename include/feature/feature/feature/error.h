@@ -4,6 +4,12 @@
 #include "feature/core/common.h"
 #include "feature/core/vf_corners.h"
 
+/**
+ * @brief Methods to compute feature alignment error. Also includes methods to determine
+ * misaligned edges and numerically degenerate triangles.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

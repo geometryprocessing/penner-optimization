@@ -7,6 +7,12 @@
 
 #include <igl/Timer.h>
 
+/**
+ * @brief Modified Newton method to find a Marked Penner Cone Metric satisfying holonomy
+ * signature constraints.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

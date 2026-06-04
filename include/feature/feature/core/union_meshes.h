@@ -6,9 +6,13 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "feature/util/union_find.h"
 
+/**
+ * @brief Methods to combine collections of meshes into a single mesh with multiple components.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
-
 
 /**
  * @brief Count the total number of vertices in set of mesh components.

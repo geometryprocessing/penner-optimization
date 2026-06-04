@@ -7,6 +7,17 @@
 #include "feature/core/vf_corners.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Method to find feature edges on a surface and hard feature constraint subsets.
+ * 
+ * Uses dihedral angle to determine feature edges. Also includes options to set features manually,
+ * and methods to prune features based on component size.
+ * 
+ * Also includes methods to remove feature graph cycles to use as hard feature constraints, and
+ * to greedily remove additional features.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

@@ -1,6 +1,6 @@
 #include "holonomy/similarity/energy.h"
 
-#include "holonomy/field/forms.h"
+#include "field/forms.h"
 
 namespace Penner {
 namespace Holonomy {

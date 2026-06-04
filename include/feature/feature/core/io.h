@@ -7,6 +7,11 @@ namespace Penner {
 namespace Feature {
 
 /**
+ * @brief Methods to write/read edges to/from file, including feature, boundary, and seam edges.
+ * 
+ */
+
+/**
  * @brief Write feature edges to a 0-indexed list in the following format:
  * <e00> <e01>
  * <e10> <101>
@@ -92,6 +97,18 @@ void write_boundary(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_uv);
 
+/**
+ * @brief Write mesh edges to file in the format:
+ * v x0 y0 z0
+ * v x1 y1 z1
+ * ...
+ * l v0 v1
+ * ...
+ * 
+ * @param filename: output edge geometry file
+ * @param V: mesh vertices
+ * @param F: mesh edges
+ */
 void write_edges(
     const std::string& filename,
     const Eigen::MatrixXd& V,

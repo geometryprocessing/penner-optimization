@@ -15,7 +15,7 @@
 #include "util/vector.h"
 #include "util/vf_mesh.h"
 #include "holonomy/holonomy/constraint.h"
-#include "holonomy/field/frame_field.h"
+#include "field/frame_field.h"
 #include "optimization/core/viewer.h"
 
 #ifdef ENABLE_VISUALIZATION

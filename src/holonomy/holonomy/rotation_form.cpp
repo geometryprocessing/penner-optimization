@@ -1,8 +1,8 @@
 #include "holonomy/holonomy/rotation_form.h"
 
-#include "holonomy/field/field.h"
-#include "holonomy/field/intrinsic_field.h"
-#include "holonomy/field/forms.h"
+#include "field/field.h"
+#include "field/intrinsic_field.h"
+#include "field/forms.h"
 
 #include <igl/boundary_facets.h>
 #include <igl/per_face_normals.h>

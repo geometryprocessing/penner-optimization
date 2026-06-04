@@ -134,6 +134,7 @@ def render_uv_one(args, fname):
     u, v = render.get_corner_uv(n, h, to, f, fuv, uv)
 
     # Get colormap for the mesh
+    logger.info('Getting {} colormap'.format(args['colormap']))
     if args['render_color'] == 'blue':
         r = 0.25 + 0.0 * np.abs(r)
     elif args['render_color'] == 'purple':

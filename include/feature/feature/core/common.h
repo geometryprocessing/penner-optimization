@@ -6,6 +6,11 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 
+/**
+ * @brief Assorted utility functions.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

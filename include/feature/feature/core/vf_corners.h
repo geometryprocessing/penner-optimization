@@ -2,6 +2,22 @@
 
 #include "feature/core/common.h"
 
+/**
+ * @brief Methods for representing mesh edges using opposite corners.
+ * 
+ * The representations are:
+ *  Mask: a Fx3 boolean mask for marking corners
+ *  Corner: a simple face and local corner index pair (f, i), with i in {0, 1, 2}
+ *  Face Edge: pair of both VF corners opposite the edge
+ * 
+ * Supports conversion between different representations, as well as conversion to and from
+ * vertex pairs and halfedge indices.
+ * 
+ * Also includes various edge utilities, such pruning redundant corners, taking mask differences,
+ * and finding parametrization seams.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

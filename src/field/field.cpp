@@ -1,8 +1,8 @@
-#include "holonomy/field/field.h"
+#include "field/field.h"
 
 #include "util/vf_mesh.h"
 #include "holonomy/core/dual_loop.h"
-#include "holonomy/field/forms.h"
+#include "field/forms.h"
 
 #include "optimization/core/constraint.h"
 #include "util/vector.h"

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "holonomy/core/common.h"
-#include "holonomy/field/intrinsic_field.h"
+#include "field/intrinsic_field.h"
 
 namespace Penner {
 namespace Holonomy {

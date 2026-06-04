@@ -1,4 +1,4 @@
-#include "holonomy/field/frame_field.h"
+#include "field/frame_field.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/core/dual_loop.h"
 #include "holonomy/holonomy/holonomy.h"

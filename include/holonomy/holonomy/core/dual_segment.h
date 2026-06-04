@@ -5,6 +5,20 @@
 namespace Penner {
 namespace Holonomy {
 
+/**
+ * @brief Methods to manage sequences of dual segments (pairs of halfedges bounding a face crossing path) on a mesh,
+ * including methods to convert to or from dual loop sequences and to update under counter clockwise edge flips.
+ * 
+ * These methods are largely superseded by the Dual Loop representations, which support more efficient
+ * queries, but are useful as a minimal representation for quick implementations and comparison.
+ * 
+ */
+
+/**
+ * @brief Representation of a dual segment as two halfedges in a face at the start
+ * and end of the dual segment.
+ *
+ */
 typedef std::array<int, 2> DualSegment;
 
 /**

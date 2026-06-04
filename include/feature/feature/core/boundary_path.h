@@ -6,6 +6,12 @@ namespace Penner {
 namespace Feature {
 
 /**
+ * @brief Data structure for tracking the line of symmetry between two boundary vertices. Also
+ * supports computation of the length of the line and the gradient with repect to Penner coordinates.
+ * 
+ */
+
+/**
  * @brief Representation of a boundary edge path. If the boundary edge is unflipped and lies along
  * the symmetry line, then this is just a single halfedge in the primal mesh. If the edge is
  * flipped, then this is a path of halfedges in the mesh copy (type 2) homotopic to the symmetry

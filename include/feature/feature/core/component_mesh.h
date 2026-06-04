@@ -7,6 +7,14 @@
 #include "feature/util/union_find.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Methods and data structures for splitting a disconnected mesh into separate components,
+ * as well as corresponding reindexing maps.
+ * 
+ * Separate methods for both halfedge and VF representations.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 
@@ -27,6 +35,13 @@ public:
      */
     ComponentMesh(const Mesh<Scalar>& m);
 
+    /**
+     * @brief Construct a collection of components for the global (possibly disconnected) mesh using
+     * precomputed component information
+     *
+     * @param m: (possibly disconnected) manifold mesh
+     * @param components: component index for each face of the mesh
+     */
     ComponentMesh(const Mesh<Scalar>& m, const Eigen::VectorXi& components);
 
     /**

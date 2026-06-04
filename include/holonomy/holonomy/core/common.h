@@ -13,6 +13,11 @@
 #include "optimization/core/cone_metric.h"
 #include "util/vector.h"
 
+/**
+ * @brief Assorted utility functions.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 
