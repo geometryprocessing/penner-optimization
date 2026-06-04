@@ -1,6 +1,6 @@
 import os, sys
 script_dir = os.path.dirname(__file__)
-module_dir = os.path.join(script_dir, '..', 'py')
+module_dir = os.path.join(script_dir, '..', '..', 'py')
 sys.path.append(module_dir)
 
 import numpy as np

@@ -42,7 +42,7 @@ def render_uv_one(args, fname):
     os.makedirs(output_dir, exist_ok=True)
 
     # Get logger
-    log_path = os.path.join(output_dir, name+'_similarity_render.log')
+    log_path = os.path.join(output_dir, name+'_holonomy_render.log')
     logger = script_util.get_logger(log_path)
     logger.info("Rendering {}".format(name))
 
@@ -63,11 +63,6 @@ def render_uv_one(args, fname):
     except:
         logger.error("Could not load uv coordinates")
         return
-
-    # Cut mesh along along uv lines
-    #v_cut = script_util.cut_mesh(v3d, f, uv, fuv)
-    #v3d = v_cut
-    #f = fuv
 
     # Need to build double mesh when it has boundary
     is_bd = igl.is_border_vertex(v3d_orig, f_orig)
@@ -99,28 +94,12 @@ def render_uv_one(args, fname):
         blue_size = 0
 
     # Get cut to singularity edges (or build for double meshes)
-    use_boundary_edges = True
     if (args["no_cut"]):
         v_cut_to_sin = []
         f_cut_to_sin = []
         logger.info("Skipping cut to singularity")
-    elif (use_boundary_edges):
-        v_cut_to_sin, f_cut_to_sin = script_util.get_boundary_edges(v3d, uv, f, fuv, bd_thick)
     else:
-        try:
-            cut_to_sin_list_path = os.path.join(uv_dir, m + "_output", name+"_cut_to_sin_list.pickle")
-            logger.info("Loading cut_to_sin_list at {}".format(cut_to_sin_list_path))
-            with open(cut_to_sin_list_path, 'rb') as fp:
-                cut_to_sin_list = pickle.load(fp)
-        except:
-            logger.error("Could not load cut_to_sin_list")
-            # FIXME Make independent function
-            bd_loops = igl.all_boundary_loop(f)
-            cut_to_sin_list = []
-            #for loop in bd_loops:
-            #    for i in np.arange(len(loop) - 1):
-            #        cut_to_sin_list.append([loop[i], loop[i+1]])
-        v_cut_to_sin, f_cut_to_sin = penner.get_edges(v3d_orig, f_orig, cut_to_sin_list, bd_thick)
+        v_cut_to_sin, f_cut_to_sin = script_util.get_boundary_edges(v3d, uv, f, fuv, bd_thick)
 
     # Get point matrices
     logger.info("Getting point matrices")
@@ -155,20 +134,20 @@ def render_uv_one(args, fname):
     u, v = render.get_corner_uv(n, h, to, f, fuv, uv)
 
     # Get colormap for the mesh
+<<<<<<< HEAD
     logger.info('Getting {} colormap'.format(args['colormap']))
     #r = np.full(len(v3d), 0.25)
     r = np.full(len(v3d), 0.5)
     #colormap = cm.get_cmap('YlOrBr')
     #colormap = cm.get_cmap('OrRd')
     #colormap = cm.get_cmap('PuRd')
+=======
+    if args['render_color'] == 'blue':
+        r = 0.25 + 0.0 * np.abs(r)
+    elif args['render_color'] == 'purple':
+        r = 0.5 + 0.0 * np.abs(r)
+>>>>>>> main
     colormap = cm.get_cmap('cool')
-    colormap_scale = args['colormap_scale']
-    logger.info('Using colormap scale {}'.format(colormap_scale))
-    if (colormap_scale > 0):
-        norm = colors.CenteredNorm(colormap_scale*0.5, colormap_scale*0.6)
-    else:
-        norm = colors.CenteredNorm(0, 1)
-        r = r * 0
     norm = colors.NoNorm()
 
     # Render image
@@ -218,7 +197,6 @@ def render_uv_one(args, fname):
 def render_uv_many(args):
     script_util.run_many(render_uv_one, args)
 
-
 def add_render_uv_arguments(parser):
     parser.add_argument(
         "-o", "--output_dir",
@@ -240,20 +218,9 @@ def add_render_uv_arguments(parser):
         default=1
     )
     parser.add_argument(
-        "--colormap",
-        help="energy for colormap",
-        default="scale_factors"
-    )
-    parser.add_argument(
-        "--interpolate_from_original",
-        help="use interpolated colormap from original values",
-        action="store_true"
-    )
-    parser.add_argument(
-        "--colormap_scale",
-        help="ratio to scale colormap by",
-        type=float,
-        default=1
+        "--render_color",
+        help="color for the mesh render",
+        default="blue"
     )
     parser.add_argument(
         "--suffix",

@@ -250,6 +250,8 @@ def get_vertex_energy(
     uv_embed[:,:2] = uv[:,:2]
 
     # Get energy
+    if (colormap == 'none'):
+        energy = 0.25 * np.ones(len(v))
     if (colormap == 'scale_factors'):
         energy = best_fit_conformal_vf(v, f, uv_embed, fuv)
     if (colormap == 'sym_dirichlet'):
@@ -293,6 +295,8 @@ def get_face_energy(
         energy = arap_vf(v, f, uv_embed, fuv)
     if (colormap == 'quadratic_sym_dirichlet'):
         energy = quadratic_sym_dirichlet_vf(v, f, uv_embed, fuv)
+    if (colormap == 'none'):
+        energy = 0.25 * np.ones(len(f))
 
     # Optionally use face weighting
     if (use_face_weight):
