@@ -1,12 +1,12 @@
 set(UtilSrc
   boundary.cpp
+  common.cpp
   embedding.cpp
   io.cpp
   linear_algebra.cpp
   map.cpp
   spanning_tree.cpp
   vector.cpp
-  vf_corners.cpp
   vf_mesh.cpp
 )
 
@@ -20,10 +20,13 @@ target_link_libraries(PennerUtilLib PUBLIC
   igl::predicates
   spdlog::spdlog
   conformal_cpp
+  HDF5::HDF5
+  #CoMISo
   ${MPFR_LIBRARIES}
   ${SUITESPARSE_LIBS}
   ${POLYSCOPE_LIBRARIES}
 )
+target_compile_features(PennerUtilLib PUBLIC cxx_std_17)
 
 target_compile_definitions(PennerUtilLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

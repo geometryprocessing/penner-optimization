@@ -7,6 +7,6 @@ FetchContent_Declare(
     geometry-central
     SYSTEM
     GIT_REPOSITORY https://github.com/nmwsharp/geometry-central.git
-    GIT_TAG 03f198748d263cea3faa040c8a399d59c38d67bc
+    GIT_TAG 52a533bd9d635a3385af3b31f8bab78684d5b20f
 )
 FetchContent_MakeAvailable(geometry-central)

@@ -20,8 +20,7 @@
 
 #include "feature/core/common.h"
 #include "feature/core/component_mesh.h"
-#include "util/vf_corners.h"
-#include "util/vf_mesh.h"
+#include "feature/core/vf_corners.h"
 #include "feature/dirichlet/constraint.h"
 #include "feature/dirichlet/optimization.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
@@ -176,7 +175,7 @@ void init_feature_pybind(pybind11::module& m)
     m.def("prune_redundant_edge_corners", &prune_redundant_edge_corners, default_call_guard);
     m.def("compute_seamless_error", &Holonomy::compute_seamless_error, default_call_guard);
     m.def("compute_angle_error", &Holonomy::compute_angle_error, default_call_guard);
-    m.def("compute_field_direction", &compute_field_direction, default_call_guard);
+    //m.def("compute_field_direction", &compute_field_direction, default_call_guard);
     m.def("reduce_relaxed_edges", &reduce_relaxed_edges, default_call_guard);
     m.def("transfer_corner_function_to_halfedge", &transfer_corner_function_to_halfedge, default_call_guard);
     m.def("transfer_halfedge_function_to_corner", &transfer_halfedge_function_to_corner, default_call_guard);
@@ -184,7 +183,7 @@ void init_feature_pybind(pybind11::module& m)
 
     m.def("check_flip", &check_flip, default_call_guard);
     m.def("compute_height", &compute_height, default_call_guard);
-    m.def("find_seams", &find_seams, default_call_guard);
+    //m.def("find_seams", &find_seams, default_call_guard);
     m.def("write_seams", &write_seams, default_call_guard);
     m.def("write_boundary", &write_boundary, default_call_guard);
     m.def("write_features", &write_features, default_call_guard);

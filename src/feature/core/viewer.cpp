@@ -1,6 +1,6 @@
 #include "feature/core/viewer.h"
 
-#include "util/vf_corners.h"
+#include "feature/core/vf_corners.h"
 #include "feature/feature/error.h"
 #include "feature/feature/features.h"
 #include "feature/feature/gluing.h"
@@ -168,6 +168,66 @@ void view_feature_edges(
     polyscope::registerCurveNetwork(mesh_handle, V, E);
 
     if (show) polyscope::show();
+#endif
+}
+
+
+void view_cross_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    std::string mesh_handle)
+{
+    if (mesh_handle == "") {
+        mesh_handle = "cross_field";
+    }
+
+    // generate frame field geometry from cross field
+    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
+    int num_faces = F.rows();
+
+    // transfer kappa and period jump to viewer halfedge indexing
+    Eigen::VectorXd halfedge_kappa(3 * num_faces);
+    Eigen::VectorXd halfedge_period_jump(3 * num_faces);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int j = (i + 1) % 3;
+            halfedge_kappa[3* fijk + j] = kappa(fijk, i);
+            halfedge_period_jump[3* fijk + j] = period_jump(fijk, i);
+        }
+    }
+
+#ifdef ENABLE_VISUALIZATION
+    polyscope::init();
+    polyscope::registerSurfaceMesh(mesh_handle, V, F);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "theta",
+            theta)
+        ->setColorMap("coolwarm")
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceVectorQuantity("reference", reference_field)
+        ->setVectorRadius(0.0005)
+        ->setVectorLengthScale(0.005)
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceVectorQuantity("frame", frame_field)
+        ->setVectorRadius(0.0005)
+        ->setVectorLengthScale(0.005)
+        ->setEnabled(true);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity("kappa", halfedge_kappa)
+        ->setEnabled(false);
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addHalfedgeScalarQuantity("period jump", halfedge_period_jump)
+        ->setEnabled(false);
+    polyscope::show();
 #endif
 }
 

@@ -27,6 +27,8 @@ public:
      */
     ComponentMesh(const Mesh<Scalar>& m);
 
+    ComponentMesh(const Mesh<Scalar>& m, const Eigen::VectorXi& components);
+
     /**
      * @brief Get the individual connected components
      *
@@ -40,6 +42,10 @@ public:
      * @return list of halfedge maps
      */
     const std::vector<std::vector<int>>& get_halfedge_maps() const {return m_he_maps;}
+
+    const std::vector<std::vector<int>>& get_vertex_maps() const {return m_v_maps;}
+
+    const std::vector<std::vector<int>>& get_halfedge_projections() const {return m_he_proj;}
 
     /**
      * @brief Combine a list of overlay meshes into a single mesh with the individual meshes as
@@ -71,6 +77,9 @@ private:
     std::vector<std::vector<int>> m_he_maps;
     std::vector<std::vector<int>> m_v_maps;
     std::vector<std::vector<int>> m_f_maps;
+    std::vector<std::vector<int>> m_he_proj;
+    std::vector<std::vector<int>> m_v_proj;
+    std::vector<std::vector<int>> m_f_proj;
     int m_num_vertices;
 
     void build_mesh_component(
@@ -80,6 +89,7 @@ private:
     void build_halfedge_data(
         Mesh<Scalar>& component_mesh,
         const Mesh<Scalar>& m,
+        const std::vector<bool>& he_in_component,
         const std::vector<int>& component_he,
         const std::vector<int>& he_map,
         const std::vector<int>& v_map,

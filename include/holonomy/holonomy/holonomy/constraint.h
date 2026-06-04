@@ -8,15 +8,14 @@ namespace Penner {
 namespace Holonomy {
 
 /**
- * @brief Compute dual loop holonomy angles for a mesh with given angles
+ * @brief 
  * 
  * @param[in] m: mesh topology
  * @param[in] homology_basis_loops: dual loops for holonomy angle computation
  * @param[in] alpha: per-halfedge angles for the mesh
  * @return vector of dual loop holonomy angles
  */
-VectorX
-Kappa(const Mesh<Scalar>& m, const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops, const VectorX& alpha);
+VectorX Kappa(const Mesh<Scalar>& m, const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops, const VectorX& alpha);
 VectorX Kappa(const MarkedPennerConeMetric& marked_metric, const VectorX& alpha);
 
 /**
@@ -69,6 +68,10 @@ MatrixX compute_triangle_corner_angle_jacobian(
 MatrixX compute_metric_holonomy_matrix(
     const MarkedPennerConeMetric& marked_metric,
     bool only_free_vertices=true);
+
+MatrixX compute_loop_holonomy_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
     
 MatrixX build_symmetric_matrix_system(const MatrixX& A, int offset, int size);
 std::tuple<MatrixX, VectorX> build_reduced_matrix_system(const MatrixX& A, int cols);

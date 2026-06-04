@@ -23,6 +23,12 @@ namespace Optimization {
 
 // TODO Refactor and add some more convenient viewers
 
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXi> generate_halfedge_faces(
+    const std::vector<int>& next,
+    const std::vector<int>& f2h,
+    const std::vector<int>& to,
+    const std::vector<int>& vtx_reindex);
+
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd> generate_cone_vertices(
     const Eigen::MatrixXd& V,
     const std::vector<int>& vtx_reindex,

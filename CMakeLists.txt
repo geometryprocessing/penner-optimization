@@ -1,7 +1,6 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.25)
 project(PennerOptimization)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
@@ -19,6 +18,8 @@ if (PROJECT_IS_TOP_LEVEL)
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   option(USE_COMISO "Use Comiso for field generation" ON)
+  
+  option(USE_UV_OPTIMIZATION "Add uv optimization library" ON)
 
   # Visualization options
   option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
@@ -28,10 +29,6 @@ if (PROJECT_IS_TOP_LEVEL)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
   option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
-  if(BUILD_CURVATURE_METRIC_TESTS)
-    include(Catch2)
-    include(CTest)
-  endif()
 
   # Set default libigl and suitesparse options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
@@ -39,8 +36,25 @@ if (PROJECT_IS_TOP_LEVEL)
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
 
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+include(eigen)
+
 include(boost)
-#include(eigen)
+# create a fake BoostConfig.cmake before libigl runs and force Boost_DIR
+# to it so ignore_package (which uses no FORCE) cannot override it.
+set(_fake_boost_dir "${CMAKE_BINARY_DIR}/cmake/FakeBoost")
+file(MAKE_DIRECTORY "${_fake_boost_dir}")
+file(WRITE "${_fake_boost_dir}/BoostConfig.cmake"
+    "set(Boost_FOUND TRUE)\nset(Boost_system_FOUND TRUE)\nset(Boost_thread_FOUND TRUE)\n")
+file(WRITE "${_fake_boost_dir}/BoostConfigVersion.cmake"
+    "set(PACKAGE_VERSION 1.83.0)\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\nset(PACKAGE_VERSION_EXACT FALSE)\n")
+set(Boost_DIR "${_fake_boost_dir}" CACHE PATH "" FORCE)
+
+if(BUILD_CURVATURE_METRIC_TESTS)
+  include(Catch2)
+  include(CTest)
+endif()
 
 # Optionally get multiprecision libraries
 if(USE_MULTIPRECISION OR USE_MULTIPRECISION_OVERLAY)
@@ -59,9 +73,14 @@ endif()
 # Optionally get frame field libraries
 if (USE_COMISO)
   add_compile_definitions(USE_COMISO)
-  option(LIBIGL_COPYLEFT_COMISO "Use COSIMO" ON)
+  set(LIBIGL_COPYLEFT_CORE   ON CACHE BOOL "" FORCE)
+ #se. (LIBIGL_COPYLEFT_COMISO   ON CACHE BOOL "" FORCE)
+  #option(LIBIGL_COPYLEFT_COMISO "Use COSIMO" ON)
+  #set(COMISO_ENABLE_SUITESPARSE_DEFAULT OFF)
+  set(COMISO_NO_INSTALL ON)
   set(COMISO_LIBS
-    igl_copyleft::comiso
+    #igl_copyleft::comiso
+    CoMISo
   )
 endif()
 
@@ -98,20 +117,29 @@ if(USE_SUITESPARSE)
 endif()
 
 # Get external libraries
-include(boost)
 include(conformal_ideal_delaunay)
 include(libigl)
 include(spectra)
 include(cli11)
-include(json)
 include(geometry-central)
-#include(symmetric-dirichlet)
+include(comiso)
+find_package(HDF5 REQUIRED COMPONENTS CXX)
+
+# get optimization library
+if (USE_UV_OPTIMIZATION)
+    add_compile_definitions(USE_UV_OPTIMIZATION)
+    include(symmetric-dirichlet)
+else()
+    include(json)
+endif()
 
 include(directional)
 add_library(DirectionalLib INTERFACE)
 target_include_directories(DirectionalLib SYSTEM INTERFACE 
   ${directional_SOURCE_DIR}/include
 )
+target_compile_features(DirectionalLib INTERFACE cxx_std_20)
+
 
 # Optionally create rendering library
 if(RENDER_TEXTURE)
@@ -124,10 +152,8 @@ if(RENDER_TEXTURE)
   target_link_libraries(rendering PUBLIC
     igl::core
     igl::glfw
-    igl::png
     plot
   )
-
 
   # Change rendering libraries from null to singleton
   set(RENDER_LIBRARIES

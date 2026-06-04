@@ -20,6 +20,14 @@ void view_frame_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& frame_field,
     const std::vector<Scalar>& Th_hat,
+    std::string mesh_handle="",
+    Scalar scale=0.005);
+
+
+void view_vector_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& vector_field,
     std::string mesh_handle="");
 
 /**

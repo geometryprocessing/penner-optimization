@@ -10,3 +10,5 @@ FetchContent_MakeAvailable(conformal_ideal_delaunay)
 if(TARGET conformal_ideal_delaunay AND APPLE)
     target_compile_options(conformal_ideal_delaunay PRIVATE -Wno-extra-tokens)
 endif()
+target_compile_features(conformal_cpp PRIVATE cxx_std_20)
+

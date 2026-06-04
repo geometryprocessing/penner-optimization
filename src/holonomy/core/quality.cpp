@@ -7,7 +7,8 @@ Scalar compute_triangle_quality(Scalar lij, Scalar ljk, Scalar lki)
 {
     Scalar numer = 2 * lij * ljk * lki;
     Scalar denom = ((-lij + ljk + lki) * (lij - ljk + lki) * (lij + ljk - lki));
-    return (!float_equal<Scalar>(denom, 0.)) ? numer / denom : 1e10;
+    //return (!float_equal<Scalar>(denom, 0.)) ? numer / denom : 1e10;
+    return (denom > 0.) ? numer / denom : 1e10;
 }
 
 // Helper function to compute face quality for a triangle mesh face
@@ -21,9 +22,9 @@ Scalar compute_face_quality(
     int hki = cone_metric.n[hjk];
 
     // Get edge log lengths and average
-    Scalar llij = metric_coords[cone_metric.he2e[hij]];
-    Scalar lljk = metric_coords[cone_metric.he2e[hjk]];
-    Scalar llki = metric_coords[cone_metric.he2e[hki]];
+    Scalar llij = metric_coords[hij];
+    Scalar lljk = metric_coords[hjk];
+    Scalar llki = metric_coords[hki];
     Scalar llijk = (llij + lljk + llki) / 3.0;
 
     // Compute lengths scaled by average (triangle quality is scale invariant)

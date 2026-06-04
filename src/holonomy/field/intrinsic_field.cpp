@@ -66,6 +66,18 @@ public:
         }
     }
 
+    int compute_cone_correction(int hij)
+    {
+        int vj = to[hij];
+        int cone = base_cones[vj];
+        for (int h : cone_period_jumps[vj])
+        {
+            cone += (is_double) ? (2 * values[h]) : values[h];
+        }
+
+        return (min_cones[vj] - cone);
+    }
+
     bool is_zero_cone(int hij)
     {
         int vj = to[hij];
@@ -92,17 +104,23 @@ public:
         
         if ((is_tip_cone) && (is_base_cone))
         {
-            spdlog::error("Cone at both tip and base of period jump halfedge");
+            spdlog::warn("Cone at both tip and base of period jump halfedge");
             return rounded_value;
         }
         if (is_tip_cone)
         {
             spdlog::trace("Cone at tip of period jump halfedge");
+            int n = compute_cone_correction(hij);
+            if (n > 1) spdlog::trace("correction at tip is {}", n);
+            if (n < 0) spdlog::error("correction at tip is {}", n);
             return rounded_value + 1;
         }
         if (is_base_cone)
         {
             spdlog::trace("Cone at base of period jump halfedge");
+            int n = compute_cone_correction(hji);
+            if (n > 1) spdlog::trace("correction at base is {}", n);
+            if (n < 0) spdlog::error("correction at tip is {}", n);
             return rounded_value - 1;
         }
 
@@ -601,6 +619,24 @@ void IntrinsicNRosyField::set_reference_halfedge(
     }
 }
 
+Eigen::MatrixXd IntrinsicNRosyField::generate_reference_field(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXd& V) const
+{
+    int num_faces = m.n_faces();
+    Eigen::MatrixXd reference_field(num_faces, 3);
+    for (int fijk = 0; fijk < num_faces; ++fijk)
+    {
+        int hij = face_reference_halfedge[fijk];
+        int vj = vtx_reindex[m.v_rep[m.to[hij]]];
+        int vi = vtx_reindex[m.v_rep[m.to[m.opp[hij]]]];
+        reference_field.row(fijk) = (V.row(vj) - V.row(vi)).stableNormalized();
+    }
+
+    return reference_field;
+}
+
 void IntrinsicNRosyField::initialize_double_kappa(const Mesh<Scalar>& m)
 {
     // Compute corner angles
@@ -657,7 +693,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     int num_halfedges = m.n_halfedges();
 
     // Initialize period jumps of value pi/2 to 0 and mark dual tree edges as fixed
-    //build_edge_maps(m, he2e, e2he);
+    build_edge_maps(m, he2e, e2he);
     //DualTree dual_tree(m, std::vector<Scalar>(num_halfedges, 0.0));
     //period_jump.setZero(num_halfedges);
     period_value = VectorX::Constant(num_halfedges, M_PI / 2.);
@@ -687,7 +723,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_kappa_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
     std::vector<int> var2he_temp, halfedge_var_id_temp;
     arange(num_halfedges, var2he_temp);
@@ -698,6 +734,7 @@ void IntrinsicNRosyField::initialize_period_jump(const Mesh<Scalar>& m)
     for (int hij = 0; hij < num_halfedges; ++hij) {
         int hji = m.opp[hij];
         if (hij < hji) continue; // only process each edge once
+        if ((!is_face_fixed[m.f[hij]]) || (!is_face_fixed[m.f[hji]])) continue;
         
         int fi = m.f[hij];
         int fj = m.f[hij];
@@ -846,7 +883,7 @@ void IntrinsicNRosyField::initialize_double_period_jump(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_kappa_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
     std::vector<int> var2he_temp, halfedge_var_id_temp;
     arange(num_halfedges, var2he_temp);
@@ -1559,23 +1596,25 @@ public:
 };
 #endif
 
-std::vector<int> generate_min_cones(const Mesh<Scalar>& m)
+std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone)
 {
     int num_vertices = m.n_ind_vertices();
     if (m.type[0] == 0)
     {
-        return std::vector<int>(num_vertices, 1);
+        return std::vector<int>(num_vertices, min_cone);
     }
-
-    std::vector<int> min_cones(num_vertices, 4);
-    for (int hij = 0; hij < m.n_halfedges(); hij++) {
-        if (m.opp[m.R[hij]] == hij)
-        {
-            min_cones[m.v_rep[m.to[hij]]] = 2;
+    else
+    {
+        std::vector<int> min_cones(num_vertices, 2 * min_cone);
+        for (int hij = 0; hij < m.n_halfedges(); hij++) {
+            if (m.opp[m.R[hij]] == hij)
+            {
+                min_cones[m.v_rep[m.to[hij]]] = 2;
+            }
         }
+        
+        return min_cones;
     }
-
-    return min_cones;
 }
 
 void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
@@ -1627,16 +1666,25 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     std::vector<int> base_cones = generate_base_cones(m);
     if (min_cones.empty())
     {
-        min_cones = generate_min_cones(m);
+        min_cones = generate_min_cones(m, min_cone);
     }
-    Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
+    if (use_roundings)
+    {
 #if ROUND_CONES
-    ConeMISolver cs;
-    cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
+        Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
+        ConeMISolver cs;
+        cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
 #else
-    COMISO::MISolver cs;
-    cs.solve(Acsc, x, gmm_b, var_edges);
+        spdlog::warn("rounding not enabled");
+        COMISO::MISolver cs;
+        cs.solve(Acsc, x, gmm_b, var_edges);
 #endif
+    }
+    else
+    {
+        COMISO::MISolver cs;
+        cs.solve(Acsc, x, gmm_b, var_edges);
+    }
 
     // Copy the face angles
     int num_faces = m.n_faces();
@@ -1656,6 +1704,8 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
             set_period_jump(m, hij, lround(x[halfedge_var_id[hij]]));
         }
     }
+    
+    if (fix_cones) fix_cone_pair(m);
 }
 
 std::vector<Scalar> generate_cones_from_rotation_form_FIXME(
@@ -1930,7 +1980,7 @@ void IntrinsicNRosyField::fix_cone_pair(const Mesh<Scalar>& m)
         if (cones[vi] < 4) pos_cone = vi;
     }
     int size = (4 - cones[pos_cone]);
-    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone);
+    spdlog::info("Fixing cone pair at {} and {} of size {}", pos_cone, neg_cone, size);
 
     // move curvature
     move_cone(m, pos_cone, neg_cone, size);
@@ -2016,6 +2066,46 @@ void IntrinsicNRosyField::remove_greedy_cone_pairs(const Mesh<Scalar>& m)
         cones[pos_cone]++;
         cones[neg_cone]--;
     }
+}
+
+void IntrinsicNRosyField::remove_close_cone_pairs(const Mesh<Scalar>& m, Scalar rel_edge_length)
+{
+    // get pos and neg cone
+    std::vector<int> cones = generate_cones(m);
+    int num_vertices = cones.size();
+
+    // get average edge length
+    //Scalar avg_length = std::accumulate(m.l.begin(), m.l.end(), 0.) / m.l.size();
+    Scalar total_length = 0.;
+    for (const Scalar& length : m.l) total_length += length;
+    Scalar avg_length = total_length / m.l.size();
+    Scalar abs_edge_length = rel_edge_length * avg_length;
+    spdlog::info("collapsing cone pairs shorter than {}", abs_edge_length);
+    
+    // check for close cone pairs to collapse
+    int count = 0;
+    for (int hij = 0; hij < m.n_halfedges(); ++hij)
+    {
+        // skip if long enough
+        if (m.l[hij] > abs_edge_length) continue;
+
+        // check if cone pair with negative cone at vi
+        int vi = m.v_rep[m.to[m.opp[hij]]];
+        int vj = m.v_rep[m.to[hij]];
+        if ((cones[vi] > 4) && (cones[vj] + cones[vi] == 8))
+        {
+            // move curvature if cone pair found
+            Scalar defect = 4 - cones[vi];
+            set_period_jump(m, hij, period_jump[hij] - defect);
+            cones[vi] += defect;
+            cones[vj] -= defect;
+            //move_cone(m, vj, vi, cones[vi] - 4); this is slow
+            assert(cones[vi] == 4);
+            assert(cones[vj] == 4);
+            ++count;
+        }
+    }
+    spdlog::info("collapsed {} cones", count);
 }
 
 void IntrinsicNRosyField::concentrate_curvature(const Mesh<Scalar>& m)
@@ -2123,6 +2213,170 @@ std::vector<int> IntrinsicNRosyField::generate_cones(const Mesh<Scalar>& m) cons
     return base_cones;
 }
 
+void IntrinsicNRosyField::infer_field_from_rotation_form(const Mesh<Scalar>& m, const VectorX& rotation_form)
+{
+    int num_faces = m.n_faces();
+    int num_halfedges = m.n_halfedges();
+    std::vector<bool> is_processed_face(num_faces, false);
+
+    // Remove interior double edges, but leave boundary edges
+    // TODO: meshes with boundary
+    if (m.type[0] != 0)
+    {
+        spdlog::error("field inference not implemented for open meshes");
+        return;
+    }
+
+    // Initialize queue with boundary faces to process
+    std::deque<int> faces_to_process;
+    int fi = 0;
+    theta[fi] = 0.;
+    is_processed_face[fi] = true;
+    faces_to_process.push_back(fi);
+
+    // Perform BFS, not crossing variable period jump edges
+    while (!faces_to_process.empty()) {
+        // Get the next face to process
+        int fi = faces_to_process.front();
+        faces_to_process.pop_front();
+
+        // Iterate over the face circulator via halfedges
+        int h_start = m.h[fi];
+        int hij = h_start;
+        do {
+            // Get the face opposite the edge
+            int fj = m.f[m.opp[hij]];
+
+            // Check if the edge to the tip face is the best seen so far
+            if ((!is_processed_face[fj]) && (is_period_jump_fixed[hij]))
+            {
+                theta[fj] = theta[fi] + kappa[hij] + period_value[hij] * period_jump[hij] - rotation_form[hij];
+                is_processed_face[fj] = true;
+                faces_to_process.push_back(fj);
+            }
+
+            // Progress to the next halfedge in the face circulator
+            hij = m.n[hij];
+        } while (hij != h_start);
+    }
+
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        if (is_period_jump_fixed[hij]) continue;
+        int hji = m.opp[hij];
+        if (hji < hij) continue;
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        Scalar jump_value = rotation_form[hij] - (theta[f0] - theta[f1] + kappa[hij]);
+        period_jump[hij] = (int)(round(jump_value / period_value[hij]));
+        period_jump[hji] = -period_jump[hij];
+    }
+}
+
+std::tuple<MatrixX, VectorX> IntrinsicNRosyField::build_theta_system(const Mesh<Scalar>& m) const
+{
+    // TODO: doubled mesh system
+    int num_edges = e2he.size();
+    int num_faces = m.n_faces();
+    std::vector<T> A_trips = {};
+    VectorX b = VectorX::Zero(num_edges);
+    for (int eij = 0; eij < num_edges; ++eij) {
+        int hij = e2he[eij];
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        A_trips.push_back(T(eij, f0, 1.));
+        A_trips.push_back(T(eij, f1, -1.));
+        b[eij] = -kappa[hij] - (period_value[hij] * period_jump[hij]);
+    }
+
+    MatrixX A(num_edges, num_faces);
+    A.reserve(A_trips.size());
+    A.setFromTriplets(A_trips.begin(), A_trips.end());
+
+    return std::make_tuple(A, b);
+}
+
+void IntrinsicNRosyField::optimize_theta(const Mesh<Scalar>& m, Scalar reg_factor)
+{
+    auto [A, b] = build_theta_system(m);
+    MatrixX L = A.transpose() * A;
+    VectorX y = A.transpose() * b;
+    if (reg_factor > 0)
+    {
+        int n = L.rows();
+        MatrixX I(n, n);
+        I.setIdentity();
+        L = L + reg_factor * I;
+        y = y + reg_factor * theta;
+    }
+    theta = solve_linear_system(L, y);
+}
+
+void IntrinsicNRosyField::smooth_theta(const Mesh<Scalar>& m, int iterations)
+{
+    int num_halfedges = m.n_halfedges();
+    VectorX b = VectorX::Zero(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij) {
+        int hji = m.opp[hij];
+        int f0 = m.f[hij];
+        int f1 = m.f[hji];
+        b[hij] = -kappa[hij] - (period_value[hij] * period_jump[hij]);
+    }
+
+    bool periodic = true;
+    int num_faces = m.n_faces();
+    for (int i = 0; i < iterations; ++i)
+    {
+        for (int f = 0; f < num_faces; ++f)
+        {
+            Scalar theta_curr = theta[f];
+            if (periodic)
+            {
+                theta_curr += PI;
+                while (theta_curr < 0) theta_curr += 2 * PI;
+                theta_curr = pos_fmod(theta_curr, 2 * PI);
+                theta_curr -= PI;
+            }
+            spdlog::debug("face theta is {}", theta_curr);
+
+            int hij = m.h[f];
+            int hjk = hij;
+            Scalar avg_theta = 0.;
+            int count = 0;
+            do
+            {
+                // update average
+                int fo = m.f[m.opp[hjk]];
+                Scalar theta_opp = theta[fo] + b[hjk];
+
+                // in some cases, only resolve period up to 2 PI
+                if (periodic)
+                {
+                    // add pi to remove ambiguity near 0
+                    theta_opp += (PI - theta_curr);
+
+                    while (theta_opp < 0) theta_opp += 2 * PI;
+                    theta_opp = pos_fmod(theta_opp, 2 * PI);
+
+                    theta_opp -= (PI - theta_curr);
+                }
+                spdlog::debug("adjacent face theta in current frame is {}", theta_opp);
+
+                avg_theta += theta_opp;
+                ++count;
+
+                // iterate
+                hjk = m.n[hjk];
+            } while (hij != hjk);
+
+            // update theta for face
+            theta[f] = avg_theta / count;
+        }
+    }
+}
+
+
 VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
 {
     int num_halfedges = m.n_halfedges();
@@ -2147,6 +2401,7 @@ VectorX IntrinsicNRosyField::compute_rotation_form(const Mesh<Scalar>& m)
     std::vector<Scalar> Th_hat = generate_cones_from_rotation_form_FIXME(m, rotation_form);
 
     int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
+    Scalar min_angle = min_cone * (M_PI / 2.);
     Scalar targetsum = M_PI * (2 * m.n_vertices() - 2 * (2 - double_genus));
     Scalar th_hat_sum = 0.0;
     for(auto t: Th_hat)
@@ -2472,6 +2727,17 @@ void IntrinsicNRosyField::get_field(
     }
 }
 
+void IntrinsicNRosyField::get_halfedge_field(
+    const Mesh<Scalar>& m,
+    Eigen::VectorXd& face_theta,
+    Eigen::VectorXd& halfedge_kappa,
+    Eigen::VectorXi& halfedge_period_jump)
+{
+    face_theta = convert_vector_type<Scalar, double>(theta);
+    halfedge_kappa = convert_vector_type<Scalar, double>(kappa);
+    halfedge_period_jump = period_jump;
+}
+
 void IntrinsicNRosyField::get_fixed_faces(
     const Mesh<Scalar>& m,
     const std::vector<int>& face_reindex,
@@ -2603,5 +2869,15 @@ void IntrinsicNRosyField::get_field(
     get_field(m, vtx_reindex, F, face_reindex, reference_corner, face_theta, corner_kappa, corner_period_jump);
 }
 
+void IntrinsicNRosyField::set_halfedge_field(
+    const Mesh<Scalar>& m,
+    const Eigen::VectorXd& face_theta,
+    const Eigen::VectorXd& halfedge_kappa,
+    const Eigen::VectorXi& halfedge_period_jump)
+{
+    theta = convert_vector_type<double, Scalar>(face_theta);
+    kappa = convert_vector_type<double, Scalar>(halfedge_kappa);
+    period_jump = halfedge_period_jump;
+}
 } // namespace Holonomy
 } // namespace Penner

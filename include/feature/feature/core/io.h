@@ -1,7 +1,7 @@
 #pragma once
 
 #include "feature/core/common.h"
-#include "util/vf_corners.h"
+#include "feature/core/vf_corners.h"
 
 namespace Penner {
 namespace Feature {
@@ -91,6 +91,11 @@ void write_boundary(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_uv);
+
+void write_edges(
+    const std::string& filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E);
 
 } // namespace Feature
 } // namespace Penner

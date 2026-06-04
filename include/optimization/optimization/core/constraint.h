@@ -122,6 +122,8 @@ Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric);
  */
 VectorX compute_cone_angles(const DifferentiableConeMetric& cone_metric);
 
+std::array<Scalar, 3> compute_triangle_angles(Scalar l12, Scalar l23, Scalar l31);
+
 /// TODO Optionally add halfedge coordinate Jacobians
 
 } // namespace Optimization

@@ -1,17 +1,17 @@
 #include "holonomy/field/cross_field.h"
 
-
 // TODO: not compiling. directional seems to be broken and missing
 // the IntrinsicFaceTangentBundle
-/*
-
 #include <directional/TriMesh.h>
 #include <directional/IntrinsicFaceTangentBundle.h>
 #include <directional/CartesianField.h>
 #include <directional/polycurl_reduction.h>
 #include <directional/combing.h>
 #include <directional/curl_matching.h>
+
+#if ENABLE_VISUALIZATION
 #include <directional/directional_viewer.h>
+#endif 
 
 #include <igl/rotate_vectors.h>
 
@@ -176,6 +176,7 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
     directional::polycurl_reduction_precompute(mesh, b, bc, blevel, rawField , pcrdata);
     Eigen::VectorXi constFaces = b;
 
+#if ENABLE_VISUALIZATION
     directional::DirectionalViewer viewer;
     bool view = false;
     if (view)
@@ -190,6 +191,7 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
         viewer.set_selected_faces(constFaces,1);
         viewer.launch();
     }
+#endif
 
     spdlog::debug("Optimizing curl");
     int iter = 0;
@@ -249,4 +251,3 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
 
 } // namespace Holonomy
 } // namespace Penner
-*/

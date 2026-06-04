@@ -1,9 +1,10 @@
-#include "util/vf_corners.h"
+#include "feature/core/vf_corners.h"
 
 #include <igl/triangle_triangle_adjacency.h>
 #include <igl/remove_unreferenced.h>
 
 namespace Penner {
+namespace Feature {
 
 Eigen::MatrixXi mask_difference(
     const Eigen::MatrixXi& F_is_in,
@@ -519,5 +520,5 @@ generate_edges(
     return std::make_tuple(VN, EN);
 }
 
-
+} // namespace Feature
 } // namespace Penner

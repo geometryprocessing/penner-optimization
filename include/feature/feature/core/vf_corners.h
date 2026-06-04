@@ -1,8 +1,10 @@
 #pragma once
 
-#include "util/common.h"
+#include "feature/core/common.h"
 
 namespace Penner {
+namespace Feature {
+
 
 typedef std::array<int, 2> VertexEdge;
 
@@ -258,4 +260,5 @@ generate_edges(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_is_edge);
 
+} // namespace Feature
 } // namespace Penner

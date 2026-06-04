@@ -7,73 +7,6 @@
 namespace Penner {
 
 /**
- * @brief Compute the max of a std vector.
- *
- * @param[in] v: vector
- * @return max of v
- */
-
-template <typename Type>
-Type vector_max(const std::vector<Type>& v)
-{
-    if (v.empty()) return 0.0;
-
-    Type max_value = v[0];
-    for (const auto& vi : v) {
-        max_value = max(max_value, vi);
-    }
-
-    return max_value;
-}
-
-/**
- * @brief Negate every value of a vector of scalars
- *
- * @param[in] v: vector
- * @return negation of v
- */
-std::vector<Scalar> vector_negate(const std::vector<Scalar>& v);
-
-template <typename VectorType>
-int argmax(const VectorType& v)
-{
-    int size = v.size();
-    if (size == 0) return -1;
-    int max_index = 0;
-    for (int i = 1; i < size; ++i) {
-        if (v[i] > v[max_index]) {
-            max_index = i;
-        }
-    }
-
-    return max_index;
-}
-
-template <typename VectorType>
-int argmin(const VectorType& v)
-{
-    int size = v.size();
-    if (size == 0) return -1;
-    int min_index = 0;
-    for (int i = 1; i < size; ++i) {
-        if (v[i] < v[min_index]) {
-            min_index = i;
-        }
-    }
-
-    return min_index;
-}
-
-/**
- * @brief Determine if a vector contains a NaN
- *
- * @param v: vector to check
- * @return true if the vector contains a NaN
- * @return false otherwise
- */
-bool vector_contains_nan(const VectorX& v);
-
-/**
  * @brief Compose two vectors
  *
  * @param[in] v: first vector
@@ -331,7 +264,12 @@ bool is_one_sided_inverse(
  * @param prev: size #he vector, prev halfedge id
  * @return true iff the edge maps are valid
  */
-bool are_polygon_mesh_edges_valid(const std::vector<int>& next, const std::vector<int>& prev);
+bool are_polygon_mesh_halfedges_valid(const std::vector<int>& next, const std::vector<int>& prev);
+
+bool are_polygon_mesh_edges_valid(
+    const std::vector<int>& opp, 
+    const std::vector<int>& h2e, 
+    const std::vector<int>& e2h);
 
 /**
  * @brief Check if the maps defining the vertex connectivity of a polygonal mesh (to and out)

@@ -42,27 +42,6 @@ std::vector<int> generate_vertex_one_ring(const Mesh<Scalar>& m, int vertex_inde
 bool is_manifold(const Eigen::MatrixXi& F);
 
 /**
- * @brief Compute salient geometry aligned field directions for a mesh.
- * 
- * The parabolic anisotropy used for the relative threshold is ||k2| - |k1|| / max(|k1|, |k2|)
- * This measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
- * 
- * @param V: mesh vertices
- * @param F: mesh faces
- * @param radius: (optional) vertex radius for fitting a smooth surface for field estimation
- * @param abs_threshold: (optional) minimum threshold for mean anisotropy of principal curvatures
- * @param rel_threshold: (optional) minimum threshold for parabolic anisotropy of principal curvatures
- * @return |F|x3 matrix of per face directions
- * @return per face mask indicating whether a direction is salient or not
- */
-std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int radius=5,
-    Scalar abs_threshold=1.,
-    Scalar rel_threshold=0.9);
-
-/**
  * @brief Reindex VF mesh.
  * 
  * @param V: mesh vertices

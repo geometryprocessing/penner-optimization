@@ -100,6 +100,8 @@ bool check_uv(
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h = -1);
 
+void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std::vector<bool>& is_cut);
+
 /// Given a cut defined on the original or current mesh, pull it back to a cut defined on
 /// an overlay mesh for the given mesh (possibly after flips)
 ///
@@ -112,6 +114,13 @@ std::vector<bool> pullback_cut_to_overlay(
     OverlayMesh<Scalar>& m_o,
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
+
+Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
+    const Eigen::Matrix<Scalar, 1, 2>& p1,
+    const Eigen::Matrix<Scalar, 1, 2>& p2,
+    Scalar l0,
+    Scalar l1,
+    Scalar l2);
 
 // TODO: Document this technical function
 // Exposed for usage in other libraries

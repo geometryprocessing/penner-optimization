@@ -2,6 +2,7 @@
 #pragma once
 
 #include "holonomy/core/common.h"
+#include "holonomy/field/intrinsic_field.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -65,6 +66,45 @@ Eigen::MatrixXd generate_frame_field(
     const Eigen::VectorXd& theta);
 
 /**
+ * @brief Compute salient geometry aligned field directions for a mesh.
+ * 
+ * The parabolic anisotropy used for the relative threshold is ||k2| - |k1|| / max(|k1|, |k2|)
+ * This measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param radius: (optional) vertex radius for fitting a smooth surface for field estimation
+ * @param abs_threshold: (optional) minimum threshold for mean anisotropy of principal curvatures
+ * @param rel_threshold: (optional) minimum threshold for parabolic anisotropy of principal curvatures
+ * @return |F|x3 matrix of per face directions
+ * @return per face mask indicating whether a direction is salient or not
+ */
+std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    int radius=5,
+    Scalar abs_threshold=1.,
+    Scalar rel_threshold=0.9,
+    Scalar sample_rate=1.);
+    
+/**
+ * @brief Optimize a cross field on a mesh.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param field_params: parameters for the field optimization
+ * @return field reference directions in R3
+ * @return field angles relative to the reference directions
+ * @return angles across edges between reference directions
+ * @return jump in period across edges
+ */
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
+generate_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const FieldParameters& field_params);
+
+/**
  * @brief Write a frame field to file.
  * 
  * The format is
@@ -113,6 +153,45 @@ void write_rosy_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& reference_field,
     const Eigen::VectorXd& theta);
+
+/**
+ * @brief Write a combed frame field to file.
+ * 
+ * <d1x> <d1y> <d1z> <d2x> <d2y> <d2z>
+ * ...
+ * ```
+ * where d1 and d2 are the two combed field direction
+ * 
+ * @param output_filename: file location to serialize the frame field
+ * @param PD1: per-face u direction matrix
+ * @param PD2: per-face b direction matrix
+ */
+void write_combed_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2);
+    
+std::tuple<int, Eigen::MatrixXd, Eigen::MatrixXd>
+maximize_combed_frame_alignment(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& PD1,
+    const Eigen::MatrixXd& PD2);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd>
+comb_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& thetas,
+    const Eigen::MatrixXi& period_jumps);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
+load_combed_field(const std::string& ffield_file);
 
 /**
  * @brief Load a rosy field from file.
@@ -195,12 +274,23 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> r
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+Eigen::VectorXd rotate_vector(
+                    const Eigen::VectorXd& vec,
+                    double angle,
+                    const Eigen::VectorXd& B1,
+                    const Eigen::VectorXd& B2);
+
 std::vector<Scalar> compute_cone_angle( 
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& kappa,
     const Eigen::MatrixXi& period_jump);
 
+Eigen::VectorXi transfer_period_jumps_to_halfedge(
+    const Mesh<Scalar>& m,
+    const std::vector<int>& vtx_reindex,
+    const Eigen::MatrixXi& F, 
+    const Eigen::MatrixXi& corner_period_jump);
 
 } // namespace Feature 
 } // namespace Penner

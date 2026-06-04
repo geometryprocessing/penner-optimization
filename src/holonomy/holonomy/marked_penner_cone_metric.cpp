@@ -84,7 +84,7 @@ bool is_valid_mesh(const Mesh<Scalar>& m)
     std::vector<int> prev = invert_map(m.n);
 
     // check edge, face, and vertex conditions
-    if (!are_polygon_mesh_edges_valid(m.n, prev))
+    if (!are_polygon_mesh_halfedges_valid(m.n, prev))
     {
         spdlog::warn("Edges are invalid");
         return false;

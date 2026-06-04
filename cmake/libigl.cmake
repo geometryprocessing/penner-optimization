@@ -6,7 +6,7 @@ include(FetchContent)
   FetchContent_Declare(
   libigl
   SYSTEM
-  GIT_REPOSITORY https://github.com/libigl/libigl.git
-  GIT_TAG v2.4.0
+  GIT_REPOSITORY https://github.com/rjc8237/libigl.git
+  GIT_TAG penner
 )
 FetchContent_MakeAvailable(libigl)

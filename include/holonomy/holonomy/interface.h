@@ -75,6 +75,30 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     MarkedMetricParameters marked_mesh_params = MarkedMetricParameters());
 
 /**
+ * @brief Generate a marked metric object from a mesh with holonomy constraints inferred from a cross field.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param theta: field angles relative to the reference directions
+ * @param kappa: angles across edges between reference directions
+ * @param period_jump: jump in period across edges
+ * @param marked_metric_params: parameters for the metric object
+ * @return marked metric for the mesh with field holonomy constraints
+ * @return vertex reindexing from the halfedge to VF mesh
+ * @return field rotations across halfedges
+ * @return inferred cones from the field on the VF mesh
+ * 
+ */
+std::tuple<MarkedPennerConeMetric, std::vector<int>, VectorX, std::vector<Scalar>>
+generate_metric_from_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    MarkedMetricParameters marked_metric_params = MarkedMetricParameters());
+
+/**
  * @brief Generate a marked metric from a VF mesh using the embedding metric and holonomy
  * constraints inferred from a fit cross-field.
  *
@@ -182,6 +206,7 @@ void regularize_metric(MarkedPennerConeMetric& marked_metric, double max_triangl
  */
 void optimize_triangle_quality(MarkedPennerConeMetric& marked_metric, double max_triangle_quality = 50);
 
+VectorX generate_log_edge_lengths(const Mesh<Scalar>& m);
 VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
 
 void generate_basis_loops(
@@ -204,6 +229,8 @@ std::vector<Scalar> compute_kappa(
     const Mesh<Scalar>& discrete_metric,
     const VectorX& rotation_form,
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
+
+Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
 
 } // namespace Holonomy
 } // namespace Penner

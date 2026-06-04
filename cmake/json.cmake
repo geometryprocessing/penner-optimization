@@ -1,3 +1,7 @@
+if(TARGET nlohmann_json::nlohmann_json)
+    return()
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
     json
