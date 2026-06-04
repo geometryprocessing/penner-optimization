@@ -30,12 +30,13 @@
 *********************************************************************************/
 #include <catch2/catch_test_macros.hpp>
 
-#include "energies.hh"
-#include "shapes.hh"
-#include "common.hh"
-#include "cone_metric.hh"
+#include "optimization/metric_optimization/energies.h"
+#include "optimization/util/shapes.h"
+#include "optimization/core/common.h"
+#include "optimization/core/cone_metric.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 TEST_CASE( "The energies of a triangle can be computed", "[energies]" )
 {

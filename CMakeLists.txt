@@ -8,6 +8,8 @@ add_compile_options(-fPIC)
 add_compile_options(-Wno-register)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # Set options if top level
 if (PROJECT_IS_TOP_LEVEL)
   # Options to generate python bindings
@@ -36,8 +38,6 @@ if (PROJECT_IS_TOP_LEVEL)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
-
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(boost)
 #include(eigen)

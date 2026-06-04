@@ -30,18 +30,20 @@
 *********************************************************************************/
 #include <catch2/catch_test_macros.hpp>
 
-#include "common.hh"
-#include "refinement.hh"
-#include "triangulation.hh"
+#include "optimization/core/common.h"
+#include "optimization/parameterization/refinement.h"
+#include "optimization/parameterization/triangulation.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 TEST_CASE( "A self overlapping polygon can be identified", "[refinement]" )
 {
 	std::vector<std::vector<bool>> is_self_overlapping_subpolygon;
 	std::vector<std::vector<int>> splitting_vertices;
 	std::vector<std::vector<Scalar>> min_face_areas;
-  std::vector<VectorX> uv_vertices, vertices;
+  std::vector<Eigen::Vector2d> uv_vertices;
+  std::vector<Eigen::Vector3d> vertices;
 
   SECTION ( "Vertex" )
   {

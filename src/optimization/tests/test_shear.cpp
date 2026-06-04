@@ -30,15 +30,16 @@
 *********************************************************************************/
 #include <catch2/catch_test_macros.hpp>
 
-#include "shear.hh"
-#include "shapes.hh"
-#include "embedding.hh"
-#include "common.hh"
-#include "cone_metric.hh"
-#include "penner_optimization_interface.hh"
-#include "projection.hh"
+#include "optimization/core/shear.h"
+#include "optimization/util/shapes.h"
+#include "util/embedding.h"
+#include "optimization/core/common.h"
+#include "optimization/core/cone_metric.h"
+#include "optimization/interface.h"
+#include "optimization/core/projection.h"
 
-using namespace CurvatureMetric;
+using namespace Penner;
+using namespace Penner::Optimization;
 
 TEST_CASE( "A dual shear coordinate basis can be computed", "[shear]" )
 {
