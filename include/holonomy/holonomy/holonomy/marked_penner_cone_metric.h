@@ -6,6 +6,13 @@
 
 #include "optimization/core/cone_metric.h"
 
+/**
+ * @brief Extension of the differentiable cone metric using Penner coordinates
+ * to include dual loop holonomy constraints, which allow for full seamless metric
+ * constraints.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

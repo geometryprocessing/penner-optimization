@@ -1,12 +1,14 @@
 add_subdirectory(util)
 add_subdirectory(optimization)
 add_subdirectory(holonomy)
+add_subdirectory(field)
 add_subdirectory(feature)
 
 add_library(PennerLib INTERFACE)
 target_link_libraries(PennerLib INTERFACE
   PennerOptimizationLib
   PennerHolonomyLib
+  PennerFieldLib
   PennerFeatureLib
 )
 

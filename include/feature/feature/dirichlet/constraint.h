@@ -4,6 +4,12 @@
 #include "feature/core/common.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 
+/**
+ * @brief Methods to compute feature aligned seamless constraints, which includes boundary length 
+ * consistency constraints, and associated Jacobians
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

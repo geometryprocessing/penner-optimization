@@ -7,6 +7,13 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/constraint.h"
 
+/**
+ * @brief Extension of the differentiable cone metric using Penner coordinates
+ * to include both dual loop holonomy constraints and boundary length consistency
+ * constraints, which allow for feature aligned seamless metric constraints.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

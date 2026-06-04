@@ -3,6 +3,11 @@
 
 #include "feature/core/common.h"
 
+/**
+ * @brief Methods to compute relevant quad mesh statistics, including degree valences.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

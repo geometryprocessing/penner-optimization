@@ -1,6 +1,6 @@
 #include "feature/core/common.h"
 
-#include "holonomy/field/intrinsic_field.h"
+#include "field/intrinsic_field.h"
 
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>

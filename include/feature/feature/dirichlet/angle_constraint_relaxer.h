@@ -4,6 +4,12 @@
 #include "feature/core/common.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 
+/**
+ * @brief Method to compute a relaxed angle constraint system that maintains total vertex angles
+ * while relaxing feature edge alignment.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

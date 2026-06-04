@@ -1,4 +1,4 @@
-#include "holonomy/field/cross_field.h"
+#include "field/cross_field.h"
 
 // TODO: not compiling. directional seems to be broken and missing
 // the IntrinsicFaceTangentBundle

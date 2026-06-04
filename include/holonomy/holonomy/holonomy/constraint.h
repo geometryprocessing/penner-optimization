@@ -4,6 +4,12 @@
 #include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Holonomy signature constraints, including vertex cone angles and dual loop angle constraints.
+ * Also includes methods to compute the constraint Jacobians, which are needed for first-order methods.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

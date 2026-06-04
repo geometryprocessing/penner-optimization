@@ -6,6 +6,10 @@
 #include "feature/feature/gluing.h"
 #include <queue>
 
+/**
+ * @brief Data structure to modify sector angle constraints for feature alignment
+ * 
+ */
 
 namespace Penner {
 namespace Feature {

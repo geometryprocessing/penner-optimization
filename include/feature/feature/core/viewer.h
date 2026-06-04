@@ -4,6 +4,11 @@
 
 // TODO: Cleaning pass
 
+/**
+ * @brief Assorted viewers.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

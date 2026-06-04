@@ -11,7 +11,7 @@
 #include "optimization/core/common.h"
 
 #include "holonomy/interface.h"
-#include "holonomy/field/frame_field.h"
+#include "field/frame_field.h"
 #include "holonomy/core/viewer.h"
 
 #include "feature/feature/gluing.h"

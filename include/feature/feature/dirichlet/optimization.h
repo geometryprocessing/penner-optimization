@@ -4,6 +4,11 @@
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 
+/**
+ * @brief Two-phase optimization method for alignment of relaxed angle constraint.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

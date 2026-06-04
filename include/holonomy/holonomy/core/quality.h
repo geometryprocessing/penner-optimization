@@ -1,5 +1,10 @@
 #include "holonomy/core/common.h"
 
+/**
+ * @brief Methods to compute the quality of triangles in a mesh.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

@@ -4,6 +4,12 @@
 
 #include "util/spanning_tree.h"
 
+/**
+ * @brief Method to compute the dual edge lengths. Also includes a related method to compute
+ * the length of loops formed by adding an edge to a dual spanning tree.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

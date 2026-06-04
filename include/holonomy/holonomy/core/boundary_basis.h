@@ -7,6 +7,21 @@ namespace Penner {
 namespace Holonomy {
 
 /**
+ * @brief Methods to generate basis dual loops for the double of meshes with boundary.
+ * 
+ * These loops correspond to alignment constraints between different boundary components
+ * of a mesh with boundary. For a mesh with b boundary components, b - 1 constraints are needed.
+ * The constraint measures the holonomy between a base boundary component and another component.
+ * 
+ * In the doubled mesh for a mesh with boundary, the paths between components become dual loops.
+ * 
+ * Note that the double mesh has b - 1 handles corresponding to the boundary loops, which results
+ * in an increase in genus of 2b - 2. However, the holonomy of b - 1 loops are determined by cone
+ * angle constraints and symmetry.
+ * 
+ */
+
+/**
  * @brief Class to generate boundary loops and boundary path basis loops
  */
 class BoundaryBasisGenerator

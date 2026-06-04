@@ -1,7 +1,16 @@
 #pragma once
 
 #include "holonomy/core/common.h"
-#include "holonomy/field/intrinsic_field.h"
+#include "field/intrinsic_field.h"
+
+/**
+ * @brief Methods to compute a rotation form, either from an existing field or generated
+ * using a cross-field optimization method.
+ * 
+ * The rotation form is a minimal representation of a cross field (up to global phase),
+ * encoding the rotation of the field across edges.
+ * 
+ */
 
 namespace Penner {
 namespace Holonomy {
