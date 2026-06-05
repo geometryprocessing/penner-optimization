@@ -7,6 +7,11 @@ namespace Penner {
 namespace Feature {
 
 /**
+ * @brief Methods to parameterize the uv components of a cut mesh, aligning each component with uv isolines.
+ * 
+ */
+
+/**
  * @brief Parametrize a cut mesh with optimized metric.
  * 
  * @tparam Scalar type to use for layout (can use higher precision to improve robustness)

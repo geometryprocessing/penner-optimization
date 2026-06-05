@@ -7,6 +7,11 @@ namespace Penner {
 namespace Feature {
 
 /**
+ * @brief Methods to get cut mesh edge and vertex correspondences, as well as total vertex cone angles.
+ * 
+ */
+
+/**
  * @brief Given a mesh with vertex pairings arising from cuts, generate pairings of cut edges.
  * 
  * @param m: halfedge mesh

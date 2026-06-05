@@ -7,6 +7,12 @@
 namespace Penner {
 namespace Feature {
 
+/**
+ * @brief Data structure to generate fields and differentiable metrics for a mesh cut
+ * along feature lines.
+ * 
+ */
+
 class CutMetricGenerator
 {
 public:
