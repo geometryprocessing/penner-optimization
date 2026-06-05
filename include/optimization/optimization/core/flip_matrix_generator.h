@@ -32,10 +32,15 @@
 
 #include "optimization/core/common.h"
 
+/**
+ * @brief Data structure to iteratively compute the change of coordinate matrix for intrinsic flips, e.g., in Penner coordinates.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 
-/// Class for incrementally building the flip change of coordinate matrix
+/// Class for iteratively building the flip change of coordinate matrix
 class FlipMatrixGenerator
 {
 public:

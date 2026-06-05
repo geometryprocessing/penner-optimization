@@ -33,6 +33,14 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
+/**
+ * @brief Methods to compute triangle inequality and differentiable cone angle constraints.
+ * 
+ * Also includes cone enumeration, and elimination of redundant or other fixed degrees of
+ * freedom in the vertex cone angle constraints.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 
@@ -136,6 +144,14 @@ Scalar compute_max_constraint(const DifferentiableConeMetric& cone_metric);
  */
 VectorX compute_cone_angles(const DifferentiableConeMetric& cone_metric);
 
+/**
+ * @brief Method to compute the angles of a triangle with given lengths
+ * 
+ * @param l12: first edge length
+ * @param l23: second edge length
+ * @param l31: third edge length
+ * @return corner angles at v1, v2, v3
+ */
 std::array<Scalar, 3> compute_triangle_angles(Scalar l12, Scalar l23, Scalar l31);
 
 /// TODO Optionally add halfedge coordinate Jacobians

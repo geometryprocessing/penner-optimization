@@ -32,6 +32,13 @@
 
 #include "optimization/core/common.h"
 
+/**
+ * @brief Methods for changing edge and interior barycentric coordinates as determined
+ * by hyperbolic edge translations.
+ * 
+ * Translations for mapping between surfaces can be computed using methods in translation.h.
+ */
+
 namespace Penner {
 namespace Optimization {
 

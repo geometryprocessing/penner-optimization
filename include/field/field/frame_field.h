@@ -4,6 +4,11 @@
 #include "holonomy/core/common.h"
 #include "field/intrinsic_field.h"
 
+/**
+ * @brief TODO: Redistribute this code
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

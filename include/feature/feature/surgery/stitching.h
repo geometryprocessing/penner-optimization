@@ -3,6 +3,12 @@
 
 #include "feature/core/common.h"
 
+/**
+ * @brief Method to stitch a mesh cut along feature lines and parametrized, possibly with edge refinement,
+ * into a single parametrized mesh.
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

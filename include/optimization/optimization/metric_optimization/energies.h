@@ -35,10 +35,18 @@
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 #include "util/embedding.h"
 
-/// \file energies.h
-///
-/// Differentiable per face energy functions with gradients for the metric
-/// optimization for both halfedge and VF representations
+/** \file energies.h
+ *
+ * Differentiable per-face energy functions with gradients for metric
+ * optimization for both halfedge and VF representations
+ * 
+ * Energies include:
+ *   - Metric distortion: (sigma_1 - 1)^2 + (sigma_2 - 1)^2,
+ *   - Area distortion: (sigma_1 * sigma_2 - 1)^2
+ *   - Symmetric Dirichlet: sigma_1^2 + sigma_2^2 + sigma_1^(-2) + sigma_2^(-2),
+ *   - Surface Hencky Strain: a quadratic approximation of symmetric Dirichlet
+ */
+
 
 namespace Penner {
 namespace Optimization {

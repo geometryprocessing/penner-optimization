@@ -37,7 +37,7 @@
 
 /// \file energy_functor.h
 ///
-/// Methods to weight energies, e.g., per element energies by element area weights
+/// Methods to scale per-element values by element weights
 
 namespace Penner {
 namespace Optimization {

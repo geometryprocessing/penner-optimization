@@ -3,6 +3,12 @@
 
 #include "holonomy/core/common.h"
 
+/**
+ * @brief Methods for generating cross fields as represented by four rotationally symmetric
+ * tangent vectors.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

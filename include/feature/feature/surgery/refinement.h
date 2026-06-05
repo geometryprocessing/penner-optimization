@@ -6,6 +6,16 @@
 #include "feature/feature/features.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Data structure with limited support to refine the faces and edges of a mesh for feature alignment.
+ * 
+ * Only intended for use with the limited mesh refinement needed for ensuring the validity
+ * of the feature alignment problem, including refining faces with more than one feature edge,
+ * and refining edges to ensure every facet component of the feature cut mesh has at least one adjacent
+ * hard feature constraint
+ * 
+ */
+
 namespace Penner {
 namespace Feature {
 

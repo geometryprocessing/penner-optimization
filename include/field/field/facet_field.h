@@ -7,6 +7,11 @@ namespace Penner {
 namespace Holonomy {
 
 /**
+ * @brief Methods for generating cross fields using legacy facet field file representations.
+ * 
+ */
+
+/**
  * @brief Load a per-facet frame field with edge matchings from file
  * 
  * @param fname: name of the file to load

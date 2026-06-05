@@ -30,6 +30,14 @@
 *********************************************************************************/
 #include "optimization/core/common.h"
 
+/**
+ * @brief Methods for triangulating self overlapping polygons in the plane.
+ * 
+ * Also supports optimization over triangle area for both the planar and spatial
+ * coordinates of the vertices of the polygon.
+ * 
+ */
+
 /// @file refinement.hh
 ///
 /// Methods to determine if polygons are self-overlapping and triangulate them

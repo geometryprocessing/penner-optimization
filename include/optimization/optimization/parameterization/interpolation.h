@@ -33,6 +33,15 @@
 #include "optimization/core/common.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
+/**
+ * @brief Data structures to compute pointwise maps between two intrinsic metrics.
+ * 
+ * Includes both forward and backwards mappings between the two surfaces. These data
+ * structures are primarily used as helpers for computing a traditional uv parameterization,
+ * but can be used directly for pointwise maps. 
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

@@ -35,8 +35,10 @@
 #include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
-/// @file Methods to optimize a metric satisfying angle constraints using an explicit
-/// representation of the constraint manifold as a graph over a linear subspace of the
+/// @file Methods to optimize a metric with angle constraints using an explicit basis complimentary
+/// to the conformal scaling space.
+///
+/// Represents the constraint manifold as a graph over a linear subspace of the
 /// space of Penner coordinates. The domain of this space has |E| - |V| + d degrees of
 /// freedom, where d > 0 is the number of vertices with free angles in the mesh.
 

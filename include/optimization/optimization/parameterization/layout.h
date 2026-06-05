@@ -33,6 +33,11 @@
 #include "optimization/core/common.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
+/**
+ * @brief Methods to layout a uv parameterization determined by intrinsic lengths.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

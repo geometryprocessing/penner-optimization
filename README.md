@@ -111,7 +111,32 @@ To engender future work in this exciting direction, we provide a library `Penner
 		- Rotation Form: Method to compute the rotation of a field across edges from a cross field (TODO: integrate with field code)
 	- Similarity: TODO. It makes sense to keep this here, since it can satisfy full holonomy signature constraints, but is not integral to the codebase
 - Feature: Library for parametrizing surfaces with both seamless and feature alignment constraints
-	- 
+	- Core
+		- Boundary Path: Data structure for tracking the line of symmetry between two boundary vertices
+		- Common: TODO
+		- Component Mesh: Methods and data structures for splitting a disconnected mesh into separate components, as well as corresponding reindexing maps.
+		- IO: Methods to write/read edges to/from file.
+		- Quads: Methods to compute relevant quad mesh statistics (TODO: Only contains valence computation; Unify with other quad related code)
+		- Union Meshes: Methods to combine collections of meshes into a single mesh with multiple components.
+		- VF Corners: Methods for representing mesh edges using opposite corners.
+		- Viewer: Assorted viewers
+	- Dirichlet: Methods for enforcing hard and optimizing soft feature alignment constraints (TODO: consider renaming)
+		- Angle Constraint Relaxer: Method to compute a relaxed angle constraint system that maintains total vertex angles while relaxing feature edge alignment.
+		- Cone Perturber: Data structure to modify sector angle constraints for feature alignment
+		- Constraints: Methods to compute feature aligned seamless constraints and associated Jacobians
+		- Dirichlet Penner Cone Metric: Extension of the differentiable cone metric using Penner coordinates to include full feature aligned seamless constraints (TODO: finish documenting)
+		- Optimization: Two-phase optimization method for alignment of relaxed angle constraint
+	- Experimental: (TODO: Remove)
+	- Feature: Methods to find
+		- Error: Methods to compute feature alignment error
+		- Features: Method to find feature edges on a surface and hard feature constraint subsets
+		- Gluing: Methods to get cut mesh edge and vertex correspondences
+	- Surgery: Methods to cut, refine, and stitch meshes and their parametrizations
+		- Cut Mesh Layout: Methods to parameterize the uv components of a cut mesh
+		- Cut Metric Generator: Data structure to generate fields and differentiable metrics for a mesh cut along feature lines.
+		- Refinement: Data structure with limited support to refine the faces and edges of a mesh for feature alignment
+		- Stitching: Method to stitch a mesh cut along feature lines and parametrized, possibly with edge refinement, into a single parametrized mesh.
+	- Util: Union Find: (TODO: Move to global utility)
 
 ## Citation
 

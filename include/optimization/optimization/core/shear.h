@@ -33,6 +33,15 @@
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 
+/**
+ * @brief Methods to compute the shear coordinates of a metric from Penner coordinates
+ * and shear coordinate bases, linearly independent from the conformal scaling space.
+ * 
+ * Also can compute the change in shear coordinates between two non-conformal metrics,
+ * which is necessary for computing continuous mappings between arbitrary surfaces.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

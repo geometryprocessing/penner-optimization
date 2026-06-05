@@ -37,6 +37,17 @@
 #include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
+/**
+ * @brief Method to optimize distortion with constraints using a walk-on-manifold approach in the
+ * full space of metric coordinates using projection.
+ * 
+ * The constraints are determined by the Differentiable Cone Metric, as well as the method of projecting
+ * to its constraint submanifold and projecting distortion descent directions. This is more general than
+ * the explicit optimization methods, which assume the existence of a conformal basis for solving angle
+ * constraints.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

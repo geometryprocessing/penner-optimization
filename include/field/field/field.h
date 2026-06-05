@@ -3,6 +3,11 @@
 
 #include "holonomy/core/common.h"
 
+/**
+ * @brief Methods to generate field directions and cones from an nrosy field.
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

@@ -7,6 +7,11 @@
 #include "polyscope/surface_mesh.h"
 #endif
 
+/**
+ * @brief Assorted viewers.
+ * 
+ */
+
 namespace Penner {
 
 #ifdef ENABLE_VISUALIZATION

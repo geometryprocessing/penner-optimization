@@ -32,6 +32,12 @@
 
 #include "optimization/core/common.h"
 
+/**
+ * @brief Method to compute hyperbolic translations determining a continuous map between
+ * two intrinsic metrics.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

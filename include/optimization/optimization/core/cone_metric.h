@@ -36,6 +36,14 @@
 #include "optimization/core/common.h"
 #include "optimization/core/flip_matrix_generator.h"
 
+/**
+ * @brief Core representation of a differentiable intrinsic metric on an underlying halfedge mesh, with
+ * support for edge flips and projection to intrinsic metric constraints.
+ * 
+ * Also includes the basic differentiable metric coordinates: log length coordinates and Penner coordinates.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 
@@ -60,6 +68,7 @@ namespace Optimization {
 ///   - Computation of the cone angle constraint error with reduced coordinate Jacobian
 ///   - Compute a new metric satisfying the constraints
 ///   - Compute the change of coordinates flip Jacobian
+/// TODO: Check if interface still up to date
 ///
 class DifferentiableConeMetric : public Mesh<Scalar>
 {

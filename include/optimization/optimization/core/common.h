@@ -30,6 +30,11 @@
 *********************************************************************************/
 #pragma once
 
+/**
+ * @brief Assorted utility functions.
+ * 
+ */
+
 #include "util/common.h"
 #include "optimization/core/globals.h"
 

@@ -30,6 +30,12 @@
 *********************************************************************************/
 #pragma once
 
+/**
+ * @brief Methods to project a metric conformally to cone constraints, and to project
+ * metric coordinate vectors to the tangent space of the constraint submanifold.
+ * 
+ */
+
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 

@@ -35,6 +35,7 @@
 
 /// @file Methods to perform advanced nonlinear optimization, including conjugate gradient
 /// and L-BFGS-B, using the current gradient, previous gradient, and previous descent direction.
+///
 /// These methods are intended to be general enough to apply to both implicit projected gradient
 /// descent and unconstrained gradient descent.
 

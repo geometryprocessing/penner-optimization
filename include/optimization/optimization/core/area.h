@@ -30,6 +30,12 @@
 *********************************************************************************/
 #pragma once
 
+/**
+ * @brief Methods to compute the area of triangles from intrinsic lengths, along
+ * with the derivatives with respect to lengths and log lengths.
+ * 
+ */
+
 #include "optimization/core/common.h"
 #include "optimization/core/cone_metric.h"
 

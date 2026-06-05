@@ -36,6 +36,19 @@
 #include "optimization/core/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
+
+/**
+ * @brief Class for differentiable distortion measures supporting evaluation, gradients, and Hessians
+ * 
+ * Energies include:
+ *   - Log length: ||l - l0||_2^2
+ *   - Log Scale: ||u||_2^2, with u the best fit conformal scale factors
+ *   - Symmetric Dirichlet
+ *   - Quadratic Symmetric Dirichlet Approximation
+ *   - Regularized Quadratic Sym. Dir. Approx.
+ * 
+ */
+
 namespace Penner {
 namespace Optimization {
 

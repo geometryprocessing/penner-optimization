@@ -37,6 +37,8 @@
 
 /// @file Methods to analyze the convergence of a metric to a global minimum on the
 /// constraint surface.
+///
+/// TODO: Move elsewhre
 
 namespace Penner {
 namespace Optimization {

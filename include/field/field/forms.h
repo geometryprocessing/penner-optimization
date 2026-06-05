@@ -3,6 +3,19 @@
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
 
+/**
+ * @brief Methods for creating and manipulating one forms on a surface, represented as
+ * anti-symmetric halfedge values.
+ * 
+ * These halfedge values are interpretable as the integrated values of the form along the
+ * oriented halfedges.
+ * 
+ * Includes methods to check whether forms are valid and closed, to build one forms dual to
+ * dual loops, to integrate closed one forms over a disk, and to scale vertices by integrated
+ * one forms. 
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 
@@ -16,7 +29,7 @@ namespace Holonomy {
 bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form);
 
 /**
- * @brief Determine if a one form is closed
+ * @brief Determine if a one form is closed, meaning the sum of halfedge values in a face is zero
  *
  * @param m: mesh
  * @param one_form: per-halfedge one-form

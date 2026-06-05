@@ -149,6 +149,8 @@ std::unique_ptr<Optimization::DifferentiableConeMetric> DirichletPennerConeMetri
     SolveStats<Scalar>& solve_stats,
     std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
 {
+    // TODO: Replace with full feature alignment constraints
+
     // Copy projection parameters to newton method parameters
     Holonomy::NewtonParameters alg_params;
     alg_params.max_itr = proj_params->max_itr;
