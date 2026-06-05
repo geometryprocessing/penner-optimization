@@ -471,34 +471,41 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>> refine_cor
     int num_halfedges = m.n_halfedges();
     IntrinsicRefinementMesh refinement_mesh(m);
 
-    // tag feature vertices
-    std::vector<bool> is_feature_vertex(m.n_vertices(), false);
+    // get list of components with no interior vertices
+    std::vector<int> feature_degrees = feature_finder.compute_feature_degrees();
+    UnionFind cut_features = feature_finder.compute_cut_feature_components();
+    std::vector<int> feature_labels = cut_features.index_sets();
+    int num_components = cut_features.count_sets();
+    std::vector<int> is_component_seen(num_components, false);
     for (int hij = 0; hij < num_halfedges; ++hij)
     {
-        if (feature_finder.is_feature_halfedge(hij))
-        {
-            is_feature_vertex[m.to[hij]] = true;
-        }
+        // check if tip is interior vertex
+        int vj = m.v_rep[m.to[hij]];
+        if (feature_degrees[vj] > 0) continue;
+
+        // label component as seen if interior vertex found
+        is_component_seen[feature_labels[hij]] = true;
     }
 
-    // refine feature faces
+    // refine faces with two feature edges or in components with no interior vertices
     for (int fijk = 0; fijk < num_faces; ++fijk)
     {
         // count number of feature vertices in face
-        int num_feature_vertices = 0;
+        int num_feature_edges = 0;
         int hij = m.h[fijk];
         for (int h : {hij, m.n[hij], m.n[m.n[hij]]})
         {
-            if (is_feature_vertex[m.to[h]])
+            if (feature_finder.is_feature_halfedge(h))
             {
-                ++num_feature_vertices;
+                ++num_feature_edges;
             }
         }
 
-        // refine if all vertices are features
-        if (num_feature_vertices == 3)
+        // refine if multiple edges are features
+        if ((num_feature_edges > 1) || (!is_component_seen[feature_labels[hij]]))
         {
             refinement_mesh.refine_face(fijk);
+            is_component_seen[feature_labels[hij]] = true;
         }
     }
 

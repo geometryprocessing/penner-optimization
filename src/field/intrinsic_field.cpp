@@ -113,7 +113,7 @@ public:
             int n = compute_cone_correction(hij);
             if (n > 1) spdlog::trace("correction at tip is {}", n);
             if (n < 0) spdlog::error("correction at tip is {}", n);
-            return rounded_value + 1;
+            return rounded_value + n;
         }
         if (is_base_cone)
         {
@@ -121,7 +121,7 @@ public:
             int n = compute_cone_correction(hji);
             if (n > 1) spdlog::trace("correction at base is {}", n);
             if (n < 0) spdlog::error("correction at tip is {}", n);
-            return rounded_value - 1;
+            return rounded_value - n;
         }
 
         return rounded_value;
@@ -1433,7 +1433,6 @@ void IntrinsicNRosyField::initialize_double_mixed_integer_system(const Mesh<Scal
 }
 
 // TODO Make option and make cone rounder code public
-#if ROUND_CONES
 class ConeMISolver : public COMISO::MISolver
 {
 public:
@@ -1594,7 +1593,6 @@ public:
     }
 
 };
-#endif
 
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone)
 {
@@ -1670,15 +1668,9 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
     }
     if (use_roundings)
     {
-#if ROUND_CONES
         Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
         ConeMISolver cs;
         cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);
-#else
-        spdlog::warn("rounding not enabled");
-        COMISO::MISolver cs;
-        cs.solve(Acsc, x, gmm_b, var_edges);
-#endif
     }
     else
     {

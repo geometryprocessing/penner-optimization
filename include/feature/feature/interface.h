@@ -134,6 +134,8 @@ DirichletPennerConeMetric generate_dirichlet_metric_from_mesh(
 class AlignedMetricGenerator
 {
 public:
+    bool is_axis_aligned = true;
+
     AlignedMetricGenerator(
         const Eigen::MatrixXd& V_,
         const Eigen::MatrixXi& F_,
@@ -154,11 +156,12 @@ public:
     void optimize_relaxed(const NewtonParameters& alg_params);
 
     Scalar compute_error() const;
+    void view_constraints() const;
 
     // get the output metric
     Eigen::MatrixXd get_metric() const;
 
-    void parameterize(bool use_high_precision=false);
+    void parameterize(bool use_high_precision=false, bool use_uniform_bc=false);
 
     // get the output parameterization
     std::tuple<

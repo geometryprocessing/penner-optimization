@@ -25,6 +25,8 @@ struct MarkedMetricParameters
     Weighting weighting = Weighting::minimal_homotopy; // weighting for tree-cotree
     bool remove_symmetry = false; // remove symmetry structure from doubled mesh
     bool free_interior = false; // remove interior cone constraints
+    // TODO Implement for meshes without features
+    bool use_free_cones = false; // use free cones instead of seamless constraints
     bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
     bool use_connectivity = true; // use connectivity structure for markings
 };
