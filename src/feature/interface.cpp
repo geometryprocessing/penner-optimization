@@ -319,7 +319,35 @@ Eigen::MatrixXd AlignedMetricGenerator::get_metric() const
         opt_dirichlet_metric.get_metric_coordinates());
 }
 
-void AlignedMetricGenerator::parameterize(bool use_high_precision)
+void AlignedMetricGenerator::view_constraints() const
+{
+    int num_ind_vertices = dirichlet_metric.n_ind_vertices();
+    VectorX independent = VectorX::Zero(num_ind_vertices);
+    VectorX Th_hat;
+    convert_std_to_eigen_vector(dirichlet_metric.Th_hat, Th_hat);
+    for (int i = 0; i < num_ind_vertices; ++i)
+    {
+        if (dirichlet_metric.fixed_dof[i]) independent[i] = 1.;
+    }
+    Optimization::view_independent_vertex_function(
+        dirichlet_metric,
+        vtx_reindex,
+        V_cut,
+        Th_hat,
+        "Th_hat",
+        false
+    );
+    Optimization::view_independent_vertex_function(
+        dirichlet_metric,
+        vtx_reindex,
+        V_cut,
+        independent,
+        "independent vertices"
+    );
+}
+
+
+void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_uniform_bc)
 {
     Eigen::MatrixXd V_o, uv_o;
     Eigen::MatrixXi F_o, FT_o;
@@ -327,7 +355,6 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     std::vector<std::pair<int, int>> endpoints;
 
     // parameterize the cut mesh in low precision
-    bool use_uniform_bc = false;
     if (use_high_precision) {
 #ifdef WITH_MPFR
         mpfr::mpreal::set_default_prec(100);
@@ -356,13 +383,13 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     }
 
     // if using low precision, check if sufficiently accurate
-    if (!use_high_precision)
+    if ((is_axis_aligned) && (!use_high_precision))
     {
         auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = Holonomy::compute_seamless_error(F_o, uv_o, FT_o);
         if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || Optimization::matrix_contains_nan(uv_o) || Optimization::matrix_contains_nan(V_o))
         {
             spdlog::warn("Falling back to high precision");
-            return parameterize(true);
+            return parameterize(true, use_uniform_bc);
        } 
     }
 
@@ -375,18 +402,29 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
 
     // align the mesh to the hard faetures
     uv_o = align_to_hard_features(uv_o, FT_o, F_o_is_hard_feature);
+    //Holonomy::view_seamless_parameterization(V_o, F_o, uv_o, FT_o, "overlay mesh", true);
 
     // stitch mesh together
     auto [V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s, F_s_is_feature] =
         stitch_cut_overlay(V_o, F_o, uv_o, FT_o, fn_to_f, endpoints, F_o_is_feature, V_map, use_uniform_bc);
 
-    // refine mesh
-    Optimization::RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
-    refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+    // simplify mesh using minimal refinement
+    bool simplify = true;
+    if (simplify)
+    {
+        //Optimization::view_triangulation(V_s, F_s, fn_to_f_s, endpoints_s, "stitched mesh");
+        Optimization::RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
+        refinement_mesh.refine_mesh();
+        refinement_mesh.simplify_mesh();
+        refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+    }
+    else {
+        std::tie(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r) = std::tie(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
+    }
 
     // check error and fallback to high precision if high
     // if using low precision, check if sufficiently accurate
-    if (!use_high_precision)
+    if ((is_axis_aligned) && (!use_high_precision))
     {
         auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = Holonomy::compute_seamless_error(F_r, uv_r, FT_r);
         if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || Optimization::matrix_contains_nan(uv_r) || Optimization::matrix_contains_nan(V_r))
@@ -400,7 +438,15 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision)
     Eigen::MatrixXi F_r_is_feature = generate_overlay_cut_mask(F_r, endpoints_r, F, F_is_feature);
     auto feature_corners = compute_mask_corners(F_r_is_feature);
     auto full_feature_face_edges = compute_face_edges_from_corners(F_r, feature_corners);
-    std::tie(feature_edges_r, misaligned_edges_r) = prune_misaligned_face_edges(uv_r, FT_r, full_feature_face_edges, 1e-10);
+    if (is_axis_aligned)
+    {
+        std::tie(feature_edges_r, misaligned_edges_r) = prune_misaligned_face_edges(uv_r, FT_r, full_feature_face_edges, 1e-10);
+    }
+    else
+    {
+        feature_edges_r = full_feature_face_edges;
+        misaligned_edges_r.clear();
+    }
 
     // refine frame field
     std::tie(reference_field_r, theta_r, kappa_r, period_jump_r) = Holonomy::refine_frame_field(

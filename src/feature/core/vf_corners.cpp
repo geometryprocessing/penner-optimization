@@ -60,6 +60,23 @@ Eigen::MatrixXi compute_mask_from_corners(
 	return F_mask;
 }
 
+Eigen::MatrixXi compute_mask_from_face_edges(
+    int num_faces,
+    const std::vector<FaceEdge>& face_edges
+) {
+    // mark matrix entries in the corner list with a 1
+    Eigen::MatrixXi F_mask = Eigen::MatrixXi::Zero(num_faces, 3);
+    for (const auto& face_edge : face_edges)
+    {
+        auto [f0, i] = face_edge.left_corner();
+        auto [f1, j] = face_edge.right_corner();
+        F_mask(f0, i) = 1;
+        F_mask(f1, j) = 1;
+    }
+
+	return F_mask;
+}
+
 
 std::vector<VertexEdge> compute_corner_edges(
     const std::vector<std::pair<int, int>>& corners,

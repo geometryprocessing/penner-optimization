@@ -1,7 +1,5 @@
 #include "field/cross_field.h"
 
-// TODO: not compiling. directional seems to be broken and missing
-// the IntrinsicFaceTangentBundle
 #include <directional/TriMesh.h>
 #include <directional/IntrinsicFaceTangentBundle.h>
 #include <directional/CartesianField.h>

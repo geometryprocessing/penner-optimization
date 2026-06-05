@@ -69,13 +69,13 @@ RefinementMesh::RefinementMesh(
     clear();
 
     // Check for flipped elements in the overlay mesh
-#if CHECK_VALIDITY
     Eigen::VectorXi flipped_f;
     igl::flipped_triangles(uv, F_uv, flipped_f);
     spdlog::trace("{} flipped elements in overlay mesh", flipped_f.size());
     if (flipped_f.size() > 0) {
         spdlog::warn("Refining a mesh with flipped elements in the overlay");
     }
+#if CHECK_VALIDITY
 #endif
 
     // set area threshold using uv
@@ -87,13 +87,13 @@ RefinementMesh::RefinementMesh(
     build_vertex_points(V, uv);
     build_connectivity(F, F_uv, Fn_to_F, endpoints);
 
-#if CHECK_VALIDITY
     // Check for validity before refining and simplifying
     if (!is_valid_refinement_mesh()) {
         spdlog::error("Initial refinement mesh is invalid");
         clear();
         return;
     }
+#if CHECK_VALIDITY
 #endif
 }
 
@@ -1233,7 +1233,7 @@ bool RefinementMesh::triangulate_face(
 
     // Return false if the face is not self overlapping
     if (!is_self_overlapping) {
-        spdlog::warn("Face {} is not self overlapping", face_index);
+        spdlog::warn("Face {} with {} vertices is not self overlapping", face_index, vertex_indices.size());
         return false;
     }
 

@@ -102,6 +102,17 @@ Eigen::MatrixXi compute_mask_from_corners(
     const std::vector<std::pair<int, int>>& mask_corners);
 
 /**
+ * @brief Compute a mask marking the face edges.
+ * 
+ * @param num_faces: number of faces in the mesh
+ * @param mask_corners: list of face edges (fijk, i, fjil, j)
+ * @return |F|x3 corner mask
+ */
+Eigen::MatrixXi compute_mask_from_face_edges(
+    int num_faces,
+    const std::vector<FaceEdge>& face_edges);
+
+/**
  * @brief Given a list of mesh corners, produce a list of the opposite halfedges (vi, vj).
  * 
  * @param corners: list of face and local corner indices (fijk, i)
