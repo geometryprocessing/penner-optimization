@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/experimental/boundary_constraint_generator.h"
 
 #include "util/boundary.h"
@@ -303,7 +311,7 @@ void BoundaryConstraintGenerator::view(
     const std::vector<int>& vtx_reindex)
 {
     const Mesh<Scalar>& m = get_mesh();
-    auto [V_double, F, F_halfedge] = Optimization::generate_doubled_mesh(V, m, vtx_reindex);
+    auto [V_double, F, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
 
     // build feature coloring
     int num_halfedges = m.n_halfedges();
@@ -315,9 +323,9 @@ void BoundaryConstraintGenerator::view(
             is_feature_halfedge(h) = i + 1;
         }
     }
-    VectorX FV_feature_halfedges = Optimization::generate_FV_halfedge_data(F_halfedge, is_feature_halfedge);
+    VectorX FV_feature_halfedges = generate_FV_halfedge_data(F_halfedge, is_feature_halfedge);
 
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, vtx_reindex, m);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, vtx_reindex, m);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();

@@ -1,6 +1,14 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/core/dual_lengths.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 
 #include <queue>
 
@@ -14,7 +22,7 @@ std::vector<Scalar> compute_dual_edge_lengths(const Mesh<Scalar>& m)
 
     // Compute cotangent angles
     VectorX he2angle, he2cot;
-    Optimization::corner_angles(m, he2angle, he2cot);
+    corner_angles(m, he2angle, he2cot);
 
     for (int hij = 0; hij < num_halfedges; ++hij) {
         // Only process halfedge with lower index

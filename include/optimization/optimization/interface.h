@@ -1,36 +1,14 @@
-/*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
-*  `Metric Optimization in Penner Coordinates`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Ryan Capouellez, Denis Zorin,                                                 *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
-#include "optimization/core/common.h"
-#include "optimization/core/cone_metric.h"
+#include "metric/common.h"
+#include "metric/cone_metric.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
 namespace Penner {
@@ -79,92 +57,6 @@ std::unique_ptr<EnergyFunctor> generate_energy(
 /// @param[in] initial_cone_angles: target angles to correct
 /// @return: corrected angles
 std::vector<Scalar> correct_cone_angles(const std::vector<Scalar>& initial_cone_angles);
-
-/// Write an obj file with uv coordinates.
-///
-/// @param[in] filename: obj output file location
-/// @param[in] V: mesh vertices
-/// @param[in] F: mesh faces
-/// @param[in] uv: mesh uv corner coordinates
-/// @param[in] F_uv: mesh uv faces
-void write_obj_with_uv(
-    const std::string& filename,
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& F_uv);
-
-/// Given a mesh with initial target and final optimized metric coordinates, generate a corresponding
-/// overlay VF mesh with parametrization.
-///
-/// @param[in] V: initial mesh vertices
-/// @param[in] F: initial mesh faces
-/// @param[in] Th_hat: initial target angles
-/// @param[in] m: mesh
-/// @param[in] vtx_reindex: map from old to new vertices
-/// @param[in] reduced_metric_target: initial mesh Penner coordinates
-/// @param[in] reduced_metric_coords: optimized mesh metric
-/// @param[in] do_best_fit_scaling: if true, extract best fit scale factors from the metric
-/// @return parametrized VF mesh with cut and topology mapping information
-std::
-    tuple<
-        OverlayMesh<Scalar>, // m_o
-        Eigen::MatrixXd, // V_o
-        Eigen::MatrixXi, // F_o
-        Eigen::MatrixXd, // uv_o
-        Eigen::MatrixXi, // FT_o
-        std::vector<bool>, // is_cut_h
-        std::vector<bool>, // is_cut_o
-        std::vector<int>, // Fn_to_F
-        std::vector<std::pair<int, int>> // endpoints_o
-        >
-    generate_VF_mesh_from_metric(
-        const Eigen::MatrixXd& V,
-        const Eigen::MatrixXi& F,
-        const std::vector<Scalar>& Th_hat,
-        const DifferentiableConeMetric& initial_cone_metric,
-        const VectorX& reduced_metric_coords,
-        std::vector<bool> is_cut = {},
-        bool do_best_fit_scaling = false);
-        
-template <typename OverlayScalar>
-std::
-    tuple<
-        OverlayMesh<OverlayScalar>, // m_o
-        Eigen::MatrixXd, // V_o
-        Eigen::MatrixXi, // F_o
-        Eigen::MatrixXd, // uv_o
-        Eigen::MatrixXi, // FT_o
-        std::vector<bool>, // is_cut_h
-        std::vector<bool>, // is_cut_o
-        std::vector<int>, // Fn_to_F
-        std::vector<std::pair<int, int>> // endpoints_o
-        >
-    generate_VF_mesh_from_halfedge_metric(
-        const Eigen::MatrixXd& V,
-        const Mesh<Scalar>& m,
-        const std::vector<int>& vtx_reindex,
-        const DifferentiableConeMetric& initial_cone_metric,
-        const VectorX& reduced_metric_coords,
-        std::vector<bool> cut_h,
-        bool do_best_fit_scaling,
-        bool use_uniform_bc=false,
-        std::string layout_output_path="");
-
-std::
-    tuple<
-        Eigen::MatrixXd, // V_o
-        Eigen::MatrixXi, // F_o
-        Eigen::MatrixXd, // uv_o
-        Eigen::MatrixXi, // FT_o
-        std::vector<bool> // is_cut_h
-        >
-    generate_VF_mesh_from_discrete_metric(
-        const Eigen::MatrixXd& V,
-        const Eigen::MatrixXi& F,
-        const std::vector<Scalar>& Th_hat,
-        const VectorX& reduced_log_edge_lengths,
-        std::vector<bool> cut_h = {});
 
 } // namespace Optimization
 } // namespace Penner

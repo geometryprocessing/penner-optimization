@@ -1,38 +1,17 @@
-/*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
-*  `Metric Optimization in Penner Coordinates`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Ryan Capouellez, Denis Zorin,                                                 *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "util/io.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
 #include <H5Cpp.h>
+#include <igl/writeOBJ.h>
 
 #include "util/vector.h"
 
@@ -164,6 +143,18 @@ void write_integer_matrix(const Eigen::MatrixXi& matrix, const std::string& file
     input_file.close();
 
     return convert_std_to_eigen_matrix(matrix_vec);
+}
+
+void write_obj_with_uv(
+    const std::string& filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv)
+{
+    Eigen::MatrixXd N;
+    Eigen::MatrixXi FN;
+    igl::writeOBJ(filename, V, F, N, FN, uv, F_uv);
 }
 
 void write_hdf5_mesh(const std::string& path,

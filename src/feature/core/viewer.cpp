@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/core/viewer.h"
 
 #include "feature/core/vf_corners.h"
@@ -8,9 +16,9 @@
 #include "field/frame_field.h"
 #include "field/cross_field.h"
 #include "feature/core/quads.h"
-#include "optimization/core/projection.h"
+#include "metric/projection.h"
 #include "field/intrinsic_field.h"
-#include "optimization/core/viewer.h"
+#include "metric/viewer.h"
 
 #include "holonomy/core/viewer.h"
 #include "util/vf_mesh.h"
@@ -82,7 +90,7 @@ void view_glued_mesh_cones(
     }
 
     // get doubled mesh to view from halfedge
-    auto [V_double, F_mesh, F_halfedge] = Optimization::generate_doubled_mesh(V, m, vtx_gluing);
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_gluing);
 
     // Generate cone geometry
     spdlog::info("Generating cone info");
@@ -186,7 +194,7 @@ void view_cross_field(
     }
 
     // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
+    Eigen::MatrixXd frame_field = Field::generate_frame_field(V, F, reference_field, theta);
     int num_faces = F.rows();
 
     // transfer kappa and period jump to viewer halfedge indexing
@@ -420,7 +428,7 @@ void view_principal_curvature(
     Eigen::VectorXd PV1,PV2;
     std::vector<int> bad_vertices;
     igl::principal_curvature(V,F,PD1,PD2,PV1,PV2, bad_vertices, radius);
-    auto[face_max_direction, face_min_direction, face_max_curvature, face_min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
+    auto[face_max_direction, face_min_direction, face_max_curvature, face_min_curvature] = Field::compute_facet_principal_curvature(V, F, radius);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -484,7 +492,7 @@ VectorX best_fit_conformal_vf(
     auto C_v = Optimization::generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex);
     auto C_uv = Optimization::generate_initial_mesh(V, F, uv, F_uv, Th_hat, vtx_reindex);
     VectorX metric_coords = C_uv->get_metric_coordinates();
-    VectorX r_perm = Optimization::best_fit_conformal(*C_v, metric_coords);
+    VectorX r_perm = best_fit_conformal(*C_v, metric_coords);
     VectorX r = vector_inverse_reindex(r_perm, vtx_reindex);
 
     return r;
@@ -550,7 +558,7 @@ void view_feature_cross_field(
     }
 
     // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
+    Eigen::MatrixXd frame_field = Field::generate_frame_field(V, F, reference_field, theta);
     int num_faces = F.rows();
 
     // transfer kappa and period jump to viewer halfedge indexing
@@ -570,8 +578,8 @@ void view_feature_cross_field(
     Eigen::MatrixXd V_disp = displace_cut_faces(V, F, displacement);
 
     // get cone angles
-    std::vector<Scalar> Th_hat = Holonomy::compute_cone_angle(V, F, kappa, period_jump);
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V_disp, Th_hat);
+    std::vector<Scalar> Th_hat = Field::compute_cone_angle(V, F, kappa, period_jump);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V_disp, Th_hat);
 
 
 #ifdef ENABLE_VISUALIZATION

@@ -32,10 +32,11 @@ if (PROJECT_IS_TOP_LEVEL)
 
   # Set default libigl and suitesparse options
   option(LIBIGL_PREDICATES "Use Predicates" ON)
-  set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
+  #set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
 
+set ( SUITESPARSE_ENABLE_PROJECTS "${SUITESPARSE_ENABLE_PROJECTS};suitesparse_config;cholmod" CACHE STRING "" FORCE)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(eigen)
@@ -111,7 +112,7 @@ if(USE_SUITESPARSE)
   add_compile_definitions(USE_SUITESPARSE)
   list(APPEND SUITESPARSE_LIBS
     SuiteSparse::SuiteSparseConfig
-    SuiteSparse::SPQR
+    #SuiteSparse::SPQR
     SuiteSparse::CHOLMOD
   )
 endif()

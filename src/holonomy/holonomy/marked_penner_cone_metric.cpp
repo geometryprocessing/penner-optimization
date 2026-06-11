@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
 #include "util/vector.h"
@@ -6,8 +14,8 @@
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/holonomy/newton.h"
 
-#include "optimization/core/constraint.h"
-#include "optimization/core/projection.h"
+#include "metric/constraint.h"
+#include "metric/projection.h"
 
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
@@ -119,7 +127,7 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(
     const VectorX& metric_coords,
     const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
     const std::vector<Scalar>& kappa)
-    : Optimization::PennerConeMetric(m, metric_coords)
+    : PennerConeMetric(m, metric_coords)
     , kappa_hat(kappa)
     , m_dual_loop_manager(m.n_edges())
 {
@@ -341,7 +349,7 @@ MatrixX MarkedPennerConeMetric::constraint_jacobian(const VectorX& cotangents)
 
 std::unique_ptr<DifferentiableConeMetric> MarkedPennerConeMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
+    std::shared_ptr<ProjectionParameters> proj_params) const
 {
     // Copy parameters
     NewtonParameters alg_params;

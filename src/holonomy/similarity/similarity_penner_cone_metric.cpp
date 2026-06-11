@@ -1,13 +1,22 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
 #include "holonomy/similarity/conformal.h"
 #include "holonomy/similarity/constraint.h"
+#include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
 
 #include <set>
 
-#include "optimization/core/area.h"
-#include "optimization/core/constraint.h"
+#include "metric/area.h"
+#include "metric/constraint.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -40,7 +49,7 @@ void similarity_corner_angles(
         Scalar lk = exp(metric_coords[hk] / 2.0);
 
         // Compute the cotangent of the angles
-        Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(Optimization::squared_area(li, lj, lk), 0.0));
+        Scalar Aijk4 = 4 * sqrt(std::max<Scalar>(squared_area(li, lj, lk), 0.0));
         Scalar Ijk = (-li * li + lj * lj + lk * lk);
         Scalar iJk = (li * li - lj * lj + lk * lk);
         Scalar ijK = (li * li + lj * lj - lk * lk);
@@ -303,7 +312,7 @@ bool SimilarityPennerConeMetric::constraint(
 
 std::unique_ptr<DifferentiableConeMetric> SimilarityPennerConeMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
+    std::shared_ptr<ProjectionParameters> proj_params) const
 {
     solve_stats.n_solves++; // TODO Make accurate
     AlgorithmParameters alg_params;
@@ -354,9 +363,9 @@ std::tuple<VectorX, VectorX, std::vector<bool>>
 SimilarityPennerConeMetric::get_integrated_metric_coordinates(std::vector<bool> cut_h) const
 {
     std::vector<bool> is_cut_h;
-    VectorX u = integrate_one_form(*this, m_one_form, cut_h, is_cut_h);
+    VectorX u = Field::integrate_one_form(*this, m_one_form, cut_h, is_cut_h);
     VectorX metric_coords = get_metric_coordinates();
-    metric_coords = scale_halfedges_by_integrated_one_form(*this, metric_coords, u);
+    metric_coords = Field::scale_halfedges_by_integrated_one_form(*this, metric_coords, u);
     return std::make_tuple(metric_coords, u, is_cut_h);
 }
 
@@ -390,7 +399,7 @@ SimilarityPennerConeMetric SimilarityPennerConeMetric::scale_by_one_form() const
     u.setZero(num_vertices);
     std::vector<int> v_map;
     int num_angles;
-    Optimization::build_free_vertex_map(*this, v_map, num_angles);
+    build_free_vertex_map(*this, v_map, num_angles);
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (v_map[vi] >= 0) {
             u[vi] = coefficients[v_map[vi]];

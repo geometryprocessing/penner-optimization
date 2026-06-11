@@ -83,15 +83,39 @@ To engender future work in this exciting direction, we provide a library `Penner
 
 ### Library Structure
 
-- Metric
-	- Utility
-	- Core
-	- Parametrization
 - Field
+	- Cross Field: Methods for generating cross fields as represented by four rotationally symmetric tangent vectors.
+	-  Facet Field: Methods for generating cross fields using legacy facet field file representations.
+	- Field: Methods to generate field directions and cones from an nrosy field. (TODO: Move rosy and combing field functions here)
+	- Forms: Methods for creating and manipulating one forms on a surface, represented as anti-symmetric halfedge values.
+	- Frame Field: TODO: move assorted functions here to appropriate locations
+	- Intrinsic Field: TODO: Needs cleanup
 - Optimization
-	- Core:
-	- Metric Optimization:
+	- Core: Underlying methods for differentiable intrinsic metrics, including (a) area and angle values, and (b) length, Penner, shear, and conformal coordinates.
+		- Area: Methods to compute the area of triangles from intrinsic lengths
+		- Common: TODO
+		- Cone Metric: Core representation of a differentiable intrinsic metric on an underlying halfedge mesh
+		- Constraint: Methods to compute triangle inequality and differentiable cone angle constraints.
+		- Flip Matrix Generator: Data structure to iteratively compute the change of coordinate matrix for intrinsic flips
+		- Globals: (TODO: Put structs in relevant files)
+		- Projection: Methods to project a metric conformally to cone constraints, and to project metric coordinate vectors to the tangent space of the constraint submanifold.
+		- Reparametrization: Methods for changing edge and interior barycentric coordinates as determined by hyperbolic edge translations. (TODO: This name is pretty confusing in a parameterization library. Change to something better like `barycentric`, and move to parameterization)
+		- Shear: Methods to compute the shear coordinates of a metric from Penner coordinates and shear coordinate bases, linearly independent from the conformal scaling space.
+	- Metric Optimization: Methods for optimizing distortion energies for an intrinsic metric with constraints
+		- Convergence: (TODO: a single function; move somewhere else)
+		- Energies: Differentiable per-face energy functions with gradients for metric optimization
+		- Energy Functor: Class for differentiable distortion measures supporting evaluation, gradients, and Hessians
+		- Energy Weights: Methods to scale per-element values by element weights
+		- Explicit Optimization: Methods to optimize a metric with angle constraints using an explicit basis complimentary to the conformal scaling space.
+		- Implicit Optimization:  Method to optimize distortion with constraints using a walk-on-manifold approach in a full space of metric coordinates using projection
+		- Nonlinear Optimization: Methods to perform advanced nonlinear optimization, including conjugate gradient and L-BFGS-B
 	- Parameterization: (TODO: move to top level. This is fundamental and common code.)
+		- Interpolation: Data structures to compute pointwise maps between two intrinsic metrics.
+		- Layout: Methods to layout a uv parameterization determined by intrinsic lengths (TODO: cleanup and documentation)
+		- Refinement: Methods to refine a triangulation with an accompanying overlay layout sufficiently to ensure the parametrization does not have inverted elements. (TODO: replace `refinement` with `simplification` or something of this sort; check what is in the paper)
+		- Translation: Method to compute hyperbolic translations determining a continuous map between two intrinsic metrics
+		- Triangulation: Methods for triangulating self overlapping polygons in the plane
+	- Util: TODO: Mostly utility for unit tests and validation. Redistribute this code.
 - Holonomy: Library for parametrizing surfaces with full seamless constraints with arbitrary holonomy signatures
 	- Core: Basic utilities for tracking dual loops on a surface
 		- Boundary Basis: Basis loops for boundary alignment constraints

@@ -1,9 +1,18 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/surgery/cut_mesh_layout.h"
 
 #include "util/vf_mesh.h"
 
-#include "optimization/parameterization/interpolation.h"
-#include "optimization/parameterization/layout.h"
+#include "parametrization/interpolation.h"
+#include "parametrization/layout.h"
+#include "parametrization/parametrize.h"
 
 #include "feature/feature/error.h"
 #include "feature/core/component_mesh.h"
@@ -70,8 +79,8 @@ parameterize_cut_mesh(
         //    metric_init[i] = 2. * log(init_component.l[i]);
             metric_coords[i] = 2. * log(mesh_component.l[i]);
         }
-        Optimization::PennerConeMetric component_init(mesh_component, metric_init);
-        Optimization::PennerConeMetric component_metric(mesh_component, metric_coords);
+        PennerConeMetric component_init(mesh_component, metric_init);
+        PennerConeMetric component_metric(mesh_component, metric_coords);
 
         // Get component vertices
         int n_v_component = component_metric.n_vertices();
@@ -97,7 +106,7 @@ parameterize_cut_mesh(
         // Generate overlay
         std::vector<bool> is_cut = {};
         std::string component_layout_path = join_path(output_dir, "component_" + std::to_string(i) + ".obj");
-        auto vf_res = Optimization::generate_VF_mesh_from_halfedge_metric<OverlayScalar>(
+        auto vf_res = generate_VF_mesh_from_halfedge_metric<OverlayScalar>(
             V_component,
             embedding_component,
             vtx_reindex_component,
@@ -382,7 +391,7 @@ generate_connected_parameterization(
     Mesh<OverlayScalar> m = FV_to_double<OverlayScalar>(V, F, uv, F_uv, convert_vector_type<Scalar, OverlayScalar>(Th_hat), vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
     //average_length(m);
     OverlayMesh<OverlayScalar> m_o(m);
-    Optimization::make_tufted_overlay(m_o);
+    make_tufted_overlay(m_o);
     spdlog::info("generated overlay mesh with {} vertices", m_o.n_vertices());
     spdlog::info("length error is {}", compute_length_error(m));
 
@@ -426,7 +435,7 @@ generate_connected_parameterization(
     // Now directly do layout on triangulated overlay mesh
     std::vector<OverlayScalar> phi(m.n_vertices(), 0.0);
     std::vector<bool> is_cut;
-    auto overlay_layout_res = Optimization::compute_layout_components(m_o.cmesh(), phi, is_cut, h_start);
+    auto overlay_layout_res = compute_layout_components(m_o.cmesh(), phi, is_cut, h_start);
     std::vector<OverlayScalar> u_o = std::get<0>(overlay_layout_res);
     std::vector<OverlayScalar> v_o = std::get<1>(overlay_layout_res);
     std::vector<bool> is_cut_o = std::get<2>(overlay_layout_res);

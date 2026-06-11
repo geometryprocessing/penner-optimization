@@ -1,14 +1,3 @@
-set(OptimizationCoreSrc
-  core/area.cpp
-  core/common.cpp
-  core/cone_metric.cpp
-  core/constraint.cpp
-  core/flip_matrix_generator.cpp
-  core/projection.cpp
-  core/reparametrization.cpp
-  core/shear.cpp
-  core/viewer.cpp
-)
 
 set(MetricOptimizationSrc
   metric_optimization/convergence.cpp
@@ -20,30 +9,19 @@ set(MetricOptimizationSrc
   metric_optimization/nonlinear_optimization.cpp
 )
 
-set(ParameterizationSrc
-  parameterization/interpolation.cpp
-  parameterization/layout.cpp
-  parameterization/refinement.cpp
-  parameterization/translation.cpp
-  parameterization/triangulation.cpp
-)
-
 set(OptimizationUtilSrc
   util/shapes.cpp
-  util/viewers.cpp
 )
 
 add_library(PennerOptimizationLib
   interface.cpp
   pybind.cpp
-  ${OptimizationCoreSrc}
   ${MetricOptimizationSrc}
-  ${ParameterizationSrc}
   ${OptimizationUtilSrc}
 )
 target_include_directories(PennerOptimizationLib PUBLIC ../../include/optimization)
 target_link_libraries(PennerOptimizationLib PUBLIC
-  PennerUtilLib
+  PennerCoreLib
   ${RENDER_LIBRARIES}
   ${PYBIND_LIBRARIES}
 )

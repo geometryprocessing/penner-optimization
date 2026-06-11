@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/surgery/cut_metric_generator.h"
 
 #include "field/cross_field.h"
@@ -209,11 +217,11 @@ void CutMetricGenerator::generate_fields(
         auto& face_map = face_maps[i];
 
         // TODO: make parameter
-        Holonomy::FieldParameters field_params;
+        Field::FieldParameters field_params;
         field_params.min_cone = 1;
 
         // initialize field data for component (needed to generate reference corners)
-        Holonomy::IntrinsicNRosyField field_generator;
+        Field::IntrinsicNRosyField field_generator;
         field_generator.min_cone = field_params.min_cone;
         if (V_map.size() > 0)
         {
@@ -232,8 +240,8 @@ void CutMetricGenerator::generate_fields(
             is_fixed[i] = is_fixed_direction[fijk];
 
             // convert extrinsic direction to intrinsic angle
-            Eigen::Vector3d reference_direction = Holonomy::generate_reference_direction(V_cut, F_cut, fijk, reference_corner[fijk]);
-            target_theta[i] = -Holonomy::signed_angle<Eigen::Vector3d>(direction.row(fijk), reference_direction, N.row(fijk));
+            Eigen::Vector3d reference_direction = Field::generate_reference_direction(V_cut, F_cut, fijk, reference_corner[fijk]);
+            target_theta[i] = -signed_angle<Eigen::Vector3d>(direction.row(fijk), reference_direction, N.row(fijk));
         }
         field_generator.set_fixed_directions(m, target_theta, is_fixed);
 
@@ -251,7 +259,7 @@ void CutMetricGenerator::generate_fields(
     }
 
     // generate reference field from reference corners
-    reference_field = Holonomy::generate_reference_field(V_cut, F_cut, reference_corner);
+    reference_field = Field::generate_reference_field(V_cut, F_cut, reference_corner);
 }
 
 
@@ -277,7 +285,7 @@ void CutMetricGenerator::set_fields(
         auto& face_map = face_maps[i];
 
         // initialize feild generator with the given field
-        Holonomy::IntrinsicNRosyField field_generator;
+        Field::IntrinsicNRosyField field_generator;
         field_generator.min_cone = 1;
         field_generator.use_trivial_boundary = true;
         field_generator.initialize(m);
@@ -464,12 +472,12 @@ void CutMetricGenerator::generate_marked_metrics(MarkedMetricParameters marked_m
 void CutMetricGenerator::optimize_fields(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const Eigen::MatrixXi& F_cut)
 {
     // generate cross field from current field
-    std::array<Eigen::MatrixXd, 4> cross_field = Holonomy::generate_cross_field(V, F, reference_field, theta);
+    std::array<Eigen::MatrixXd, 4> cross_field = Field::generate_cross_field(V, F, reference_field, theta);
 
     // optimize cross field
     std::vector<int> fixed_faces;
     convert_boolean_array_to_index_vector(is_fixed_face, fixed_faces);
-    cross_field = Holonomy::reduce_curl(V, F, cross_field, fixed_faces);
+    cross_field = Field::reduce_curl(V, F, cross_field, fixed_faces);
 
     // build glued mesh
     spdlog::info("Generating uncut mesh");
@@ -481,11 +489,11 @@ void CutMetricGenerator::optimize_fields(const Eigen::MatrixXd& V, const Eigen::
     // set field with optimized cross field
     spdlog::info("Setting field");
     Eigen::VectorXi reference_corner(F.rows());
-    Holonomy::IntrinsicNRosyField field_generator;
+    Field::IntrinsicNRosyField field_generator;
     field_generator.initialize(m);
     field_generator.get_field(m, vtx_reindex_uncut, F, face_reindex_uncut, reference_corner, theta, kappa, period_jump);
-    theta = Holonomy::infer_theta(V, F, reference_corner, cross_field[0]);
-    reference_field = Holonomy::generate_reference_field(V, F, reference_corner);
+    theta = Field::infer_theta(V, F, reference_corner, cross_field[0]);
+    reference_field = Field::generate_reference_field(V, F, reference_corner);
     field_generator.set_field(m, vtx_reindex_uncut, F, face_reindex_uncut, theta, kappa, period_jump);
 
     // set principal matchings

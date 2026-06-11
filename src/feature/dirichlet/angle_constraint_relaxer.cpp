@@ -1,9 +1,17 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/dirichlet/angle_constraint_relaxer.h"
 #include "feature/core/component_mesh.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
-#include "optimization/core/constraint.h"
-#include "optimization/core/viewer.h"
+#include "metric/constraint.h"
+#include "metric/viewer.h"
 #include "util/io.h"
 #include "util/vector.h"
 
@@ -49,7 +57,7 @@ void AngleConstraintMatrixRelaxer::view(const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V) const
 {
-    auto [V_double, F_mesh, F_halfedge] = Optimization::generate_doubled_mesh(V, m, vtx_reindex);
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, m, vtx_reindex);
 
     // propagate joined corner labels to vertices and edges
     int num_ind_vertices = m.n_ind_vertices();
@@ -72,7 +80,7 @@ void AngleConstraintMatrixRelaxer::view(const Mesh<Scalar>& m,
             edge_label[hij] = ci;
         }
     }
-    VectorX edge_label_VF = Optimization::generate_FV_halfedge_data(F_halfedge, edge_label);
+    VectorX edge_label_VF = generate_FV_halfedge_data(F_halfedge, edge_label);
     VectorX corner_label_VF = vector_compose(corner_label, m.v_rep);
 
 #ifdef ENABLE_VISUALIZATION

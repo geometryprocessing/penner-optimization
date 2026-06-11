@@ -1,6 +1,14 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/dirichlet/cone_perturber.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 #include "feature/core/vf_corners.h"
 
 namespace Penner {
@@ -42,7 +50,7 @@ void ConePerturber::perturb_boundary_cones(
     Scalar min_angle)
 {
     // get initial metric actual angles
-    VectorX Theta = Optimization::compute_cone_angles(m);
+    VectorX Theta = compute_cone_angles(m);
 
     // get map from halfedge endpoints to halfedges
     Eigen::SparseMatrix<int> vv2he = generate_VV_to_halfedge_map(m, vtx_reindex, V_map);

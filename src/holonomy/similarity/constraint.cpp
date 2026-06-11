@@ -1,6 +1,14 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/similarity/constraint.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/holonomy/constraint.h"
 
@@ -17,7 +25,7 @@ VectorX compute_similarity_constraint(
 
     std::vector<int> v_map;
     int num_vertex_forms;
-    Optimization::build_free_vertex_map(similarity_metric, v_map, num_vertex_forms);
+    build_free_vertex_map(similarity_metric, v_map, num_vertex_forms);
 
     // Initialize the constraint
     constraint.setZero(num_vertex_forms + n_s + n_f - 1);
@@ -43,7 +51,7 @@ MatrixX compute_one_form_constraint_jacobian(
     // Get free vertex map
     std::vector<int> v_rep;
     int num_vertex_forms;
-    Optimization::build_free_vertex_rep(similarity_metric, v_rep, num_vertex_forms);
+    build_free_vertex_rep(similarity_metric, v_rep, num_vertex_forms);
 
     // Add entries for vertex angles constraints
     for (int h = 0; h < n_h; h++) {

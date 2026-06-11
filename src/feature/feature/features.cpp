@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 #include "feature/feature/features.h"
 #include "feature/core/common.h"
@@ -496,7 +504,7 @@ FeatureFinder::generate_feature_cut_mesh() const
 void FeatureFinder::view_features(bool show)
 {
     // view the feature edges as a graph
-    Optimization::view_primal_graph(
+    view_primal_graph(
         m_vertex_positions,
         m_mesh,
         m_vtx_reindex,
@@ -506,7 +514,7 @@ void FeatureFinder::view_features(bool show)
 
     // view the feature forest that would be produced by pruning cycles as a graph
     std::vector<bool> is_in_feature_forest = compute_feature_forest_halfedges();
-    Optimization::view_primal_graph(
+    view_primal_graph(
         m_vertex_positions,
         m_mesh,
         m_vtx_reindex,
@@ -521,7 +529,7 @@ void FeatureFinder::view_parametric_features(
     const std::vector<int>& vtx_reindex) const
 {
     // add features
-    Optimization::view_primal_graph(uv, m_mesh, vtx_reindex, m_is_feature_halfedge);
+    view_primal_graph(uv, m_mesh, vtx_reindex, m_is_feature_halfedge);
 }
 
 void FeatureFinder::set_feature_edge(int halfedge_index, bool is_feature)

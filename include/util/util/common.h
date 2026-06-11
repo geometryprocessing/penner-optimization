@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #include <Eigen/Core>
@@ -104,6 +112,15 @@ inline std::vector<int> arange(size_t n)
     return vec;
 }
 
+/**
+ * @brief Compute the real modulus of x mod y
+ * 
+ * @param x: positive number to mod
+ * @param y: positive modulus
+ * @return x (mod y)
+ */
+inline
+Scalar pos_fmod(Scalar x, Scalar y) { return (0 == y) ? x : x - y * floor(x / y); }
 
 template <typename OldScalar, typename NewScalar>
 Mesh<NewScalar> change_mesh_type(const Mesh<OldScalar>& m)

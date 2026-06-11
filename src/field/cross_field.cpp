@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "field/cross_field.h"
 
 #include <directional/TriMesh.h>
@@ -7,14 +15,10 @@
 #include <directional/combing.h>
 #include <directional/curl_matching.h>
 
-#if ENABLE_VISUALIZATION
-#include <directional/directional_viewer.h>
-#endif 
-
 #include <igl/rotate_vectors.h>
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 std::array<Eigen::MatrixXd, 4> load_rawfield(const std::string& filename)
 {
@@ -174,23 +178,6 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
     directional::polycurl_reduction_precompute(mesh, b, bc, blevel, rawField , pcrdata);
     Eigen::VectorXi constFaces = b;
 
-#if ENABLE_VISUALIZATION
-    directional::DirectionalViewer viewer;
-    bool view = false;
-    if (view)
-    {
-        viewer.set_mesh(mesh,0);
-        viewer.set_mesh(mesh, 1);
-        viewer.set_field(rawField,Eigen::MatrixXd(), 1,0.9, 0, 10.0);
-
-        viewer.toggle_mesh(false,0);
-        viewer.toggle_field(true,0);
-        viewer.toggle_field(true,1);
-        viewer.set_selected_faces(constFaces,1);
-        viewer.launch();
-    }
-#endif
-
     spdlog::debug("Optimizing curl");
     int iter = 0;
     params.numIter = 5;
@@ -247,5 +234,5 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
     return opt_cross_field;
 }
 
-} // namespace Holonomy
+}
 } // namespace Penner

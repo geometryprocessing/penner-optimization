@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/experimental/newton.h"
 
 #include "holonomy/holonomy/holonomy.h"
@@ -9,13 +17,13 @@
 #include <nlohmann/json.hpp>
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
-#include "optimization/core/projection.h"
-#include "optimization/core/shear.h"
+#include "metric/projection.h"
+#include "metric/shear.h"
 #include "util/io.h"
 
 #ifdef USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
-#include <Eigen/SPQRSupport>
+//#include <Eigen/SPQRSupport>
 #endif
 
 namespace Penner {

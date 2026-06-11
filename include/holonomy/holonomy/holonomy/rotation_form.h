@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #include "holonomy/core/common.h"
@@ -32,13 +40,13 @@ VectorX generate_rotation_form_from_cross_field(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& frame_field);
 
-VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params);
+VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const Field::FieldParameters& field_params);
 
 VectorX generate_intrinsic_rotation_form(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V,
-    const FieldParameters& field_params);
+    const Field::FieldParameters& field_params);
 
 } // namespace Holonomy
 } // namespace Penner

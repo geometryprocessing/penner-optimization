@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #include "holonomy/core/common.h"
@@ -225,14 +233,14 @@ std::vector<int> extend_vtx_reindex(
 std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    const FieldParameters& field_params);
+    const Field::FieldParameters& field_params);
 
 std::vector<Scalar> compute_kappa(
     const Mesh<Scalar>& discrete_metric,
     const VectorX& rotation_form,
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
 
-Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
+DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
 
 } // namespace Holonomy
 } // namespace Penner

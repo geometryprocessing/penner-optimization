@@ -1,54 +1,34 @@
-/*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
-*  `Metric Optimization in Penner Coordinates`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Ryan Capouellez, Denis Zorin,                                                 *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "optimization/pybind.h"
 
-#include "optimization/core/common.h"
+#include "metric/common.h"
 
-#include "optimization/core/area.h"
-#include "optimization/core/constraint.h"
+#include "metric/area.h"
+#include "metric/constraint.h"
 #include "optimization/metric_optimization/convergence.h"
 #include "util/embedding.h"
+#include "util/io.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/explicit_optimization.h"
 #include "optimization/metric_optimization/implicit_optimization.h"
-#include "optimization/parameterization/interpolation.h"
-#include "optimization/parameterization/layout.h"
+#include "parametrization/interpolation.h"
+#include "parametrization/layout.h"
 #include "optimization/interface.h"
-#include "optimization/core/projection.h"
-#include "optimization/parameterization/refinement.h"
-#include "optimization/core/reparametrization.h"
+#include "metric/projection.h"
+#include "parametrization/refinement.h"
+#include "parametrization/parametrize.h"
+#include "metric/reparametrization.h"
 #include "optimization/util/shapes.h"
-#include "optimization/core/shear.h"
-#include "optimization/parameterization/translation.h"
+#include "metric/shear.h"
+#include "parametrization/translation.h"
 
 #ifdef USE_HIGHFIVE
 #include <highfive/H5Easy.hpp>
@@ -315,12 +295,6 @@ void init_conformal_pybind(pybind11::module& m)
         "add_shading_to_mesh",
         &add_shading_to_mesh,
         "add shading to mesh",
-        pybind11::
-            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
-    m.def(
-        "save_mesh_screen_capture",
-        &save_mesh_screen_capture,
-        "save viewer image to png",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 #endif

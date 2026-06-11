@@ -1,10 +1,18 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
 #include "holonomy/core/homology_basis.h"
 
-#include "optimization/core/cone_metric.h"
+#include "metric/cone_metric.h"
 
 /**
  * @brief Extension of the differentiable cone metric using Penner coordinates
@@ -30,7 +38,7 @@ bool is_valid_mesh(const Mesh<Scalar>& m);
 /**
  * @brief Class to represent a mesh with a Penner metric and homology basis markings
  */
-class MarkedPennerConeMetric : public Optimization::PennerConeMetric
+class MarkedPennerConeMetric : public PennerConeMetric
 {
 public:
     // Additional constraints for homology loops
@@ -139,7 +147,7 @@ public:
     // TODO Use Newton
     virtual std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
         SolveStats<Scalar>& solve_stats,
-        std::shared_ptr<Optimization::ProjectionParameters> proj_params =
+        std::shared_ptr<ProjectionParameters> proj_params =
             nullptr) const override;
 
     // Flip method

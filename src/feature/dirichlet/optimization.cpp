@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/dirichlet/optimization.h"
 
 #ifdef USE_SUITESPARSE
@@ -7,7 +15,7 @@
 #include "feature/dirichlet/angle_constraint_relaxer.h"
 #include "feature/dirichlet/constraint.h"
 #include "holonomy/holonomy/constraint.h"
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 #include <queue>
 #include <igl/Timer.h>
 
@@ -49,7 +57,7 @@ public:
 
         // build projection parameters for the subroutines
         SolveStats<Scalar> solve_stats;
-        proj_params = std::make_shared<Optimization::ProjectionParameters>();
+        proj_params = std::make_shared<ProjectionParameters>();
         proj_params->do_reduction = true;
         proj_params->output_dir = alg_params.output_dir;
         proj_params->error_eps = 1e-12;
@@ -71,7 +79,7 @@ public:
 
         // perform initial projection
         dirichlet_metric.change_metric(initial_dirichlet_metric, reduced_metric_init);
-        std::unique_ptr<Optimization::DifferentiableConeMetric> projected_cone_metric =
+        std::unique_ptr<DifferentiableConeMetric> projected_cone_metric =
             dirichlet_metric.project_to_constraint(solve_stats, proj_params);
         reduced_metric_coords = projected_cone_metric->get_reduced_metric_coordinates();
         update_metric(initial_dirichlet_metric, reduced_metric_coords);
@@ -137,7 +145,7 @@ protected:
     int num_solves;
     Scalar max_triangle_quality;
     Scalar max_hard_error;
-    std::shared_ptr<Optimization::ProjectionParameters> proj_params;
+    std::shared_ptr<ProjectionParameters> proj_params;
     VectorX triangle_quality, he2angle, he2cot;
 
     // Open a per iteration data log and write a header
@@ -293,7 +301,7 @@ protected:
         SolveStats<Scalar> solve_stats;
         reduced_metric_coords = reduced_metric_start + lambda * descent_direction;
         dirichlet_metric.change_metric(initial_dirichlet_metric, reduced_metric_coords);
-        std::unique_ptr<Optimization::DifferentiableConeMetric> line_step_cone_metric =
+        std::unique_ptr<DifferentiableConeMetric> line_step_cone_metric =
             dirichlet_metric.project_to_constraint(solve_stats, proj_params);
         reduced_metric_coords = line_step_cone_metric->get_reduced_metric_coordinates();
         update_metric(initial_dirichlet_metric, reduced_metric_coords);

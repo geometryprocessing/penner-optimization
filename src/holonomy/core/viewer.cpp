@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 #include "holonomy/core/viewer.h"
 
@@ -17,7 +25,7 @@
 #include "util/vf_mesh.h"
 #include "holonomy/holonomy/constraint.h"
 #include "field/frame_field.h"
-#include "optimization/core/viewer.h"
+#include "metric/viewer.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/curve_network.h"
@@ -57,7 +65,7 @@ void view_frame_field(
     if (num_cones != num_vertices) return;
 
     // Generate cones
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, Th_hat);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, Th_hat);
 
     // Generate rotated cross field vectors from reference
     std::array<Eigen::MatrixXd, 4> cross_field;
@@ -138,7 +146,7 @@ void view_cross_field(
     }
 
     // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Holonomy::generate_frame_field(V, F, reference_field, theta);
+    Eigen::MatrixXd frame_field = Field::generate_frame_field(V, F, reference_field, theta);
     int num_faces = F.rows();
 
     // transfer kappa and period jump to viewer halfedge indexing
@@ -155,8 +163,8 @@ void view_cross_field(
     }
 
     // get cone angles
-    std::vector<Scalar> Th_hat = compute_cone_angle(V, F, kappa, period_jump);
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, Th_hat);
+    std::vector<Scalar> Th_hat = Field::compute_cone_angle(V, F, kappa, period_jump);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, Th_hat);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -214,7 +222,7 @@ void view_rotation_form(
     // Generate cones
     spdlog::info("{} vertices", Th_hat.size());
     //auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, vtx_reindex, m);
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, Th_hat);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, Th_hat);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -389,7 +397,7 @@ void view_constraint_error(
     if (show) {
         spdlog::info("Viewing {} mesh with {} vertices", mesh_handle, num_vertices);
     }
-    auto [V_double, F_mesh, F_halfedge] = Optimization::generate_doubled_mesh(V, marked_metric, vtx_reindex);
+    auto [V_double, F_mesh, F_halfedge] = generate_doubled_mesh(V, marked_metric, vtx_reindex);
 
     // Make mesh into discrete metric
     spdlog::debug("Making metric discrete");
@@ -405,7 +413,7 @@ void view_constraint_error(
     // Generate cones and cone errors
     spdlog::debug("Computing cones and errors");
     VectorX vertex_constraint = compute_vertex_constraint(marked_metric_copy, he2angle);
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, vtx_reindex, marked_metric);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, vtx_reindex, marked_metric);
     VectorX cone_error = vector_compose(vertex_constraint, marked_metric.v_rep);
 
 #ifdef ENABLE_VISUALIZATION
@@ -498,8 +506,8 @@ void view_seamless_parameterization(
     VectorX area, uv_area;
     igl::doublearea(V_cut, FT, area);
     igl::doublearea(uv, FT, uv_area);
-    VectorX corner_angles = Optimization::compute_corner_angles(V_cut, FT);
-    VectorX uv_corner_angles = Optimization::compute_corner_angles(uv, FT);
+    VectorX corner_angles = compute_corner_angles(V_cut, FT);
+    VectorX uv_corner_angles = compute_corner_angles(uv, FT);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
     spdlog::info("Min embedding area: {}", area.minCoeff());
@@ -510,7 +518,7 @@ void view_seamless_parameterization(
     VectorX cone_angles = compute_cone_angles(V, F, uv, FT);
     std::vector<Scalar> cone_angles_vec;
     convert_eigen_to_std_vector(cone_angles, cone_angles_vec);
-    auto [cone_positions, cone_values] = Optimization::generate_cone_vertices(V, cone_angles_vec);
+    auto [cone_positions, cone_values] = generate_cone_vertices(V, cone_angles_vec);
     VectorX cone_error(cone_values.size());
     for (int i = 0; i < cone_values.size(); ++i)
     {

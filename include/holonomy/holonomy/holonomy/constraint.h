@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 #pragma once
 
@@ -24,6 +32,33 @@ namespace Holonomy {
 VectorX Kappa(const Mesh<Scalar>& m, const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops, const VectorX& alpha);
 VectorX Kappa(const MarkedPennerConeMetric& marked_metric, const VectorX& alpha);
 
+/**
+ * @brief Given a list of dual loops, compute a matrix with columns given by the corresponding
+ * closed one forms for the dual loops.
+ *
+ * @param m: mesh
+ * @param dual_loops: loops defining the one forms
+ * @return matrix of dual loop one forms
+ */
+MatrixX build_dual_loop_basis_one_form_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
+
+/**
+ * @brief Given a mesh and a homology basis, compute a matrix for the space of closed one forms
+ * with the first |V| (or |V| - 1) columns corresponding to vertex hat function derivatives and the
+ * last 2g corresponding to the homology basis loops.
+ *
+ * @param m: mesh
+ * @param homology_basis_loops: homology basis loops for the mesh
+ * @param eliminate_vertex: remove the last vertex of the mesh so that the matrix is full rank
+ * @return matrix with basis forms as columns
+ */
+MatrixX build_closed_one_form_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
+    bool eliminate_vertex = false);
+    
 /**
  * @brief Compute vertex cone holonomy constraints
  * 

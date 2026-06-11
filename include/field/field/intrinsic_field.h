@@ -1,6 +1,15 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
-#include "holonomy/core/common.h"
+#include "metric/common.h"
+#include "metric/cone_metric.h"
 
 // TODO: This needs a lot of cleanup. To make it clean:
 //   - The rounder should be moved to another file, and the CoMISo changes made in a fork
@@ -8,7 +17,7 @@
 //   - The double code should be much cleaner, e.g., by making a derived class
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 /**
  * @brief Parameters for cross field generation
@@ -233,5 +242,5 @@ private:
 std::vector<int> generate_min_cones(const Mesh<Scalar>& m, int min_cone=1);
 std::vector<int> build_double_dual_bfs_forest(const Mesh<Scalar>& m, const std::vector<int> roots);
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

@@ -1,8 +1,16 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/surgery/stitching.h"
 
 #include "holonomy/core/viewer.h"
-#include "optimization/parameterization/refinement.h"
-#include "optimization/parameterization/layout.h"
+#include "parametrization/refinement.h"
+#include "parametrization/layout.h"
 #include "util/io.h"
 #include "util/vector.h"
 #include "util/vf_mesh.h"
@@ -429,7 +437,7 @@ private:
         Eigen::Vector2d pj(refined_uv[vj][0], refined_uv[vj][1]);
         Eigen::Vector2d pk(refined_uv[vk][0], refined_uv[vk][1]);
 
-        return Optimization::signed_area(pi, pj, pk);
+        return signed_area(pi, pj, pk);
     }
 
     // split the current segment, returning the current stitched vertex and corresponding uv points
@@ -744,12 +752,12 @@ EdgeSplicer::EdgeSplicer(
     , m_endpoints(endpoints)
 {
     // build list of split faces per original face
-    std::vector<std::vector<int>> F_to_Fn = Optimization::build_F_to_Fn(Fn_to_F);
+    std::vector<std::vector<int>> F_to_Fn = build_F_to_Fn(Fn_to_F);
 
     // For each original face, get the overlay vertices corresponding to the face
     int num_faces = F_to_Fn.size();
     Eigen::MatrixXi halfedge_map;
-    Optimization::build_faces(
+    build_faces(
         F,
         F_uv,
         F_to_Fn,

@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 
 #include "util/boundary.h"
@@ -131,7 +139,7 @@ MatrixX DirichletPennerConeMetric::constraint_jacobian(const VectorX& cotangents
     return compute_dirichlet_constraint_jacobian(*this, cotangents);
 }
 
-std::unique_ptr<Optimization::DifferentiableConeMetric>
+std::unique_ptr<DifferentiableConeMetric>
 DirichletPennerConeMetric::set_metric_coordinates(const VectorX& metric_coords) const
 {
     return std::make_unique<DirichletPennerConeMetric>(DirichletPennerConeMetric(
@@ -145,9 +153,9 @@ DirichletPennerConeMetric::set_metric_coordinates(const VectorX& metric_coords) 
         m_relaxed_angle_constraint_system));
 }
 
-std::unique_ptr<Optimization::DifferentiableConeMetric> DirichletPennerConeMetric::project_to_constraint(
+std::unique_ptr<DifferentiableConeMetric> DirichletPennerConeMetric::project_to_constraint(
     SolveStats<Scalar>& solve_stats,
-    std::shared_ptr<Optimization::ProjectionParameters> proj_params) const
+    std::shared_ptr<ProjectionParameters> proj_params) const
 {
     // TODO: Replace with full feature alignment constraints
 

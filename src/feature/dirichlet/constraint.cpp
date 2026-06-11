@@ -1,9 +1,17 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/dirichlet/constraint.h"
 #include "feature/core/component_mesh.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
-#include "optimization/core/constraint.h"
-#include "optimization/core/viewer.h"
+#include "metric/constraint.h"
+#include "metric/viewer.h"
 #include "util/io.h"
 #include "util/vector.h"
 

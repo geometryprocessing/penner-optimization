@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/pybind.h"
 
 #include "holonomy/interface.h"
@@ -50,9 +58,9 @@ void init_holonomy_pybind(pybind11::module& m)
         .value("primal_min_dual_max", HomotopyBasisGenerator::Weighting::primal_min_dual_max)
         .export_values();
 
-    pybind11::class_<IntrinsicNRosyField>(m, "IntrinsicNRosyField")
+    pybind11::class_<Field::IntrinsicNRosyField>(m, "IntrinsicNRosyField")
         .def(pybind11::init<>())
-        .def("initialize", &IntrinsicNRosyField::initialize)
+        .def("initialize", &Field::IntrinsicNRosyField::initialize)
         .def("set_field", pybind11::overload_cast<
             const Mesh<Scalar>&,
             const std::vector<int>&,
@@ -60,18 +68,18 @@ void init_holonomy_pybind(pybind11::module& m)
             const std::vector<int>&,
             const Eigen::VectorXd&,
             const Eigen::MatrixXd&,
-            const Eigen::MatrixXi&>(&IntrinsicNRosyField::set_field))
+            const Eigen::MatrixXi&>(&Field::IntrinsicNRosyField::set_field))
         .def("set_field", pybind11::overload_cast<
             const Mesh<Scalar>&,
             const std::vector<int>&,
             const Eigen::MatrixXi&,
             const Eigen::VectorXd&,
             const Eigen::MatrixXd&,
-            const Eigen::MatrixXi&>(&IntrinsicNRosyField::set_field))
-        //.def("set_field", &IntrinsicNRosyField::set_field)
-        .def("compute_principal_matchings", &IntrinsicNRosyField::compute_principal_matchings)
-        .def("fix_inconsistent_matchings", &IntrinsicNRosyField::fix_inconsistent_matchings)
-        .def("compute_rotation_form", &IntrinsicNRosyField::compute_rotation_form);
+            const Eigen::MatrixXi&>(&Field::IntrinsicNRosyField::set_field))
+        //.def("set_field", &Field::IntrinsicNRosyField::set_field)
+        .def("compute_principal_matchings", &Field::IntrinsicNRosyField::compute_principal_matchings)
+        .def("fix_inconsistent_matchings", &Field::IntrinsicNRosyField::fix_inconsistent_matchings)
+        .def("compute_rotation_form", &Field::IntrinsicNRosyField::compute_rotation_form);
 
     pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")
         .def(pybind11::init<>())
@@ -99,9 +107,9 @@ void init_holonomy_pybind(pybind11::module& m)
         .def_readwrite("free_interior", &MarkedMetricParameters::free_interior)
         .def_readwrite("weighting", &MarkedMetricParameters::weighting);
 
-    pybind11::class_<FieldParameters, std::shared_ptr<FieldParameters>>(m, "FieldParameters")
+    pybind11::class_<Field::FieldParameters, std::shared_ptr<Field::FieldParameters>>(m, "FieldParameters")
         .def(pybind11::init<>())
-        .def_readwrite("min_cone", &FieldParameters::min_cone);
+        .def_readwrite("min_cone", &Field::FieldParameters::min_cone);
 
     pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
         .def(pybind11::init<
@@ -169,7 +177,7 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def(
         "generate_intrinsic_rotation_form",
         pybind11::
-            overload_cast<const Eigen::MatrixXd&, const Eigen::MatrixXi&, const FieldParameters&>(
+            overload_cast<const Eigen::MatrixXd&, const Eigen::MatrixXi&, const Field::FieldParameters&>(
                 &generate_intrinsic_rotation_form),
         default_call_guard);
 
@@ -191,11 +199,11 @@ void init_holonomy_pybind(pybind11::module& m)
         &generate_penner_coordinates,
         default_call_guard);
 
-    m.def("load_frame_field", &load_frame_field, default_call_guard);
-    m.def("write_frame_field", &write_frame_field, default_call_guard);
-    m.def("refine_frame_field", &refine_frame_field, default_call_guard);
+    m.def("load_frame_field", &Field::load_frame_field, default_call_guard);
+    m.def("write_frame_field", &Field::write_frame_field, default_call_guard);
+    m.def("refine_frame_field", &Field::refine_frame_field, default_call_guard);
     m.def("compute_loop_holonomy_matrix", &compute_loop_holonomy_matrix, default_call_guard);
-    m.def("compute_field_direction", &compute_field_direction, default_call_guard);
+    m.def("compute_field_direction", &Field::compute_field_direction, default_call_guard);
     m.def("write_obj", writeOBJ, default_call_guard);
 
 }

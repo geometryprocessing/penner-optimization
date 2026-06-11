@@ -1,7 +1,15 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/similarity/layout.h"
 
-#include "optimization/parameterization/layout.h"
-#include "optimization/parameterization/translation.h"
+#include "parametrization/layout.h"
+#include "parametrization/translation.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 namespace Penner {
@@ -13,8 +21,8 @@ void interpolate_penner_coordinates(
     const Mesh<Scalar>& mesh,
     const SimilarityPennerConeMetric& initial_marked_metric,
     SimilarityPennerConeMetric& marked_metric,
-    Optimization::InterpolationMesh<Scalar>& interpolation_mesh,
-    Optimization::InterpolationMesh<Scalar>& reverse_interpolation_mesh)
+    InterpolationMesh<Scalar>& interpolation_mesh,
+    InterpolationMesh<Scalar>& reverse_interpolation_mesh)
 {
     marked_metric = initial_marked_metric;
 
@@ -23,7 +31,7 @@ void interpolate_penner_coordinates(
     trivial_scale_factors.setZero(mesh.n_ind_vertices());
     bool is_hyperbolic = false;
     interpolation_mesh =
-        Optimization::InterpolationMesh<Scalar>(mesh, trivial_scale_factors, is_hyperbolic);
+        InterpolationMesh<Scalar>(mesh, trivial_scale_factors, is_hyperbolic);
 
     // Get initial reflection structure
     Mesh<Scalar>& mc = interpolation_mesh.get_mesh();
@@ -48,7 +56,7 @@ void interpolate_penner_coordinates(
 
     // Compute translations for reparametrization
     VectorX translations;
-    Optimization::compute_as_symmetric_as_possible_translations(
+    compute_as_symmetric_as_possible_translations(
         mc,
         flipped_metric_coords,
         initial_metric_coords,
@@ -73,7 +81,7 @@ void interpolate_penner_coordinates(
     Mesh<Scalar> m_layout = interpolation_mesh.get_mesh();
     is_hyperbolic = true;
     reverse_interpolation_mesh =
-        Optimization::InterpolationMesh<Scalar>(m_layout, trivial_scale_factors, is_hyperbolic);
+        InterpolationMesh<Scalar>(m_layout, trivial_scale_factors, is_hyperbolic);
 
     // Undo the flips to make the hyperbolic surface with new metric Delaunay
     reverse_interpolation_mesh.reverse_flip_sequence(flip_sequence);
@@ -130,7 +138,7 @@ std::
     // Compute interpolation overlay mesh
     // TODO: Use consistent interpolation code from the Penner codebase
     Eigen::MatrixXd V_overlay;
-    Optimization::InterpolationMesh<Scalar> interpolation_mesh, reverse_interpolation_mesh;
+    InterpolationMesh<Scalar> interpolation_mesh, reverse_interpolation_mesh;
     SimilarityPennerConeMetric similarity_metric = initial_similarity_metric;
     spdlog::trace("Interpolating penner coordinates");
     interpolate_penner_coordinates(
@@ -155,7 +163,7 @@ std::
     for (int h = 0; h < metric_coords.size(); ++h) {
         mc.l[h] = exp(metric_coords[h] / 2.0);
     }
-    Optimization::make_tufted_overlay(m_o);
+    make_tufted_overlay(m_o);
 
     // Get endpoints
     std::vector<std::pair<int, int>> endpoints;
@@ -171,12 +179,12 @@ std::
     }
 
     // Get layout topology from original mesh
-    std::vector<bool> is_cut = Optimization::compute_layout_topology(m, cut_h);
+    std::vector<bool> is_cut = compute_layout_topology(m, cut_h);
 
     // Convert overlay mesh to VL format
     spdlog::trace("Getting layout");
     std::vector<Scalar> u(m.n_ind_vertices(), 0.0);
-    return Optimization::consistent_overlay_mesh_to_VL(
+    return consistent_overlay_mesh_to_VL(
         m,
         m_o,
         vtx_reindex,

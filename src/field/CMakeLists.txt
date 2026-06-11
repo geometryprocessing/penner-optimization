@@ -12,9 +12,7 @@ add_library(PennerFieldLib
 )
 target_include_directories(PennerFieldLib PUBLIC ../../include/field)
 target_link_libraries(PennerFieldLib PUBLIC
-  PennerUtilLib
-  PennerOptimizationLib
-  PennerHolonomyLib
+  PennerCoreLib
   ${VISUALIZATION_LIBS}
 )
 target_link_libraries(PennerFieldLib PRIVATE

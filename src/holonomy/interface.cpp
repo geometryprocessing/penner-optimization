@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/interface.h"
 
 #include "holonomy/core/boundary_basis.h"
@@ -10,10 +18,10 @@
 #include "holonomy/similarity/energy.h"
 #include "util/boundary.h"
 
-#include "optimization/core/cone_metric.h"
-#include "optimization/core/constraint.h"
-#include "optimization/parameterization/interpolation.h"
-#include "optimization/parameterization/refinement.h"
+#include "metric/cone_metric.h"
+#include "metric/constraint.h"
+#include "parametrization/interpolation.h"
+#include "parametrization/refinement.h"
 #include "util/io.h"
 #include "util/vector.h"
 
@@ -110,7 +118,7 @@ generate_metric_from_field(
 
     // build field
     // TODO: make field setting check for validity of field
-    Holonomy::IntrinsicNRosyField field_generator;
+    Field::IntrinsicNRosyField field_generator;
     field_generator.initialize(m);
     field_generator.set_field(m, vtx_reindex, F, face_map, theta, kappa, period_jump);
     VectorX rotation_form = field_generator.compute_rotation_form(m);
@@ -256,16 +264,16 @@ void generate_basis_loops(
     }
 }
 
-Optimization::DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
+DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
     // Build initial metric and target metric from edge lengths
     VectorX scale_factors;
     scale_factors.setZero(m.n_ind_vertices());
     bool is_hyperbolic = false;
-    Optimization::InterpolationMesh<Scalar> interpolation_mesh(m, scale_factors, is_hyperbolic);
+    InterpolationMesh<Scalar> interpolation_mesh(m, scale_factors, is_hyperbolic);
 
     // Get initial log length coordinates
     VectorX log_length_coords = interpolation_mesh.get_halfedge_metric_coordinates();
-    return Optimization::DiscreteMetric(m, log_length_coords);
+    return DiscreteMetric(m, log_length_coords);
 }
 
 
@@ -276,7 +284,7 @@ std::vector<Scalar> compute_kappa(
 {
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    Optimization::corner_angles(discrete_metric, he2angle, he2cot);
+    corner_angles(discrete_metric, he2angle, he2cot);
 
     // Compute rotation angles along dual loops if loop constraints are needed
     int num_basis_loops = basis_loops.size();
@@ -344,7 +352,7 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     Mesh<Scalar> m = _m;
 
     // Get initial log length coordinates
-    Optimization::DiscreteMetric discrete_metric = generate_discrete_metric(m);
+    DiscreteMetric discrete_metric = generate_discrete_metric(m);
     VectorX log_length_coords = discrete_metric.get_metric_coordinates();
 
     // compute basis loops
@@ -359,7 +367,7 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     // if set to free cones, instead mark all free cones
     if (marked_metric_params.use_free_cones)
     {
-        std::vector<int> cones = Optimization::enumerate_cone_vertices(m);
+        std::vector<int> cones = enumerate_cone_vertices(m);
         if (!cones.empty())
         {
             convert_index_vector_to_boolean_array(cones, m.n_ind_vertices(), m.fixed_dof);
@@ -422,7 +430,7 @@ infer_marked_metric(
     bool use_intrinsic,
     MarkedMetricParameters marked_metric_params)
 {
-    auto [frame_field, field_Th_hat] = generate_cross_field(V, F);
+    auto [frame_field, field_Th_hat] = Field::generate_cross_field(V, F);
 
     // Convert VF mesh to halfedge
     std::vector<int> vtx_reindex_mesh, indep_vtx, dep_vtx, v_rep, bnd_loops;
@@ -445,7 +453,7 @@ infer_marked_metric(
     // Generate rotation form and cones
     VectorX rotation_form;
     if (use_intrinsic) {
-        FieldParameters field_params;
+        Field::FieldParameters field_params;
         rotation_form = generate_intrinsic_rotation_form(m, field_params);
     } else {
         rotation_form =
@@ -468,7 +476,7 @@ infer_marked_metric(
 std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    const FieldParameters& field_params)
+    const Field::FieldParameters& field_params)
 {
     // generate halfedge mesh
     std::vector<int> vtx_reindex;
@@ -563,7 +571,7 @@ std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refine
     m.fixed_dof[0] = true;
 
     // Get rotation form and corresponding cones
-    FieldParameters field_params;
+    Field::FieldParameters field_params;
     VectorX rotation_form = generate_intrinsic_rotation_form(m, field_params);
     std::vector<Scalar> Th_hat = generate_cones_from_rotation_form(m, rotation_form);
     m.Th_hat = Th_hat;

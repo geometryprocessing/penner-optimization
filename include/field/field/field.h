@@ -1,7 +1,14 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 #pragma once
-
-#include "holonomy/core/common.h"
+#include "metric/common.h"
 
 /**
  * @brief Methods to generate field directions and cones from an nrosy field.
@@ -9,7 +16,7 @@
  */
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 /**
  * @brief Generate a cross field for a mesh
@@ -24,5 +31,5 @@ std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
     const Eigen::MatrixXi& F);
 
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

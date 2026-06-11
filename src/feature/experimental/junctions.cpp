@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 #include "feature/experimental/junctions.h"
 #include "feature/core/common.h"
@@ -31,7 +39,7 @@ void JunctionFeatureFinder::view_junctions(bool show)
     // get junction vertices
     std::vector<int> junction_vertices = vector_reindex(vtx_reindex, compute_junctions());
     Eigen::MatrixXd junctions =
-        Optimization::generate_subset_vertices(vertex_positions, junction_vertices);
+        generate_subset_vertices(vertex_positions, junction_vertices);
 
 #ifdef ENABLE_VISUALIZATION
     polyscope::init();
@@ -238,7 +246,7 @@ void JunctionFeatureFinder::prune_closest_junction(int vertex_index)
     // compute distance to input vertex with features cut
     const std::vector<bool>& is_feature_halfedge = get_feature_halfedges();
     std::vector<Scalar> vertex_weights = find_vertex_weights(m, is_feature_halfedge, root);
-    Optimization::view_vertex_function(m, vtx_reindex, vertex_positions, vertex_weights);
+    view_vertex_function(m, vtx_reindex, vertex_positions, vertex_weights);
 
     // get the junction closest to the root vertex
     std::vector<int> junctions = compute_junctions();

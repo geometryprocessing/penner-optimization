@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/holonomy/newton.h"
 
 #include "holonomy/holonomy/constraint.h"
@@ -8,13 +16,13 @@
 #include <nlohmann/json.hpp>
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
-#include "optimization/core/projection.h"
-#include "optimization/core/shear.h"
+#include "metric/projection.h"
+#include "metric/shear.h"
 #include "util/io.h"
 
 #ifdef USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
-#include <Eigen/SPQRSupport>
+//#include <Eigen/SPQRSupport>
 #endif
 
 #ifdef ENABLE_VISUALIZATION
@@ -188,7 +196,7 @@ void OptimizeNewton::checkpoint_metric(const MarkedPennerConeMetric& marked_metr
 
     // Write best fit scale factors
     int num_halfedges = marked_metric.n_halfedges();
-    VectorX scale_factors = Optimization::best_fit_conformal(marked_metric, VectorX::Zero(num_halfedges));
+    VectorX scale_factors = best_fit_conformal(marked_metric, VectorX::Zero(num_halfedges));
     checkpoint_path = join_path(checkpoint_dir, "scale_factors_" + suffix);
     write_vector(scale_factors, checkpoint_path);
 
@@ -197,7 +205,7 @@ void OptimizeNewton::checkpoint_metric(const MarkedPennerConeMetric& marked_metr
     MatrixX shear_dual_matrix;
     std::vector<int> edges;
     arange(num_edges, edges);
-    Optimization::compute_shear_dual_matrix(marked_metric, edges, shear_dual_matrix);
+    compute_shear_dual_matrix(marked_metric, edges, shear_dual_matrix);
     VectorX metric_coords = marked_metric.get_metric_coordinates();
     VectorX shears = shear_dual_matrix.transpose() * metric_coords;
     checkpoint_path = join_path(checkpoint_dir, "shears_" + suffix);
@@ -261,7 +269,7 @@ void OptimizeNewton::solve_linear_system()
     }
     // QR based minimum norm computation: more numerically stable than direct pseudo-inverse
     else if (alg_params.solver == "qr") {
-#ifdef USE_SUITESPARSE
+#ifdef USE_QR
         typedef int32_t Int;
         typedef Eigen::SparseMatrix<Scalar, Eigen::ColMajor, Int> PinvMatrix;
 

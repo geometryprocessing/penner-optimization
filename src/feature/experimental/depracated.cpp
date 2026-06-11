@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi>
 parameterize_components(
@@ -30,8 +38,8 @@ parameterize_components(
             metric_init[i] = 2. * log(init_component.l[i]);
             metric_coords[i] = 2. * log(mesh_component.l[i]);
         }
-        Optimization::PennerConeMetric component_init(mesh_component, metric_init);
-        Optimization::PennerConeMetric component_metric(mesh_component, metric_coords);
+        PennerConeMetric component_init(mesh_component, metric_init);
+        PennerConeMetric component_metric(mesh_component, metric_coords);
 
         // Get component vertices
         int n_v_component = component_metric.n_vertices();
@@ -81,7 +89,7 @@ parameterize_components(
         std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
 
         // Refine mesh
-        Optimization::RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
+        RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
         auto [V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r] = refinement_mesh.get_VF_mesh();
 
         // Add components to lists
@@ -339,7 +347,7 @@ layout_cut_mesh(
         for (int i = 0; i < mesh_component.n_halfedges(); ++i) {
             metric_coords[i] = 2. * log(mesh_component.l[i]);
         }
-        Optimization::PennerConeMetric component_metric(mesh_component, metric_coords);
+        PennerConeMetric component_metric(mesh_component, metric_coords);
 
         int n_v_component = component_metric.n_vertices();
         int n_ind_v_component = component_metric.n_ind_vertices();
@@ -362,7 +370,7 @@ layout_cut_mesh(
         scale_factors.setZero(n_ind_v_component);
 
         // Compute interpolation overlay mesh
-        Optimization::InterpolationMesh<OverlayScalar> interpolation_mesh, reverse_interpolation_mesh;
+        InterpolationMesh<OverlayScalar> interpolation_mesh, reverse_interpolation_mesh;
         interpolate_penner_coordinates(
             embedding_component,
             component_metric.get_metric_coordinates(),
@@ -370,7 +378,7 @@ layout_cut_mesh(
             interpolation_mesh,
             reverse_interpolation_mesh);
         OverlayMesh<OverlayScalar> m_o = interpolation_mesh.get_overlay_mesh();
-        auto [F_o, uv_o, FT_o] = Optimization::compute_layout_VF(m_o);
+        auto [F_o, uv_o, FT_o] = compute_layout_VF(m_o);
         //Optimization::view_mesh_topology(V_component, F_o);
 
         // Add components to lists

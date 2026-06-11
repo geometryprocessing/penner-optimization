@@ -1,7 +1,15 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
-#include "holonomy/core/common.h"
-#include "holonomy/core/dual_loop.h"
+#include "metric/common.h"
+#include "metric/cone_metric.h"
 
 /**
  * @brief Methods for creating and manipulating one forms on a surface, represented as
@@ -10,14 +18,13 @@
  * These halfedge values are interpretable as the integrated values of the form along the
  * oriented halfedges.
  * 
- * Includes methods to check whether forms are valid and closed, to build one forms dual to
- * dual loops, to integrate closed one forms over a disk, and to scale vertices by integrated
- * one forms. 
+ * Includes methods to check whether forms are valid and closed, to integrate closed one
+ * forms over a disk, and to scale vertices by integrated one forms. 
  * 
  */
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 /**
  * @brief Determine if a one form is valid.
@@ -36,33 +43,6 @@ bool is_valid_one_form(const Mesh<Scalar>& m, const VectorX& one_form);
  * @return true iff the one form is closed
  */
 bool is_closed_one_form(const Mesh<Scalar>& m, const VectorX& one_form);
-
-/**
- * @brief Given a list of dual loops, compute a matrix with columns given by the corresponding
- * closed one forms for the dual loops.
- *
- * @param m: mesh
- * @param dual_loops: loops defining the one forms
- * @return matrix of dual loop one forms
- */
-MatrixX build_dual_loop_basis_one_form_matrix(
-    const Mesh<Scalar>& m,
-    const std::vector<std::unique_ptr<DualLoop>>& dual_loops);
-
-/**
- * @brief Given a mesh and a homology basis, compute a matrix for the space of closed one forms
- * with the first |V| (or |V| - 1) columns corresponding to vertex hat function derivatives and the
- * last 2g corresponding to the homology basis loops.
- *
- * @param m: mesh
- * @param homology_basis_loops: homology basis loops for the mesh
- * @param eliminate_vertex: remove the last vertex of the mesh so that the matrix is full rank
- * @return matrix with basis forms as columns
- */
-MatrixX build_closed_one_form_matrix(
-    const Mesh<Scalar>& m,
-    const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
-    bool eliminate_vertex = false);
 
 /**
  * @brief Compute the matrix that integrates a closed one-form over a cut of the mesh to a disk.
@@ -142,5 +122,5 @@ VectorX scale_edges_by_zero_form(
     const VectorX& metric_coords,
     const VectorX& zero_form);
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

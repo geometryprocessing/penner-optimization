@@ -1,39 +1,67 @@
-/*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2023 Paper     *
-*  `Metric Optimization in Penner Coordinates`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Ryan Capouellez, Denis Zorin,                                                 *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #include "util/common.h"
 #include <Eigen/SparseLU>
 
 namespace Penner {
+
+/**
+ * @brief Compute the dot product of two 3D vectors.
+ * 
+ * @tparam vector representation of R3 supporting indexing
+ * @param v1: first vector
+ * @param v2: second vector
+ * @return dot product of the two vectors
+ */
+template <typename VectorType>
+double dot_prod(const VectorType& v1, const VectorType& v2)
+{
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+/**
+ * @brief Compute the cross product of two 3D vectors.
+ * 
+ * @tparam vector representation of R3 supporting indexing
+ * @param v1: first vector
+ * @param v2: second vector
+ * @return cross product of the two vectors
+ */
+template <typename VectorType>
+VectorType cross_prod(const VectorType& v1, const VectorType& v2)
+{
+    return VectorType(
+        v1[1] * v2[2] - v1[2] * v2[1],
+        v1[2] * v2[0] - v1[0] * v2[2],
+        v1[0] * v2[1] - v1[1] * v2[0]);
+}
+
+/**
+ * @brief Compute the signed angle between two 3D vectors around a normal axis.
+ * 
+ * @tparam vector representation of R3 supporting indexing
+ * @param v1: first vector
+ * @param v2: second vector
+ * @param normal: normal vector representing the axis of rotation
+ * @return signed angle between the two vectors around the axis of rotation
+ */
+template <typename VectorType>
+double signed_angle(const VectorType& v1, const VectorType& v2, const VectorType& normal)
+{
+    double s = dot_prod(normal, cross_prod(v1, v2));
+    double c = dot_prod(v1, v2);
+    const double angle = (s == 0 && c == 0) ? 0.0 : atan2(s, c);
+    return angle;
+}
+
 
 /// Compute the Kronecker product of two vectors.
 ///

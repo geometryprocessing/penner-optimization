@@ -1,10 +1,17 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "field/field.h"
 
 #include "util/vf_mesh.h"
-#include "holonomy/core/dual_loop.h"
 #include "field/forms.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 #include "util/vector.h"
 
 #if USE_COMISO
@@ -13,7 +20,7 @@
 #endif
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
     const Eigen::MatrixXd& V,

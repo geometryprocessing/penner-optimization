@@ -1,10 +1,17 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "field/frame_field.h"
-#include "holonomy/holonomy/constraint.h"
-#include "holonomy/core/dual_loop.h"
-#include "holonomy/holonomy/holonomy.h"
-#include "optimization/parameterization/refinement.h"
-#include "holonomy/core/viewer.h"
+#include "parametrization/refinement.h"
 #include "util/vf_mesh.h"
+#include "util/vector.h"
+#include "util/linear_algebra.h"
+#include "util/map.h"
 
 #include <igl/per_face_normals.h>
 #include <igl/local_basis.h>
@@ -18,7 +25,7 @@
 // TODO: Cleaning pass
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 Eigen::Vector3d generate_reference_direction(
     const Eigen::MatrixXd& V,
@@ -135,9 +142,9 @@ std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
     Scalar rel_threshold,
     Scalar sample_rate)
 {
-    //auto[max_direction, min_direction, _max_curvature, _min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
-    //auto[_max_direction, _min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, 3);
-    auto[max_direction, min_direction, max_curvature, min_curvature] = Holonomy::compute_facet_principal_curvature(V, F, radius);
+    //auto[max_direction, min_direction, _max_curvature, _min_curvature] = compute_facet_principal_curvature(V, F, radius);
+    //auto[_max_direction, _min_direction, max_curvature, min_curvature] = compute_facet_principal_curvature(V, F, 3);
+    auto[max_direction, min_direction, max_curvature, min_curvature] = compute_facet_principal_curvature(V, F, radius);
     int num_faces = F.rows();
     std::vector<bool> is_fixed_direction(num_faces, false);
     for (int fijk = 0; fijk < num_faces; ++fijk)
@@ -199,7 +206,7 @@ generate_frame_field(
     std::vector<int> face_map = generate_face_map(m);
 
     // initalize field generator
-    Holonomy::IntrinsicNRosyField field_generator;
+    IntrinsicNRosyField field_generator;
     field_generator.min_cone = field_params.min_cone;
     field_generator.use_roundings= field_params.use_roundings;
     field_generator.initialize(m);
@@ -240,8 +247,8 @@ generate_frame_field(
             is_fixed[i] = is_fixed_direction[fijk];
 
             // convert extrinsic direction to intrinsic angle
-            Eigen::Vector3d reference_direction = Holonomy::generate_reference_direction(V, F, fijk, reference_corner[fijk]);
-            target_theta[i] = -Holonomy::signed_angle<Eigen::Vector3d>(direction.row(fijk), reference_direction, N.row(fijk));
+            Eigen::Vector3d reference_direction = generate_reference_direction(V, F, fijk, reference_corner[fijk]);
+            target_theta[i] = -signed_angle<Eigen::Vector3d>(direction.row(fijk), reference_direction, N.row(fijk));
         }
 
         // set fixed directions 
@@ -266,7 +273,7 @@ generate_frame_field(
     field_generator.get_field(m, vtx_reindex, F, face_map, reference_corner, theta, kappa, period_jump);
 
     // convert face corner to tangent direction
-    Eigen::MatrixXd reference_field = Holonomy::generate_reference_field(V, F, reference_corner);
+    Eigen::MatrixXd reference_field = generate_reference_field(V, F, reference_corner);
 
     return std::make_tuple(reference_field, theta, kappa, period_jump);
 }
@@ -757,8 +764,8 @@ std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> r
     // TODO: make version that does not require uv map
     Eigen::MatrixXi F_orig, F_uv_orig, halfedge_map;
     std::vector<std::array<std::vector<int>, 3>> corner_v_points, corner_uv_points;
-    std::vector<std::vector<int>> F_to_Fn = Optimization::build_F_to_Fn(Fn_to_F);
-    Optimization::build_faces(
+    std::vector<std::vector<int>> F_to_Fn = build_F_to_Fn(Fn_to_F);
+    build_faces(
         F,
         F_uv,
         F_to_Fn,

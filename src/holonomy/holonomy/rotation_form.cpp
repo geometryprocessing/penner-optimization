@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/holonomy/rotation_form.h"
 
 #include "field/field.h"
@@ -102,13 +110,13 @@ VectorX generate_rotation_form_from_cross_field(
         rotation_form[h] = compute_cross_field_edge_angle(m, vtx_reindex, V, frame_field, N, h);
     }
 
-    assert(is_valid_one_form(m, rotation_form));
+    assert(Field::is_valid_one_form(m, rotation_form));
     return rotation_form;
 }
 
-VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const FieldParameters& field_params)
+VectorX generate_intrinsic_rotation_form(const Mesh<Scalar>& m, const Field::FieldParameters& field_params)
 {
-    IntrinsicNRosyField field_generator;
+    Field::IntrinsicNRosyField field_generator;
     field_generator.min_cone = field_params.min_cone;
     field_generator.use_roundings = field_params.use_roundings;
     
@@ -119,9 +127,9 @@ VectorX generate_intrinsic_rotation_form(
     const Mesh<Scalar>& m,
     const std::vector<int>& vtx_reindex,
     const Eigen::MatrixXd& V,
-    const FieldParameters& field_params)
+    const Field::FieldParameters& field_params)
 {
-    IntrinsicNRosyField field_generator;
+    Field::IntrinsicNRosyField field_generator;
     field_generator.use_roundings = field_params.use_roundings;
     field_generator.min_cone = field_params.min_cone;
 

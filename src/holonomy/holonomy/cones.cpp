@@ -1,10 +1,18 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/holonomy/cones.h"
 
 #include "util/boundary.h"
 #include "field/forms.h"
 #include "holonomy/holonomy/holonomy.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 
 #include <random>
 
@@ -19,7 +27,7 @@ bool validate_cones_from_rotation_form(
 {
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    Optimization::corner_angles(m, he2angle, he2cot);
+    corner_angles(m, he2angle, he2cot);
 
     // Get boundary vertices if symmetric mesh with boundary
     int num_vertices = m.n_vertices();
@@ -68,10 +76,10 @@ std::vector<Scalar> generate_cones_from_rotation_form(
     const Mesh<Scalar>& m,
     const VectorX& rotation_form)
 {
-    assert(is_valid_one_form(m, rotation_form));
+    assert(Field::is_valid_one_form(m, rotation_form));
     // Compute the corner angles
     VectorX he2angle, he2cot;
-    Optimization::corner_angles(m, he2angle, he2cot);
+    corner_angles(m, he2angle, he2cot);
 
     // Compute cones from the rotation form as holonomy - rotation around each vertex
     // Per-halfedge iteration is used for faster computation

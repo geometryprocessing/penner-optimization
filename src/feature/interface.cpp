@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/interface.h"
 
 #ifdef WITH_MPFR
@@ -7,8 +15,8 @@
 #include "util/vf_mesh.h"
 #include "util/boundary.h"
 
-#include "optimization/parameterization/refinement.h"
-#include "optimization/core/common.h"
+#include "parametrization/refinement.h"
+#include "metric/common.h"
 
 #include "holonomy/interface.h"
 #include "field/frame_field.h"
@@ -329,7 +337,7 @@ void AlignedMetricGenerator::view_constraints() const
     {
         if (dirichlet_metric.fixed_dof[i]) independent[i] = 1.;
     }
-    Optimization::view_independent_vertex_function(
+    view_independent_vertex_function(
         dirichlet_metric,
         vtx_reindex,
         V_cut,
@@ -337,7 +345,7 @@ void AlignedMetricGenerator::view_constraints() const
         "Th_hat",
         false
     );
-    Optimization::view_independent_vertex_function(
+    view_independent_vertex_function(
         dirichlet_metric,
         vtx_reindex,
         V_cut,
@@ -386,7 +394,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_unif
     if ((is_axis_aligned) && (!use_high_precision))
     {
         auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = Holonomy::compute_seamless_error(F_o, uv_o, FT_o);
-        if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || Optimization::matrix_contains_nan(uv_o) || Optimization::matrix_contains_nan(V_o))
+        if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || matrix_contains_nan(uv_o) || matrix_contains_nan(V_o))
         {
             spdlog::warn("Falling back to high precision");
             return parameterize(true, use_uniform_bc);
@@ -413,7 +421,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_unif
     if (simplify)
     {
         //Optimization::view_triangulation(V_s, F_s, fn_to_f_s, endpoints_s, "stitched mesh");
-        Optimization::RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
+        RefinementMesh refinement_mesh(V_s, F_s, uv_s, FT_s, fn_to_f_s, endpoints_s);
         refinement_mesh.refine_mesh();
         refinement_mesh.simplify_mesh();
         refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
@@ -427,7 +435,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_unif
     if ((is_axis_aligned) && (!use_high_precision))
     {
         auto [uv_length_error, uv_angle_error, uv_length, uv_angle] = Holonomy::compute_seamless_error(F_r, uv_r, FT_r);
-        if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || Optimization::matrix_contains_nan(uv_r) || Optimization::matrix_contains_nan(V_r))
+        if ((uv_length_error.maxCoeff() > 1e-10) || (uv_angle_error.maxCoeff() > 1e-10) || matrix_contains_nan(uv_r) || matrix_contains_nan(V_r))
         {
             spdlog::warn("Falling back to high precision");
             return parameterize(true);
@@ -449,7 +457,7 @@ void AlignedMetricGenerator::parameterize(bool use_high_precision, bool use_unif
     }
 
     // refine frame field
-    std::tie(reference_field_r, theta_r, kappa_r, period_jump_r) = Holonomy::refine_frame_field(
+    std::tie(reference_field_r, theta_r, kappa_r, period_jump_r) = Field::refine_frame_field(
         F_r,
         FT_r,
         fn_to_f_r,

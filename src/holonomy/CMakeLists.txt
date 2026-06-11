@@ -39,7 +39,7 @@ target_include_directories(PennerHolonomyLib PUBLIC
   ../../include/field
 )
 target_link_libraries(PennerHolonomyLib PUBLIC
-  PennerUtilLib
+  PennerCoreLib
   PennerOptimizationLib
   ${VISUALIZATION_LIBS}
 )

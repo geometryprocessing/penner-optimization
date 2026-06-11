@@ -1,6 +1,15 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/similarity/energy.h"
 
 #include "field/forms.h"
+#include "holonomy/holonomy/constraint.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -99,9 +108,9 @@ IntegratedEnergy::IntegratedEnergy(const SimilarityPennerConeMetric& target_simi
         target_similarity_metric,
         target_similarity_metric.get_homology_basis_loops());
     MatrixX integral_matrix =
-        build_one_form_integral_matrix(target_similarity_metric, cut_h, is_cut_h);
+        Field::build_one_form_integral_matrix(target_similarity_metric, cut_h, is_cut_h);
     MatrixX integrated_scaling_matrix =
-        build_integrated_one_form_scaling_matrix(target_similarity_metric);
+        Field::build_integrated_one_form_scaling_matrix(target_similarity_metric);
 
     // Get metric expansion matrix
     MatrixX identification, projection;

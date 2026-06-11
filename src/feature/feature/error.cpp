@@ -1,10 +1,18 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "feature/feature/error.h"
 #include <igl/predicates/predicates.h>
 #include "feature/core/common.h"
 #include "feature/core/component_mesh.h"
 #include "feature/dirichlet/constraint.h"
 #include "holonomy/holonomy/constraint.h"
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 
 #include "util/vf_mesh.h"
 
@@ -20,7 +28,7 @@ double compute_edge_alignment(const Eigen::Vector2d& d)
 
     // compute signed angle between the nearest axis
     double signed_axis_angle =
-        (double)(Holonomy::pos_fmod(diagonal_angle, M_PI / 2.) - (M_PI / 4.));
+        (double)(pos_fmod(diagonal_angle, M_PI / 2.) - (M_PI / 4.));
 
     // compute normalized absolute value
     return abs(signed_axis_angle) / (M_PI / 4.);

@@ -1,3 +1,11 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/similarity/conformal.h"
 
 #include <Eigen/SparseLU>
@@ -76,7 +84,7 @@ Scalar compute_newton_decrement(
     for (int h = 0; h < similarity_metric.n_halfedges(); h++) {
         d[h] = similarity_metric.sign(h) * descent_direction[similarity_metric.he2e[h]];
     }
-    assert(is_closed_one_form(similarity_metric, d));
+    assert(Field::is_closed_one_form(similarity_metric, d));
 
     // Get reduced descent direction coefficients
     VectorX y = similarity_metric.reduce_one_form(d);

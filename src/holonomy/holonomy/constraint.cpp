@@ -1,8 +1,16 @@
+// This file is part of penner-optimization, a constrained parametrization library.
+// 
+// Copyright (C) 2026 Ryan Capouellez <rjcapouellez@gmail.com>
+// 
+// This Source Code Form is subject to the terms of the Mozilla Public License 
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can 
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #include "holonomy/holonomy/constraint.h"
 
 #include "holonomy/holonomy/holonomy.h"
 
-#include "optimization/core/constraint.h"
+#include "metric/constraint.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -28,12 +36,89 @@ VectorX Kappa(const MarkedPennerConeMetric& marked_metric, const VectorX& alpha)
     return Kappa(marked_metric, homology_basis_loops, alpha);
 }
 
+MatrixX build_dual_loop_basis_one_form_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& dual_loops)
+{
+    int num_loops = dual_loops.size();
+    int num_halfedges = m.n_halfedges();
+
+    // Columns of matrix are signed segment halfedge indicators
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(num_halfedges);
+    for (int i = 0; i < num_loops; ++i) {
+        for (const auto& dual_segment : *dual_loops[i]) {
+            tripletList.push_back(T(dual_segment[0], i, -1.0));
+            tripletList.push_back(T(dual_segment[1], i, 1.0));
+        }
+    }
+
+    // Create the matrix from the triplets
+    MatrixX one_form_matrix;
+    one_form_matrix.resize(num_halfedges, num_loops);
+    one_form_matrix.reserve(tripletList.size());
+    one_form_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    return one_form_matrix;
+}
+
+MatrixX build_closed_one_form_matrix(
+    const Mesh<Scalar>& m,
+    const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
+    bool eliminate_vertex)
+{
+    // Initialize matrix triplet list
+    int num_halfedges = m.n_halfedges();
+    typedef Eigen::Triplet<Scalar> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(2 * num_halfedges);
+
+    // Build v_rep
+    std::vector<int> v_rep;
+    int num_vertex_forms;
+    if (eliminate_vertex) {
+      build_free_vertex_map(m, v_rep, num_vertex_forms);
+    } else {
+        v_rep = m.v_rep;
+        num_vertex_forms = m.n_ind_vertices();
+    }
+
+    // Add vertex basis forms
+    for (int h = 0; h < num_halfedges; ++h) {
+        int v0 = v_rep[m.to[h]];
+        if (v0 >= 0) {
+            tripletList.push_back(T(h, v0, 1.0));
+        }
+
+        int v1 = v_rep[m.to[m.opp[h]]];
+        if (v1 >= 0) {
+            tripletList.push_back(T(h, v1, -1.0));
+        }
+    }
+
+    // Add homology basis forms
+    int num_loops = homology_basis_loops.size();
+    for (int i = 0; i < num_loops; ++i) {
+        for (const auto& dual_segment : *homology_basis_loops[i]) {
+            tripletList.push_back(T(dual_segment[0], num_vertex_forms + i, -1.0));
+            tripletList.push_back(T(dual_segment[1], num_vertex_forms + i, 1.0));
+        }
+    }
+
+    // Create the matrix from the triplets
+    MatrixX one_form_matrix(num_halfedges, num_vertex_forms + num_loops);
+    one_form_matrix.reserve(tripletList.size());
+    one_form_matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    return one_form_matrix;
+}
+
+
 MatrixX build_free_vertex_system(const Mesh<Scalar>& m)
 {
     // build map to free vertices
     std::vector<int> v_map;
     int num_free_vertices;
-    Optimization::build_free_vertex_map(m, v_map, num_free_vertices);
+    build_free_vertex_map(m, v_map, num_free_vertices);
 
     // make map into a matrix
     int num_vertices = v_map.size();
