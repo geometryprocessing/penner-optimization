@@ -10,7 +10,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <igl/readOBJ.h>
 
-#include "metric/common.h"
 #include "optimization/interface.h"
 #include "util/io.h"
 #include "util/vector.h"

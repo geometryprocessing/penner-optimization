@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 
 /**

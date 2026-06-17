@@ -6,6 +6,11 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Similarity structue constraints for holonomy signatures, including vertex
+ * angle constraints, dual loop holonomy constraints, and closed form constraints.
+ * 
+ */
 
 #pragma once
 

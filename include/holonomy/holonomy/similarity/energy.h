@@ -6,6 +6,12 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Various Penner coordinate energies to optimize for a similarity metric,
+ * including distortion of the scaled metric and the scale jumps across edges
+ * 
+ */
+
 #pragma once
 
 #include "holonomy/core/common.h"

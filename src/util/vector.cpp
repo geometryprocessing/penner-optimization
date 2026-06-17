@@ -30,6 +30,17 @@ bool vector_contains_nan(const VectorX& v)
     return false;
 }
 
+bool matrix_contains_nan(const Eigen::MatrixXd& mat)
+{
+    for (Eigen::Index i = 0; i < mat.rows(); ++i) {
+        for (Eigen::Index j = 0; j < mat.cols(); ++j) {
+            if (std::isnan(mat(i, j))) return true;
+        }
+    }
+
+    return false;
+}
+
 void convert_dense_vector_to_sparse(const VectorX& vector_dense, MatrixX& vector_sparse)
 {
     // Copy the vector to a triplet list

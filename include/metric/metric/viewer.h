@@ -8,8 +8,7 @@
 
 
 #pragma once
-
-#include "metric/common.h"
+#include "util/common.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"

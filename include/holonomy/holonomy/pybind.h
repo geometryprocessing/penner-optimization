@@ -7,6 +7,9 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
+
+#include "util/common.h"
+
 #ifdef PYBIND
 #ifndef MULTIPRECISION
 

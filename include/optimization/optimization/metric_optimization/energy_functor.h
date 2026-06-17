@@ -10,7 +10,6 @@
 
 #include "util/embedding.h"
 #include "util/linear_algebra.h"
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 

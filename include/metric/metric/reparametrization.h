@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "metric/common.h"
+#include "util/common.h"
 
 /**
  * @brief Methods for changing edge and interior barycentric coordinates as determined

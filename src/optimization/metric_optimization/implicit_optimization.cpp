@@ -761,5 +761,41 @@ std::unique_ptr<DifferentiableConeMetric> optimize_metric(
     return optimize_metric_log(initial_cone_metric, opt_energy, log, proj_params, opt_params);
 }
 
+void compute_direction_energy_values(
+    const DifferentiableConeMetric& m,
+    const EnergyFunctor& opt_energy,
+    std::shared_ptr<OptimizationParameters> opt_params,
+    std::shared_ptr<ProjectionParameters> proj_params,
+    const VectorX& direction,
+    const VectorX& step_sizes,
+    VectorX& unprojected_energies,
+    VectorX& projected_energies)
+{
+    VectorX reduced_metric_coords = m.get_reduced_metric_coordinates();
+
+    // Compute energies at step sizes
+    int num_nodes = step_sizes.size();
+    unprojected_energies.resize(num_nodes);
+    projected_energies.resize(num_nodes);
+    for (int i = 0; i < num_nodes; ++i) {
+        // Compute unprojected step
+        Scalar step_size = step_sizes[i];
+        VectorX reduced_line_step_metric_coords = reduced_metric_coords + step_size * direction;
+
+        // Compute the unprojected energy
+        std::unique_ptr<DifferentiableConeMetric> cone_metric = m.clone_cone_metric();
+        unprojected_energies[i] = opt_energy.energy(*cone_metric);
+
+        // Project to the constraint
+        VectorX u =
+            compute_constraint_scale_factors(*cone_metric, proj_params, opt_params->output_dir);
+        std::unique_ptr<DifferentiableConeMetric> constrained_cone_metric =
+            cone_metric->scale_conformally(u);
+
+        // Compute the projected energy
+        projected_energies[i] = opt_energy.energy(*constrained_cone_metric);
+    }
+}
+
 } // namespace Optimization
 } // namespace Penner

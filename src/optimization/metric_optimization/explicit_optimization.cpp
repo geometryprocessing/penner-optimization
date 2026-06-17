@@ -314,7 +314,7 @@ VectorX compute_codomain_coordinates(
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
     solver.compute(inner_product_matrix);
     VectorX codomain_coords = solver.solve(rhs);
-    SPDLOG_DEBUG(vector_equal(
+    SPDLOG_DEBUG(vector_equal<VectorX>(
         constraint_domain_matrix * domain_coords + constraint_codomain_matrix * codomain_coords,
         metric_coords));
     return codomain_coords;

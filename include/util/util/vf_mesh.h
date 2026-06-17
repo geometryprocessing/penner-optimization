@@ -6,6 +6,15 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Methods to process a VF mesh representation.
+ * 
+ * Significant functions include finding and cutting along seam edges, 
+ * reindexing vertices, and building maps from directed edges
+ * (represented as vertex pairs) to unique halfedge indices
+ * 
+ */
+
 #pragma once
 
 #include "util/common.h"

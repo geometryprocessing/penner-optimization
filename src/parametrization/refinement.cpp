@@ -1183,8 +1183,8 @@ bool RefinementMesh::triangulate_face(
     }
 
     // FIXME
-    if (vertex_indices.size() > 3) {
-        spdlog::trace("Triangulating face {} of size {}", face_index, vertex_indices.size());
+    if (vertices.size() > 3) {
+        spdlog::trace("Triangulating face {} with {} vertices", face_index, vertices.size());
         spdlog::trace("Face vertices are {}", formatted_vector(vertex_indices));
     }
 
@@ -1210,6 +1210,7 @@ bool RefinementMesh::triangulate_face(
     // Return false if the face is not self overlapping
     if (!is_self_overlapping) {
         spdlog::warn("Face {} with {} vertices is not self overlapping", face_index, vertex_indices.size());
+        assert(false);
         return false;
     }
 

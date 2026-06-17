@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include "util/common.h"
 #include <deque>
-#include "metric/common.h"
 
 /// @file Methods to perform advanced nonlinear optimization, including conjugate gradient
 /// and L-BFGS-B, using the current gradient, previous gradient, and previous descent direction.

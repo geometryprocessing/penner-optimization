@@ -6,6 +6,11 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Basic linear algebra routines, such as dot products, cross products, and linear solves.
+ * 
+ */
+
 #pragma once
 
 #include "util/common.h"
@@ -43,6 +48,18 @@ VectorType cross_prod(const VectorType& v1, const VectorType& v2)
         v1[2] * v2[0] - v1[0] * v2[2],
         v1[0] * v2[1] - v1[1] * v2[0]);
 }
+
+// Compute the sup norm of a vector.
+//
+/// @param[in] v: vector
+/// @return sup norm of v
+Scalar sup_norm(const VectorX& v);
+
+// Compute the sup norm of a matrix.
+//
+/// @param[in] matrix: matrix
+/// @return sup norm of the matrix
+Scalar matrix_sup_norm(const MatrixX& matrix);
 
 /**
  * @brief Compute the signed angle between two 3D vectors around a normal axis.

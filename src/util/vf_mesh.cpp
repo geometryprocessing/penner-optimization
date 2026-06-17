@@ -297,6 +297,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
         }
     }
 
+    return std::make_tuple(V_reindex, F_reindex);
 }
 
 Eigen::MatrixXi find_seams(

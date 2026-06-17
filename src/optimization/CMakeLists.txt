@@ -1,6 +1,5 @@
 
 set(MetricOptimizationSrc
-  metric_optimization/convergence.cpp
   metric_optimization/energies.cpp
   metric_optimization/energy_functor.cpp
   metric_optimization/energy_weights.cpp
@@ -22,7 +21,6 @@ add_library(PennerOptimizationLib
 target_include_directories(PennerOptimizationLib PUBLIC ../../include/optimization)
 target_link_libraries(PennerOptimizationLib PUBLIC
   PennerCoreLib
-  ${RENDER_LIBRARIES}
   ${PYBIND_LIBRARIES}
 )
 target_compile_definitions(PennerOptimizationLib PUBLIC

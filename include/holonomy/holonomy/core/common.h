@@ -17,7 +17,6 @@
 #include <Eigen/Sparse>
 
 #include "optimization/interface.h"
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 #include "util/vector.h"
 

@@ -6,6 +6,14 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Methods to query, convert, and fill vectors of data.
+ * 
+ * Of particular note are methods to convert between lists of indices
+ * and boolean mask vectors marking indices in the list.
+ * 
+ */
+
 #pragma once
 
 #include "util/common.h"
@@ -98,6 +106,12 @@ int argmin(const VectorType& v)
  */
 bool vector_contains_nan(const VectorX& v);
 
+/// Check if a matrix contains a nan
+///
+/// @param[in] mat: matrix to check
+/// @return true iff mat contains a nan
+bool matrix_contains_nan(const Eigen::MatrixXd& mat);
+
 /**
  * @brief Convert an Eigen vector to a std vector
  *
@@ -149,11 +163,12 @@ std::vector<Type> concatenate_vector(const std::vector<Type>& v, const std::vect
  * @tparam VectorType 
  * @param v: first vector
  * @param w: second vector
+ * @param eps: (optional) tolerance for equality
  * @return true if equal
  * @return false otherwise
  */
 template <typename VectorType>
-bool vector_equal(const VectorType& v, const VectorType& w)
+bool vector_equal(const VectorType& v, const VectorType& w, Scalar eps = 1e-10)
 {
     int n = v.size();
     int m = w.size();
@@ -164,7 +179,7 @@ bool vector_equal(const VectorType& v, const VectorType& w)
     // check all entries
     for (int i = 0; i < n; ++i)
     {
-        if (!float_equal(v[i], w[i])) return false;
+        if (!float_equal(v[i], w[i], eps)) return false;
     }
 
     return true;

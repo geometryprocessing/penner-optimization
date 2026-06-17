@@ -10,7 +10,6 @@
 
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/util/shapes.h"
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 
 using namespace Penner;

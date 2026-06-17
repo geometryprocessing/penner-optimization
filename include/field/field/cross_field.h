@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "metric/common.h"
+#include "util/common.h"
 
 /**
  * @brief Methods for generating cross fields as represented by four rotationally symmetric

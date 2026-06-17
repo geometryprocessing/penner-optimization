@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "metric/common.h"
+#include "util/common.h"
 
 namespace Penner {
 namespace Field {

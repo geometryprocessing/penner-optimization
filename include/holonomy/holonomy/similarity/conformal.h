@@ -6,6 +6,12 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Method to find a conformally equivalent similarity metric satisfying
+ * holonomy constraints.
+ * 
+ */
+
 #pragma once
 
 #include "holonomy/core/common.h"
