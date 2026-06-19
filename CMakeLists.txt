@@ -129,7 +129,7 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 # get optimization library
 if (USE_UV_OPTIMIZATION)
     add_compile_definitions(USE_UV_OPTIMIZATION)
-    include(symmetric-dirichlet)
+    include(seamless-optimization)
 else()
     include(json)
 endif()
