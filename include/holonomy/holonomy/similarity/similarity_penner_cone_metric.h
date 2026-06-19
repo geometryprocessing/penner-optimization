@@ -69,12 +69,12 @@ public:
     // One form getters and setters
     void set_one_form(const VectorX& one_form)
     {
-        assert(is_closed_one_form(*this, one_form));
+        assert(Field::is_closed_one_form(*this, one_form));
         m_one_form = one_form;
     }
     void set_one_form_direction(const VectorX& one_form_direction)
     {
-        assert(is_closed_one_form(*this, one_form_direction));
+        assert(Field::is_closed_one_form(*this, one_form_direction));
         m_one_form_direction = one_form_direction;
     }
     const VectorX& get_one_form() const { return m_one_form; }
