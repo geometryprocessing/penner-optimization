@@ -12,7 +12,7 @@
 #include "feature/core/common.h"
  
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
-#include "feature/util/union_find.h"
+#include "util/union_find.h"
 
 /**
  * @brief Methods to combine collections of meshes into a single mesh with multiple components.

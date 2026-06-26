@@ -1183,8 +1183,8 @@ bool RefinementMesh::triangulate_face(
     }
 
     // FIXME
-    if (face_triangles.size() > 1) {
-        spdlog::trace("Triangulating face {} with {} subfaces", face_index, face_triangles.size());
+    if (vertices.size() > 3) {
+        spdlog::trace("Triangulating face {} with {} vertices", face_index, vertices.size());
         spdlog::trace("Face vertices are {}", formatted_vector(vertex_indices));
     }
 

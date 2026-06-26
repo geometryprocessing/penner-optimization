@@ -7,7 +7,6 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 #include "optimization/metric_optimization/energy_functor.h"
 

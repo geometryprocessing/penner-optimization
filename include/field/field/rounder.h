@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "metric/common.h"
 #include "metric/cone_metric.h"
+#include "util/common.h"
 #include "util/vector.h"
 #include "util/map.h"
 

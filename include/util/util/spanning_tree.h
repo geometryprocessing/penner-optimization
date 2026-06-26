@@ -6,6 +6,11 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Methods to build spanning trees and cotrees, either dual or primal, on a halfedge mesh.
+ * 
+ */
+
 #pragma once
 
 #include "util/common.h"

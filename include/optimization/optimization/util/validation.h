@@ -10,7 +10,6 @@
 #pragma once
 #include <random>
 #include <vector>
-#include "metric/common.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "metric/constraint.h"
 #include "metric/cone_metric.h"

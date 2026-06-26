@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "metric/common.h"
+#include "util/common.h"
 
 /**
  * @brief Data structure to iteratively compute the change of coordinate matrix for intrinsic flips, e.g., in Penner coordinates.

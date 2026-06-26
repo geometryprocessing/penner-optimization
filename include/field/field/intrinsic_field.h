@@ -6,9 +6,14 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Methods to generate a smooth cross field on a halfedge mesh using only
+ * the intrinsic metric, with curvature alignment for extrinsic geoemtry
+ * 
+ */
+
 #pragma once
 
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 
 // TODO: This needs a lot of cleanup. To make it clean:

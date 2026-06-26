@@ -11,7 +11,7 @@
 #include "metric/shear.h"
 #include "optimization/util/shapes.h"
 #include "util/embedding.h"
-#include "metric/common.h"
+#include "util/vector.h"
 #include "metric/cone_metric.h"
 #include "optimization/interface.h"
 #include "metric/projection.h"

@@ -12,6 +12,13 @@
 #include "field/forms.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
+/**
+ * @brief Representation for a mesh with a differentiable intrinsic metric and additional
+ * conformal scaling by an integrated harmonic one form, which is sufficient for arbitrary
+ * holonomy constraints
+ * 
+ */
+
 namespace Penner {
 namespace Holonomy {
 

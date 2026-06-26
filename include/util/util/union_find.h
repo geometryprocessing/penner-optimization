@@ -6,6 +6,11 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Union Find data structure.
+ * 
+ */
+
 #pragma once
 
 #include "feature/core/common.h"
@@ -109,8 +114,6 @@ public:
     }
 
     /**
-<<<<<<< HEAD
-=======
      * @brief Get a representative element for each set.
      * 
      * @return vector of one element per set
@@ -133,7 +136,6 @@ public:
     }
 
     /**
->>>>>>> resolution
      * @brief Build labels for the set elements.
      * 
      * @return map from elements to set index

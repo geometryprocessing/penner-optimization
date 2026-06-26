@@ -9,7 +9,6 @@
 #pragma once
 
 #include <filesystem>
-#include "metric/common.h"
 #include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/implicit_optimization.h"

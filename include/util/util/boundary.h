@@ -12,6 +12,11 @@
 #include "util/vector.h"
 #include "util/map.h"
 
+/**
+ * @brief Methods to find and navigate the boundary elements of a halfedge mesh.
+ * 
+ */
+
 namespace Penner {
 
 /**

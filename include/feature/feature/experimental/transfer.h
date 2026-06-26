@@ -14,7 +14,7 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/interface.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
-#include "feature/util/union_find.h"
+#include "util/union_find.h"
 
 namespace Penner {
 namespace Feature {

@@ -16,6 +16,33 @@
 
 namespace Penner {
 
+Scalar sup_norm(const VectorX& v)
+{
+    Scalar norm_value = 0.0;
+    for (Eigen::Index i = 0; i < v.size(); ++i) {
+        norm_value = max(norm_value, abs(v[i]));
+    }
+
+    return norm_value;
+}
+
+Scalar matrix_sup_norm(const MatrixX& matrix)
+{
+    // Check for trivial matrices
+    if (matrix.size() == 0) return 0;
+
+    // Iterate to determine maximum abs value
+    Scalar max_value = 0.0;
+    for (Eigen::Index k = 0; k < matrix.outerSize(); ++k) {
+        for (MatrixX::InnerIterator it(matrix, k); it; ++it) {
+            max_value = std::max(max_value, abs(it.value()));
+        }
+    }
+
+    return max_value;
+}
+
+
 VectorX kronecker_product(const VectorX& vec_1, const VectorX& vec_2)
 {
     if (vec_1.size() != vec_2.size()) {

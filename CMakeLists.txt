@@ -144,21 +144,9 @@ target_compile_features(DirectionalLib INTERFACE cxx_std_20)
 
 # Optionally create rendering library
 if(RENDER_TEXTURE)
-  # Build core rendering library
-  # TODO: Move somewhere reasonable
-  add_library(rendering
-    src/optimization/util/visualization.cc
-  )
-  target_include_directories(rendering PUBLIC include/optimization/optimization/util)
-  target_link_libraries(rendering PUBLIC
-    igl::core
+  set(RENDER_LIBRARIES
     igl::glfw
     plot
-  )
-
-  # Change rendering libraries from null to singleton
-  set(RENDER_LIBRARIES
-    rendering
   )
 endif()
 

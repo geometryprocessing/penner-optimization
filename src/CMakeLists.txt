@@ -6,13 +6,13 @@ set(UtilSrc
   util/linear_algebra.cpp
   util/map.cpp
   util/spanning_tree.cpp
+  util/union_find.cpp
   util/vector.cpp
   util/vf_mesh.cpp
 )
 
 set(MetricSrc
   metric/area.cpp
-  metric/common.cpp
   metric/cone_metric.cpp
   metric/constraint.cpp
   metric/flip_matrix_generator.cpp
@@ -48,6 +48,7 @@ target_link_libraries(PennerCoreLib PUBLIC
   HDF5::HDF5
   #CoMISo
   ${MPFR_LIBRARIES}
+  ${RENDER_LIBRARIES}
   ${SUITESPARSE_LIBS}
   ${POLYSCOPE_LIBRARIES}
 )
@@ -85,7 +86,6 @@ if(FALSE)
   # Link libraries
   target_link_libraries(penner PUBLIC
     PennerLib
-    ${RENDER_LIBRARIES}
   )
 
   # Set pybinding settings

@@ -10,8 +10,9 @@
 
 #include <memory>
 
+#include "util/common.h"
 #include "util/embedding.h"
-#include "metric/common.h"
+#include "metric/globals.h"
 #include "metric/flip_matrix_generator.h"
 
 /**

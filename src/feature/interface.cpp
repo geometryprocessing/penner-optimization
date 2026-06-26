@@ -16,7 +16,6 @@
 #include "util/boundary.h"
 
 #include "parametrization/refinement.h"
-#include "metric/common.h"
 
 #include "holonomy/interface.h"
 #include "field/frame_field.h"

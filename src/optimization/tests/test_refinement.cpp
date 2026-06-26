@@ -8,7 +8,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "metric/common.h"
 #include "parametrization/refinement.h"
 #include "parametrization/triangulation.h"
 

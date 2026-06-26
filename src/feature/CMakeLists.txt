@@ -30,22 +30,6 @@ set(SurgerySrc
   surgery/stitching.cpp
 )
 
-set(FeatureUtilSrc
-  util/union_find.cpp
-)
-
-set(FeatureExperimentalSrc
-  experimental/boundary_constraint_generator.cpp
-  experimental/boundary_constraint_validator.cpp
-  #experimental/newton.cpp
-  experimental/patches.cpp
-  experimental/transfer.cpp
-  experimental/energy.cpp
-  experimental/junctions.cpp
-  experimental/polygon_cones.cpp
-  experimental/marked_refinement.cpp
-)
-
 add_library(PennerFeatureLib
   interface.cpp
   pybind.cpp
@@ -53,8 +37,6 @@ add_library(PennerFeatureLib
   ${DirichletSrc}
   ${FeatureSrc}
   ${SurgerySrc}
-  ${FeatureUtilSrc}
-  ${FeatureExperimentalSrc}
 )
 target_include_directories(PennerFeatureLib PUBLIC ../../include/feature)
 target_link_libraries(PennerFeatureLib PUBLIC

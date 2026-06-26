@@ -8,11 +8,9 @@
 
 #include "optimization/pybind.h"
 
-#include "metric/common.h"
 
 #include "metric/area.h"
 #include "metric/constraint.h"
-#include "optimization/metric_optimization/convergence.h"
 #include "util/embedding.h"
 #include "util/io.h"
 #include "optimization/metric_optimization/energies.h"
@@ -37,7 +35,6 @@
 #ifdef RENDER_TEXTURE
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/Sampling.hh"
-#include "visualization.h"
 #endif
 
 namespace Penner {
@@ -105,10 +102,6 @@ void init_classes_pybind(pybind11::module& m)
         .def_readwrite("max_beta", &OptimizationParameters::max_beta)
         .def_readwrite("max_grad_range", &OptimizationParameters::max_grad_range)
         .def_readwrite("max_angle", &OptimizationParameters::max_angle);
-
-#ifdef RENDER_TEXTURE
-    pybind11::class_<Viewer>(m, "Viewer").def(pybind11::init<>());
-#endif
 
     pybind11::class_<Connectivity>(m, "Connectivity")
         .def(pybind11::init<>())
@@ -285,18 +278,6 @@ void init_conformal_pybind(pybind11::module& m)
     m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
     m.def("get_pt_mat", &get_pt_mat, "get pt_mat");
     m.def("get_edges", &get_edges, "get edges mesh");
-    m.def(
-        "generate_mesh_viewer",
-        &generate_mesh_viewer,
-        "generate viewer for mesh",
-        pybind11::
-            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
-    m.def(
-        "add_shading_to_mesh",
-        &add_shading_to_mesh,
-        "add shading to mesh",
-        pybind11::
-            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
 #endif
 }
 

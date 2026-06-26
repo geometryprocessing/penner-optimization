@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "metric/common.h"
+#include "util/common.h"
 
 /**
  * @brief Method to compute hyperbolic translations determining a continuous map between

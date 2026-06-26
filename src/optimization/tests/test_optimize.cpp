@@ -10,7 +10,6 @@
 
 #include "optimization/metric_optimization/implicit_optimization.h"
 #include "optimization/util/shapes.h"
-#include "metric/common.h"
 #include "metric/cone_metric.h"
 #include "optimization/metric_optimization/energy_functor.h"
 

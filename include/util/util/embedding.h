@@ -6,20 +6,26 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+/**
+ * @brief Generate maps between edges and halfedges, as well as edges and unique
+ * representative edges in doubled symmetric meshes.
+ * 
+ * Also methods to expand symmetric functions defined on unique representative edges
+ * embedded in a symmetric mesh to per edge and per halfedge functions on the
+ * full symmetric mesh. Conventions:
+ *   E denotes an edge in the embedded mesh
+ *   V denotes a vertex in the embedded mesh
+ *   e denotes an edge in the double mesh
+ *   h denotes a halfedge in the double mesh
+ *   v denotes a vertex in the double mesh
+ */
+
 #pragma once
 
 #include "util/common.h"
 
 namespace Penner {
 
-// Methods to expand symmetric functions defined on unique representative edges
-// embedded in a symmetric mesh to per edge and per halfedge functions on the
-// full symmetric mesh. Conventions:
-//     E denotes an edge in the embedded mesh
-//     V denotes a vertex in the embedded mesh
-//     e denotes an edge in the double mesh
-//     h denotes a halfedge in the double mesh
-//     v denotes a vertex in the double mesh
 
 /// Data structure to store maps from full doubled mesh halfedge indices to edge indices
 /// and to embedded mesh edge indices. Also includes lists of free and fixed vertices and

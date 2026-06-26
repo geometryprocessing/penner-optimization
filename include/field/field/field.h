@@ -8,7 +8,8 @@
 
 
 #pragma once
-#include "metric/common.h"
+
+#include "util/common.h"
 
 /**
  * @brief Methods to generate field directions and cones from an nrosy field.
