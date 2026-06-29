@@ -5,6 +5,7 @@ set(UtilSrc
   util/io.cpp
   util/linear_algebra.cpp
   util/map.cpp
+  util/quads.cpp
   util/spanning_tree.cpp
   util/union_find.cpp
   util/vector.cpp
@@ -13,11 +14,12 @@ set(UtilSrc
 
 set(MetricSrc
   metric/area.cpp
+  metric/barycentric.cpp
   metric/cone_metric.cpp
   metric/constraint.cpp
   metric/flip_matrix_generator.cpp
   metric/projection.cpp
-  metric/barycentric.cpp
+  metric/quality.cpp
   metric/shear.cpp
   metric/viewer.cpp
 )

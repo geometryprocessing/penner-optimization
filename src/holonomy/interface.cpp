@@ -11,7 +11,7 @@
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
 #include "field/intrinsic_field.h"
-#include "holonomy/core/quality.h"
+#include "metric/quality.h"
 #include "holonomy/holonomy/cones.h"
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/holonomy/rotation_form.h"

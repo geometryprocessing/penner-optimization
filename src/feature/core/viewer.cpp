@@ -29,7 +29,7 @@
 #include "feature/feature/error.h"
 
 // quad valences
-#include "feature/core/quads.h"
+#include "util/quads.h"
 
 #include <igl/principal_curvature.h>
 #include <igl/per_vertex_normals.h>

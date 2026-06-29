@@ -6,11 +6,10 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "feature/core/quads.h"
+#include "util/quads.h"
 
 
 namespace Penner {
-namespace Feature {
 
 std::vector<int> compute_valences(const Eigen::MatrixXi& F)
 {
@@ -44,5 +43,4 @@ std::vector<int> compute_valences(const Eigen::MatrixXi& F)
 	return valences;
 }
 
-} // namespace Feature
 } // namespace Penner

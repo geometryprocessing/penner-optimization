@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "feature/core/common.h"
+#include "util/common.h"
 
 /**
  * @brief Methods to compute relevant quad mesh statistics, including degree valences.
@@ -17,7 +17,6 @@
  */
 
 namespace Penner {
-namespace Feature {
 
 /**
  * @brief Compute the vertex valences of a given (tri or quad) mesh
@@ -27,5 +26,4 @@ namespace Feature {
  */
 std::vector<int> compute_valences(const Eigen::MatrixXi& F);
 
-} // namespace Feature
 } // namespace Penner

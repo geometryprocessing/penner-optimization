@@ -6,7 +6,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "holonomy/core/common.h"
+#include "metric/cone_metric.h"
 
 /**
  * @brief Methods to compute the quality of triangles in a mesh.

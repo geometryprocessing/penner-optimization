@@ -5,7 +5,6 @@ set(HolonomyCoreSrc
   core/dual_loop.cpp
   core/dual_segment.cpp
   core/homology_basis.cpp
-  core/quality.cpp
   core/viewer.cpp
 )
 

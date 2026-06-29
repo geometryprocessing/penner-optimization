@@ -9,7 +9,7 @@
 #include "holonomy/pybind.h"
 
 #include "holonomy/interface.h"
-#include "holonomy/core/quality.h"
+#include "metric/quality.h"
 #include "holonomy/holonomy/cones.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
