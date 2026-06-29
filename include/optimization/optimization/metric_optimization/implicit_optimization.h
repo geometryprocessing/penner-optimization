@@ -8,10 +8,6 @@
 
 #pragma once
 
-#include <filesystem>
-#include "metric/cone_metric.h"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 
 /**

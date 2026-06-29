@@ -8,11 +8,8 @@
 
 #pragma once
 
-#include "util/embedding.h"
 #include "util/linear_algebra.h"
 #include "metric/cone_metric.h"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
-
 
 /**
  * @brief Class for differentiable distortion measures supporting evaluation, gradients, and Hessians

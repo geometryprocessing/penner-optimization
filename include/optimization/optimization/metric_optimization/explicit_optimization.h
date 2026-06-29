@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <filesystem>
-#include "util/embedding.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/implicit_optimization.h"
 

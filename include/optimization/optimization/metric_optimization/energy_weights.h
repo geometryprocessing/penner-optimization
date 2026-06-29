@@ -9,8 +9,6 @@
 #pragma once
 
 #include "metric/cone_metric.h"
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "util/embedding.h"
 
 /// \file energy_functor.h
 ///

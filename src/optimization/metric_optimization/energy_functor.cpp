@@ -8,13 +8,12 @@
 
 #include "optimization/metric_optimization/energy_functor.h"
 
-#include <igl/cotmatrix_entries.h>
-#include <igl/doublearea.h>
-#include <igl/edge_lengths.h>
-#include "metric/area.h"
-#include "metric/constraint.h"
+#include "util/linear_algebra.h"
+
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_weights.h"
+
+// best fit conformal
 #include "metric/projection.h"
 
 /// FIXME Do cleaning pass

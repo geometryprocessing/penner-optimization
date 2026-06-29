@@ -8,14 +8,13 @@
 
 #include "optimization/metric_optimization/explicit_optimization.h"
 
-#include "metric/constraint.h"
-#include "optimization/metric_optimization/energies.h"
-#include "metric/globals.h"
 #include "util/io.h"
+#include "util/linear_algebra.h"
+#include "util/vector.h"
+
+#include "metric/shear.h"
 #include "optimization/metric_optimization/nonlinear_optimization.h"
 #include "metric/projection.h"
-#include "metric/shear.h"
-#include "util/vector.h"
 
 /// FIXME Do cleaning pass
 

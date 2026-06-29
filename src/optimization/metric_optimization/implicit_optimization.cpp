@@ -8,14 +8,14 @@
 
 #include "optimization/metric_optimization/implicit_optimization.h"
 
-#include <igl/Timer.h>
-#include "metric/area.h"
+#include "util/io.h"
+
 #include "metric/constraint.h"
 #include "optimization/metric_optimization/energies.h"
-#include "metric/globals.h"
-#include "util/io.h"
-#include "optimization/metric_optimization/nonlinear_optimization.h"
 #include "metric/projection.h"
+#include "optimization/metric_optimization/nonlinear_optimization.h"
+
+#include <igl/Timer.h>
 
 /// FIXME Do cleaning pass
 

@@ -12,7 +12,6 @@
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "util/linear_algebra.h"
 #include "metric/constraint.h"
-#include "metric/globals.h"
 
 /// FIXME Do cleaning pass
 

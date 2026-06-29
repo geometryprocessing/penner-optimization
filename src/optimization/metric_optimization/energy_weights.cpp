@@ -9,14 +9,8 @@
 #include "optimization/metric_optimization/energy_functor.h"
 
 #include "util/vector.h"
-#include "metric/area.h"
-#include "metric/constraint.h"
-#include "optimization/metric_optimization/energies.h"
-#include "metric/projection.h"
 
-#include <igl/cotmatrix_entries.h>
-#include <igl/doublearea.h>
-#include <igl/edge_lengths.h>
+#include "metric/area.h"
 
 /// FIXME Do cleaning pass
 

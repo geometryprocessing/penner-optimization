@@ -8,13 +8,18 @@
 
 #include "optimization/metric_optimization/energies.h"
 
+#include "metric/cone_metric.h"
+#include "metric/area.h"
+
+// corner angles
+#include "metric/constraint.h"
+
+// conformal scaling matrix
+#include "metric/projection.h"
+
 #include <igl/cotmatrix_entries.h>
 #include <igl/doublearea.h>
 #include <igl/edge_lengths.h>
-#include "metric/area.h"
-#include "metric/cone_metric.h"
-#include "metric/constraint.h"
-#include "metric/projection.h"
 
 /// FIXME Do cleaning pass
 
