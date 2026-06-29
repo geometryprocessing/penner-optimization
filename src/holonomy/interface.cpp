@@ -12,9 +12,10 @@
 #include "holonomy/core/homology_basis.h"
 #include "field/intrinsic_field.h"
 #include "metric/quality.h"
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 #include "holonomy/holonomy/holonomy.h"
-#include "holonomy/holonomy/rotation_form.h"
+#include "holonomy/holonomy/constraint.h"
+#include "field/rotation_form.h"
 #include "holonomy/similarity/energy.h"
 #include "util/boundary.h"
 
@@ -74,7 +75,7 @@ std::tuple<MarkedPennerConeMetric, std::vector<int>> generate_marked_metric(
     // Check for invalid cones
     if (!validate_cones(m)) {
         spdlog::info("Fixing invalid cones");
-        fix_cones(m);
+        Field::fix_cones(m);
     }
 
     // Use halfedge mesh method
@@ -126,10 +127,10 @@ generate_metric_from_field(
     // build cones
     bool has_boundary = bnd_loops.size() >= 1;
     std::vector<Scalar> Th_hat =
-        Holonomy::generate_cones_from_rotation_form(m, vtx_reindex, rotation_form, has_boundary);
+        Field::generate_cones_from_rotation_form(m, vtx_reindex, rotation_form, has_boundary);
 
     // build marked metric
-    m.Th_hat = Holonomy::generate_cones_from_rotation_form(m, rotation_form);
+    m.Th_hat = Field::generate_cones_from_rotation_form(m, rotation_form);
     MarkedPennerConeMetric marked_metric = generate_marked_metric_from_mesh(m, rotation_form, marked_metric_params);
 
     return std::make_tuple(marked_metric, vtx_reindex, rotation_form, Th_hat);
@@ -197,13 +198,13 @@ void generate_basis_loops(
     // (optionally) generate dual loops on the surface
     // If the mesh is a trivial torus, don't add constraints
     int num_basis_loops = 0;
-    if (is_trivial_torus(m))
+    if (Field::is_trivial_torus(m))
     {
         spdlog::warn("Trivial torus seen");
     }
     if (marked_metric_params.remove_loop_constraints) return;
-    if ((marked_metric_params.remove_trivial_torus) && (is_trivial_torus(m))) return;
-    if (is_trivial_torus(m))
+    if ((marked_metric_params.remove_trivial_torus) && (Field::is_trivial_torus(m))) return;
+    if (Field::is_trivial_torus(m))
     {
         spdlog::warn("Adding constraints for trivial torus");
     }
@@ -457,11 +458,11 @@ infer_marked_metric(
         rotation_form = generate_intrinsic_rotation_form(m, field_params);
     } else {
         rotation_form =
-            generate_rotation_form_from_cross_field(m, vtx_reindex_mesh, V, F, frame_field);
+            Field::generate_rotation_form_from_cross_field(m, vtx_reindex_mesh, V, F, frame_field);
     }
     bool has_boundary = bnd_loops.size() >= 1;
     std::vector<Scalar> Th_hat =
-        generate_cones_from_rotation_form(m, vtx_reindex_mesh, rotation_form, has_boundary);
+        Field::generate_cones_from_rotation_form(m, vtx_reindex_mesh, rotation_form, has_boundary);
 
     // Generate marked mesh
     auto [marked_metric, vtx_reindex] =
@@ -501,7 +502,7 @@ std::tuple<VectorX, std::vector<Scalar>> generate_intrinsic_rotation_form(
 
     // generate cones from the rotation form
     bool has_bd = (cone_metric->type[0] != 0);
-    Th_hat = generate_cones_from_rotation_form(*cone_metric, vtx_reindex, rotation_form, has_bd);
+    Th_hat = Field::generate_cones_from_rotation_form(*cone_metric, vtx_reindex, rotation_form, has_bd);
 
     return std::make_tuple(rotation_form, Th_hat);
 }
@@ -573,13 +574,13 @@ std::tuple<MarkedPennerConeMetric, VectorX, std::vector<Scalar>> generate_refine
     // Get rotation form and corresponding cones
     Field::FieldParameters field_params;
     VectorX rotation_form = generate_intrinsic_rotation_form(m, field_params);
-    std::vector<Scalar> Th_hat = generate_cones_from_rotation_form(m, rotation_form);
+    std::vector<Scalar> Th_hat = Field::generate_cones_from_rotation_form(m, rotation_form);
     m.Th_hat = Th_hat;
 
     // Check for invalid cones
     if (!validate_cones(m)) {
         spdlog::info("Fixing invalid cones");
-        fix_cones(m);
+        Field::fix_cones(m);
     }
 
     // Set cones and check Guass Bonnet
@@ -717,6 +718,60 @@ void optimize_triangle_quality(MarkedPennerConeMetric& marked_metric, double max
             marked_metric.flip_ccw(h, true);
         }
     }
+}
+
+std::tuple<int, int> get_constraint_outliers(
+    MarkedPennerConeMetric& marked_metric,
+    bool use_interior_vertices,
+    bool use_flat_vertices)
+{
+    bool is_symmetric = (marked_metric.type[0] != 0);
+    int num_vertices = marked_metric.n_vertices();
+    int num_ind_vertices = marked_metric.n_ind_vertices();
+    std::vector<int> bd_vertices = find_boundary_vertices(marked_metric);
+    std::vector<bool> is_bd_vertex(num_ind_vertices, false);
+    for (int vi : bd_vertices) {
+        is_bd_vertex[marked_metric.v_rep[vi]] = true;
+    }
+
+    // get constraint errors
+    VectorX constraint;
+    MatrixX J_constraint;
+    bool need_jacobian = false;
+    bool only_free_vertices = false;
+    marked_metric.constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
+
+    // get cone indices with minimum and maximum defect
+    int i = 0;
+    int j = 0;
+    Scalar flat_angle = (is_symmetric) ? 4. * M_PI : 2. * M_PI;
+    for (int k = 0; k < num_vertices; ++k) {
+        int vi = marked_metric.v_rep[i];
+        int vj = marked_metric.v_rep[j];
+        int vk = marked_metric.v_rep[k];
+
+        // only add (optionally) interior cone pairs at flat vertices
+        if ((use_interior_vertices) && (is_symmetric) && (is_bd_vertex[vk])) continue;
+        if ((use_flat_vertices) && (!float_equal(marked_metric.Th_hat[vk], flat_angle))) continue;
+
+        if (constraint[vk] < constraint[vi]) i = k;
+        if (constraint[vk] > constraint[vj]) j = k;
+    }
+
+    return std::make_tuple(i, j);
+}
+
+std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric)
+{
+    auto [i, j] = get_constraint_outliers(marked_metric, true, true);
+    spdlog::debug("Adding positive cone at {}", i);
+    spdlog::debug("Adding negative cone at {}", j);
+    bool is_symmetric = (marked_metric.type[0] != 0);
+    Scalar angle_delta = (is_symmetric) ? M_PI : (M_PI / 2.);
+    marked_metric.Th_hat[marked_metric.v_rep[i]] += angle_delta;
+    marked_metric.Th_hat[marked_metric.v_rep[j]] -= angle_delta;
+
+    return std::make_tuple(i, j);
 }
 
 } // namespace Holonomy

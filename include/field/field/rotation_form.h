@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "field/intrinsic_field.h"
 
 /**
@@ -21,7 +20,7 @@
  */
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 /**
  * @brief Given a mesh with a per-face frame field, 
@@ -48,5 +47,5 @@ VectorX generate_intrinsic_rotation_form(
     const Eigen::MatrixXd& V,
     const Field::FieldParameters& field_params);
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

@@ -9,6 +9,7 @@
 
 #include "feature/core/component_mesh.h"
 
+#include "util/boundary.h"
 #include "util/vector.h"
 #include "util/union_find.h"
 
@@ -16,7 +17,7 @@
 #include "feature/core/union_meshes.h"
 
 // check for interior vertices
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
@@ -482,12 +483,12 @@ void add_component_cone_pair(Mesh<Scalar>& m, Eigen::VectorXi vertex_component, 
         // check if vertex is valid
         int Vi = m.v_rep[vi];
         if (m.Th_hat[Vi] < 2. * angle_delta) continue;
-        if ((only_interior) && (!Holonomy::is_interior(m, vi))) continue;
+        if ((only_interior) && (!is_interior(m, vi))) continue;
 
         // check if adjacent vertex is valid
         int vj = m.to[m.out[vi]];
         int Vj = m.v_rep[vj];
-        if ((only_interior) && (!Holonomy::is_interior(m, vj))) continue;
+        if ((only_interior) && (!is_interior(m, vj))) continue;
 
         // add cones
         spdlog::debug("Adding negative cone at {} with angle {}", Vi, m.Th_hat[Vi]);

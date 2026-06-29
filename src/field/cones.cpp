@@ -6,7 +6,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 
 #include "util/boundary.h"
 #include "util/vector.h"
@@ -17,66 +17,11 @@
 // check valid one forms
 #include "field/forms.h"
 
-// holonomy computation
-#include "holonomy/holonomy/holonomy.h"
-
 #include <random>
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
-// Check cones computed from rotation form match more direct vertex iteration computation
-bool validate_cones_from_rotation_form(
-    const Mesh<Scalar>& m,
-    const VectorX& rotation_form,
-    const std::vector<Scalar>& Th_hat)
-{
-    // Compute the corner angles
-    VectorX he2angle, he2cot;
-    corner_angles(m, he2angle, he2cot);
-
-    // Get boundary vertices if symmetric mesh with boundary
-    int num_vertices = m.n_vertices();
-    bool is_symmetric = (m.type[0] != 0);
-    std::vector<bool> is_boundary_vertex(num_vertices, false);
-    if (is_symmetric) {
-        std::vector<int> boundary_vertices = find_boundary_vertices(m);
-        convert_index_vector_to_boolean_array(
-            boundary_vertices,
-            num_vertices,
-            is_boundary_vertex);
-    }
-
-    // Compare cones with direct per-vertex computation
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        DualLoopList dual_loop(build_counterclockwise_vertex_dual_segment_sequence(m, vi));
-        Scalar rotation = compute_dual_loop_rotation(m, rotation_form, dual_loop);
-        Scalar holonomy = compute_dual_loop_holonomy(m, he2angle, dual_loop);
-
-        // Special treatment for vertices in interior of doubled mesh
-        if ((is_symmetric) && (!is_boundary_vertex[vi])) {
-            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
-                spdlog::warn(
-                    "Inconsistent interior cones {} and {}",
-                    Th_hat[m.v_rep[vi]] / 2.,
-                    holonomy - rotation);
-                return false;
-            }
-        }
-        // General case
-        else {
-            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
-                spdlog::warn(
-                    "Inconsistent cones {} and {}",
-                    Th_hat[m.v_rep[vi]],
-                    holonomy - rotation);
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
 
 std::vector<Scalar> generate_cones_from_rotation_form(
     const Mesh<Scalar>& m,
@@ -100,7 +45,6 @@ std::vector<Scalar> generate_cones_from_rotation_form(
         // the vertex
         Th_hat[m.v_rep[m.to[h]]] += rotation_form[h];
     }
-    assert(validate_cones_from_rotation_form(m, rotation_form, Th_hat));
 
     for (int vi = 0; vi < num_vertices; ++vi) {
         Th_hat[vi] = round(Th_hat[vi] / (M_PI / 2.)) * (M_PI / 2.);
@@ -282,20 +226,6 @@ void remove_minimum_cone(Mesh<Scalar>& m)
     *max_cone -= angle_delta;
 }
 
-bool is_interior(const Mesh<Scalar>& m, int vi)
-{
-    int h_start = m.out[vi];
-    int hij = h_start;
-    do {
-        int hji = m.opp[hij];
-        if ((m.type[hij] == 1) && (m.type[hji] == 2)) return false;
-        if ((m.type[hij] == 2) && (m.type[hji] == 1)) return false;
-
-        hij = m.n[m.opp[hij]];
-    } while (hij != h_start);
-
-    return true;
-}
 
 int get_flat_vertex(const Mesh<Scalar>& m, bool only_interior)
 {
@@ -372,59 +302,6 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior, int offset)
     }
 }
 
-std::tuple<int, int> get_constraint_outliers(
-    MarkedPennerConeMetric& marked_metric,
-    bool use_interior_vertices,
-    bool use_flat_vertices)
-{
-    bool is_symmetric = (marked_metric.type[0] != 0);
-    int num_vertices = marked_metric.n_vertices();
-    int num_ind_vertices = marked_metric.n_ind_vertices();
-    std::vector<int> bd_vertices = find_boundary_vertices(marked_metric);
-    std::vector<bool> is_bd_vertex(num_ind_vertices, false);
-    for (int vi : bd_vertices) {
-        is_bd_vertex[marked_metric.v_rep[vi]] = true;
-    }
-
-    // get constraint errors
-    VectorX constraint;
-    MatrixX J_constraint;
-    bool need_jacobian = false;
-    bool only_free_vertices = false;
-    marked_metric.constraint(constraint, J_constraint, need_jacobian, only_free_vertices);
-
-    // get cone indices with minimum and maximum defect
-    int i = 0;
-    int j = 0;
-    Scalar flat_angle = (is_symmetric) ? 4. * M_PI : 2. * M_PI;
-    for (int k = 0; k < num_vertices; ++k) {
-        int vi = marked_metric.v_rep[i];
-        int vj = marked_metric.v_rep[j];
-        int vk = marked_metric.v_rep[k];
-
-        // only add (optionally) interior cone pairs at flat vertices
-        if ((use_interior_vertices) && (is_symmetric) && (is_bd_vertex[vk])) continue;
-        if ((use_flat_vertices) && (!float_equal(marked_metric.Th_hat[vk], flat_angle))) continue;
-
-        if (constraint[vk] < constraint[vi]) i = k;
-        if (constraint[vk] > constraint[vj]) j = k;
-    }
-
-    return std::make_tuple(i, j);
-}
-
-std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric)
-{
-    auto [i, j] = get_constraint_outliers(marked_metric, true, true);
-    spdlog::debug("Adding positive cone at {}", i);
-    spdlog::debug("Adding negative cone at {}", j);
-    bool is_symmetric = (marked_metric.type[0] != 0);
-    Scalar angle_delta = (is_symmetric) ? M_PI : (M_PI / 2.);
-    marked_metric.Th_hat[marked_metric.v_rep[i]] += angle_delta;
-    marked_metric.Th_hat[marked_metric.v_rep[j]] -= angle_delta;
-
-    return std::make_tuple(i, j);
-}
 
 void fix_cones(Mesh<Scalar>& m, int min_cone_index)
 {
@@ -476,14 +353,6 @@ void remove_trivial_boundaries(
     }
 }
 
-void make_interior_free(Mesh<Scalar>& m)
-{
-    m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), true);
-    auto bd_vertices = find_boundary_vertices(m);
-    for (int vi : bd_vertices) {
-        m.fixed_dof[m.v_rep[vi]] = false;
-    }
-}
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

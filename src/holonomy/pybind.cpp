@@ -10,11 +10,11 @@
 
 #include "holonomy/interface.h"
 #include "metric/quality.h"
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 #include "holonomy/holonomy/constraint.h"
-#include "holonomy/holonomy/rotation_form.h"
+#include "field/rotation_form.h"
 #include "field/intrinsic_field.h"
 #include "field/frame_field.h"
 #include "holonomy/similarity/conformal.h"
@@ -143,8 +143,8 @@ void init_holonomy_pybind(pybind11::module& m)
 
     m.def("compute_mesh_quality", &compute_mesh_quality, default_call_guard);
     m.def("compute_min_angle", &compute_min_angle, default_call_guard);
-    m.def("fix_cones", &fix_cones, default_call_guard);
-    m.def("add_random_cone_pair", &add_random_cone_pair, default_call_guard);
+    m.def("fix_cones", &Field::fix_cones, default_call_guard);
+    m.def("add_random_cone_pair", &Field::add_random_cone_pair, default_call_guard);
     m.def("add_optimal_cone_pair", &add_optimal_cone_pair, default_call_guard);
     m.def(
         "find_boundary_vertices",
@@ -187,7 +187,7 @@ void init_holonomy_pybind(pybind11::module& m)
             const Mesh<Scalar>&,
             const std::vector<int>&,
             const VectorX&,
-            bool>(&generate_cones_from_rotation_form), default_call_guard);
+            bool>(&Field::generate_cones_from_rotation_form), default_call_guard);
 
     m.def(
         "generate_VF_mesh_from_similarity_metric",

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "holonomy/holonomy/marked_penner_cone_metric.h"
+#include "metric/cone_metric.h"
 
 /**
  * @brief Methods to compute cones on a surface from field data, as well as various
@@ -17,7 +17,7 @@
  */
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 /**
  * @brief Compute the cones from a rotation form on an intrinsic mesh.
@@ -55,22 +55,6 @@ std::vector<Scalar> generate_cones_from_rotation_form(
 bool is_trivial_torus(const Mesh<Scalar>& m);
 
 /**
- * @brief Check if the cones are valid for seamless holonomy constraints
- * 
- * Checks both for invalid cones that cannot be satisfied independently (i.e., a negative
- * or zero cone) and for cones that cannot be satisfied with seamless holonomy constraints
- * (i.e., a torus with a pair of cones).
- * 
- * WARNING: Don't check for trivial torus constraints, but must be accounted for by removing
- * holonomy constraints as the trivial torus only supports trivial topology.
- * 
- * @param Th_hat: per-vertex cone angles
- * @return true if the cones are valid for seamless holonomy constraints
- * @return false otherwise
- */
-bool validate_cones(const Mesh<Scalar>& m);
-
-/**
  * @brief Given target cone angles, fix any problems that prevent them from being valid
  * for seamless holonomy constraints.
  * 
@@ -81,16 +65,9 @@ void fix_cones(Mesh<Scalar>& m, int min_cone_index=1);
 
 void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=true, int offset=0);
 
-std::tuple<int, int> get_constraint_outliers(
-    MarkedPennerConeMetric& marked_metric,
-    bool use_interior_vertices=true,
-    bool use_flat_vertices=true);
-std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric);
-
-void make_interior_free(Mesh<Scalar>& m);
 
 std::pair<int, int> count_cones(const Mesh<Scalar>& m);
-bool is_interior(const Mesh<Scalar>& m, int vi);
 
-} // namespace Holonomy
+
+} // namespace Field
 } // namespace Penner

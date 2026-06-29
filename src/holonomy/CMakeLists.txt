@@ -9,12 +9,10 @@ set(HolonomyCoreSrc
 )
 
 set(HolonomySrc
-  holonomy/cones.cpp
   holonomy/constraint.cpp
   holonomy/holonomy.cpp
   holonomy/marked_penner_cone_metric.cpp
   holonomy/newton.cpp
-  holonomy/rotation_form.cpp
 )
 
 set(SimilaritySrc

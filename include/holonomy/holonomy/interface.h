@@ -10,7 +10,7 @@
 
 #include "holonomy/core/common.h"
 #include "field/field.h"
-#include "holonomy/holonomy/rotation_form.h"
+#include "field/rotation_form.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
@@ -241,6 +241,12 @@ std::vector<Scalar> compute_kappa(
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
 
 DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
+
+std::tuple<int, int> get_constraint_outliers(
+    MarkedPennerConeMetric& marked_metric,
+    bool use_interior_vertices=true,
+    bool use_flat_vertices=true);
+std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric);
 
 } // namespace Holonomy
 } // namespace Penner

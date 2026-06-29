@@ -10,7 +10,7 @@
 #include "feature/feature/gluing.h"
 
 #include "feature/core/vf_corners.h"
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 
 namespace Penner {
 namespace Feature {
@@ -107,7 +107,7 @@ std::pair<int, int> count_glued_cones(
 ) {
     // if mesh is not cut, use regular cone counting method
     bool is_symmetric = (m.type[0] != 0);
-    if (!is_symmetric) return Holonomy::count_cones(m);
+    if (!is_symmetric) return Field::count_cones(m);
 
     // get glued cone angles
     std::vector<Scalar> Th_hat = compute_glued_angles(m, vtx_reindex, V_map);

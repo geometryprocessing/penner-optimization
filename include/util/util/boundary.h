@@ -81,4 +81,7 @@ std::vector<int> find_boundary_components(const Mesh<Scalar>& m);
  */
 std::vector<int> build_boundary_component(const Mesh<Scalar>& m, int halfedge_index);
 
+bool is_interior(const Mesh<Scalar>& m, int vi);
+void make_interior_free(Mesh<Scalar>& m);
+
 } // namespace Penner

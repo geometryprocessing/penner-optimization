@@ -147,4 +147,28 @@ std::vector<int> find_boundary_components(const Mesh<Scalar>& m)
     return boundary_components;
 }
 
+bool is_interior(const Mesh<Scalar>& m, int vi)
+{
+    int h_start = m.out[vi];
+    int hij = h_start;
+    do {
+        int hji = m.opp[hij];
+        if ((m.type[hij] == 1) && (m.type[hji] == 2)) return false;
+        if ((m.type[hij] == 2) && (m.type[hji] == 1)) return false;
+
+        hij = m.n[m.opp[hij]];
+    } while (hij != h_start);
+
+    return true;
+}
+
+void make_interior_free(Mesh<Scalar>& m)
+{
+    m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), true);
+    auto bd_vertices = find_boundary_vertices(m);
+    for (int vi : bd_vertices) {
+        m.fixed_dof[m.v_rep[vi]] = false;
+    }
+}
+
 } // namespace Penner

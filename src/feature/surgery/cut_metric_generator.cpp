@@ -8,6 +8,7 @@
 
 #include "feature/surgery/cut_metric_generator.h"
 
+#include "util/boundary.h"
 #include "field/intrinsic_field.h"
 #include "feature/core/vf_corners.h"
 #include "feature/core/union_meshes.h"
@@ -21,7 +22,7 @@
 #include "feature/feature/gluing.h"
 
 // fix invalid or poor cones
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 #include "feature/dirichlet/cone_perturber.h"
 
 #include <igl/per_face_normals.h>
@@ -79,7 +80,7 @@ CutMetricGenerator::CutMetricGenerator(
         m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), false);
         bool fixed_dof = false;
         for (int vi = 0; vi < m.n_vertices(); ++vi) {
-            if (Holonomy::is_interior(m, vi)) {
+            if (is_interior(m, vi)) {
                 m.fixed_dof[m.v_rep[vi]] = true;
                 fixed_dof = true;
                 break;
@@ -257,7 +258,7 @@ void CutMetricGenerator::generate_fields(
         rotation_forms.push_back(field_generator.compute_rotation_form(m));
         field_generator.get_field(m, vtx_reindex, F_cut, face_map, reference_corner, theta, kappa, period_jump);
         field_generator.get_fixed_faces(m, face_map, is_fixed_face);
-        m.Th_hat = Holonomy::generate_cones_from_rotation_form(m, rotation_forms.back());
+        m.Th_hat = Field::generate_cones_from_rotation_form(m, rotation_forms.back());
 
         // check Guass Bonnet
         GaussBonnetCheck(m);
@@ -298,7 +299,7 @@ void CutMetricGenerator::set_fields(
 
         // extract the rotation form and cone angles
         rotation_forms.push_back(field_generator.compute_rotation_form(m));
-        m.Th_hat = Holonomy::generate_cones_from_rotation_form(m, rotation_forms.back());
+        m.Th_hat = Field::generate_cones_from_rotation_form(m, rotation_forms.back());
 
         // check Guass Bonnet
         GaussBonnetCheck(m);
@@ -415,8 +416,8 @@ void fix_cones(
         spdlog::info("Resolving cone pair with split");
 
         int num_vertices = dirichlet_metric.n_ind_vertices();
-        add_random_cone_pair(dirichlet_metric, true, num_vertices / 3);
-        add_random_cone_pair(dirichlet_metric, true, 2 * num_vertices / 3);
+        Field::add_random_cone_pair(dirichlet_metric, true, num_vertices / 3);
+        Field::add_random_cone_pair(dirichlet_metric, true, 2 * num_vertices / 3);
         std::tie(num_neg_cones, num_pos_cones) = count_glued_cones(dirichlet_metric, vtx_reindex, V_map);
     }
 

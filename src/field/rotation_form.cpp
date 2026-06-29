@@ -6,7 +6,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can 
 // obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "holonomy/holonomy/rotation_form.h"
+#include "field/rotation_form.h"
 
 #include "util/linear_algebra.h"
 #include "field/field.h"
@@ -16,7 +16,7 @@
 #include <igl/per_face_normals.h>
 
 namespace Penner {
-namespace Holonomy {
+namespace Field {
 
 // Priority function for halfedges
 // Assumes that vertex indices are unique
@@ -136,5 +136,5 @@ VectorX generate_intrinsic_rotation_form(
     return field_generator.run_with_viewer(m, vtx_reindex, V);
 }
 
-} // namespace Holonomy
+} // namespace Field
 } // namespace Penner

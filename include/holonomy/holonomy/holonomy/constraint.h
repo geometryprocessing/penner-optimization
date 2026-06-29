@@ -158,5 +158,21 @@ MatrixX compute_metric_corner_angle_jacobian(
 std::tuple<VectorX, MatrixX> compute_metric_constraint_with_jacobian_pybind(
     const MarkedPennerConeMetric& marked_metric);
     
+/**
+ * @brief Check if the cones are valid for seamless holonomy constraints
+ * 
+ * Checks both for invalid cones that cannot be satisfied independently (i.e., a negative
+ * or zero cone) and for cones that cannot be satisfied with seamless holonomy constraints
+ * (i.e., a torus with a pair of cones).
+ * 
+ * WARNING: Don't check for trivial torus constraints, but must be accounted for by removing
+ * holonomy constraints as the trivial torus only supports trivial topology.
+ * 
+ * @param Th_hat: per-vertex cone angles
+ * @return true if the cones are valid for seamless holonomy constraints
+ * @return false otherwise
+ */
+bool validate_cones(const Mesh<Scalar>& m);
+    
 } // namespace Holonomy
 } // namespace Penner

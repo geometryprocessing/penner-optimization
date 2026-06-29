@@ -8,6 +8,7 @@
 
 #include "holonomy/holonomy/constraint.h"
 
+#include "util/boundary.h"
 #include "util/vector.h"
 #include "util/linear_algebra.h"
 #include "metric/constraint.h"
@@ -647,6 +648,59 @@ std::tuple<VectorX, MatrixX> compute_metric_constraint_with_jacobian_pybind(
         true);
 
     return std::make_tuple(constraint, J_constraint);
+}
+
+// Check cones computed from rotation form match more direct vertex iteration computation
+bool validate_cones_from_rotation_form(
+    const Mesh<Scalar>& m,
+    const VectorX& rotation_form,
+    const std::vector<Scalar>& Th_hat)
+{
+    // Compute the corner angles
+    VectorX he2angle, he2cot;
+    corner_angles(m, he2angle, he2cot);
+
+    // Get boundary vertices if symmetric mesh with boundary
+    int num_vertices = m.n_vertices();
+    bool is_symmetric = (m.type[0] != 0);
+    std::vector<bool> is_boundary_vertex(num_vertices, false);
+    if (is_symmetric) {
+        std::vector<int> boundary_vertices = find_boundary_vertices(m);
+        convert_index_vector_to_boolean_array(
+            boundary_vertices,
+            num_vertices,
+            is_boundary_vertex);
+    }
+
+    // Compare cones with direct per-vertex computation
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        DualLoopList dual_loop(build_counterclockwise_vertex_dual_segment_sequence(m, vi));
+        Scalar rotation = compute_dual_loop_rotation(m, rotation_form, dual_loop);
+        Scalar holonomy = compute_dual_loop_holonomy(m, he2angle, dual_loop);
+
+        // Special treatment for vertices in interior of doubled mesh
+        if ((is_symmetric) && (!is_boundary_vertex[vi])) {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]] / 2., holonomy - rotation, 1e-3)) {
+                spdlog::warn(
+                    "Inconsistent interior cones {} and {}",
+                    Th_hat[m.v_rep[vi]] / 2.,
+                    holonomy - rotation);
+                return false;
+            }
+        }
+        // General case
+        else {
+            if (!float_equal<Scalar>(Th_hat[m.v_rep[vi]], holonomy - rotation, 1e-3)) {
+                spdlog::warn(
+                    "Inconsistent cones {} and {}",
+                    Th_hat[m.v_rep[vi]],
+                    holonomy - rotation);
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 } // namespace Holonomy
