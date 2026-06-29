@@ -10,10 +10,6 @@
 
 #include "holonomy/core/dual_loop.h"
 
-#include "metric/area.h"
-
-#include <stdexcept>
-
 namespace Penner {
 namespace Holonomy {
 

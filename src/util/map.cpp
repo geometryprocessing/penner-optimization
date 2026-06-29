@@ -9,6 +9,7 @@
 #include "util/map.h"
 
 #include "util/vector.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 #include <random>
 #include <chrono>

@@ -8,18 +8,19 @@
 
 #include "feature/surgery/cut_mesh_layout.h"
 
+#include "util/vector.h"
 #include "util/vf_mesh.h"
 
-#include "parametrization/interpolation.h"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "parametrization/layout.h"
 #include "parametrization/parametrize.h"
-
-#include "feature/feature/error.h"
 #include "feature/core/component_mesh.h"
 
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "conformal_ideal_delaunay/Layout.hh"
+// overlay graph management
+#include "parametrization/interpolation.h"
+
+// check edge alignment
+#include "feature/feature/error.h"
 
 #include <igl/facet_components.h>
 

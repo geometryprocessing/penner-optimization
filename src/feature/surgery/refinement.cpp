@@ -9,9 +9,7 @@
 #include "feature/surgery/refinement.h"
 
 #include "util/boundary.h"
-#include "util/vector.h"
-#include "holonomy/core/viewer.h"
-#include "feature/core/component_mesh.h"
+#include "util/vf_mesh.h"
 
 namespace Penner {
 namespace Feature {

@@ -144,7 +144,6 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
                 extField(f, 3 * i + j) = cross_field[i](f, j);
             }
         }
-        spdlog::trace("row {}: {}", f, extField.row(f));
     }
 
     assert(tb.sources.rows()==extField.rows());

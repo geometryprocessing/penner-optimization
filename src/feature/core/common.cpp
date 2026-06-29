@@ -8,22 +8,9 @@
 
 #include "feature/core/common.h"
 
-#include "field/intrinsic_field.h"
-
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-
 namespace Penner {
 namespace Feature {
 
-bool is_manifold(const Eigen::MatrixXi& F)
-{
-    Eigen::VectorXi B;
-    if (!igl::is_edge_manifold(F)) return false;
-    if (!igl::is_vertex_manifold(F, B)) return false;
-
-    return true;
-}
 
 std::vector<int> generate_vertex_one_ring(const Mesh<Scalar>& m, int vertex_index)
 {
@@ -41,32 +28,6 @@ std::vector<int> generate_vertex_one_ring(const Mesh<Scalar>& m, int vertex_inde
     return one_ring;
 }
 
-
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<int>& vtx_reindex)
-{
-    int num_orig_vertices = vtx_reindex.size();
-
-    // reindex vertices
-    Eigen::MatrixXd V_reindex = V;
-    for (int vi = 0; vi < num_orig_vertices; ++vi) {
-        V_reindex.row(vtx_reindex[vi]) = V.row(vi);
-    }
-
-    // reindex faces
-    int num_faces = F.rows();
-    Eigen::MatrixXi F_reindex = F;
-    for (int fijk = 0; fijk < num_faces; ++fijk) {
-        for (int i = 0; i < 3; ++i) {
-            if (F(fijk, i) >= num_orig_vertices) continue;
-            F_reindex(fijk, i) = vtx_reindex[F(fijk, i)];
-        }
-    }
-
-    return std::make_tuple(V_reindex, F_reindex);
-}
 
 std::vector<std::pair<int, int>> reindex_endpoints(
     const std::vector<std::pair<int, int>>& endpoints,

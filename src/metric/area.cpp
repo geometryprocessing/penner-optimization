@@ -8,8 +8,6 @@
 
 #include "metric/area.h"
 
-#include "util/embedding.h"
-
 namespace Penner {
 
 Scalar squared_area(Scalar li, Scalar lj, Scalar lk)

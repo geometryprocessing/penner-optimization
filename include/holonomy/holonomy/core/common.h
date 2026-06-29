@@ -8,17 +8,8 @@
 
 #pragma once
 
-#include <array>
-#include <iostream>
-#include <vector>
-
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-
-#include "optimization/interface.h"
+#include "util/common.h"
 #include "metric/cone_metric.h"
-#include "util/vector.h"
 
 /**
  * @brief Assorted utility functions.

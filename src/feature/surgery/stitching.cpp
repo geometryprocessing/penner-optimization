@@ -8,20 +8,13 @@
 
 #include "feature/surgery/stitching.h"
 
-#include "holonomy/core/viewer.h"
-#include "parametrization/refinement.h"
-#include "parametrization/layout.h"
-#include "util/io.h"
 #include "util/vector.h"
 #include "util/vf_mesh.h"
 
-#include "igl/remove_unreferenced.h"
-#include "igl/boundary_loop.h"
+#include "parametrization/layout.h"
+#include "parametrization/refinement.h"
 
-#ifdef ENABLE_VISUALIZATION
-#include "polyscope/point_cloud.h"
-#include "polyscope/surface_mesh.h"
-#endif
+#include <igl/boundary_loop.h>
 
 namespace Penner {
 namespace Feature {

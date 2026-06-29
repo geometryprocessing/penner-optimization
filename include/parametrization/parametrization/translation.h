@@ -9,6 +9,7 @@
 #pragma once
 
 #include "util/common.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 /**
  * @brief Method to compute hyperbolic translations determining a continuous map between

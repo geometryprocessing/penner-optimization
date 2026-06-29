@@ -9,8 +9,6 @@
 #include "field/frame_field.h"
 #include "parametrization/refinement.h"
 #include "util/vf_mesh.h"
-#include "util/vector.h"
-#include "util/linear_algebra.h"
 #include "util/map.h"
 
 #include <igl/per_face_normals.h>
@@ -21,8 +19,6 @@
 #include <igl/triangle_triangle_adjacency.h>
 #include <igl/grad.h>
 #include <igl/doublearea.h>
-
-// TODO: Cleaning pass
 
 namespace Penner {
 namespace Field {

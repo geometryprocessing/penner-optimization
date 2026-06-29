@@ -9,26 +9,24 @@
 
 #include "holonomy/core/viewer.h"
 
+#include "util/vector.h"
 #include "util/vf_mesh.h"
 
-#include <igl/boundary_facets.h>
 #include <igl/doublearea.h>
 #include <igl/edge_flaps.h>
-#include <igl/facet_components.h>
 #include <igl/local_basis.h>
 #include <igl/rotate_vectors.h>
 #include <igl/flipped_triangles.h>
 
-#include <random>
+//#include <random>
 
-#include "util/vector.h"
-#include "util/vf_mesh.h"
+// used to visualize constraint error
 #include "holonomy/holonomy/constraint.h"
+
+// cross field generation for viewer
 #include "field/frame_field.h"
-#include "metric/viewer.h"
 
 #ifdef ENABLE_VISUALIZATION
-#include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #endif

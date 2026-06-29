@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
 /**

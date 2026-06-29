@@ -7,8 +7,6 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "holonomy/core/dual_segment.h"
-#include <algorithm>
-#include <stdexcept>
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"

@@ -12,7 +12,6 @@
 #include "field/forms.h"
 
 #include "metric/constraint.h"
-#include "util/vector.h"
 
 #if USE_COMISO
 #include <igl/copyleft/comiso/nrosy.h>

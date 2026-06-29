@@ -7,23 +7,20 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "parametrization/refinement.h"
-#include <igl/boundary_facets.h>
 #include <igl/boundary_loop.h>
 #include <igl/doublearea.h>
-#include <igl/facet_components.h>
 #include <igl/flipped_triangles.h>
 #include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+
 #include <set>
 #include <stack>
-#include "metric/area.h"
+
 #include "conformal_ideal_delaunay/Halfedge.hh"
 #include "util/io.h"
-#include "parametrization/triangulation.h"
 #include "util/vector.h"
 #include "util/vf_mesh.h"
+#include "parametrization/triangulation.h"
 
 #if ENABLE_VISUALIZATION
 #include "polyscope/point_cloud.h"

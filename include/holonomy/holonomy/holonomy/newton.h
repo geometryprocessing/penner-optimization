@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "util/io.h"
+#include "holonomy/core/common.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
-#include <igl/Timer.h>
+#include "optimization/metric_optimization/energy_functor.h"
 
 #include <igl/Timer.h>
+
 
 /**
  * @brief Modified Newton method to find a Marked Penner Cone Metric satisfying holonomy

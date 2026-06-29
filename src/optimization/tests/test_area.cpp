@@ -9,7 +9,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "metric/area.h"
-#include "util/vector.h"
 #include "optimization/util/shapes.h"
 #include "metric/cone_metric.h"
 

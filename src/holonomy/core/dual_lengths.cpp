@@ -8,9 +8,8 @@
 
 #include "holonomy/core/dual_lengths.h"
 
+// corner angle computations
 #include "metric/constraint.h"
-
-#include <queue>
 
 namespace Penner {
 namespace Holonomy {

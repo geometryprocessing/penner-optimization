@@ -8,11 +8,8 @@
 
 #pragma once
 
-#include "feature/core/boundary_path.h"
-#include "feature/core/common.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 #include "feature/feature/features.h"
-#include "holonomy/holonomy/marked_penner_cone_metric.h"
 
 /**
  * @brief Data structure with limited support to refine the faces and edges of a mesh for feature alignment.

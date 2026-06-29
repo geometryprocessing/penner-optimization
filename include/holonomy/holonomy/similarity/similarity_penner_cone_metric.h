@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
-#include "field/forms.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
+
+// form getter and setter asserts
+#include "field/forms.h"
 
 /**
  * @brief Representation for a mesh with a differentiable intrinsic metric and additional

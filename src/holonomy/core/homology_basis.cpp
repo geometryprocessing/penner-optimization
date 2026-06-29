@@ -9,10 +9,11 @@
 #include "holonomy/core/homology_basis.h"
 
 #include "util/vector.h"
+
+// dual edge lengths for optimization
 #include "holonomy/core/dual_lengths.h"
 
 #include <random>
-#include "util/embedding.h"
 
 namespace Penner {
 namespace Holonomy {

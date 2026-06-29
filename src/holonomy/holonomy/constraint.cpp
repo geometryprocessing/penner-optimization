@@ -8,9 +8,10 @@
 
 #include "holonomy/holonomy/constraint.h"
 
-#include "holonomy/holonomy/holonomy.h"
-
+#include "util/vector.h"
+#include "util/linear_algebra.h"
 #include "metric/constraint.h"
+#include "holonomy/holonomy/holonomy.h"
 
 namespace Penner {
 namespace Holonomy {

@@ -10,6 +10,8 @@
 #pragma once
 
 #include "util/common.h"
+#include "util/linear_algebra.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace Penner {
 namespace Field {

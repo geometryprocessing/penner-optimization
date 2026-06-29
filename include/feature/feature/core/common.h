@@ -8,11 +8,13 @@
 
 #pragma once
 
-#include "holonomy/interface.h"
 #include "holonomy/core/common.h"
+
+// get holonomy classes to put in feature namespace
 #include "holonomy/core/dual_loop.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
+#include "holonomy/interface.h"
 
 /**
  * @brief Assorted utility functions.
@@ -28,17 +30,6 @@ using Holonomy::NewtonParameters;
 using Holonomy::MarkedMetricParameters;
 
 /**
- * @brief Compute the square of a scalar.
- *
- * @param x: value to square
- * @return squared value
- */
-inline Scalar square(Scalar x)
-{
-    return x * x;
-}
-
-/**
  * @brief Compute the one ring of halfedges emenating from a mesh vertex.
  *
  * @param m: mesh
@@ -47,26 +38,6 @@ inline Scalar square(Scalar x)
  */
 std::vector<int> generate_vertex_one_ring(const Mesh<Scalar>& m, int vertex_index);
 
-/**
- * @brief Determine if a VF mesh is manifold
- * @param F: mesh faces
- * @return true iff the mesh is edge and vertex manifold
- */
-bool is_manifold(const Eigen::MatrixXi& F);
-
-/**
- * @brief Reindex VF mesh.
- * 
- * @param V: mesh vertices
- * @param F: mesh faces
- * @param vtx_reindex: map from old to new vertex indices
- * @return reindexed mesh vertices
- * @return reindexed mesh faces
- */
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<int>& vtx_reindex);
 
 /**
  * @brief Reindex list of edge endpoints under vertex reindexing.

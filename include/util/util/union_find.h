@@ -13,10 +13,9 @@
 
 #pragma once
 
-#include "feature/core/common.h"
+#include "util/common.h"
 
 namespace Penner {
-namespace Feature {
 
 /**
  * @brief Simple implementation of a union find data structure
@@ -189,5 +188,4 @@ private:
     std::vector<int> m_parent;
 };
 
-} // namespace Feature
 } // namespace Penner

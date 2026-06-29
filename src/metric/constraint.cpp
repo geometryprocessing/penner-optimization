@@ -8,7 +8,6 @@
 
 #include "metric/constraint.h"
 
-#include "util/embedding.h"
 #include "util/linear_algebra.h"
 #include "util/boundary.h"
 #include "metric/area.h"

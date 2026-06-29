@@ -13,9 +13,9 @@
 #endif
 
 #include "feature/dirichlet/angle_constraint_relaxer.h"
-#include "feature/dirichlet/constraint.h"
-#include "holonomy/holonomy/constraint.h"
 #include "metric/constraint.h"
+#include "feature/dirichlet/constraint.h"
+
 #include <queue>
 #include <igl/Timer.h>
 

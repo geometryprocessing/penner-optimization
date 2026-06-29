@@ -9,14 +9,18 @@
 
 #include "feature/core/component_mesh.h"
 
-#include "holonomy/core/dual_lengths.h"
+#include "util/vector.h"
+#include "util/union_find.h"
+
+// mesh unioning
+#include "feature/core/union_meshes.h"
+
+// check for interior vertices
 #include "holonomy/holonomy/cones.h"
 
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_unreferenced.h>
-
-#include "util/vector.h"
 
 namespace Penner {
 namespace Feature {

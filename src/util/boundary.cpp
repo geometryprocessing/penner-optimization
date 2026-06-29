@@ -9,6 +9,7 @@
 #include "util/boundary.h"
 
 #include "util/vector.h"
+#include "util/map.h"
 
 namespace Penner {
 

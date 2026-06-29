@@ -14,8 +14,7 @@
 #pragma once
 
 #include "util/common.h"
-
-#include "util/embedding.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 #include <filesystem>
 #include <fstream>

@@ -13,11 +13,7 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
-#include "parametrization/interpolation.h"
-
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace Penner {
 namespace Holonomy {

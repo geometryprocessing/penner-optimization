@@ -8,20 +8,28 @@
 
 #include "feature/core/viewer.h"
 
-#include "feature/core/vf_corners.h"
-#include "feature/feature/error.h"
-#include "feature/feature/features.h"
-#include "feature/feature/gluing.h"
-#include "field/facet_field.h"
-#include "field/frame_field.h"
-#include "field/cross_field.h"
-#include "feature/core/quads.h"
-#include "metric/projection.h"
-#include "field/intrinsic_field.h"
+#include "util/vector.h"
+#include "util/vf_mesh.h"
+
 #include "metric/viewer.h"
 
-#include "holonomy/core/viewer.h"
-#include "util/vf_mesh.h"
+// used to generate initial mesh
+#include "optimization/interface.h"
+
+// frame field from reference
+#include "field/frame_field.h"
+
+// cone angle defects for glued mesh
+#include "feature/feature/gluing.h"
+
+// conformal scale factors
+#include "metric/projection.h"
+
+// uv alignment error
+#include "feature/feature/error.h"
+
+// quad valences
+#include "feature/core/quads.h"
 
 #include <igl/principal_curvature.h>
 #include <igl/per_vertex_normals.h>

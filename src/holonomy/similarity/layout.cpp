@@ -11,6 +11,7 @@
 #include "parametrization/layout.h"
 #include "parametrization/translation.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
+#include "parametrization/interpolation.h"
 
 namespace Penner {
 namespace Holonomy {

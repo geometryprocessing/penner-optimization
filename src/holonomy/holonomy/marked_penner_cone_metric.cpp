@@ -8,7 +8,6 @@
 
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 
-#include "util/vector.h"
 #include "holonomy/core/viewer.h"
 #include "holonomy/holonomy/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
@@ -16,8 +15,6 @@
 
 #include "metric/constraint.h"
 #include "metric/projection.h"
-
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"

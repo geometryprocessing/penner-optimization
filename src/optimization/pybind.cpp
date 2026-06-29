@@ -11,7 +11,6 @@
 
 #include "metric/area.h"
 #include "metric/constraint.h"
-#include "util/embedding.h"
 #include "util/io.h"
 #include "optimization/metric_optimization/energies.h"
 #include "optimization/metric_optimization/energy_functor.h"
@@ -23,7 +22,6 @@
 #include "metric/projection.h"
 #include "parametrization/refinement.h"
 #include "parametrization/parametrize.h"
-#include "metric/reparametrization.h"
 #include "optimization/util/shapes.h"
 #include "metric/shear.h"
 #include "parametrization/translation.h"

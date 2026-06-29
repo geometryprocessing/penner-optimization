@@ -8,22 +8,11 @@
 
 #include "parametrization/triangulation.h"
 
-#include <igl/boundary_facets.h>
-#include <igl/doublearea.h>
-#include <igl/facet_components.h>
-#include <igl/flipped_triangles.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_duplicate_vertices.h>
-#include <igl/remove_unreferenced.h>
 #include <igl/predicates/predicates.h>
-#include <set>
-#include <stack>
-#include "metric/area.h"
+
 #include "util/io.h"
-#include "parametrization/refinement.h"
+#include "metric/area.h"
 #include "metric/constraint.h"
-#include "util/vector.h"
 
 #if ENABLE_VISUALIZATION
 #include "polyscope/point_cloud.h"

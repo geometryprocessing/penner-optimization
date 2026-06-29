@@ -9,10 +9,16 @@
 #include "holonomy/holonomy/cones.h"
 
 #include "util/boundary.h"
-#include "field/forms.h"
-#include "holonomy/holonomy/holonomy.h"
+#include "util/vector.h"
 
+// corner angle computation
 #include "metric/constraint.h"
+
+// check valid one forms
+#include "field/forms.h"
+
+// holonomy computation
+#include "holonomy/holonomy/holonomy.h"
 
 #include <random>
 

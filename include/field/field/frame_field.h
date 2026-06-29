@@ -10,6 +10,8 @@
 #pragma once
 
 #include "field/intrinsic_field.h"
+#include "util/linear_algebra.h"
+#include "util/vector.h"
 
 /**
  * @brief TODO: Redistribute this code

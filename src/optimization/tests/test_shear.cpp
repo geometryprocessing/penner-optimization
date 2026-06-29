@@ -10,7 +10,6 @@
 
 #include "metric/shear.h"
 #include "optimization/util/shapes.h"
-#include "util/embedding.h"
 #include "util/vector.h"
 #include "metric/cone_metric.h"
 #include "optimization/interface.h"

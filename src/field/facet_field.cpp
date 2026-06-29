@@ -7,8 +7,6 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "field/facet_field.h"
-#include "util/linear_algebra.h"
-#include <iostream>
 #include <fstream>
 
 namespace Penner {

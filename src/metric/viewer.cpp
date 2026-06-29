@@ -14,17 +14,13 @@
 #include <igl/boundary_facets.h>
 #include <igl/doublearea.h>
 #include <igl/internal_angles.h>
-#include <igl/edge_flaps.h>
 #include <igl/facet_components.h>
-#include <igl/local_basis.h>
-#include <igl/rotate_vectors.h>
 #include <igl/flipped_triangles.h>
 
 #include <random>
 
 #include "util/vector.h"
 #include "util/map.h"
-#include "util/vf_mesh.h"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/curve_network.h"

@@ -8,7 +8,6 @@
 
 #include "feature/core/quads.h"
 
-#include <igl/boundary_loop.h>
 
 namespace Penner {
 namespace Feature {

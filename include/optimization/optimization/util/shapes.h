@@ -9,6 +9,7 @@
 #pragma once
 
 #include "util/common.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 // Some good simple tests are simplex embeddings that are natural (one vertex
 // at the origin and others at unit vectors) with metrics that are uniform 

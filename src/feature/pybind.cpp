@@ -26,16 +26,11 @@
 
 #include "holonomy/core/viewer.h"
 
-#include "feature/core/common.h"
 #include "feature/core/component_mesh.h"
-#include "feature/core/vf_corners.h"
 #include "feature/dirichlet/constraint.h"
 #include "feature/dirichlet/optimization.h"
-#include "feature/dirichlet/dirichlet_penner_cone_metric.h"
 #include "feature/dirichlet/angle_constraint_relaxer.h"
-#include "feature/experimental/polygon_cones.h"
 #include "feature/feature/error.h"
-#include "feature/feature/features.h"
 #include "feature/core/viewer.h"
 #include "feature/interface.h"
 #include "feature/surgery/refinement.h"
@@ -173,7 +168,6 @@ void init_feature_pybind(pybind11::module& m)
     m.def("compute_face_edges_from_corners", &compute_face_edges_from_corners, default_call_guard);
 
     m.def("optimize_relaxed_angles", &optimize_relaxed_angles, default_call_guard);
-    m.def("is_manifold", &is_manifold, default_call_guard);
     m.def("align_to_hard_features", &align_to_hard_features, default_call_guard);
     m.def("stitch_cut_overlay", &stitch_cut_overlay, default_call_guard);
     m.def("compute_edge_alignment", &compute_edge_alignment, default_call_guard);
@@ -201,7 +195,6 @@ void init_feature_pybind(pybind11::module& m)
 #endif
     m.def("load_feature_edges", &load_feature_edges, default_call_guard);
     m.def("load_mesh_edges", &load_mesh_edges, default_call_guard);
-    m.def("generate_polygon_cones", &generate_polygon_cones, default_call_guard);
 }
 
 

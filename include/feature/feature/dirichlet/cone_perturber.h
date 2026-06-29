@@ -8,10 +8,7 @@
 
 #pragma once
 
-#include "feature/core/common.h"
-
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
-#include "feature/feature/gluing.h"
 #include <queue>
 
 /**

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "util/common.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 /**
  * @brief Methods for changing edge and interior barycentric coordinates as determined

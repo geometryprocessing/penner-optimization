@@ -9,12 +9,8 @@
 #include "metric/projection.h"
 
 #include <igl/Timer.h>
-#include <map>
-#include <stack>
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "util/embedding.h"
 #include "util/linear_algebra.h"
-#include "util/vector.h"
 #include "metric/constraint.h"
 #include "metric/globals.h"
 

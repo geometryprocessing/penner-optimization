@@ -14,6 +14,7 @@
 #include <igl/writeOBJ.h>
 
 #include "util/vector.h"
+#include "util/embedding.h"
 
 namespace Penner {
 

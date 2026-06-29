@@ -8,35 +8,18 @@
 
 #include "parametrization/parametrize.h"
 
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "util/boundary.h"
-#include "util/embedding.h"
-#include "util/vector.h"
+#include "metric/projection.h"
 #include "parametrization/interpolation.h"
 #include "parametrization/layout.h"
-#include "metric/projection.h"
-#include "parametrization/translation.h"
+#include "util/vector.h"
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 /// FIXME Do cleaning pass
 
 
 namespace Penner {
 
-
-/*
-std::vector<bool> find_boundary_vertices(const Mesh<Scalar>& m)
-{
-    std::vector<bool> is_bd(m.n_ind_vertices(), false);
-    for (int i = 0; i < m.n_halfedges(); i++) {
-        if ((m.type[i] == 1) && (m.type[m.opp[i]] == 2))
-        {
-            is_bd[m.v_rep[m.to[i]]] = true;
-        }
-    }
-
-    return is_bd;
-}
-*/
 
 template <typename OverlayScalar>
 std::

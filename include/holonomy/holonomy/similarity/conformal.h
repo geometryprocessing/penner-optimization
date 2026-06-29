@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
 namespace Penner {

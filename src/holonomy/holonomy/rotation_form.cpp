@@ -8,11 +8,11 @@
 
 #include "holonomy/holonomy/rotation_form.h"
 
+#include "util/linear_algebra.h"
 #include "field/field.h"
 #include "field/intrinsic_field.h"
 #include "field/forms.h"
 
-#include <igl/boundary_facets.h>
 #include <igl/per_face_normals.h>
 
 namespace Penner {

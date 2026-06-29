@@ -8,7 +8,7 @@
 
 #include "metric/shear.h"
 
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
+#include "util/vector.h"
 #include "util/embedding.h"
 #include "metric/projection.h"
 #include "metric/reparametrization.h"
@@ -388,7 +388,7 @@ void compute_shear_basis_coordinates(
         shear_coords.minCoeff(),
         shear_coords.maxCoeff());
     assert(solver.info() == Eigen::Success);
-    assert(vector_equal(shear_coords, solver.solve(inner_product_matrix * shear_coords), 1e-5));
+    assert(vector_equal<VectorX>(shear_coords, solver.solve(inner_product_matrix * shear_coords), 1e-5));
 
     // Get the corresponding scale factors for shear space to original metric
     // This is the (additive) inverse of the scale factors from original to shear

@@ -7,16 +7,16 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "feature/feature/error.h"
-#include <igl/predicates/predicates.h>
-#include "feature/core/common.h"
-#include "feature/core/component_mesh.h"
-#include "feature/dirichlet/constraint.h"
-#include "holonomy/holonomy/constraint.h"
-#include "metric/constraint.h"
 
 #include "util/vf_mesh.h"
 
-#include <igl/internal_angles.h>
+// get max in component
+#include "feature/core/component_mesh.h"
+
+// constraint in component
+#include "holonomy/holonomy/constraint.h"
+
+#include <igl/predicates/predicates.h>
 
 namespace Penner {
 namespace Feature {

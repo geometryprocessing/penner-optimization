@@ -8,12 +8,9 @@
 
 #pragma once
 
-#include "feature/core/boundary_path.h"
 #include "feature/core/common.h"
-#include "holonomy/core/dual_loop.h"
-#include "holonomy/core/homology_basis.h"
+#include "feature/core/boundary_path.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
-#include "holonomy/holonomy/constraint.h"
 
 /**
  * @brief Extension of the differentiable cone metric using Penner coordinates

@@ -11,69 +11,18 @@
 #include <igl/doublearea.h>
 #include <igl/flipped_triangles.h>
 #include <igl/edge_flaps.h>
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "conformal_ideal_delaunay/Layout.hh"
-#include "util/embedding.h"
-#include "parametrization/interpolation.h"
-#include "metric/viewer.h"
-#include "metric/projection.h"
-#include "metric/constraint.h"
-#include "parametrization/refinement.h"
-#include "parametrization/translation.h"
-#include "util/vector.h"
-#include "util/vf_mesh.h"
-#include "util/io.h"
 
-// TODO: cleaning pass
+#include "conformal_ideal_delaunay/ConformalInterface.hh"
+#include "metric/cone_metric.h"
+#include "util/vector.h"
+#include "util/embedding.h"
+//#include "util/io.h"
+//#include "metric/constraint.h"
+//#include "parametrization/refinement.h"
+#include "parametrization/interpolation.h"
 
 namespace Penner {
 
-template <typename OverlayScalar>
-OverlayMesh<OverlayScalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
-{
-    // Get edge maps
-    std::vector<int> he2e;
-    std::vector<int> e2he;
-    build_edge_maps(m, he2e, e2he);
-
-    // Build refl projection and embedding
-    std::vector<int> proj;
-    std::vector<int> embed;
-    build_refl_proj(m, he2e, e2he, proj, embed);
-
-    // Build overlay mesh from mesh m
-    Mesh<OverlayScalar> m_l = change_mesh_type<Scalar, OverlayScalar>(m);
-
-    // Convert mesh Penner coordinates to a halfedge length array l for m
-    int num_halfedges = he2e.size();
-    for (int h = 0; h < num_halfedges; ++h) {
-        m_l.l[h] = OverlayScalar(exp(reduced_metric_coords[proj[he2e[h]]] / 2.0));
-    }
-
-    OverlayMesh<OverlayScalar> mo(m_l);
-
-    return mo;
-}
-
-template <typename OverlayScalar>
-void make_tufted_overlay(OverlayMesh<OverlayScalar>& mo)
-{
-    auto& m = mo._m;
-    if (m.type[0] == 0) return; // nothing to do for closed mesh
-
-    int n_ind_v = m.n_ind_vertices();
-    int n_he = m.n_halfedges();
-
-    // Modify the to and out arrays to identify dependent vertices with their reflection
-    m.out = std::vector<int>(n_ind_v);
-    for (int i = 0; i < n_he; ++i)
-    {
-        m.out[m.v_rep[m.to[i]]] = i;
-        m.to[i] = m.v_rep[m.to[i]];
-    }
-    m.v_rep = range(0, n_ind_v);
-}
 
 bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
 {
@@ -849,18 +798,6 @@ void view_halfedge_mesh_type(
 #endif
 }
 
-void check_angles(const Mesh<Scalar>& m)
-{
-    VectorX he2angle, he2cot;
-    corner_angles(m, he2angle, he2cot);
-    VectorX vertex_angles(m.n_vertices());
-    for (int h = 0; h < m.n_halfedges(); ++h) {
-        int v = m.to[h];
-        vertex_angles[v] += he2angle[m.n[m.n[h]]] / (M_PI / 2.);
-    }
-    spdlog::info("Vertex angles: {}", vertex_angles.transpose());
-}
-
 template <typename Scalar>
 std::tuple<
     Eigen::MatrixXi,
@@ -1440,8 +1377,6 @@ void compute_layout_faces(
 
 #endif
 
-template void make_tufted_overlay<Scalar>(OverlayMesh<Scalar>& mo);
-template OverlayMesh<Scalar> add_overlay<Scalar>(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
 template
 std::
     tuple<
@@ -1496,9 +1431,6 @@ std::vector<bool> pullback_cut_to_overlay(
 
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
-
-template void make_tufted_overlay<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
-template OverlayMesh<mpfr::mpreal> add_overlay<mpfr::mpreal>(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
 
 template
 std::

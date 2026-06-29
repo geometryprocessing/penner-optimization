@@ -8,9 +8,11 @@
 
 #include "holonomy/core/boundary_basis.h"
 
-#include "holonomy/core/dual_lengths.h"
 #include "util/boundary.h"
 #include "util/vector.h"
+
+// compute dual edge lengths for minimization
+#include "holonomy/core/dual_lengths.h"
 
 namespace Penner {
 namespace Holonomy {

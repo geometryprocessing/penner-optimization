@@ -7,13 +7,11 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "feature/dirichlet/angle_constraint_relaxer.h"
-#include "feature/core/component_mesh.h"
-#include "holonomy/holonomy/constraint.h"
-#include "holonomy/holonomy/holonomy.h"
-#include "metric/constraint.h"
-#include "metric/viewer.h"
-#include "util/io.h"
+
 #include "util/vector.h"
+
+// double mesh for viewer
+#include "metric/viewer.h"
 
 namespace Penner {
 namespace Feature {

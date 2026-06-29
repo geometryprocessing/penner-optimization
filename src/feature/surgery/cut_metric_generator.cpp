@@ -8,16 +8,21 @@
 
 #include "feature/surgery/cut_metric_generator.h"
 
-#include "field/cross_field.h"
-#include "field/frame_field.h"
 #include "field/intrinsic_field.h"
-#include "holonomy/holonomy/cones.h"
-
-#include "feature/core/component_mesh.h"
-#include "feature/core/union_meshes.h"
 #include "feature/core/vf_corners.h"
-#include "feature/dirichlet/cone_perturber.h"
+#include "feature/core/union_meshes.h"
+#include "feature/core/component_mesh.h"
+
+// frame field optimization
+#include "field/frame_field.h"
+#include "field/cross_field.h"
+
+// get glued cones
 #include "feature/feature/gluing.h"
+
+// fix invalid or poor cones
+#include "holonomy/holonomy/cones.h"
+#include "feature/dirichlet/cone_perturber.h"
 
 #include <igl/per_face_normals.h>
 #include <igl/facet_components.h>

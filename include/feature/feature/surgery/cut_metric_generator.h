@@ -8,9 +8,7 @@
 
 #pragma once
 
-#include "feature/core/common.h"
 #include "feature/dirichlet/dirichlet_penner_cone_metric.h"
-#include "holonomy/interface.h"
 
 namespace Penner {
 namespace Feature {

@@ -8,18 +8,14 @@
 
 
 #include "feature/feature/features.h"
-#include "feature/core/common.h"
 
-#include "holonomy/core/viewer.h"
-#include "feature/core/component_mesh.h"
-#include "feature/core/vf_corners.h"
-#include "holonomy/holonomy/cones.h"
 #include "util/vector.h"
+#include "metric/viewer.h"
 
 #include <igl/per_face_normals.h>
+
 #include <queue>
 #include <random>
-#include <algorithm>
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/point_cloud.h"

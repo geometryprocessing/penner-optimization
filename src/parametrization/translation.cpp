@@ -8,13 +8,9 @@
 
 #include "parametrization/translation.h"
 
-#include <Eigen/SparseLU>
-#include <Eigen/SparseQR>
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
+#include "util/vector.h"
 #include "util/embedding.h"
 #include "util/linear_algebra.h"
-#include "util/vector.h"
-#include "metric/reparametrization.h"
 #include "metric/shear.h"
 
 /// FIXME Do cleaning pass

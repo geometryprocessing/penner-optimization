@@ -138,6 +138,13 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
     const std::vector<int>& vtx_reindex);
 
 /**
+ * @brief Determine if a VF mesh is manifold
+ * @param F: mesh faces
+ * @return true iff the mesh is edge and vertex manifold
+ */
+bool is_manifold(const Eigen::MatrixXi& F);
+
+/**
  * @brief Find the seams of the parameterization of a closed mesh.
  * 
  * TODO: Extend to open meshes

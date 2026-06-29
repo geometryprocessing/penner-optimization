@@ -8,7 +8,6 @@
 
 #include "feature/core/vf_corners.h"
 
-#include <igl/triangle_triangle_adjacency.h>
 #include <igl/remove_unreferenced.h>
 
 namespace Penner {

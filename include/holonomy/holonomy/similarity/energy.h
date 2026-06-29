@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 
+// extending energy functor class
 #include "optimization/metric_optimization/energy_functor.h"
 
 namespace Penner {

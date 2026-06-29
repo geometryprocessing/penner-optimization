@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
 #include "util/spanning_tree.h"
 

@@ -14,6 +14,8 @@
 #include <igl/facet_components.h>
 #include <igl/per_vertex_normals.h>
 #include <igl/remove_unreferenced.h>
+#include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
 #include <igl/unique.h>
 
 namespace Penner {
@@ -265,6 +267,15 @@ Eigen::MatrixXd subset_vertices(
     }
 
     return V_subset;
+}
+
+bool is_manifold(const Eigen::MatrixXi& F)
+{
+    Eigen::VectorXi B;
+    if (!igl::is_edge_manifold(F)) return false;
+    if (!igl::is_vertex_manifold(F, B)) return false;
+
+    return true;
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(

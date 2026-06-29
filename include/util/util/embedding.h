@@ -23,9 +23,9 @@
 #pragma once
 
 #include "util/common.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 namespace Penner {
-
 
 /// Data structure to store maps from full doubled mesh halfedge indices to edge indices
 /// and to embedded mesh edge indices. Also includes lists of free and fixed vertices and

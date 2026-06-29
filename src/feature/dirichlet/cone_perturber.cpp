@@ -10,6 +10,7 @@
 
 #include "metric/constraint.h"
 #include "feature/core/vf_corners.h"
+#include "feature/feature/gluing.h"
 
 namespace Penner {
 namespace Feature {

@@ -23,13 +23,13 @@
 #include <numeric>
 
 #include "spdlog/spdlog.h"
-
-#include "conformal_ideal_delaunay/OverlayMesh.hh"
-#include "conformal_ideal_delaunay/globals.hh"
+#include <spdlog/fmt/fmt.h>
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"
 #endif
+
+namespace OverlayProblem {}
 
 namespace Penner {
 using namespace OverlayProblem;
@@ -69,6 +69,18 @@ using std::min;
 using std::isnan;
 
 const Scalar INF = 1e10;
+
+/**
+ * @brief Compute the square of a scalar.
+ *
+ * @param x: value to square
+ * @return squared value
+ */
+template <typename FloatScalar>
+FloatScalar square(FloatScalar x)
+{
+    return x * x;
+}
 
 /// Swap two doubles.
 ///
@@ -126,51 +138,5 @@ inline std::vector<int> arange(size_t n)
  */
 inline
 Scalar pos_fmod(Scalar x, Scalar y) { return (0 == y) ? x : x - y * floor(x / y); }
-
-template <typename OldScalar, typename NewScalar>
-Mesh<NewScalar> change_mesh_type(const Mesh<OldScalar>& m)
-{
-    Mesh<NewScalar> _m;
-    _m.n = m.n;
-    _m.to = m.to;
-    _m.f = m.f;
-    _m.h = m.h;
-    _m.out = m.out;
-    _m.opp = m.opp;
-    _m.type = m.type;
-    _m.type_input = m.type_input;
-    _m.R = m.R;
-    _m.v_rep = m.v_rep;
-    _m.fixed_dof = m.fixed_dof;
-    _m.pt_in_f = m.pt_in_f;
-
-    int num_pts = m.pts.size();
-    _m.pts.resize(num_pts);
-    for (int i = 0; i < num_pts; ++i)
-    {
-        _m.pts[i].f_id = m.pts[i].f_id;
-        for (int j = 0; j < 3; ++j)
-        {
-            _m.pts[i].bc[j] = (NewScalar)(m.pts[i].bc[j]);
-        }
-    }
-
-    int num_halfedges = m.l.size();
-    _m.l.resize(num_halfedges);
-    for (int hij = 0; hij < num_halfedges; ++hij)
-    {
-        _m.l[hij] = (NewScalar)(m.l[hij]);
-    }
-
-    int num_vertices = m.Th_hat.size();
-    _m.Th_hat.resize(num_vertices);
-    for (int vi = 0; vi < num_vertices; ++vi)
-    {
-        _m.Th_hat[vi] = (NewScalar)(m.Th_hat[vi]);
-    }
-
-    return _m;
-}
-
 
 } // namespace Penner

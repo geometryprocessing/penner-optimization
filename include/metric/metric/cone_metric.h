@@ -14,6 +14,8 @@
 #include "util/embedding.h"
 #include "metric/globals.h"
 #include "metric/flip_matrix_generator.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
+#include "conformal_ideal_delaunay/globals.hh"
 
 /**
  * @brief Core representation of a differentiable intrinsic metric on an underlying halfedge mesh, with
@@ -344,5 +346,51 @@ protected:
     VectorX reduce_metric_coordinates(const VectorX& metric_coords) const;
     void expand_metric_coordinates(const VectorX& metric_coords);
 };
+
+template <typename OldScalar, typename NewScalar>
+Mesh<NewScalar> change_mesh_type(const Mesh<OldScalar>& m)
+{
+    Mesh<NewScalar> _m;
+    _m.n = m.n;
+    _m.to = m.to;
+    _m.f = m.f;
+    _m.h = m.h;
+    _m.out = m.out;
+    _m.opp = m.opp;
+    _m.type = m.type;
+    _m.type_input = m.type_input;
+    _m.R = m.R;
+    _m.v_rep = m.v_rep;
+    _m.fixed_dof = m.fixed_dof;
+    _m.pt_in_f = m.pt_in_f;
+
+    int num_pts = m.pts.size();
+    _m.pts.resize(num_pts);
+    for (int i = 0; i < num_pts; ++i)
+    {
+        _m.pts[i].f_id = m.pts[i].f_id;
+        for (int j = 0; j < 3; ++j)
+        {
+            _m.pts[i].bc[j] = (NewScalar)(m.pts[i].bc[j]);
+        }
+    }
+
+    int num_halfedges = m.l.size();
+    _m.l.resize(num_halfedges);
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        _m.l[hij] = (NewScalar)(m.l[hij]);
+    }
+
+    int num_vertices = m.Th_hat.size();
+    _m.Th_hat.resize(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        _m.Th_hat[vi] = (NewScalar)(m.Th_hat[vi]);
+    }
+
+    return _m;
+}
+
 
 } // namespace Penner

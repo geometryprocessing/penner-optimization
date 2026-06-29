@@ -18,23 +18,6 @@
 
 namespace Penner {
 
-/// Generate an overlay mesh for the mesh m with given metric coordinates integrated
-/// as the mesh metric.
-///
-/// Note that here the original mesh metric is overwritten, whereas during the optimization
-/// the two are kept separate and the mesh maintains the original input length metric.
-///
-/// @param[in] m: mesh to add overlay to
-/// @param[in] reduced_metric_coords: reduced metric coordinates for overlay mesh
-/// @return: overlay mesh with new metric coordinates
-template <typename OverlayScalar>
-OverlayMesh<OverlayScalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords);
-
-/// @brief: Make an overlay mesh into a tufted double cover
-///
-/// @param[in] mo: mesh to make tufted
-template <typename OverlayScalar>
-void make_tufted_overlay(OverlayMesh<OverlayScalar>& mo);
 
 /// Given a VF mesh, check that the signed face areas are nonnegative
 ///
@@ -82,6 +65,13 @@ bool check_uv(
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h = -1);
 
+/**
+ * @brief Remove regular (that is, not cone) leaf vertices from a cut graph
+ * 
+ * @param m: mesh data structure
+ * @param is_cone: per-vertex mask of cone vertices
+ * @param is_cut: per-halfedge cut graph
+ */
 void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std::vector<bool>& is_cut);
 
 /// Given a cut defined on the original or current mesh, pull it back to a cut defined on
@@ -97,6 +87,7 @@ std::vector<bool> pullback_cut_to_overlay(
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
 
+// TODO: unclear why this is here. May be deprecated.
 Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
     const Eigen::Matrix<Scalar, 1, 2>& p1,
     const Eigen::Matrix<Scalar, 1, 2>& p2,

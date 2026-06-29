@@ -11,10 +11,6 @@
 
 #include "feature/core/common.h"
 
-#include "feature/core/union_meshes.h"
-#include "util/union_find.h"
-#include "holonomy/holonomy/marked_penner_cone_metric.h"
-
 /**
  * @brief Methods and data structures for splitting a disconnected mesh into separate components,
  * as well as corresponding reindexing maps.

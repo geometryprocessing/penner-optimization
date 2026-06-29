@@ -8,21 +8,21 @@
 
 #include "holonomy/holonomy/newton.h"
 
-#include "holonomy/holonomy/constraint.h"
-#include "holonomy/holonomy/holonomy.h"
-#include "holonomy/core/viewer.h"
 #include "util/vector.h"
+#include "util/linear_algebra.h"
 
-#include <nlohmann/json.hpp>
-#include "optimization/metric_optimization/energies.h"
-#include "optimization/metric_optimization/energy_functor.h"
+// used for detailed metric checkpoint statistics
 #include "metric/projection.h"
 #include "metric/shear.h"
-#include "util/io.h"
+
+// root mean square error computations
+#include "optimization/metric_optimization/energies.h"
+
+// used for state viewing function
+#include "holonomy/core/viewer.h"
 
 #ifdef USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
-//#include <Eigen/SPQRSupport>
 #endif
 
 #ifdef ENABLE_VISUALIZATION

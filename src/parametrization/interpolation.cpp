@@ -8,9 +8,7 @@
 
 #include "parametrization/interpolation.h"
 
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
-#include "util/embedding.h"
 #include "util/vector.h"
 #include "metric/projection.h"
 #include "metric/reparametrization.h"
@@ -1000,26 +998,7 @@ bool InterpolationMesh<OverlayScalar>::are_valid_halfedge_translations(const Vec
     return true;
 }
 
-template <typename OverlayScalar>
-bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo)
-{
-    std::vector<bool> has_original_halfedge(mo.cmesh().n_halfedges(), false);
-    for (int hi = 0; hi < mo.n_halfedges(); ++hi) {
-        if (mo.n[hi] == -1) continue; // Deleted halfedge
-        if (mo.edge_type[hi] == ORIGINAL_EDGE) {
-            has_original_halfedge[mo.origin_of_origin[hi]] = true;
-        } else if (mo.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
-            has_original_halfedge[mo.origin_of_origin[hi]] = true;
-        }
-    }
-    int num_missing_original_halfedges =
-        std::count(has_original_halfedge.begin(), has_original_halfedge.end(), false);
-
-    return (num_missing_original_halfedges == 0);
-}
-
 template class InterpolationMesh<Scalar>;
-template bool overlay_has_all_original_halfedges<Scalar>(OverlayMesh<Scalar>& mo);
 template void interpolate_penner_coordinates<Scalar>(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,
@@ -1042,7 +1021,6 @@ template void interpolate_vertex_positions(
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
 template class InterpolationMesh<mpfr::mpreal>;
-template bool overlay_has_all_original_halfedges<mpfr::mpreal>(OverlayMesh<mpfr::mpreal>& mo);
 template void interpolate_penner_coordinates<mpfr::mpreal>(
     const Mesh<Scalar>& mesh,
     const VectorX& halfedge_metric_coords,

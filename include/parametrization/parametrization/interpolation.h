@@ -9,6 +9,8 @@
 #pragma once
 
 #include "util/common.h"
+#include "util/embedding.h"
+#include "metric/cone_metric.h"
 #include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 /**
@@ -292,7 +294,80 @@ void interpolate_vertex_positions(
     OverlayMesh<OverlayScalar>& reverse_overlay_mesh,
     Eigen::MatrixXd& V_overlay);
 
+/// Generate an overlay mesh for the mesh m with given metric coordinates integrated
+/// as the mesh metric.
+///
+/// Note that here the original mesh metric is overwritten, whereas during the optimization
+/// the two are kept separate and the mesh maintains the original input length metric.
+///
+/// @param[in] m: mesh to add overlay to
+/// @param[in] reduced_metric_coords: reduced metric coordinates for overlay mesh
+/// @return: overlay mesh with new metric coordinates
 template <typename OverlayScalar>
-bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo);
+OverlayMesh<OverlayScalar> add_overlay(const Mesh<Scalar>& m, const VectorX& reduced_metric_coords)
+{
+    // Get edge maps
+    std::vector<int> he2e;
+    std::vector<int> e2he;
+    build_edge_maps(m, he2e, e2he);
+
+    // Build refl projection and embedding
+    std::vector<int> proj;
+    std::vector<int> embed;
+    build_refl_proj(m, he2e, e2he, proj, embed);
+
+    // Build overlay mesh from mesh m
+    Mesh<OverlayScalar> m_l = change_mesh_type<Scalar, OverlayScalar>(m);
+
+    // Convert mesh Penner coordinates to a halfedge length array l for m
+    int num_halfedges = he2e.size();
+    for (int h = 0; h < num_halfedges; ++h) {
+        m_l.l[h] = OverlayScalar(exp(reduced_metric_coords[proj[he2e[h]]] / 2.0));
+    }
+
+    OverlayMesh<OverlayScalar> mo(m_l);
+
+    return mo;
+}
+
+/// @brief: Make an overlay mesh into a tufted double cover
+///
+/// @param[in] mo: mesh to make tufted
+template <typename OverlayScalar>
+void make_tufted_overlay(OverlayMesh<OverlayScalar>& mo)
+{
+    auto& m = mo._m;
+    if (m.type[0] == 0) return; // nothing to do for closed mesh
+
+    int n_ind_v = m.n_ind_vertices();
+    int n_he = m.n_halfedges();
+
+    // Modify the to and out arrays to identify dependent vertices with their reflection
+    m.out = std::vector<int>(n_ind_v);
+    for (int i = 0; i < n_he; ++i)
+    {
+        m.out[m.v_rep[m.to[i]]] = i;
+        m.to[i] = m.v_rep[m.to[i]];
+    }
+    m.v_rep = range(0, n_ind_v);
+}
+
+template <typename OverlayScalar>
+bool overlay_has_all_original_halfedges(OverlayMesh<OverlayScalar>& mo)
+{
+    std::vector<bool> has_original_halfedge(mo.cmesh().n_halfedges(), false);
+    for (int hi = 0; hi < mo.n_halfedges(); ++hi) {
+        if (mo.n[hi] == -1) continue; // Deleted halfedge
+        if (mo.edge_type[hi] == ORIGINAL_EDGE) {
+            has_original_halfedge[mo.origin_of_origin[hi]] = true;
+        } else if (mo.edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE) {
+            has_original_halfedge[mo.origin_of_origin[hi]] = true;
+        }
+    }
+    int num_missing_original_halfedges =
+        std::count(has_original_halfedge.begin(), has_original_halfedge.end(), false);
+
+    return (num_missing_original_halfedges == 0);
+}
 
 } // namespace Penner

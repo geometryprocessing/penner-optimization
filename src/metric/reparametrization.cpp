@@ -9,7 +9,6 @@
 #include "metric/reparametrization.h"
 
 #include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
-#include "util/embedding.h"
 
 /// FIXME Do cleaning pass
 

@@ -9,6 +9,7 @@
 
 #pragma once
 #include "util/common.h"
+#include "conformal_ideal_delaunay/OverlayMesh.hh"
 
 #ifdef ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"

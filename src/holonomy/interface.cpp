@@ -20,6 +20,7 @@
 
 #include "metric/cone_metric.h"
 #include "metric/constraint.h"
+#include "optimization/interface.h"
 #include "parametrization/interpolation.h"
 #include "parametrization/refinement.h"
 #include "util/io.h"
@@ -27,7 +28,6 @@
 
 #include <igl/facet_components.h>
 
-#include "conformal_ideal_delaunay/ConformalIdealDelaunayMapping.hh"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 
 #include "geometrycentral/surface/integer_coordinates_intrinsic_triangulation.h"

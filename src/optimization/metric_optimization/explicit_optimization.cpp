@@ -8,10 +8,7 @@
 
 #include "optimization/metric_optimization/explicit_optimization.h"
 
-#include <Eigen/SparseLU>
-#include <Eigen/SparseQR>
 #include "metric/constraint.h"
-#include "util/embedding.h"
 #include "optimization/metric_optimization/energies.h"
 #include "metric/globals.h"
 #include "util/io.h"

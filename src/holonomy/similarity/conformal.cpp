@@ -8,7 +8,7 @@
 
 #include "holonomy/similarity/conformal.h"
 
-#include <Eigen/SparseLU>
+#include "util/linear_algebra.h"
 #include "holonomy/similarity/constraint.h"
 #include "holonomy/holonomy/holonomy.h"
 

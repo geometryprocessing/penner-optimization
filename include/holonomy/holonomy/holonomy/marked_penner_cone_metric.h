@@ -11,7 +11,6 @@
 #include "holonomy/core/common.h"
 #include "holonomy/core/dual_loop.h"
 #include "holonomy/core/homology_basis.h"
-
 #include "metric/cone_metric.h"
 
 /**
