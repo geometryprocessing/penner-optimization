@@ -17,7 +17,7 @@ set(MetricSrc
   metric/constraint.cpp
   metric/flip_matrix_generator.cpp
   metric/projection.cpp
-  metric/reparametrization.cpp
+  metric/barycentric.cpp
   metric/shear.cpp
   metric/viewer.cpp
 )

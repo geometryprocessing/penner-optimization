@@ -11,7 +11,7 @@
 #include "util/vector.h"
 #include "util/embedding.h"
 #include "metric/projection.h"
-#include "metric/reparametrization.h"
+#include "metric/barycentric.h"
 #include "util/vector.h"
 
 /// FIXME Do cleaning pass

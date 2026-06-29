@@ -11,7 +11,7 @@
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "util/vector.h"
 #include "metric/projection.h"
-#include "metric/reparametrization.h"
+#include "metric/barycentric.h"
 #include "parametrization/translation.h"
 
 /// FIXME Do cleaning pass
