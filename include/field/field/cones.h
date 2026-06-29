@@ -63,9 +63,24 @@ bool is_trivial_torus(const Mesh<Scalar>& m);
  */
 void fix_cones(Mesh<Scalar>& m, int min_cone_index=1);
 
+/**
+ * @brief Add positive and negative curvature cones to constraints.
+ * 
+ * WARNING: this method places cones arbitrarily and may produce difficult constraints
+ * 
+ * @param m: mesh with cone constraints
+ * @param only_interior: only add cone constraints to interior if possible
+ * @param offset: approximate vertex index to place cones near
+ */
 void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior=true, int offset=0);
 
-
+/**
+ * @brief Count the number of positive and negative curvature cones.
+ * 
+ * @param m: mesh with cone metric
+ * @return number of negative curvature cones (cone angle above 2 Pi)
+ * @return number of postiive curvature cones (cone angle below 2 Pi)
+ */
 std::pair<int, int> count_cones(const Mesh<Scalar>& m);
 
 

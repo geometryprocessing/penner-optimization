@@ -302,7 +302,6 @@ void add_random_cone_pair(Mesh<Scalar>& m, bool only_interior, int offset)
     }
 }
 
-
 void fix_cones(Mesh<Scalar>& m, int min_cone_index)
 {
     // Remove any zero cones
@@ -317,41 +316,6 @@ void fix_cones(Mesh<Scalar>& m, int min_cone_index)
     }
 }
 
-
-// TODO May be worth supporting
-void remove_trivial_boundaries(
-    const Mesh<Scalar>& m,
-    const std::vector<int>& vtx_reindex,
-    std::vector<Scalar>& Th_hat)
-{
-    std::vector<int> boundary_components = find_boundary_components(m);
-    for (int h_start : boundary_components) {
-        spdlog::info("Checking for trivial loop at {}", h_start);
-        bool is_trivial = true;
-        int h = h_start;
-        do {
-            // Circulate to next boundary edge
-            while (m.type[h] != 2) {
-                h = m.opp[m.n[h]];
-            }
-            h = m.opp[h];
-
-            int vi = vtx_reindex[m.v_rep[m.to[h]]];
-            if (!float_equal<Scalar>(Th_hat[vi], M_PI)) {
-                is_trivial = false;
-                break;
-            }
-        } while (h != h_start);
-
-        if (is_trivial) {
-            spdlog::info("Adjusting trivial loop at {}", h);
-            int vi = vtx_reindex[m.v_rep[m.to[h]]];
-            int vj = vtx_reindex[m.v_rep[m.to[m.opp[h]]]];
-            Th_hat[vi] += M_PI / 2.;
-            Th_hat[vj] -= M_PI / 2.;
-        }
-    }
-}
 
 
 } // namespace Field

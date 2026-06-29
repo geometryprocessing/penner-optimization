@@ -11,6 +11,7 @@
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
 #include "field/intrinsic_field.h"
+#include "field/cross_field.h"
 #include "metric/quality.h"
 #include "field/cones.h"
 #include "holonomy/holonomy/holonomy.h"
@@ -431,7 +432,7 @@ infer_marked_metric(
     bool use_intrinsic,
     MarkedMetricParameters marked_metric_params)
 {
-    auto [frame_field, field_Th_hat] = Field::generate_cross_field(V, F);
+    auto [frame_field, field_Th_hat] = Field::generate_rosy_field(V, F);
 
     // Convert VF mesh to halfedge
     std::vector<int> vtx_reindex_mesh, indep_vtx, dep_vtx, v_rep, bnd_loops;

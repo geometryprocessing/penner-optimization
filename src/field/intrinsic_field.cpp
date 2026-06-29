@@ -17,11 +17,7 @@
 #include <CoMISo/Utils/StopWatch.hh>
 #endif
 
-#include <igl/boundary_facets.h>
-#include <igl/principal_curvature.h>
-#include <igl/average_onto_faces.h>
-
-#include "field/field.h"
+#include "field/vector_field.h"
 #include "util/spanning_tree.h"
 #include "util/boundary.h"
 #include "field/forms.h"
@@ -43,118 +39,6 @@ namespace Penner {
 namespace Field {
 
 
-Eigen::MatrixXd transfer_vertex_direction_to_corner(
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& vertex_direction,
-    int corner_index
-)
-{
-    int num_faces = F.rows();
-    int dim = vertex_direction.cols();
-    Eigen::MatrixXd face_direction(num_faces, dim);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        int vi = F(fijk, corner_index);
-        face_direction.row(fijk) = vertex_direction.row(vi);
-    }
-
-    return face_direction;
-}
-
-/*
-VectorX average_corner_angles(const std::array<VectorX, 3>& corner_angles)
-{
-    int num_faces = corner_angles[0].size();
-    VectorX theta(num_faces);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        Scalar theta_sum = 0.;
-        for (int i = 0; i < 3; ++ i)
-        {
-            theta_sum += corner_angles[fijk][i];
-        }
-        while (theta_sum < 0)
-        {
-            theta_sum += 2 * M_PI.;
-        }
-        theta_sum = pos_fmod(theta_sum, M_PI / 2.);
-        face_theta[i] = theta_sum / 2.
-    }
-
-    return theta;
-}
-*/
-
-Eigen::Vector3d average_line_field(const Eigen::Vector3d& d0, const Eigen::Vector3d& d1, const Eigen::Vector3d& d2)
-{
-    //start with first vector (implicitly fixing sign)
-    Eigen::Vector3d d = d0;
-
-    // add second vector with sign corrected to d0
-    if ((d0 - d1).norm() < (d0 + d1).norm())
-    {
-        d += d1;
-    } else {
-        d -= d1;
-    }
-
-    // add third vector with sign corrected to d0
-    if ((d0 - d2).norm() < (d0 + d2).norm())
-    {
-        d += d2;
-    } else {
-        d -= d2;
-    }
-
-    return d / 3.;
-}
-
-Eigen::MatrixXd average_line_field(const std::array<Eigen::MatrixXd, 3>& corner_directions)
-{
-    int num_faces = corner_directions[0].rows();
-    Eigen::MatrixXd face_direction(num_faces, 3);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        face_direction.row(fijk) = average_line_field(corner_directions[0].row(fijk), corner_directions[1].row(fijk), corner_directions[2].row(fijk));
-    }
-
-    return face_direction;
-}
-
-
-Eigen::MatrixXd average_line_field_onto_faces(
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& vertex_direction)
-{
-    std::array<Eigen::MatrixXd, 3> corner_directions;
-    for (int i = 0; i < 3; ++i)
-    {
-        corner_directions[i] = transfer_vertex_direction_to_corner(F, vertex_direction, i);
-    }
-
-    return average_line_field(corner_directions);
-}
-
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
-compute_facet_principal_curvature(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int radius)
-{
-    // find principal curvature
-      // Compute curvature directions via quadric fitting
-    Eigen::MatrixXd PD1,PD2;
-    Eigen::VectorXd PV1,PV2;
-    std::vector<int> bad_vertices;
-    igl::principal_curvature(V,F,PD1,PD2,PV1,PV2,bad_vertices,radius,(radius!=1));
-    Eigen::VectorXd face_max_curvature, face_min_curvature;
-    igl::average_onto_faces(F, PV1, face_max_curvature);
-    igl::average_onto_faces(F, PV2, face_min_curvature);
-    Eigen::MatrixXd face_max_direction = average_line_field_onto_faces(F, PD1);
-    Eigen::MatrixXd face_min_direction = average_line_field_onto_faces(F, PD2);
-
-    return std::make_tuple(face_max_direction, face_min_direction, face_max_curvature, face_min_curvature);
-}
 
 // compute the cone angles at vertices
 VectorX compute_cone_angles(const Mesh<Scalar>& m, const VectorX& alpha)

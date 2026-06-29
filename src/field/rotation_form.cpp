@@ -9,7 +9,7 @@
 #include "field/rotation_form.h"
 
 #include "util/linear_algebra.h"
-#include "field/field.h"
+#include "field/vector_field.h"
 #include "field/intrinsic_field.h"
 #include "field/forms.h"
 

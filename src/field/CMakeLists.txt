@@ -1,5 +1,4 @@
 set(FieldSrc
-  field.cpp
   frame_field.cpp
   cones.cpp
   cross_field.cpp
@@ -7,6 +6,7 @@ set(FieldSrc
   forms.cpp
   intrinsic_field.cpp
   rotation_form.cpp
+  vector_field.cpp
 )
 
 add_library(PennerFieldLib

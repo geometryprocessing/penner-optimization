@@ -40,12 +40,6 @@ struct FieldParameters
     Scalar abs_anisotropy=0.2;
 };
 
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
-compute_facet_principal_curvature(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int radius=5);
-
 class IntrinsicNRosyField
 {
 public:

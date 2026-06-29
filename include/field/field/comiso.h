@@ -26,9 +26,6 @@
 namespace Penner {
 namespace Field {
 
-
-
-// TODO Make option and make cone rounder code public
 class ConeMISolver : public COMISO::MISolver
 {
 public:

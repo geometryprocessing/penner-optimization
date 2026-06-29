@@ -7,6 +7,7 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "field/frame_field.h"
+#include "field/vector_field.h"
 #include "parametrization/refinement.h"
 #include "util/vf_mesh.h"
 #include "util/map.h"
@@ -23,157 +24,6 @@
 namespace Penner {
 namespace Field {
 
-Eigen::Vector3d generate_reference_direction(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int fijk,
-    int local_index)
-{
-    int i = local_index;
-    int j = (i + 1) % 3;
-    int k = (j + 1) % 3;
-    int vj = F(fijk, j);
-    int vk = F(fijk, k);
-    return (V.row(vk) - V.row(vj)).normalized();
-}
-
-Eigen::MatrixXd generate_reference_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F)
-{
-    int num_faces = F.rows();
-    int local_index = 1;
-    Eigen::MatrixXd reference_field(num_faces, 3);
-    for (int fijk = 0; fijk < num_faces; ++fijk) {
-        reference_field.row(fijk) = generate_reference_direction(V, F, fijk, local_index);
-    }
-
-    return reference_field;
-}
-
-Eigen::MatrixXd generate_reference_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::VectorXi& reference_corner)
-{
-    int num_faces = F.rows();
-    Eigen::MatrixXd reference_field(num_faces, 3);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        int local_index = reference_corner[fijk];
-        reference_field.row(fijk) = generate_reference_direction(V, F, fijk, local_index);
-    }
-
-    return reference_field;
-}
-
-Eigen::MatrixXd generate_frame_field(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta)
-{
-    Eigen::MatrixXd B1, B2, B3;
-    igl::local_basis(V, F, B1, B2, B3);
-    return igl::rotate_vectors(reference_field, theta, B1, B2);
-}
-
-void write_rosy_field(
-    const std::string& output_filename,
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta)
-{
-    Eigen::MatrixXd rosy_field = generate_frame_field(V, F, reference_field, theta);
-
-    std::ofstream field_file(output_filename, std::ios::out | std::ios::trunc);
-    field_file << F.rows() << std::endl;
-    field_file << "4" << std::endl;
-    for (int f = 0; f < F.rows(); ++f)
-    {
-        for (int j : {0 , 1, 2})
-        {
-            field_file << std::fixed << std::setprecision(17) << rosy_field(f, j) << " ";
-        }
-
-        field_file << std::endl;
-    }
-
-    field_file.close();
-}
-
-// difference of principal curvatures relative to their total magnitude
-Scalar compute_relative_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(max_val - min_val) / (abs(max_val) + abs(min_val));
-}
-
-
-// absolute difference of principal curvatures
-Scalar compute_absolute_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(max_val - min_val);
-}
-
-
-// mean of two principal curvatures
-Scalar compute_mean_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return (max_val + min_val) / 2.;
-}
-
-
-// this measurement is near 0 for parabolic regions and near 1 for highly anisotropic regions
-Scalar compute_parabolic_anisotropy(Scalar max_val, Scalar min_val)
-{
-    return abs(abs(max_val) - abs(min_val)) / max(abs(max_val), abs(min_val));
-}
-
-std::tuple<Eigen::MatrixXd, std::vector<bool>> compute_field_direction(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    int radius,
-    Scalar abs_threshold,
-    Scalar rel_threshold,
-    Scalar sample_rate)
-{
-    //auto[max_direction, min_direction, _max_curvature, _min_curvature] = compute_facet_principal_curvature(V, F, radius);
-    //auto[_max_direction, _min_direction, max_curvature, min_curvature] = compute_facet_principal_curvature(V, F, 3);
-    auto[max_direction, min_direction, max_curvature, min_curvature] = compute_facet_principal_curvature(V, F, radius);
-    int num_faces = F.rows();
-    std::vector<bool> is_fixed_direction(num_faces, false);
-    for (int fijk = 0; fijk < num_faces; ++fijk)
-    {
-        Scalar kmax = max_curvature[fijk];
-        Scalar kmin = min_curvature[fijk];
-        if (compute_mean_anisotropy(kmax, kmin) < abs_threshold) continue;
-        if (compute_parabolic_anisotropy(kmax, kmin) < rel_threshold) continue;
-        is_fixed_direction[fijk] = true;
-    }
-
-    if (sample_rate < 1)
-    {
-        // shuffle directions
-        std::vector<int> fixed_directions;
-        convert_boolean_array_to_index_vector(is_fixed_direction, fixed_directions);
-        std::vector<int> shuffled_directions = shuffle_map_image(fixed_directions);
-
-        // compute number of sampled directions
-        int num_fixed_directions = fixed_directions.size();
-        int num_sampled_directions = sample_rate * num_fixed_directions;
-        num_sampled_directions = std::min<int>(num_sampled_directions, num_fixed_directions);
-
-        // get first n shuffled directions
-        is_fixed_direction = std::vector<bool>(num_faces, false);
-        for (int i = 0; i < num_sampled_directions; ++i)
-        {
-            is_fixed_direction[shuffled_directions[i]] = true;
-        }
-    }
-
-    return std::make_tuple(max_direction, is_fixed_direction);
-}
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi>
 generate_frame_field(
@@ -314,47 +164,6 @@ void write_frame_field(
 
     // close output file
     field_file.close();
-}
-
-Eigen::MatrixXd load_rosy_field(const std::string& input_filename)
-{
-    // Open file
-    spdlog::debug("opening field at {}", input_filename);
-    std::ifstream input_file(input_filename);
-    if (!input_file) return {};
-
-    // get number of faces
-    std::string line;
-    std::getline(input_file, line);
-    std::istringstream iss(line);
-    int num_faces;
-    iss >> num_faces;
-    spdlog::debug("{} faces", num_faces);
-    std::getline(input_file, line); // skip start line
-
-    // initialize vectors
-    Eigen::MatrixXd frame_field(num_faces, 3);
-
-    // Read file one face at a time
-    int f = 0;
-    while ((f < num_faces) && (std::getline(input_file, line))) {
-        std::istringstream iss(line);
-        for (int i : {0 , 1, 2})
-        {
-            iss >> frame_field(f, i);
-        }
-
-        ++f;
-    }
-
-    if (num_faces != f)
-    {
-        spdlog::error("Number of faces inconsistent with number of lines");
-    }
-
-    // Close file
-    input_file.close();
-    return frame_field;
 }
 
 Eigen::VectorXd rotate_vector(
@@ -722,27 +531,6 @@ std::vector<Scalar> compute_cone_angle(
     }
 
     return Th_hat;
-}
-
-Eigen::VectorXd infer_theta(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::VectorXi& reference_corner,
-    const Eigen::MatrixXd& direction_field)
-{
-    Eigen::MatrixXd N;
-    igl::per_face_normals(V, F, N);
-
-    Eigen::MatrixXd reference_field = generate_reference_field(V, F, reference_corner);
-    int num_faces = F.rows();
-    Eigen::VectorXd theta(num_faces);
-    for (int f = 0; f < num_faces; ++f)
-    {
-        // TODO: Check if can replace sign by reversing order, i.e., the signed angle is anticommutative
-        theta[f] = -signed_angle<Eigen::Vector3d>(direction_field.row(f), reference_field.row(f), N.row(f));
-    }
-
-    return theta;
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXi> refine_frame_field(

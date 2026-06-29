@@ -202,7 +202,7 @@ void view_cross_field(
     }
 
     // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Field::generate_frame_field(V, F, reference_field, theta);
+    Eigen::MatrixXd frame_field = Field::generate_vector_field(V, F, reference_field, theta);
     int num_faces = F.rows();
 
     // transfer kappa and period jump to viewer halfedge indexing
@@ -566,7 +566,7 @@ void view_feature_cross_field(
     }
 
     // generate frame field geometry from cross field
-    Eigen::MatrixXd frame_field = Field::generate_frame_field(V, F, reference_field, theta);
+    Eigen::MatrixXd frame_field = Field::generate_vector_field(V, F, reference_field, theta);
     int num_faces = F.rows();
 
     // transfer kappa and period jump to viewer halfedge indexing

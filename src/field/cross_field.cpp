@@ -8,6 +8,14 @@
 
 #include "field/cross_field.h"
 
+#include "util/vf_mesh.h"
+#include "field/vector_field.h"
+
+#if USE_COMISO
+#include <igl/copyleft/comiso/nrosy.h>
+//#include <comiso/nrosy.h>
+#endif
+
 #include <directional/TriMesh.h>
 #include <directional/IntrinsicFaceTangentBundle.h>
 #include <directional/CartesianField.h>
@@ -99,6 +107,73 @@ void write_cross_field(
 
     field_file.close();
 }
+
+Eigen::MatrixXd load_rosy_field(const std::string& input_filename)
+{
+    // Open file
+    spdlog::debug("opening field at {}", input_filename);
+    std::ifstream input_file(input_filename);
+    if (!input_file) return {};
+
+    // get number of faces
+    std::string line;
+    std::getline(input_file, line);
+    std::istringstream iss(line);
+    int num_faces;
+    iss >> num_faces;
+    spdlog::debug("{} faces", num_faces);
+    std::getline(input_file, line); // skip start line
+
+    // initialize vectors
+    Eigen::MatrixXd frame_field(num_faces, 3);
+
+    // Read file one face at a time
+    int f = 0;
+    while ((f < num_faces) && (std::getline(input_file, line))) {
+        std::istringstream iss(line);
+        for (int i : {0 , 1, 2})
+        {
+            iss >> frame_field(f, i);
+        }
+
+        ++f;
+    }
+
+    if (num_faces != f)
+    {
+        spdlog::error("Number of faces inconsistent with number of lines");
+    }
+
+    // Close file
+    input_file.close();
+    return frame_field;
+}
+
+void write_rosy_field(
+    const std::string& output_filename,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta)
+{
+    Eigen::MatrixXd rosy_field = generate_vector_field(V, F, reference_field, theta);
+
+    std::ofstream field_file(output_filename, std::ios::out | std::ios::trunc);
+    field_file << F.rows() << std::endl;
+    field_file << "4" << std::endl;
+    for (int f = 0; f < F.rows(); ++f)
+    {
+        for (int j : {0 , 1, 2})
+        {
+            field_file << std::fixed << std::setprecision(17) << rosy_field(f, j) << " ";
+        }
+
+        field_file << std::endl;
+    }
+
+    field_file.close();
+}
+
 
 std::array<Eigen::MatrixXd, 4> generate_cross_field(
     const Eigen::MatrixXd& V,
@@ -232,6 +307,48 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
 
     return opt_cross_field;
 }
+
+std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F)
+{
+    // Compute cross field and singularities from comiso
+    Eigen::MatrixXd frame_field;
+    Eigen::VectorXd S;
+#if USE_COMISO
+    Eigen::VectorXi b(1);
+    Eigen::MatrixXd bc(1, 3);
+    b << 0;
+    bc << 1, 1, 1;
+    int degree = 4;
+    igl::copyleft::comiso::nrosy(V, F, b, bc, degree, frame_field, S);
+#else
+    int num_vertices = V.rows();
+    int num_faces = F.rows();
+    spdlog::error(
+        "Comiso solver not enabled for #V={}, #F={} mesh. Set USE_COMISO to use.",
+        num_vertices,
+        num_faces);
+#endif
+
+    // Get the boundary vertices
+    std::vector<bool> is_boundary_vertex = compute_boundary_vertices(F, V.rows());
+
+    // Turn singularities into a flat metric
+    // FIXME This is only accurate for closed meshes; singularities only make sense with doubling
+    int num_cone_vertices = S.size();
+    std::vector<Scalar> Th_hat(num_cone_vertices);
+    for (int vi = 0; vi < num_cone_vertices; ++vi) {
+        if (is_boundary_vertex[vi]) {
+            Th_hat[vi] = M_PI - (2 * M_PI * S[vi]);
+        } else {
+            Th_hat[vi] = 2 * M_PI * (1 - S[vi]);
+        }
+    }
+
+    return std::make_tuple(frame_field, Th_hat);
+}
+
 
 }
 } // namespace Penner
