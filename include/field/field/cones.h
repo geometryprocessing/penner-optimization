@@ -45,6 +45,17 @@ std::vector<Scalar> generate_cones_from_rotation_form(
     const VectorX& rotation_form,
     bool has_boundary=false);
 
+
+/**
+ * @brief Determine if a mesh cone prescription contains cones below a threshold
+ * 
+ * @param Th_hat: mesh with cone constraints
+ * @param min_cone_index: minimum index for cones
+ * @return true if there is a cone strictly below the threshold
+ * @return false otherwise
+ */
+bool contains_small_cones(const std::vector<Scalar>& Th_hat, int min_cone_index=1);
+
 /**
  * @brief Determine if a mesh cone prescription corresponds to a trivial torus
  * 
@@ -53,6 +64,15 @@ std::vector<Scalar> generate_cones_from_rotation_form(
  * @return false otherwise
  */
 bool is_trivial_torus(const Mesh<Scalar>& m);
+
+/**
+ * @brief Determine if a mesh cone prescription corresponds to a torus with a cone pair.
+ * 
+ * @param m: mesh with cone constraints
+ * @return true if the mesh is a torus with a pair of cones
+ * @return false otherwise
+ */
+bool is_torus_with_cone_pair(const Mesh<Scalar>& m);
 
 /**
  * @brief Given target cone angles, fix any problems that prevent them from being valid

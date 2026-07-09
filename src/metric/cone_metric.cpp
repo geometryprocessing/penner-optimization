@@ -11,6 +11,10 @@
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "metric/constraint.h"
 #include "metric/projection.h"
+#include "util/vector.h"
+
+// get boundary vertices for free interior
+#include "util/boundary.h"
 
 // TODO: Clean code
 
@@ -404,5 +408,6 @@ void DiscreteMetric::expand_metric_coordinates(const VectorX& metric_coords)
     }
     // TODO error
 }
+
 
 } // namespace Penner

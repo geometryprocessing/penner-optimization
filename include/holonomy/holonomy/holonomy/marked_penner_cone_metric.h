@@ -63,6 +63,20 @@ public:
         const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
         const std::vector<Scalar>& kappa);
 
+
+    /**
+     * @brief Construct a new Marked Penner Cone Metric object with given dual loop
+     * markings and holonomy constraints.
+     *
+     * @param cone_metric: mesh with metric
+     * @param homology_basis_loops: homology basis loops for the surface
+     * @param kappa: holonomy constraints on the basis loops
+     */
+    MarkedPennerConeMetric(
+        const PennerConeMetric& cone_metric,
+        const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
+        const std::vector<Scalar>& kappa);
+
     MarkedPennerConeMetric(const MarkedPennerConeMetric& marked_metric);
     void operator=(const MarkedPennerConeMetric& m);
 

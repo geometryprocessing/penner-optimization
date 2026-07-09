@@ -295,5 +295,14 @@ generate_edges(
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXi& F_is_edge);
 
+/**
+ * @brief Covert a list of edge endpoints into an edge matrix with edges as rows.
+ * 
+ * @param edges: list of edge endpoints
+ * @return edges in matrix format
+ */
+Eigen::MatrixXi compute_edge_matrix(const std::vector<VertexEdge>& edges);
+
+
 } // namespace Feature
 } // namespace Penner

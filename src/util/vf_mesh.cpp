@@ -70,6 +70,26 @@ void remove_unreferenced(
     }
 }
 
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> remove_unreferenced(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F)
+{
+    // reindex to remove redundant vertices
+    Eigen::MatrixXi FN;
+    std::vector<int> new_to_old_map;
+    remove_unreferenced(F, FN, new_to_old_map);
+
+    // get new vertices
+    int num_vertices = new_to_old_map.size();
+    Eigen::MatrixXd VN(num_vertices, V.cols());
+    for (int i = 0; i < num_vertices; ++i) {
+        VN.row(i) = V.row(new_to_old_map[i]);
+    }
+
+    return std::make_tuple(VN, FN);
+}
+
+
 void cut_mesh_along_parametrization_seams(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -295,7 +315,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> reindex_mesh(
     }
 
     // reindex faces
-    int num_faces = F.size();
+    int num_faces = F.rows();
     for (int fijk = 0; fijk < num_faces; ++fijk)
     {
         for (int i = 0; i < 3; ++i)

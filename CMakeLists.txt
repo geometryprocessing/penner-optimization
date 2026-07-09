@@ -36,8 +36,13 @@ if (PROJECT_IS_TOP_LEVEL)
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
 
-set ( SUITESPARSE_ENABLE_PROJECTS "${SUITESPARSE_ENABLE_PROJECTS};suitesparse_config;cholmod" CACHE STRING "" FORCE)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# add needed suitesparse projects
+set ( SUITESPARSE_ENABLE_PROJECTS "${SUITESPARSE_ENABLE_PROJECTS};suitesparse_config;cholmod" CACHE STRING "" FORCE)
+if (USE_UV_OPTIMIZATION)
+  set ( SUITESPARSE_ENABLE_PROJECTS "${SUITESPARSE_ENABLE_PROJECTS};spqr;umfpack" CACHE STRING "" FORCE)
+endif()
 
 include(eigen)
 
@@ -172,3 +177,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Make main cpp library
 add_subdirectory(src)
+
+# Add executable files
+add_subdirectory(app)

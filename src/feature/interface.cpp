@@ -34,6 +34,7 @@
 #include "feature/core/union_meshes.h"
 
 #include <igl/facet_components.h>
+#include <igl/bounding_box_diagonal.h>
 
 namespace Penner {
 namespace Feature {
@@ -216,6 +217,65 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     feature_finder = FeatureFinder(V_ref_f, F_ref_f);
     feature_finder.mark_features(feature_edges_f);
     return refine_feature_components(feature_finder, use_minimal_forest);
+}
+
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_refined_feature_field(
+    const Eigen::MatrixXd& V_cut,
+    const Eigen::MatrixXi& F_cut,
+    const Eigen::VectorXi& V_map,
+    bool collapse_cones)
+{
+    int radius = 5;
+    Scalar rel_anisotropy=0.9;
+    Scalar abs_anisotropy=0.2;
+    Scalar bb_diag = igl::bounding_box_diagonal(V_cut);
+    auto [direction, is_fixed_direction] = Penner::Field::compute_field_direction(
+        V_cut,
+        F_cut,
+        radius,
+        abs_anisotropy / bb_diag,
+        rel_anisotropy);
+
+    MarkedMetricParameters marked_metric_params;
+    marked_metric_params.remove_trivial_torus = false; // FIXME
+    marked_metric_params.use_log_length = true;
+    marked_metric_params.use_initial_zero = false;
+
+    // generate fields
+    Eigen::MatrixXd reference_field;
+    Eigen::VectorXd theta;
+    Eigen::MatrixXd kappa;
+    Eigen::MatrixXi period_jump;
+    CutMetricGenerator cut_metric_generator(V_cut, F_cut, marked_metric_params, {});
+    cut_metric_generator.generate_fields(V_cut, F_cut, V_map, direction, is_fixed_direction);
+    std::tie(reference_field, theta, kappa, period_jump) = cut_metric_generator.get_field();
+
+    // optionally collapse cones
+    if (collapse_cones)
+    {
+        // generate initial metric to use for collapse
+        MarkedPennerConeMetric marked_metric;
+        std::vector<int> vtx_reindex;
+        std::vector<int> face_reindex;
+        VectorX rotation_form;
+        std::vector<Scalar> Th_hat;
+        std::tie(marked_metric, vtx_reindex, face_reindex, rotation_form, Th_hat) = cut_metric_generator.get_union_metric( marked_metric_params);
+
+        // do collapse and get fixed field
+        Penner::Field::IntrinsicNRosyField field_generator;
+        Eigen::VectorXi reference_corner(reference_field.rows());
+        field_generator.initialize(marked_metric);
+        field_generator.set_field(marked_metric, vtx_reindex, F_cut, face_reindex, theta, kappa, period_jump);
+        field_generator.collapse_nearby_cones(marked_metric);
+        field_generator.get_field(marked_metric, vtx_reindex, F_cut, face_reindex, reference_corner, theta, kappa, period_jump);
+    }
+
+    return std::make_tuple(reference_field, theta, kappa, period_jump);
 }
 
 AlignedMetricGenerator::AlignedMetricGenerator(

@@ -28,9 +28,7 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#include "field/field.h"
-#include "holonomy/interface.h"
-#include "holonomy/holonomy/cones.h"
+#include "field/frame_field.h"
 #include "util/io.h"
 
 #include <igl/boundary_facets.h>
@@ -48,7 +46,6 @@
 
 using namespace Penner;
 using namespace Penner::Field;
-using namespace Penner::Holonomy;
 
 void write_error_record(const std::filesystem::path& filepath, const std::string& error_message)
 {
@@ -64,6 +61,8 @@ int main(int argc, char* argv[])
     std::string mesh_file = "";
     std::string input_dir = "./";
     std::string output_dir = "./";
+    FieldParameters field_params;
+    field_params.use_principal_directions = true;
     bool is_stl = false;
     app.add_option("--mesh", mesh_file, "Mesh file")->required();
     app.add_option("-i,--input", input_dir, "Input filepath")
@@ -124,68 +123,13 @@ int main(int argc, char* argv[])
     }
 
     // generate cross field
-    auto [frame_field, field_Th_hat] = generate_cross_field(V, F);
-
-    // build halfedge mesh with angles
-    std::vector<int> vtx_reindex;
-    std::vector<int> free_cones(0);
-    bool fix_boundary = false;
-    bool use_discrete_metric = true;
-    std::unique_ptr<DifferentiableConeMetric> cone_metric =
-        Optimization::generate_initial_mesh(
-            V,
-            F,
-            V,
-            F,
-            field_Th_hat,
-            vtx_reindex,
-            free_cones,
-            fix_boundary,
-            use_discrete_metric);
-
-    // check for zero edge lengths and degenerate angles
-    VectorX he2angle, he2cot;
-    cone_metric->get_corner_angles(he2angle, he2cot);
-    int num_halfedges = cone_metric->n_halfedges();
-    for (int hij = 0; hij < num_halfedges; ++hij) {
-        if (float_equal(cone_metric->l[hij], 0.)) {
-            spdlog::error("Mesh has {} length edge", cone_metric->l[hij]);
-            write_error_record(error_filename, mesh_name + " has 0 length edge");
-            return 1;
-        }
-        if (float_equal(he2angle[hij], 0.)) {
-            spdlog::error("Mesh has {} angle", he2angle[hij]);
-            write_error_record(error_filename, mesh_name + " has 0 corner angle");
-            return 1;
-        }
-        if (float_equal(he2angle[hij], M_PI)) {
-            spdlog::error("Mesh has {} angle", cone_metric->l[hij]);
-            write_error_record(error_filename, mesh_name + " has pi corner angle");
-            return 1;
-        }
-    }
-
-    // generate rotation form and cones from cross field
-    VectorX rotation_form = generate_rotation_form_from_cross_field(*cone_metric, vtx_reindex, V, F, frame_field);
-    std::vector<Scalar> form_Th_hat = generate_cones_from_rotation_form(
-            *cone_metric,
-            vtx_reindex,
-            rotation_form,
-            bd.size() > 1);
-
-    // check cones are consistent
-    int num_vertices = V.rows();
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        if (!float_equal(form_Th_hat[vi], field_Th_hat[vi], 1e-6)) {
-            spdlog::warn("Inconsistent cones {} and {}", form_Th_hat[vi], field_Th_hat[vi]);
-            write_error_record(error_filename, mesh_name + " has inconsistent cones");
-        }
-    }
+    auto [reference_field, theta, kappa, period_jump] = generate_frame_field(V, F, field_params);
 
     // write output
-    igl::writeOBJ(join_path(output_dir, mesh_name + ".obj"), V, F);
-    write_vector(rotation_form, join_path(output_dir, mesh_name + "_kappa_hat"));
-    write_vector(form_Th_hat, join_path(output_dir, mesh_name + "_Th_hat"));
+    std::string output_path = join_path(output_dir, mesh_name + ".obj");
+    igl::writeOBJ(output_path, V, F);
+    output_path = join_path(output_dir, mesh_name + ".ffield");
+    write_frame_field(output_path, reference_field, theta, kappa, period_jump);
 
     return 0;
 }

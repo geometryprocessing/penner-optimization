@@ -36,11 +36,24 @@ int count_components(const Eigen::MatrixXi& F);
 /// @param[in] F: initial mesh faces
 /// @param[out] FN: reindexed mesh faces
 /// @param[out] new_to_old_map: map from new to old vertex indices
-/// @return number of connected components
 void remove_unreferenced(
     const Eigen::MatrixXi& F,
     Eigen::MatrixXi& FN,
     std::vector<int>& new_to_old_map);
+
+/// Given a face index matrix, reindex the vertex indices to removed unreferenced
+/// vertex indices in O(|F|) time.
+///
+/// Note that libigl has function with similar behavior, but it is a O(|V| + |F|)
+/// algorithm due to their bookkeeping method
+///
+/// @param[in] V: initial mesh vertices
+/// @param[in] F: initial mesh face
+/// @return: mesh vertices without unreferenced
+/// @return: reindexed mesh faces
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> remove_unreferenced(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F);
 
 /// Given a mesh with a parametrization, generate the 3D seam polylines
 ///

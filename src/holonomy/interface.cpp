@@ -8,6 +8,7 @@
 
 #include "holonomy/interface.h"
 
+#include "metric/interface.h"
 #include "holonomy/core/boundary_basis.h"
 #include "holonomy/core/homology_basis.h"
 #include "field/intrinsic_field.h"
@@ -137,59 +138,6 @@ generate_metric_from_field(
     return std::make_tuple(marked_metric, vtx_reindex, rotation_form, Th_hat);
 }
 
-VectorX generate_log_edge_lengths(const Mesh<Scalar>& m)
-{
-    // Make copy of mesh delaunay
-    // Get metric coordinates from copy
-    int num_halfedges = m.n_halfedges();
-    VectorX metric_coords(num_halfedges);
-    for (int h = 0; h < num_halfedges; ++h) {
-        metric_coords[h] = 2.0 * log(m.l[h]);
-        if (isnan(metric_coords[h])) spdlog::warn("generating NaN Penner coordinate");
-    }
-
-    return metric_coords;
-}
-
-VectorX generate_penner_coordinates(const Mesh<Scalar>& m)
-{
-    // Make copy of mesh delaunay
-    Mesh<Scalar> m_copy = m;
-    VectorX scale_factors;
-    scale_factors.setZero(m.n_ind_vertices());
-    bool use_ptolemy_flip = false;
-    DelaunayStats del_stats;
-    SolveStats<Scalar> solve_stats;
-    ConformalIdealDelaunay<Scalar>::MakeDelaunay(
-        m_copy,
-        scale_factors,
-        del_stats,
-        solve_stats,
-        use_ptolemy_flip);
-
-    // Get flip sequence
-    const auto& flip_sequence = del_stats.flip_seq;
-    for (auto iter = flip_sequence.rbegin(); iter != flip_sequence.rend(); ++iter) {
-        int flip_index = *iter;
-        if (flip_index < 0) {
-            flip_index = -flip_index - 1;
-        }
-        m_copy.flip_ccw(flip_index);
-        m_copy.flip_ccw(flip_index);
-        m_copy.flip_ccw(flip_index);
-    }
-
-    // Get metric coordinates from copy
-    int num_halfedges = m.n_halfedges();
-    VectorX metric_coords(num_halfedges);
-    for (int h = 0; h < num_halfedges; ++h) {
-        metric_coords[h] = 2.0 * log(m_copy.l[h]);
-        if (isnan(metric_coords[h])) spdlog::warn("generating NaN Penner coordinate");
-    }
-
-    return metric_coords;
-}
-
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
@@ -266,19 +214,6 @@ void generate_basis_loops(
     }
 }
 
-DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
-    // Build initial metric and target metric from edge lengths
-    VectorX scale_factors;
-    scale_factors.setZero(m.n_ind_vertices());
-    bool is_hyperbolic = false;
-    InterpolationMesh<Scalar> interpolation_mesh(m, scale_factors, is_hyperbolic);
-
-    // Get initial log length coordinates
-    VectorX log_length_coords = interpolation_mesh.get_halfedge_metric_coordinates();
-    return DiscreteMetric(m, log_length_coords);
-}
-
-
 std::vector<Scalar> compute_kappa(
     const Mesh<Scalar>& discrete_metric,
     const VectorX& rotation_form,
@@ -304,45 +239,6 @@ std::vector<Scalar> compute_kappa(
     return kappa;
 }
 
-void make_free_interior(Mesh<Scalar>& m) {
-    m.fixed_dof = std::vector<bool>(m.n_ind_vertices(), true);
-    auto bd_vertices = find_boundary_vertices(m);
-    for (int vi : bd_vertices) {
-        m.fixed_dof[m.v_rep[vi]] = false;
-    }
-
-    // handle trivial interior case
-    int num_bd_vertices = bd_vertices.size();
-    if (num_bd_vertices == m.n_ind_vertices()) {
-        m.fixed_dof[0] = true;
-    }
-}
-
-void remove_symmetry(const Mesh<Scalar>& _m, Mesh<Scalar>& m) {
-    m.Th_hat = std::vector<Scalar>(m.n_vertices(), 0.);
-    m.fixed_dof = std::vector<bool>(m.n_vertices(), false);
-    arange(m.n_vertices(), m.v_rep);
-    int num_halfedges = m.n_halfedges();
-    for (int hij = 0; hij < num_halfedges; ++hij) {
-        m.type[hij] = 0;
-        // m.R[hij] = 0;
-
-        // split interior cones
-        m.Th_hat[m.v_rep[m.to[hij]]] = _m.Th_hat[_m.v_rep[_m.to[hij]]] / 2.;
-        if (_m.type[hij] == 2) {
-            m.fixed_dof[m.v_rep[m.to[hij]]] = true;
-        } else {
-            m.fixed_dof[m.v_rep[m.to[hij]]] = _m.fixed_dof[_m.v_rep[_m.to[hij]]];
-        }
-    }
-
-    std::vector<int> bd_vertices = find_boundary_vertices(_m);
-    for (int vi : bd_vertices) {
-        m.Th_hat[m.v_rep[vi]] = _m.Th_hat[_m.v_rep[vi]];
-        m.fixed_dof[m.v_rep[vi]] = _m.fixed_dof[_m.v_rep[vi]];
-    }
-}
-
 MarkedPennerConeMetric generate_marked_metric_from_mesh(
     const Mesh<Scalar>& _m,
     const VectorX& rotation_form,
@@ -351,43 +247,17 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
 {
     // Optionally remove symmetry structure
     // TODO: Need to remake cone angles with half values
-    Mesh<Scalar> m = _m;
+    PennerConeMetric cone_metric = generate_cone_metric(_m, marked_metric_params);
 
     // Get initial log length coordinates
-    DiscreteMetric discrete_metric = generate_discrete_metric(m);
-    VectorX log_length_coords = discrete_metric.get_metric_coordinates();
+    DiscreteMetric discrete_metric = generate_discrete_metric(_m);
 
     // compute basis loops
     std::vector<std::unique_ptr<DualLoop>> basis_loops;
-    generate_basis_loops(m, basis_loops, marked_metric_params, marked_halfedges);
+    generate_basis_loops(_m, basis_loops, marked_metric_params, marked_halfedges);
     std::vector<Scalar> kappa = compute_kappa(discrete_metric, rotation_form, basis_loops);
 
-    // optional modifications
-    if (marked_metric_params.free_interior) make_free_interior(m);
-    if (marked_metric_params.remove_symmetry) remove_symmetry(_m, m);
-
-    // if set to free cones, instead mark all free cones
-    if (marked_metric_params.use_free_cones)
-    {
-        std::vector<int> cones = enumerate_cone_vertices(m);
-        if (!cones.empty())
-        {
-            convert_index_vector_to_boolean_array(cones, m.n_ind_vertices(), m.fixed_dof);
-        }
-    }
-
-    // Build initial metric coordinates
-    VectorX metric_coords;
-    if (marked_metric_params.use_initial_zero) {
-        int num_halfedges = m.n_halfedges();
-        metric_coords = VectorX::Zero(num_halfedges);
-    } else if (marked_metric_params.use_log_length) {
-        metric_coords = log_length_coords;
-    } else {
-        metric_coords = generate_penner_coordinates(m);
-    }
-
-    return MarkedPennerConeMetric(m, metric_coords, basis_loops, kappa);
+    return MarkedPennerConeMetric(cone_metric, basis_loops, kappa);
 }
 
 std::tuple<Mesh<Scalar>, std::vector<int>> generate_mesh(

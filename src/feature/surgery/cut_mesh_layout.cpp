@@ -74,7 +74,7 @@ parameterize_cut_mesh(
         const auto& he_index = he_maps[i];
 
         // get initial and final metric coordinates
-        VectorX metric_init = Holonomy::generate_penner_coordinates(embedding_component);
+        VectorX metric_init = generate_penner_coordinates(embedding_component);
         VectorX metric_coords(mesh_component.n_halfedges());
         for (int i = 0; i < mesh_component.n_halfedges(); ++i) {
         //    metric_init[i] = 2. * log(init_component.l[i]);

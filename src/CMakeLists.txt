@@ -18,6 +18,7 @@ set(MetricSrc
   metric/cone_metric.cpp
   metric/constraint.cpp
   metric/flip_matrix_generator.cpp
+  metric/interface.cpp
   metric/projection.cpp
   metric/quality.cpp
   metric/shear.cpp

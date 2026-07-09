@@ -28,26 +28,43 @@
 *  Courant Institute of Mathematical Sciences, New York University, USA          *
 *                                          *                                     *
 *********************************************************************************/
-#include <igl/readOBJ.h>
-#include <igl/writeOBJ.h>
-
-#include "optimization/core/common.h"
-#include "optimization/metric_optimization/explicit_optimization.h"
+#include "metric/cone_metric.h"
+#include "optimization/metric_optimization/energy_functor.h"
+#include "optimization/metric_optimization/implicit_optimization.h"
 #include "optimization/interface.h"
-#include "optimization/core/shear.h"
-#include "optimization/parameterization/refinement.h"
+#include "parameterization/refinement.h"
 #include "optimization/util/viewers.h"
+#include "field/frame_field.h"
+#include "util/vector.h"
 #include "util/io.h"
+
 #include <CLI/CLI.hpp>
+#include <igl/readOBJ.h>
 
 using namespace Penner;
 using namespace Optimization;
+
+
+std::vector<int> get_free_cones(const std::vector<Scalar>& Th_hat)
+{
+    std::vector<int> free_cones = {};
+    int num_vertices = Th_hat.size();
+    for (int vi = 0; vi < num_vertices; ++vi)
+    {
+        if (!float_equal(Th_hat[vi], 2. * M_PI))
+        {
+            free_cones.push_back(vi);
+        }
+    }
+
+    return free_cones;
+}
 
 int main(int argc, char* argv[])
 {
 #ifdef MULTIPRECISION
     spdlog::info("Using multiprecision");
-    mpfr::mpreal::set_default_prec(60);
+    mpfr::mpreal::set_default_prec(100);
     mpfr::mpreal::set_emax(mpfr::mpreal::get_emax_max());
     mpfr::mpreal::set_emin(mpfr::mpreal::get_emin_min());
 #endif
@@ -67,30 +84,39 @@ int main(int argc, char* argv[])
     std::string Th_hat_filename = "";
     std::string output_dir = "./";
 		EnergyChoice energy_choice = EnergyChoice::log_length;
+    bool use_discrete_metric = false;
+    bool use_free_cones = false;
     bool show_parameterization = false;
     auto proj_params = std::make_shared<ProjectionParameters>();
     auto opt_params = std::make_shared<OptimizationParameters>();
-    opt_params->direction_choice = "gradient";
     app.add_option("--mesh", mesh_filename, "Mesh filepath")->check(CLI::ExistingFile)->required();
     app.add_option("--cones", Th_hat_filename, "Cone angle filepath")
-        ->check(CLI::ExistingFile)
-        ->required();
+        ->check(CLI::ExistingFile);
     app.add_option("--energy", energy_choice, "Energy to minimize")
         ->transform(CLI::CheckedTransformer(energy_choice_map, CLI::ignore_case));
-    app.add_option("--direction", opt_params->direction_choice, "Descent direction: gradient, conjugate_gradient, lbfgs");
+    app.add_option("--direction", opt_params->direction_choice, "Descent direction: projected_gradient, projected_newton");
     app.add_option(
            "--num_iter",
            opt_params->num_iter,
            "Maximum number of iterations to perform")
         ->check(CLI::NonNegativeNumber);
+    app.add_flag("--use_discrete_metric", use_discrete_metric, "Use edge lengths instead of Penner coordinates");
     app.add_flag("--show_parameterization", show_parameterization, "Show final parameterization");
+    app.add_flag("--use_free_cones", use_free_cones, "Let cones have free angles");
     app.add_option("-o,--output", output_dir, "Output directory");
     CLI11_PARSE(app, argc, argv);
 
-    // Make output directory
     spdlog::set_level(spdlog::level::info);
     std::filesystem::create_directories(output_dir);
     opt_params->output_dir = output_dir;
+
+		// TODO Make this automatic
+		if (use_discrete_metric)
+		{
+			proj_params->initial_ptolemy = false;
+			proj_params->use_edge_flips = false;
+			proj_params->max_itr = 30;
+		}
 
     // Get input mesh
     Eigen::MatrixXd V, uv, N;
@@ -100,84 +126,94 @@ int main(int argc, char* argv[])
 
     // Get input angles
     std::vector<Scalar> Th_hat_init;
-    spdlog::info("Using cone angles at {}", Th_hat_filename);
-    read_vector_from_file(Th_hat_filename, Th_hat_init);
+    if (Th_hat_filename != "")
+    {
+        spdlog::info("Using cone angles at {}", Th_hat_filename);
+        read_vector_from_file(Th_hat_filename, Th_hat_init);
+    }
+    else
+    {
+        Eigen::MatrixXd frame_field;
+        std::tie(frame_field, Th_hat_init)= Holonomy::generate_cross_field(V, F);
+    }
     std::vector<Scalar> Th_hat = correct_cone_angles(Th_hat_init);
 
     // Get initial mesh for optimization
     std::vector<int> vtx_reindex;
     std::vector<int> free_cones = {};
+    if (use_free_cones) free_cones = get_free_cones(Th_hat);
     bool fix_boundary = false;
-    bool use_discrete_metric = false;
     std::unique_ptr<DifferentiableConeMetric> cone_metric =
         generate_initial_mesh(V, F, V, F, Th_hat, vtx_reindex, free_cones, fix_boundary, use_discrete_metric);
 
     // Get energy
     std::unique_ptr<EnergyFunctor> opt_energy = generate_energy(V, F, Th_hat, *cone_metric, energy_choice);
 
-    // Compute shear dual basis and the corresponding inner product matrix
-    MatrixX shear_basis_matrix;
-    std::vector<int> independent_edges;
-    compute_shear_dual_basis(*cone_metric, shear_basis_matrix, independent_edges);
-
-    // Compute the shear dual coordinates for this basis
-    VectorX shear_basis_coords_init;
-    VectorX scale_factors_init;
-    compute_shear_basis_coordinates(
-        *cone_metric,
-        shear_basis_matrix,
-        shear_basis_coords_init,
-        scale_factors_init);
-
     // Optimize the metric
-    VectorX optimized_metric_coords = optimize_shear_basis_coordinates(
-        *cone_metric,
-        *opt_energy,
-        shear_basis_matrix,
-        proj_params,
-        opt_params);
+    std::unique_ptr<DifferentiableConeMetric> optimized_cone_metric =
+        optimize_metric(*cone_metric, *opt_energy, proj_params, opt_params);
+    VectorX optimized_metric_coords = optimized_cone_metric->get_reduced_metric_coordinates();
 
-    // Write the metric coordinate output
-    std::string output_filename = join_path(output_dir, "reduced_metric_coords");
-    write_vector(optimized_metric_coords, output_filename);
+    // Write the output metric coordinates
+    std::string output_filename = join_path(output_dir, "optimized_metric_coords");
+    write_vector(optimized_metric_coords, output_filename, 17);
 
-    // Generate overlay mesh
-    std::vector<bool> is_cut = {};
-    bool do_best_fit_scaling = false;
-    auto vf_res = generate_VF_mesh_from_metric(
-            V,
-            F,
-            Th_hat,
-            *cone_metric,
-            optimized_metric_coords,
-            is_cut,
-            do_best_fit_scaling);
-    OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
-    Eigen::MatrixXd V_o = std::get<1>(vf_res);
-    Eigen::MatrixXi F_o = std::get<2>(vf_res);
-    Eigen::MatrixXd uv_o = std::get<3>(vf_res);
-    Eigen::MatrixXi FT_o = std::get<4>(vf_res);
-    std::vector<int> fn_to_f_o = std::get<7>(vf_res);
-    std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
+    // Generate overlay VF mesh with parametrization
+		if (use_discrete_metric) {
+				auto vf_res = generate_VF_mesh_from_discrete_metric(
+						V,
+						F,
+						Th_hat,
+						optimized_metric_coords);
+				Eigen::MatrixXd V_l = std::get<0>(vf_res);
+				Eigen::MatrixXi F_l = std::get<1>(vf_res);
+				Eigen::MatrixXd uv_l = std::get<2>(vf_res);
+				Eigen::MatrixXi FT_l = std::get<3>(vf_res);
 
-    // Write the overlay output
-    output_filename = join_path(output_dir, "overlay_mesh_with_uv.obj");
-    write_obj_with_uv(output_filename, V_o, F_o, uv_o, FT_o);
+				// Write the overlay output
+				output_filename = join_path(output_dir, "mesh_with_uv.obj");
+				write_obj_with_uv(output_filename, V_l, F_l, uv_l, FT_l);
 
-    // Get refinement mesh
-    Eigen::MatrixXd V_r;
-    Eigen::MatrixXi F_r;
-    Eigen::MatrixXd uv_r;
-    Eigen::MatrixXi FT_r;
-    std::vector<int> fn_to_f_r;
-    std::vector<std::pair<int, int>> endpoints_r;
-    RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
-    refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+				// Optionally show final parameterization
+				if (show_parameterization) view_parameterization(V_l, F_l, uv_l, FT_l);
+		} else {
+				std::vector<bool> is_cut = {};
+				bool do_best_fit_scaling = false;
+				auto vf_res = generate_VF_mesh_from_metric(
+						V,
+						F,
+						Th_hat,
+						*cone_metric,
+						optimized_metric_coords,
+						is_cut,
+						do_best_fit_scaling);
+				OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
+				Eigen::MatrixXd V_o = std::get<1>(vf_res);
+				Eigen::MatrixXi F_o = std::get<2>(vf_res);
+				Eigen::MatrixXd uv_o = std::get<3>(vf_res);
+				Eigen::MatrixXi FT_o = std::get<4>(vf_res);
+				std::vector<int> fn_to_f_o = std::get<7>(vf_res);
+				std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
 
-    // Write the refined output
-    output_filename = join_path(output_dir, "refined_mesh_with_uv.obj");
-    write_obj_with_uv(output_filename, V_r, F_r, uv_r, FT_r);
+				// Write the overlay output
+				output_filename = join_path(output_dir, "overlay_mesh_with_uv.obj");
+				write_obj_with_uv(output_filename, V_o, F_o, uv_o, FT_o);
 
-    // Optionally show final parameterization
-    if (show_parameterization) view_parameterization(V_r, F_r, uv_r, FT_r);
+				// Get refinement mesh
+				Eigen::MatrixXd V_r;
+				Eigen::MatrixXi F_r;
+				Eigen::MatrixXd uv_r;
+				Eigen::MatrixXi FT_r;
+				std::vector<int> fn_to_f_r;
+				std::vector<std::pair<int, int>> endpoints_r;
+				RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
+				refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+
+				// Write the refined output
+				output_filename = join_path(output_dir, "refined_mesh_with_uv.obj");
+				write_obj_with_uv(output_filename, V_r, F_r, uv_r, FT_r);
+
+				// Optionally show final parameterization
+				if (show_parameterization) view_parameterization(V_r, F_r, uv_r, FT_r);
+		}
 }

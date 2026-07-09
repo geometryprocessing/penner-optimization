@@ -124,21 +124,30 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(
     const VectorX& metric_coords,
     const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
     const std::vector<Scalar>& kappa)
-    : PennerConeMetric(m, metric_coords)
-    , kappa_hat(kappa)
-    , m_dual_loop_manager(m.n_edges())
+    : MarkedPennerConeMetric(
+        PennerConeMetric(m, metric_coords),
+        homology_basis_loops,
+        kappa)
 {
-    assert(is_valid_mesh(m));
+}
 
+MarkedPennerConeMetric::MarkedPennerConeMetric(
+    const PennerConeMetric& cone_metric,
+    const std::vector<std::unique_ptr<DualLoop>>& homology_basis_loops,
+    const std::vector<Scalar>& kappa)
+    : PennerConeMetric(cone_metric)
+    , kappa_hat(kappa)
+    , m_dual_loop_manager(cone_metric.n_edges())
+{
     int num_basis_loops = homology_basis_loops.size();
     m_homology_basis_loops.reserve(num_basis_loops);
     for (int i = 0; i < num_basis_loops; ++i) {
         m_homology_basis_loops.push_back(homology_basis_loops[i]->clone());
-        m_dual_loop_manager.register_loop_edges(i, m, *homology_basis_loops[i]);
+        m_dual_loop_manager.register_loop_edges(i, cone_metric, *homology_basis_loops[i]);
     }
 
     // TODO
-    int num_halfedges = m.n_halfedges();
+    int num_halfedges = cone_metric.n_halfedges();
     original_coords.resize(num_halfedges);
     for (int h = 0; h < num_halfedges; ++h) {
         original_coords[h] = 2. * log(l[h]);

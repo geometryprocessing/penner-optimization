@@ -13,6 +13,7 @@
 #include "field/rotation_form.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
+#include "metric/interface.h"
 
 namespace Penner {
 namespace Holonomy {
@@ -21,20 +22,14 @@ namespace Holonomy {
  * @brief Parameters for marked metric construction
  *
  */
-struct MarkedMetricParameters
+struct MarkedMetricParameters : ConeMetricParameters
 {
     typedef HomotopyBasisGenerator::Weighting Weighting;
 
-    bool use_initial_zero = false; // use initial zero Penner coordinates
-    bool use_log_length = false; // use initial log length coordinates instead of Penner
     bool remove_loop_constraints = false; // don't set dual loop holonomy constraints if true
     int max_loop_constraints = -1; // set maximum number of loop constraints if positive
     int max_boundary_constraints = -1; // set maximum number of boundary constraints if positive
     Weighting weighting = Weighting::minimal_homotopy; // weighting for tree-cotree
-    bool remove_symmetry = false; // remove symmetry structure from doubled mesh
-    bool free_interior = false; // remove interior cone constraints
-    // TODO Implement for meshes without features
-    bool use_free_cones = false; // use free cones instead of seamless constraints
     bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
     bool use_connectivity = true; // use connectivity structure for markings
 };
@@ -216,9 +211,6 @@ void regularize_metric(MarkedPennerConeMetric& marked_metric, double max_triangl
  */
 void optimize_triangle_quality(MarkedPennerConeMetric& marked_metric, double max_triangle_quality = 50);
 
-VectorX generate_log_edge_lengths(const Mesh<Scalar>& m);
-VectorX generate_penner_coordinates(const Mesh<Scalar>& m);
-
 void generate_basis_loops(
     const Mesh<Scalar>& m,
     std::vector<std::unique_ptr<DualLoop>>& basis_loops,
@@ -239,8 +231,6 @@ std::vector<Scalar> compute_kappa(
     const Mesh<Scalar>& discrete_metric,
     const VectorX& rotation_form,
     const std::vector<std::unique_ptr<DualLoop>>& basis_loops);
-
-DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
 
 std::tuple<int, int> get_constraint_outliers(
     MarkedPennerConeMetric& marked_metric,

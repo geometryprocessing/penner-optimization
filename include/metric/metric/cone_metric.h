@@ -365,6 +365,7 @@ protected:
     void expand_metric_coordinates(const VectorX& metric_coords);
 };
 
+
 template <typename OldScalar, typename NewScalar>
 Mesh<NewScalar> change_mesh_type(const Mesh<OldScalar>& m)
 {

@@ -544,5 +544,18 @@ generate_edges(
     return std::make_tuple(VN, EN);
 }
 
+Eigen::MatrixXi compute_edge_matrix(const std::vector<VertexEdge>& edges)
+{
+    int num_edges = edges.size();
+    Eigen::MatrixXi E(num_edges, 2);
+    for (int e = 0; e < num_edges; ++e)
+    {
+        for (int i = 0; i < 2; ++i)
+        {
+            E(e, i) = edges[e][i];
+        }
+    }
+}
+
 } // namespace Feature
 } // namespace Penner

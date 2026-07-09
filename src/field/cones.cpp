@@ -89,11 +89,6 @@ bool contains_small_cones(const std::vector<Scalar>& Th_hat, int min_cone_index)
     return false;
 }
 
-bool contains_zero_cones(const std::vector<Scalar>& Th_hat)
-{
-    return contains_small_cones(Th_hat, 1);
-}
-
 std::pair<int, int> count_cones(const Mesh<Scalar>& m)
 {
     const auto& Th_hat = m.Th_hat;
@@ -203,13 +198,6 @@ bool is_torus_with_cone_pair(const Mesh<Scalar>& m)
     return ((genus == 1) && (num_neg_cones == 1) && (num_pos_cones == 1));
 }
 
-bool validate_cones(const Mesh<Scalar>& m)
-{
-    if (contains_zero_cones(m.Th_hat)) return false;
-    if (is_torus_with_cone_pair(m)) return false;
-
-    return true;
-}
 
 // Helper to fix small cones
 void remove_minimum_cone(Mesh<Scalar>& m)

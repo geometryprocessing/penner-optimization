@@ -34,24 +34,25 @@ parameterize_aligned.cpp
 )
 target_link_libraries(parameterize_aligned PRIVATE
   PennerLib
+  SymmetricDirichletLib
   ApplicationUtilLib
 )
 
-add_executable(optimize_metric
-  optimize_metric.cpp
-)
-target_link_libraries(optimize_metric PRIVATE
-  PennerLib
-  CLI11::CLI11
-)
+# add_executable(optimize_metric
+#   optimize_metric.cpp
+# )
+# target_link_libraries(optimize_metric PRIVATE
+#   PennerLib
+#   CLI11::CLI11
+# )
 
-add_executable(optimize_shear
-  optimize_shear.cpp
-)
-target_link_libraries(optimize_shear PRIVATE
-  PennerLib
-  CLI11::CLI11
-)
+# add_executable(optimize_shear
+#   optimize_shear.cpp
+# )
+# target_link_libraries(optimize_shear PRIVATE
+#   PennerLib
+#   CLI11::CLI11
+# )
 
 # only build visualization executables if visualization enabled
 if (NOT USE_MULTIPRECISION)

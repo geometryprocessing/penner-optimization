@@ -29,27 +29,35 @@
 *                                          *                                     *
 *********************************************************************************/
 #include "field/frame_field.h"
+#include "field/cross_field.h"
 #include "field/intrinsic_field.h"
 #include "holonomy/interface.h"
 #include "holonomy/holonomy/newton.h"
-#include "holonomy/holonomy/cones.h"
+#include "field/cones.h"
 #include "holonomy/core/viewer.h"
 #include "parametrization/refinement.h"
 #include "parametrization/parametrize.h"
+
+// cone validation
+#include "holonomy/holonomy/constraint.h"
+
+// infer theta from direction field
+#include "field/vector_field.h"
 
 #include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
 
+#if USE_UV_OPTIMIZATION 
 #include "ExtremeOpt.h"
 #include "MeshCutter.h"
 #include "main_helper.h"
+#endif
 
 using namespace Penner;
 using namespace Penner::Field;
 using namespace Penner::Holonomy;
-
 
 
 Eigen::MatrixXd optimize_seamless_parameterization(
@@ -165,7 +173,8 @@ int main(int argc, char* argv[])
     std::filesystem::path Th_hat_filename = "";
     std::filesystem::path field_filename = "";
     std::filesystem::path output_dir = "./";
-    std::filesystem::path input_json = "../scripts/symdir.json";
+    std::filesystem::path current_dir = std::filesystem::path(__FILE__).parent_path();
+    std::filesystem::path input_json = current_dir / "symdir.json";
 
     // IO Parameters
     app.add_option("--mesh", mesh_filename, "Mesh filepath")->check(CLI::ExistingFile)->required();
@@ -201,6 +210,7 @@ int main(int argc, char* argv[])
     bool use_delaunay = false;
     bool fit_field = false;
     bool show_parameterization = false;
+    bool show_field = false;
     spdlog::level::level_enum log_level = spdlog::level::info;
     app.add_option(
            "--max_triangle_quality",
@@ -210,6 +220,7 @@ int main(int argc, char* argv[])
     app.add_flag("--use_delaunay", use_delaunay, "Use Delaunay connectivity");
     app.add_flag("--fit_field", fit_field, "Fit new cross field");
     app.add_flag("--show_parameterization", show_parameterization, "Show final paramaterization");
+    app.add_flag("--show_field", show_field, "Show guiding cross field");
     app.add_option("--log_level", log_level, "Level of logging")
         ->transform(CLI::CheckedTransformer(log_level_map, CLI::ignore_case));
 
@@ -310,7 +321,7 @@ int main(int argc, char* argv[])
     }
 
     // add constraints to viewer
-    view_rotation_form(marked_metric, vtx_reindex, V, rotation_form, Th_hat, "rotation", false);
+    if (show_field) view_rotation_form(marked_metric, vtx_reindex, V, rotation_form, Th_hat, "rotation", false);
 
     // Make initial mesh Delaunay if desired
     std::vector<int> flip_seq = {};
@@ -400,8 +411,8 @@ int main(int argc, char* argv[])
             config);
     }
 
-    if (show_parameterization) view_triangulation(V_o, F_o, fn_to_f_o, endpoints_o, "refinement", false);
-    if (show_parameterization) view_seamless_parameterization(V_o, F_o, uv_o, FT_o, "overlay", false);
+    //if (show_parameterization) view_triangulation(V_o, F_o, fn_to_f_o, endpoints_o, "refinement", false);
+    //if (show_parameterization) view_seamless_parameterization(V_o, F_o, uv_o, FT_o, "overlay", false);
     if (show_parameterization) view_seamless_parameterization(V_r, F_r, uv_r, FT_r, "simplified");
 
     // Write the output mesh

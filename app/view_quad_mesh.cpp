@@ -1,6 +1,4 @@
-#include "holonomy/core/common.h"
 #include "feature/core/viewer.h"
-#include "feature/core/quads.h"
 
 #include <igl/readOBJ.h>
 #include <CLI/CLI.hpp>

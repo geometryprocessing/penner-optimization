@@ -36,6 +36,29 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, std::vector<VertexEdge>, std::vecto
     bool use_minimal_forest=false);
 
 /**
+ * @brief Find an aligned cross field for a mesh cut along feature edges.
+ * 
+ * @param V_cut: cut mesh vertices
+ * @param F_cut: cut mesh faces
+ * @param V_map: vertex identifications in the cut mesh
+ * @param collapse_cones: (optional) attempt to collapse nearby cones if true
+ * @return base per-face reference tangent direction matrix
+ * @return base offset angles of a representative cross field direction relative to the reference
+ * @return base per-corner rotation angle of the reference direction field across the opposite edge
+ * @return base per-corner period jump of the cross field across the opposite edge
+ */
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_refined_feature_field(
+    const Eigen::MatrixXd& V_cut,
+    const Eigen::MatrixXi& F_cut,
+    const Eigen::VectorXi& V_map,
+    bool collapse_cones=false);
+
+/**
  * @brief Generate a parameterization aligned to features and the given cross field.
  * 
  * @param V: mesh vertices

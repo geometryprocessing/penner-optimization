@@ -1,4 +1,3 @@
-#include <igl/readOBJ.h>
 #include "feature/interface.h"
 #include "feature/core/io.h"
 #include "field/frame_field.h"
@@ -9,6 +8,7 @@
 #include "util/vf_mesh.h"
 
 #include <CLI/CLI.hpp>
+#include <igl/readOBJ.h>
 #include <igl/triangle_triangle_adjacency.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/internal_angles.h>
@@ -362,6 +362,13 @@ int main(int argc, char* argv[])
     spdlog::info("optimizing mesh at {}", mesh_filename);
     igl::readOBJ(mesh_filename, V, uv, N, F, FT, FN);
 
+    // check if valid input
+    if (V.rows() < 0)
+    {
+        spdlog::error("cannot parametrize empty mesh");
+        return 1;
+    }
+
     // Get features and field
     std::vector<VertexEdge> feature_edges, hard_feature_edges;
     Eigen::MatrixXd reference_field;
@@ -378,29 +385,16 @@ int main(int argc, char* argv[])
         std::tie(reference_field, theta, kappa, period_jump) = Penner::Field::load_frame_field(field_filename);
     }
     else {
+        spdlog::info("generating feature edges");
+
         // refine input mesh
         std::tie(V, F, feature_edges, hard_feature_edges) = generate_refined_feature_mesh(V, F, false);
+
+        spdlog::info("optimizing field");
         FeatureFinder feature_finder(V, F);
         feature_finder.mark_features(feature_edges);
         auto[V_cut, F_cut, V_map, F_is_feature] = feature_finder.generate_feature_cut_mesh();
-
-        int radius = 5;
-        Scalar rel_anisotropy=0.9;
-        Scalar abs_anisotropy=0.2;
-        Scalar bb_diag = igl::bounding_box_diagonal(V);
-        auto [direction, is_fixed_direction] = Penner::Field::compute_field_direction(
-            V_cut,
-            F_cut,
-            radius,
-            abs_anisotropy / bb_diag,
-            rel_anisotropy);
-        MarkedMetricParameters marked_metric_params;
-        marked_metric_params.remove_trivial_torus = false; // FIXME
-        marked_metric_params.use_log_length = true;
-        marked_metric_params.use_initial_zero = false;
-        CutMetricGenerator cut_metric_generator(V_cut, F_cut, marked_metric_params, {});
-        cut_metric_generator.generate_fields(V_cut, F_cut, V_map, direction, is_fixed_direction);
-        std::tie(reference_field, theta, kappa, period_jump) = cut_metric_generator.get_field();
+        std::tie(reference_field, theta, kappa, period_jump) = generate_refined_feature_field(V_cut, F_cut, V_map);
     }
     if (show_field) view_cross_field(V, F, reference_field, theta, kappa, period_jump);
 

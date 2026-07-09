@@ -12,6 +12,7 @@
 #include "util/vector.h"
 #include "util/linear_algebra.h"
 #include "metric/constraint.h"
+#include "field/cones.h"
 #include "holonomy/holonomy/holonomy.h"
 
 namespace Penner {
@@ -699,6 +700,14 @@ bool validate_cones_from_rotation_form(
             }
         }
     }
+
+    return true;
+}
+
+bool validate_cones(const Mesh<Scalar>& m)
+{
+    if (Field::contains_small_cones(m.Th_hat, 1)) return false;
+    if (Field::is_torus_with_cone_pair(m)) return false;
 
     return true;
 }
