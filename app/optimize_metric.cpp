@@ -29,12 +29,14 @@
 *                                          *                                     *
 *********************************************************************************/
 #include "metric/cone_metric.h"
+#include "metric/viewer.h"
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/implicit_optimization.h"
 #include "optimization/interface.h"
-#include "parameterization/refinement.h"
-#include "optimization/util/viewers.h"
+#include "parametrization/refinement.h"
+#include "parametrization/parametrize.h"
 #include "field/frame_field.h"
+#include "field/cross_field.h"
 #include "util/vector.h"
 #include "util/io.h"
 
@@ -110,13 +112,13 @@ int main(int argc, char* argv[])
     std::filesystem::create_directories(output_dir);
     opt_params->output_dir = output_dir;
 
-		// TODO Make this automatic
-		if (use_discrete_metric)
-		{
-			proj_params->initial_ptolemy = false;
-			proj_params->use_edge_flips = false;
-			proj_params->max_itr = 30;
-		}
+    // TODO Make this automatic
+    if (use_discrete_metric)
+    {
+        proj_params->initial_ptolemy = false;
+        proj_params->use_edge_flips = false;
+        proj_params->max_itr = 30;
+    }
 
     // Get input mesh
     Eigen::MatrixXd V, uv, N;
@@ -134,7 +136,7 @@ int main(int argc, char* argv[])
     else
     {
         Eigen::MatrixXd frame_field;
-        std::tie(frame_field, Th_hat_init)= Holonomy::generate_cross_field(V, F);
+        std::tie(frame_field, Th_hat_init) = Field::generate_rosy_field(V, F);
     }
     std::vector<Scalar> Th_hat = correct_cone_angles(Th_hat_init);
 
@@ -159,61 +161,61 @@ int main(int argc, char* argv[])
     write_vector(optimized_metric_coords, output_filename, 17);
 
     // Generate overlay VF mesh with parametrization
-		if (use_discrete_metric) {
-				auto vf_res = generate_VF_mesh_from_discrete_metric(
-						V,
-						F,
-						Th_hat,
-						optimized_metric_coords);
-				Eigen::MatrixXd V_l = std::get<0>(vf_res);
-				Eigen::MatrixXi F_l = std::get<1>(vf_res);
-				Eigen::MatrixXd uv_l = std::get<2>(vf_res);
-				Eigen::MatrixXi FT_l = std::get<3>(vf_res);
+    if (use_discrete_metric) {
+        auto vf_res = generate_VF_mesh_from_discrete_metric(
+            V,
+            F,
+            Th_hat,
+            optimized_metric_coords);
+        Eigen::MatrixXd V_l = std::get<0>(vf_res);
+        Eigen::MatrixXi F_l = std::get<1>(vf_res);
+        Eigen::MatrixXd uv_l = std::get<2>(vf_res);
+        Eigen::MatrixXi FT_l = std::get<3>(vf_res);
 
-				// Write the overlay output
-				output_filename = join_path(output_dir, "mesh_with_uv.obj");
-				write_obj_with_uv(output_filename, V_l, F_l, uv_l, FT_l);
+        // Write the overlay output
+        output_filename = join_path(output_dir, "mesh_with_uv.obj");
+        write_obj_with_uv(output_filename, V_l, F_l, uv_l, FT_l);
 
-				// Optionally show final parameterization
-				if (show_parameterization) view_parameterization(V_l, F_l, uv_l, FT_l);
-		} else {
-				std::vector<bool> is_cut = {};
-				bool do_best_fit_scaling = false;
-				auto vf_res = generate_VF_mesh_from_metric(
-						V,
-						F,
-						Th_hat,
-						*cone_metric,
-						optimized_metric_coords,
-						is_cut,
-						do_best_fit_scaling);
-				OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
-				Eigen::MatrixXd V_o = std::get<1>(vf_res);
-				Eigen::MatrixXi F_o = std::get<2>(vf_res);
-				Eigen::MatrixXd uv_o = std::get<3>(vf_res);
-				Eigen::MatrixXi FT_o = std::get<4>(vf_res);
-				std::vector<int> fn_to_f_o = std::get<7>(vf_res);
-				std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
+        // Optionally show final parameterization
+        if (show_parameterization) view_parameterization(V_l, F_l, uv_l, FT_l);
+    } else {
+        std::vector<bool> is_cut = {};
+        bool do_best_fit_scaling = false;
+        auto vf_res = generate_VF_mesh_from_metric(
+            V,
+            F,
+            Th_hat,
+            *cone_metric,
+            optimized_metric_coords,
+            is_cut,
+            do_best_fit_scaling);
+        OverlayMesh<Scalar> m_o = std::get<0>(vf_res);
+        Eigen::MatrixXd V_o = std::get<1>(vf_res);
+        Eigen::MatrixXi F_o = std::get<2>(vf_res);
+        Eigen::MatrixXd uv_o = std::get<3>(vf_res);
+        Eigen::MatrixXi FT_o = std::get<4>(vf_res);
+        std::vector<int> fn_to_f_o = std::get<7>(vf_res);
+        std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
 
-				// Write the overlay output
-				output_filename = join_path(output_dir, "overlay_mesh_with_uv.obj");
-				write_obj_with_uv(output_filename, V_o, F_o, uv_o, FT_o);
+        // Write the overlay output
+        output_filename = join_path(output_dir, "overlay_mesh_with_uv.obj");
+        write_obj_with_uv(output_filename, V_o, F_o, uv_o, FT_o);
 
-				// Get refinement mesh
-				Eigen::MatrixXd V_r;
-				Eigen::MatrixXi F_r;
-				Eigen::MatrixXd uv_r;
-				Eigen::MatrixXi FT_r;
-				std::vector<int> fn_to_f_r;
-				std::vector<std::pair<int, int>> endpoints_r;
-				RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
-				refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
+        // Get refinement mesh
+        Eigen::MatrixXd V_r;
+        Eigen::MatrixXi F_r;
+        Eigen::MatrixXd uv_r;
+        Eigen::MatrixXi FT_r;
+        std::vector<int> fn_to_f_r;
+        std::vector<std::pair<int, int>> endpoints_r;
+        RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
+        refinement_mesh.get_VF_mesh(V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r);
 
-				// Write the refined output
-				output_filename = join_path(output_dir, "refined_mesh_with_uv.obj");
-				write_obj_with_uv(output_filename, V_r, F_r, uv_r, FT_r);
+        // Write the refined output
+        output_filename = join_path(output_dir, "refined_mesh_with_uv.obj");
+        write_obj_with_uv(output_filename, V_r, F_r, uv_r, FT_r);
 
-				// Optionally show final parameterization
-				if (show_parameterization) view_parameterization(V_r, F_r, uv_r, FT_r);
-		}
+        // Optionally show final parameterization
+        if (show_parameterization) view_parameterization(V_r, F_r, uv_r, FT_r);
+    }
 }

@@ -30,11 +30,11 @@ namespace Field {
  */
 struct FieldParameters
 {
-    int min_cone = 0; // minimum allowed cone angle in the cross field
-    bool fix_cone_pair = false; // collapse infeasible cone pair on a torus
+    int min_cone = 1; // minimum allowed cone angle in the cross field
+    bool fix_cone_pair = true; // collapse infeasible cone pair on a torus
     bool collapse_cones = false; // collapse as many cones as possible TODO
     bool use_roundings = true; // round away from zero
-    bool use_principal_directions = false; // round away from zero
+    bool use_principal_directions = true; // round away from zero
     Scalar min_cone_pair_distance = 0.; // minimum relative cone pair distance for fitting
     Scalar rel_anisotropy=0.9;
     Scalar abs_anisotropy=0.2;

@@ -19,48 +19,13 @@
 namespace Penner {
 
 
-/// Given a VF mesh, check that the signed face areas are nonnegative
-///
-/// @param[in] V: mesh vertices in 2D
-/// @param[in] F: mesh faces
-/// @return true iff the face areas are all nonnegative
-bool check_areas(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
-
-/// Given a VF mesh with uv coordinates, get the maximum error of the uv lengths
-/// across cuts
-///
-/// @param[in] F: mesh faces
-/// @param[in] uv: mesh uv coordinates in 2D
-/// @param[in] F_uv: mesh uv faces
-/// @return maximum uv length error across cuts
-double compute_uv_length_error(
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& F_uv);
-
-/// Given a VF mesh with uv coordinates, check that it satisfies fundamental uv
-/// consistency constraints:
-///     - uv lengths match up across cuts
-///     - uv face areas are nonnegative
-///
-/// @param[in] V: mesh vertices in 3D
-/// @param[in] F: mesh faces
-/// @param[in] uv: mesh uv coordinates in 2D
-/// @param[in] F_uv: mesh uv faces
-/// @return true iff the mesh passes all of the tests
-bool check_uv(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& F_uv);
-
 /// Given a halfedge mesh, do a bfs on dual graph of mesh to produce a cut
 ///
 /// Note that this only lays out the connected component containing the start halfedge.
 ///
 /// @param m: mesh data structure
 /// @param is_cut_h: (optional) pre-defined cuts to be included
-/// @param start_h: the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
+/// @param start_h: (optional) the first halfedge to be laid out, can be used to control the axis-alignment for the whole patch
 /// @return #h vector, mark whether the current halfedge is part of cut graph
 std::vector<bool>
 compute_layout_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cut_h, int start_h = -1);
@@ -87,16 +52,25 @@ std::vector<bool> pullback_cut_to_overlay(
     const std::vector<bool>& is_cut_h,
     bool is_original_cut = true);
 
-// TODO: unclear why this is here. May be deprecated.
-Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
-    const Eigen::Matrix<Scalar, 1, 2>& p1,
-    const Eigen::Matrix<Scalar, 1, 2>& p2,
-    Scalar l0,
-    Scalar l1,
-    Scalar l2);
-
-// TODO: Document this technical function
-// Exposed for usage in other libraries
+/**
+ * @brief Core layout method for generating a parametrization from
+ * a mesh with metric.
+ * 
+ * WARNING: this is a technical function with numerous exposed parameters.
+ * In particular, it uses a metric representation augmented by conformal scale
+ * factors, which is used for conformal methods and for optional numerical stability.
+ * 
+ * For a simpler parametrization method, use interface code in parametrize.h
+ * 
+ * @param _m: original mesh with initial metric and connectivity
+ * @param mo: overly mesh with final metric (up to scale factors) and connectivity
+ * @param vtx_reindex: map from halfedge to VF vertices
+ * @param u: scale factors to apply to the final metric
+ * @param V_overlay: interpolated vertices of the overlay mesh
+ * @param is_cut_orig: cut on the original mesh to propagate to the final parametrization
+ * @param is_cut: cut on the final mesh to use for the layout
+ * @param use_uniform_bc: (optional) if true, use uniform barycentric coordinates for layout
+ */
 template <typename OverlayScalar>
 std::
     tuple<
@@ -110,23 +84,25 @@ std::
         std::vector<int>, // Fn_to_F
         std::vector<std::pair<int, int>> // endpoints_o
         >
-    consistent_overlay_mesh_to_VL(
+    layout_overlay_mesh(
         const Mesh<Scalar>& _m,
         OverlayMesh<OverlayScalar>& mo,
         const std::vector<int>& vtx_reindex,
-        const std::vector<bool>& is_bd,
         std::vector<Scalar>& u,
         std::vector<std::vector<OverlayScalar>>& V_overlay,
-        std::vector<std::pair<int, int>>& endpoints,
         const std::vector<bool>& is_cut_orig,
         const std::vector<bool>& is_cut,
-        bool use_uniform_bc=false,
-        std::string layout_output_path="");
+        bool use_uniform_bc=false);
 
-    double signed_area(
-        const Eigen::Vector2d& A,
-        const Eigen::Vector2d& B,
-        const Eigen::Vector2d& C);
+inline double signed_area(
+    const Eigen::Vector2d& A,
+    const Eigen::Vector2d& B,
+    const Eigen::Vector2d& C)
+{
+    const Eigen::Vector2d AB = B - A;
+    const Eigen::Vector2d AC = C - A;
+    return AB.x() * AC.y() - AB.y() * AC.x();
+}
 
 /**
  * @brief Generate a mesh of the layout of the intrinsic metric.

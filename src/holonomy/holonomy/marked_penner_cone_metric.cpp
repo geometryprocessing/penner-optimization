@@ -145,13 +145,6 @@ MarkedPennerConeMetric::MarkedPennerConeMetric(
         m_homology_basis_loops.push_back(homology_basis_loops[i]->clone());
         m_dual_loop_manager.register_loop_edges(i, cone_metric, *homology_basis_loops[i]);
     }
-
-    // TODO
-    int num_halfedges = cone_metric.n_halfedges();
-    original_coords.resize(num_halfedges);
-    for (int h = 0; h < num_halfedges; ++h) {
-        original_coords[h] = 2. * log(l[h]);
-    }
 }
 
 
@@ -218,37 +211,6 @@ void MarkedPennerConeMetric::operator=(const MarkedPennerConeMetric& m)
     copy_holonomy(m);
 }
 
-
-void MarkedPennerConeMetric::reset_connectivity(const MarkedPennerConeMetric& m)
-{
-    // Halfedge arrays
-    int num_halfedges = n_halfedges();
-    for (int h = 0; h < num_halfedges; ++h) {
-        n[h] = m.n[h];
-        to[h] = m.to[h];
-        f[h] = m.f[h];
-        l[h] = m.l[h];
-        type[h] = m.type[h];
-        R[h] = m.R[h];
-
-        // opp, he2e, e2he do not change
-    }
-
-    // Vertex arrays
-    int num_vertices = n_vertices();
-    for (int v = 0; v < num_vertices; ++v) {
-        out[v] = m.out[v];
-
-        // v_rep, Th_hat, fixed_dof do not change
-    }
-
-    // Face arrays
-    int num_faces = n_faces();
-    for (int f = 0; f < num_faces; ++f) {
-        h[f] = m.h[f];
-    }
-}
-
 void MarkedPennerConeMetric::reset_markings(const MarkedPennerConeMetric& m)
 {
     // Loop data
@@ -270,7 +232,7 @@ void MarkedPennerConeMetric::reset_marked_metric(const MarkedPennerConeMetric& m
     // Clear flip data
     m_is_discrete_metric = false;
     m_flip_seq.clear();
-    PennerConeMetric::reset();
+    reset_flip_sequence();
 }
 
 void MarkedPennerConeMetric::change_metric(
@@ -279,34 +241,11 @@ void MarkedPennerConeMetric::change_metric(
     bool need_jacobian,
     bool do_repeat_flips)
 {
-    // Restore connectivity to that of m
-    reset_connectivity(m);
+    // Change metric in base class
+    PennerConeMetric::change_metric(m, metric_coords, need_jacobian, do_repeat_flips);
 
-    // Change metric coordinates
-    PennerConeMetric::expand_metric_coordinates(metric_coords);
-    std::vector<int> flip_seq = m_flip_seq;
-    spdlog::debug("Repeating {} flips", m_flip_seq.size());
-    m_flip_seq.clear();
-    m_is_discrete_metric = false;
-    m_need_jacobian = need_jacobian;
-    PennerConeMetric::reset();
-
-    // TODO
-    int num_halfedges = m.n_halfedges();
-    original_coords.resize(num_halfedges);
-    for (int h = 0; h < num_halfedges; ++h) {
-        original_coords[h] = 2. * log(l[h]);
-    }
-
-    // Flip back to current connectivity if flag set
-    if (do_repeat_flips) {
-        for (int h : flip_seq) {
-            PennerConeMetric::flip_ccw(h);
-        }
-        spdlog::debug("{} flips performed", m_flip_seq.size());
-    }
-    // Reset markings if using original connectivity
-    else {
+    // If not repeating flips, restore markings
+    if (!do_repeat_flips) {
         reset_markings(m);
     }
 }
@@ -331,16 +270,6 @@ bool MarkedPennerConeMetric::constraint(
         need_jacobian,
         only_free_vertices);
     return true;
-}
-
-Scalar MarkedPennerConeMetric::max_constraint_error() const
-{
-    VectorX cons;
-    MatrixX J_constraint;
-    bool need_jacobian = false;
-    bool only_free_vertices = true;
-    constraint(cons, J_constraint, need_jacobian, only_free_vertices);
-    return cons.cwiseAbs().maxCoeff();
 }
 
 VectorX MarkedPennerConeMetric::constraint(const VectorX& angles)

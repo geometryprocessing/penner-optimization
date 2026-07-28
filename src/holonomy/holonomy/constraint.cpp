@@ -200,22 +200,6 @@ std::vector<int> compute_dependent_edges(const MarkedPennerConeMetric& marked_me
     return dependent_edges;
 }
 
-void add_symmetry_constraints(
-    const MarkedPennerConeMetric& marked_metric,
-    const std::vector<int>& dependent_edges,
-    VectorX& constraint,
-    int offset)
-{
-    // add symmetry constraints
-    int num_dep_edges = dependent_edges.size();
-    for (int i = 0; i < num_dep_edges; i++) {
-        int e = dependent_edges[i];
-        int h = marked_metric.e2he[e];
-        int Rh = marked_metric.R[h];
-        constraint[offset + i] = marked_metric.original_coords[h] - marked_metric.original_coords[Rh];
-    }
-}
-
 VectorX compute_vertex_constraint(
     const MarkedPennerConeMetric& marked_metric,
     const VectorX& angles)

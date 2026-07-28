@@ -127,15 +127,6 @@ std::
     Mesh<Scalar> m =
         FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
-    // Find boundary halfedges
-    std::vector<bool> is_bd(m.n_ind_vertices(), false);
-    for (int i = 0; i < m.n_halfedges(); i++) {
-        if ((m.type[i] == 1) && (m.type[m.opp[i]] == 2))
-        {
-            is_bd[m.v_rep[m.to[i]]] = true;
-        }
-    }
-
     // Compute interpolation overlay mesh
     // TODO: Use consistent interpolation code from the Penner codebase
     Eigen::MatrixXd V_overlay;
@@ -166,10 +157,6 @@ std::
     }
     make_tufted_overlay(m_o);
 
-    // Get endpoints
-    std::vector<std::pair<int, int>> endpoints;
-    find_origin_endpoints(m_o, endpoints);
-
     // Convert overlay mesh to transposed vector format
     std::vector<std::vector<Scalar>> V_overlay_vec(3);
     for (int i = 0; i < 3; ++i) {
@@ -185,14 +172,12 @@ std::
     // Convert overlay mesh to VL format
     spdlog::trace("Getting layout");
     std::vector<Scalar> u(m.n_ind_vertices(), 0.0);
-    return consistent_overlay_mesh_to_VL(
+    return layout_overlay_mesh(
         m,
         m_o,
         vtx_reindex,
-        is_bd,
         u,
         V_overlay_vec,
-        endpoints,
         is_cut,
         is_cut_integral);
 }

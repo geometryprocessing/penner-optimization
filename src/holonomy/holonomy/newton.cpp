@@ -47,6 +47,8 @@ void OptimizeNewton::initialize_logging() {
 
 void OptimizeNewton::initialize_metric_status_log(MarkedPennerConeMetric& marked_metric)
 {
+    if ((!alg_params.error_log) || (alg_params.output_dir.empty())) return;
+
     // Open main logging file
     std::string data_log_path = join_path(alg_params.output_dir, "metric_status_log.csv");
     spdlog::info("Writing data to {}", data_log_path);
@@ -54,12 +56,15 @@ void OptimizeNewton::initialize_metric_status_log(MarkedPennerConeMetric& marked
     marked_metric.write_status_log(metric_status_file, true);
 }
 
+void OptimizeNewton::close_metric_status_log()
+{
+    if ((!alg_params.error_log) || (alg_params.output_dir.empty())) return;
+    metric_status_file.close();
+}
+
 // Open a per iteration data log and write a header
 void OptimizeNewton::initialize_data_log()
 {
-    // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
-
     // Generate data log path
     std::filesystem::create_directory(alg_params.output_dir);
     std::string data_log_path;
@@ -80,9 +85,6 @@ void OptimizeNewton::initialize_data_log()
 // Write newton log iteration data to file
 void OptimizeNewton::write_data_log_entry()
 {
-    // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
-
     // Write iteration row
     log_file << log.num_iter << ",";
     log_file << std::fixed << std::setprecision(17) << log.max_error << ",";
@@ -110,9 +112,6 @@ void OptimizeNewton::initialize_timing_log()
 // Write newton log iteration data to file
 void OptimizeNewton::write_timing_log_entry()
 {
-    // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
-
     // Write iteration row
     timing_file << std::fixed << std::setprecision(8) << log.time << ",";
     timing_file << std::fixed << std::setprecision(8) << log.solve_time << ",";
@@ -125,12 +124,16 @@ void OptimizeNewton::write_timing_log_entry()
 // Open all logs
 void OptimizeNewton::initialize_logs()
 {
+    if ((!alg_params.error_log) || (alg_params.output_dir.empty())) return;
+
     initialize_data_log();
     initialize_timing_log();
 }
 
 void OptimizeNewton::write_log_entries()
 {
+    if ((!alg_params.error_log) || (alg_params.output_dir.empty())) return;
+
     write_data_log_entry();
     write_timing_log_entry();
 }
@@ -139,7 +142,7 @@ void OptimizeNewton::write_log_entries()
 void OptimizeNewton::close_logs()
 {
     // Do nothing if error logging disabled
-    if (!alg_params.error_log) return;
+    if ((!alg_params.error_log) || (alg_params.output_dir.empty())) return;
 
     log_file.close();
     timing_file.close();
@@ -590,7 +593,6 @@ MarkedPennerConeMetric OptimizeNewton::run(
 
     // Close logging
     close_logs();
-    metric_status_file.close();
 
     // Change metric to final values and restore the original connectivity
     marked_metric->change_metric(initial_marked_metric, reduced_metric_coords, true, false);

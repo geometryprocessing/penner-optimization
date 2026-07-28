@@ -308,7 +308,7 @@ std::array<Eigen::MatrixXd, 4> reduce_curl(
     return opt_cross_field;
 }
 
-std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_cross_field(
+std::tuple<Eigen::MatrixXd, std::vector<Scalar>> generate_rosy_field(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F)
 {

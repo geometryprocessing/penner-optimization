@@ -12,6 +12,7 @@
 #include "field/vector_field.h"
 #include "field/rotation_form.h"
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
+#include "holonomy/holonomy/newton.h"
 #include "holonomy/similarity/similarity_penner_cone_metric.h"
 #include "metric/interface.h"
 
@@ -33,6 +34,79 @@ struct MarkedMetricParameters : ConeMetricParameters
     bool remove_trivial_torus = true; // remove loop constraints from trivial torus to make independent
     bool use_connectivity = true; // use connectivity structure for markings
 };
+
+/**
+ * @brief Generate a parametrization satisfying seamless constraints inferred from
+ * a smooth cross-field, optimized with a MIQ method 
+ * 
+ * The parametrization algorithm is based on a modified newton's method.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param field_params: (optional) parameters for field generation
+ * @param alg_params: (optional) parameters for modified Newton method
+ * @return parametrized VF mesh with uv coordinates
+ * @return cross field direction for u coordinate gradient
+ * @return cross field direction for v coordinate gradient
+ */
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXd>
+parametrize_seamless(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params=Field::FieldParameters(),
+    NewtonParameters alg_params=NewtonParameters());
+
+/**
+ * @brief Generate a parametrization for the metric with given seamless constraints
+ * 
+ * The parametrization algorithm is based on a modified newton's method.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param marked_metric: metric with differentiable seamless constraints
+ * @param alg_params: (optional) parameters for modified Newton method
+ * @return parametrized VF mesh with uv coordinates
+ * @return map from refined faces to original faces
+ * @return map from refined edge vertices to edge endpoints 
+ */
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi, std::vector<int>, std::vector<std::pair<int, int>>>
+parametrize_seamless_metric(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const MarkedPennerConeMetric& marked_metric,
+    NewtonParameters alg_params=NewtonParameters());
+
+/**
+ * @brief Generate a parametrization satisfying seamless constraints inferred from the given cross field.
+ * 
+ * Since the mesh is refined by the parametrization, the cross field also needs to be refined.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param theta: field angles relative to the reference directions
+ * @param kappa: angles across edges between reference directions
+ * @param period_jump: jump in period across edges
+ * @return parametrized VF mesh with uv coordinates
+ * @return refined cross field
+ * 
+ */
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_seamless_parametrization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    NewtonParameters alg_params=NewtonParameters());
 
 /**
  * @brief Generate a mesh with metric from a VF mesh and cones.

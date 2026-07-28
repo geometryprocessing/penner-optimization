@@ -27,6 +27,7 @@ set(MetricSrc
 
 set(ParametrizationSrc
   parametrization/interpolation.cpp
+  parametrization/error.cpp
   parametrization/layout.cpp
   parametrization/parametrize.cpp
   parametrization/refinement.cpp
@@ -80,8 +81,7 @@ target_link_libraries(PennerLib INTERFACE
   PennerFeatureLib
 )
 
-if(FALSE)
-#if(USE_PYBIND)
+if(USE_PYBIND)
   add_library(penner MODULE
     pybind.cpp
   )

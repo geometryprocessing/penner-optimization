@@ -138,7 +138,7 @@ public:
     // Constraint methods: need to have a differentiable constraint and method to project to it
     // ****************************************************************************************
 
-    /// Project the metric to the constraints Th_hat, conformally or otherwise.
+    /// Project the metric to the constraints, conformally or otherwise.
     ///
     /// @param[out] solve_stats: (optional) statistics for the projection method
     /// @param[in] proj_params: (optional) parameters for the projection method
@@ -149,13 +149,15 @@ public:
     std::unique_ptr<DifferentiableConeMetric> project_to_constraint(
         std::shared_ptr<ProjectionParameters> proj_params = nullptr) const;
 
-    /// Compute the current differentiable discrepancy between the vertex cone angles and the target angles.
+    /// Compute the current differentiable constraints
     ///
-    /// @param[out] constraint: per-vertex cone angle constraint error (theta - Th_hat)
+    /// The default constraints are cone angle constraints at vertices.
+    ///
+    /// @param[out] constraint: vector valued constraint function
     /// @param[out] J_constraint: optional Jacobian of the constraint with respect to reduced metric coordinates
     /// @param[in] need_jacobian: (optional) if true, compute the Jacobian
-    /// @param[in] only_free_vertices: (optional) if true, only compute the angle error at vertices that are not
-    ///     marked as fixed
+    /// @param[in] only_free_vertices: (optional) if true, only compute the cone angle error at vertices that are not
+    ///     marked as fixed.
     virtual bool constraint(
         VectorX& constraint,
         MatrixX& J_constraint,
@@ -206,6 +208,16 @@ public:
     /// Undo all flips that have occurred since the metric was initialized
     void undo_flips();
 
+    /// Compute the current differentiable constraints
+    ///
+    /// @return: vector valued constraint function
+    VectorX constraint() const;
+
+    /// Compute the maximum absolute differentiable constraint value
+    ///
+    /// @return: maximum constraint value
+    Scalar max_constraint_error() const;
+
     /// Get the number of reduced independent metric coordinates
     ///
     /// @return number of reduced coordinates
@@ -252,6 +264,8 @@ protected:
     bool m_is_discrete_metric;
     std::vector<int> m_flip_seq;
     MatrixX m_identification;
+
+    void reset_connectivity(const Mesh<Scalar>& m);
 };
 
 /// Differentiable cone metric using Penner coordinates. The advantage of this choice is any
@@ -299,8 +313,26 @@ public:
     // Unique methods: methods unique to this class
     // ********************************************
 
+    /**
+     * @brief Change the metric of the given mesh given new coordinates on the original
+     * connectivity.
+     *
+     * The new metric is assumed to be defined on the same initial connectivity as the current
+     * metric but with potentially new metric coordinates.
+     *
+     * @param m: mesh used to initialize the current mesh
+     * @param metric_coords: new metric coordinates
+     * @param need_jacobian: (optional) track change of metric jacobian if true
+     * @param do_repeat_flips: (optional) repeat flips to restore current connectivity if true
+     */
+    virtual void change_metric(
+        const Mesh<Scalar>& m,
+        const VectorX& metric_coords,
+        bool need_jacobian = true,
+        bool do_repeat_flips = false);
+
     /// Reset the flip sequence, treating the current metric and mesh as the base
-    void reset();
+    void reset_flip_sequence();
 
 protected:
     std::vector<int> m_embed;

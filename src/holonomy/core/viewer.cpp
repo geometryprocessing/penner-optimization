@@ -162,7 +162,7 @@ void view_cross_field(
     }
 
     // get cone angles
-    std::vector<Scalar> Th_hat = Field::compute_cone_angle(V, F, kappa, period_jump);
+    std::vector<Scalar> Th_hat = Field::compute_frame_field_cones(V, F, kappa, period_jump);
     auto [cone_positions, cone_values] = generate_cone_vertices(V, Th_hat);
 
 #ifdef ENABLE_VISUALIZATION

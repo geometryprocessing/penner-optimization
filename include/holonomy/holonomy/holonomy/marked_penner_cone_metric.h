@@ -43,9 +43,6 @@ public:
     // Additional constraints for homology loops
     std::vector<Scalar> kappa_hat;
 
-    // TODO move
-    VectorX original_coords;
-
     MarkedPennerConeMetric();
 
     /**
@@ -86,26 +83,6 @@ public:
      * @param m: mesh with the same element counts as the current mesh
      */
     void reset_marked_metric(const MarkedPennerConeMetric& m);
-
-    /**
-     * @brief Change the metric of the given mesh given new coordinates on the original
-     * connectivity.
-     *
-     * The new metric is assumed to be defined on the same initial connectivity as the current
-     * metric but with potentially new metric coordinates.
-     *
-     * TODO: Move to base class
-     *
-     * @param m: mesh used to initialize the current mesh
-     * @param metric_coords: new metric coordinates
-     * @param need_jacobian: (optional) track change of metric jacobian if true
-     * @param do_repeat_flips: (optional) repeat flips to restore current connectivity if true
-     */
-    virtual void change_metric(
-        const MarkedPennerConeMetric& m,
-        const VectorX& metric_coords,
-        bool need_jacobian = true,
-        bool do_repeat_flips = false);
 
     /**
      * @brief Get number of homology basis loops
@@ -166,11 +143,16 @@ public:
     // Flip method
     virtual bool flip_ccw(int _h, bool Ptolemy = true) override;
 
+    // WARNING: this is not quite an override since the arguments differ
+    virtual void change_metric(
+        const MarkedPennerConeMetric& m,
+        const VectorX& metric_coords,
+        bool need_jacobian = true,
+        bool do_repeat_flips = false);
+
     virtual VectorX constraint(const VectorX& angles);
 
     virtual MatrixX constraint_jacobian(const VectorX& cotangents);
-
-    Scalar max_constraint_error() const;
 
     virtual std::unique_ptr<MarkedPennerConeMetric> clone_marked_metric() const
     {
@@ -182,7 +164,6 @@ public:
 protected:
     std::vector<std::unique_ptr<DualLoop>> m_homology_basis_loops;
     DualLoopManager m_dual_loop_manager;
-    void reset_connectivity(const MarkedPennerConeMetric& m);
     void reset_markings(const MarkedPennerConeMetric& m);
     void copy_connectivity(const MarkedPennerConeMetric& m);
     void copy_metric(const MarkedPennerConeMetric& m);

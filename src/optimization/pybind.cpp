@@ -16,6 +16,7 @@
 #include "optimization/metric_optimization/energy_functor.h"
 #include "optimization/metric_optimization/explicit_optimization.h"
 #include "optimization/metric_optimization/implicit_optimization.h"
+#include "optimization/metric_optimization/uv_optimization.h"
 #include "parametrization/interpolation.h"
 #include "parametrization/layout.h"
 #include "optimization/interface.h"
@@ -25,6 +26,7 @@
 #include "optimization/util/shapes.h"
 #include "metric/shear.h"
 #include "parametrization/translation.h"
+#include "parametrization/error.h"
 
 #ifdef USE_HIGHFIVE
 #include <highfive/H5Easy.hpp>
@@ -69,18 +71,6 @@ std::tuple<Mesh<Scalar>, std::vector<int>> FV_to_double_pybind(
 
 void init_classes_pybind(pybind11::module& m)
 {
-    pybind11::class_<ProjectionParameters, std::shared_ptr<ProjectionParameters>>(
-        m,
-        "ProjectionParameters")
-        .def(pybind11::init<>())
-        .def_readwrite("max_itr", &ProjectionParameters::max_itr)
-        .def_readwrite("output_dir", &ProjectionParameters::output_dir)
-        .def_readwrite("bound_norm_thres", &ProjectionParameters::bound_norm_thres)
-        .def_readwrite("error_eps", &ProjectionParameters::error_eps)
-        .def_readwrite("do_reduction", &ProjectionParameters::do_reduction)
-        .def_readwrite("use_edge_flips", &ProjectionParameters::use_edge_flips)
-        .def_readwrite("initial_ptolemy", &ProjectionParameters::initial_ptolemy);
-
     pybind11::class_<OptimizationParameters, std::shared_ptr<OptimizationParameters>>(
         m,
         "OptimizationParameters")
@@ -146,39 +136,6 @@ void init_classes_pybind(pybind11::module& m)
         .def_readwrite("lambda0", &LineSearchParameters::lambda0)
         .def_readwrite("reset_lambda", &LineSearchParameters::reset_lambda);
 
-    pybind11::class_<OverlayProblem::Mesh<Scalar>>(m, "Mesh")
-        .def(pybind11::init<>())
-        .def_readwrite("n", &OverlayProblem::Mesh<Scalar>::n)
-        .def_readwrite("to", &OverlayProblem::Mesh<Scalar>::to)
-        .def_readwrite("f", &OverlayProblem::Mesh<Scalar>::f)
-        .def_readwrite("h", &OverlayProblem::Mesh<Scalar>::h)
-        .def_readwrite("out", &OverlayProblem::Mesh<Scalar>::out)
-        .def_readwrite("opp", &OverlayProblem::Mesh<Scalar>::opp)
-        .def_readwrite("R", &OverlayProblem::Mesh<Scalar>::R)
-        .def_readwrite("type", &OverlayProblem::Mesh<Scalar>::type)
-        .def_readwrite("Th_hat", &OverlayProblem::Mesh<Scalar>::Th_hat)
-        .def_readwrite("l", &OverlayProblem::Mesh<Scalar>::l)
-        .def_readwrite("v_rep", &OverlayProblem::Mesh<Scalar>::v_rep)
-        .def_readwrite("fixed_dof", &OverlayProblem::Mesh<Scalar>::fixed_dof);
-
-    pybind11::class_<OverlayProblem::OverlayMesh<Scalar>>(m, "OverlayMesh")
-        .def_readwrite("n", &OverlayProblem::OverlayMesh<Scalar>::n)
-        .def_readwrite("to", &OverlayProblem::OverlayMesh<Scalar>::to)
-        .def_readwrite("f", &OverlayProblem::OverlayMesh<Scalar>::f)
-        .def_readwrite("h", &OverlayProblem::OverlayMesh<Scalar>::h)
-        .def_readwrite("out", &OverlayProblem::OverlayMesh<Scalar>::out)
-        .def_readwrite("opp", &OverlayProblem::OverlayMesh<Scalar>::opp)
-        .def_readwrite("R", &OverlayProblem::OverlayMesh<Scalar>::R)
-        .def_readwrite("type", &OverlayProblem::OverlayMesh<Scalar>::type)
-        .def_readwrite("prev", &OverlayProblem::OverlayMesh<Scalar>::prev)
-        .def_readwrite("first_segment", &OverlayProblem::OverlayMesh<Scalar>::first_segment)
-        .def_readwrite("origin", &OverlayProblem::OverlayMesh<Scalar>::origin)
-        .def_readwrite("origin_of_origin", &OverlayProblem::OverlayMesh<Scalar>::origin_of_origin)
-        .def_readwrite("vertex_type", &OverlayProblem::OverlayMesh<Scalar>::vertex_type)
-        .def_readwrite("edge_type", &OverlayProblem::OverlayMesh<Scalar>::edge_type)
-        .def_readwrite("seg_bcs", &OverlayProblem::OverlayMesh<Scalar>::seg_bcs)
-        .def_readwrite("_m", &OverlayProblem::OverlayMesh<Scalar>::_m);
-
     pybind11::class_<ReductionMaps>(m, "ReductionMaps")
         .def(pybind11::init<const Mesh<Scalar>&>())
         .def_readwrite("he2e", &ReductionMaps::he2e)
@@ -215,27 +172,6 @@ void init_classes_pybind(pybind11::module& m)
             "get_overlay_mesh",
             &InterpolationMesh<Scalar>::get_overlay_mesh,
             pybind11::return_value_policy::copy);
-
-    pybind11::
-        class_<DifferentiableConeMetric, std::unique_ptr<DifferentiableConeMetric>, Mesh<Scalar>>(
-            m,
-            "DifferentiableConeMetric")
-            .def("get_metric_coordinates", &DifferentiableConeMetric::get_metric_coordinates)
-            .def(
-                "get_corner_angles",
-                static_cast<
-                std::tuple<
-                    VectorX,
-                    VectorX
-                > (DifferentiableConeMetric::*)() const>(&DifferentiableConeMetric::get_corner_angles))
-            .def(
-                "get_reduced_metric_coordinates",
-                &DifferentiableConeMetric::get_reduced_metric_coordinates)
-            .def("get_expansion_matrix", &DifferentiableConeMetric::get_expansion_matrix)
-            .def("set_metric_coordinates", &DifferentiableConeMetric::set_metric_coordinates);
-
-    pybind11::class_<DiscreteMetric, DifferentiableConeMetric>(m, "DiscreteMetric")
-        .def(pybind11::init<const Mesh<Scalar>&, const VectorX&>());
 
     pybind11::class_<RefinementMesh>(m, "RefinementMesh")
         .def(pybind11::init<
@@ -407,11 +343,6 @@ void init_parameterization_pybind(pybind11::module& m)
         "Make overlay mesh a tufted cover",
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
-    m.def(
-        "compute_uv_length_error",
-        &compute_uv_length_error,
-        pybind11::
-            call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
     m.def("compute_layout_VF", &compute_layout_VF<double>, 
         pybind11::
             call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>());
@@ -476,6 +407,22 @@ load_simplify_overlay_output(std::string fname)
 }
 #endif
 
+void init_uv_optimization_pybind(pybind11::module& m)
+{
+#ifdef USE_UV_OPTIMIZATION
+    spdlog::set_level(spdlog::level::info);
+    pybind11::call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>
+        default_call_guard;
+
+    pybind11::class_<SymDir::Parameters>(m, "SymDirParameters")
+        .def(pybind11::init<>());
+
+    m.def("load_parameters", &load_parameters, default_call_guard);
+    m.def("optimize_seamless_parameterization", &optimize_seamless_parameterization, default_call_guard);
+    m.def("optimize_aligned_parameterization", &optimize_aligned_parameterization, default_call_guard);
+#endif
+}
+
 void init_optimization_pybind(pybind11::module& m)
 {
     init_classes_pybind(m);
@@ -484,6 +431,8 @@ void init_optimization_pybind(pybind11::module& m)
     init_energies_pybind(m);
     init_opt_pybind(m);
     init_parameterization_pybind(m);
+    init_uv_optimization_pybind(m);
+
 
 #ifdef USE_HIGHFIVE
     m.def(

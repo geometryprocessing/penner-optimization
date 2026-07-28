@@ -43,7 +43,6 @@ public:
         const Holonomy::NewtonParameters& input_alg_params)
     {
         alg_params = input_alg_params;
-        num_solves = 0;
 
         switch (alg_params.log_level) {
             case 6: spdlog::set_level(spdlog::level::trace); break;
@@ -71,6 +70,7 @@ public:
         reduced_metric_init = dirichlet_metric.get_reduced_metric_coordinates();
         update_metric(initial_dirichlet_metric, reduced_metric_init);
         num_solves = 0;
+        prev_solves = -1;
         log.max_error = constraint.cwiseAbs().maxCoeff();
 
         // write first data log
@@ -97,6 +97,7 @@ public:
             // Increment iteration and lambda
             log.num_iter++;
             lambda = min(2. * lambda, 1.);
+            prev_solves = num_solves;
 
             // Compute Newton descent direction
             update_metric(initial_dirichlet_metric, reduced_metric_coords);
@@ -142,7 +143,7 @@ protected:
     // log data
     std::ofstream log_file;
     Holonomy::NewtonLog log;
-    int num_solves;
+    int num_solves, prev_solves;
     Scalar max_triangle_quality;
     Scalar max_hard_error;
     std::shared_ptr<ProjectionParameters> proj_params;
@@ -151,6 +152,8 @@ protected:
     // Open a per iteration data log and write a header
     void initialize_data_log()
     {
+        if (alg_params.output_dir.empty()) return;
+
         // Generate data log path
         std::filesystem::create_directory(alg_params.output_dir);
         std::string data_log_path;
@@ -172,6 +175,8 @@ protected:
     // Write newton log iteration data to file
     void write_data_log_entry()
     {
+        if (alg_params.output_dir.empty()) return;
+
         log_file << log.num_iter << ",";
         log_file << std::fixed << std::setprecision(17) << log.max_error << ",";
         log_file << std::fixed << std::setprecision(17) << max_hard_error << ",";
@@ -185,6 +190,8 @@ protected:
     // close the log file
     void close_logs()
     {
+        if (alg_params.output_dir.empty()) return;
+
         log_file.close();
     }
 
@@ -343,7 +350,7 @@ protected:
         }
 
         // Make final line step in original connectivity
-        spdlog::info("Updating metric");
+        spdlog::info("{} solves performed", num_solves);
         dirichlet_metric.change_metric(initial_dirichlet_metric, reduced_metric_coords);
     }
 
@@ -352,6 +359,12 @@ protected:
         // check maximum error
         if (constraint.cwiseAbs().maxCoeff() < alg_params.error_eps) {
             spdlog::info("Stopping optimization as max error {} reached", alg_params.error_eps);
+            return true;
+        }
+
+        // check whether number of solves is stationary
+        if ((log.num_iter > 1) && (num_solves <= (prev_solves + 1))) {
+            spdlog::info("Stopping optimization as no more progress can be made");
             return true;
         }
 

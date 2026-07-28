@@ -127,8 +127,6 @@ DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m) {
 std::tuple<PennerConeMetric, std::vector<int>> generate_cone_metric(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& F_uv,
     const std::vector<Scalar>& Th_hat,
     std::vector<int> free_cones,
     ConeMetricParameters cone_metric_params)
@@ -139,8 +137,8 @@ std::tuple<PennerConeMetric, std::vector<int>> generate_cone_metric(
     Mesh<Scalar> m = FV_to_double<Scalar>(
         V,
         F,
-        uv,
-        F_uv,
+        V,
+        F,
         Th_hat,
         vtx_reindex,
         indep_vtx,
@@ -150,10 +148,10 @@ std::tuple<PennerConeMetric, std::vector<int>> generate_cone_metric(
         free_cones,
         fix_boundary);
     
-    return std::make_tuple(generate_cone_metric(m, cone_metric_params), vtx_reindex);
+    return std::make_tuple(generate_cone_metric_from_mesh(m, cone_metric_params), vtx_reindex);
 }
 
-PennerConeMetric generate_cone_metric(
+PennerConeMetric generate_cone_metric_from_mesh(
     const Mesh<Scalar>& m,
     ConeMetricParameters cone_metric_params)
 {

@@ -15,6 +15,7 @@
 #include "field/cross_field.h"
 #include "metric/quality.h"
 #include "field/cones.h"
+#include "field/frame_field.h"
 #include "holonomy/holonomy/holonomy.h"
 #include "holonomy/holonomy/constraint.h"
 #include "field/rotation_form.h"
@@ -25,6 +26,7 @@
 #include "metric/constraint.h"
 #include "optimization/interface.h"
 #include "parametrization/interpolation.h"
+#include "parametrization/parametrize.h"
 #include "parametrization/refinement.h"
 #include "util/io.h"
 #include "util/vector.h"
@@ -245,9 +247,7 @@ MarkedPennerConeMetric generate_marked_metric_from_mesh(
     MarkedMetricParameters marked_metric_params,
     std::vector<int> marked_halfedges)
 {
-    // Optionally remove symmetry structure
-    // TODO: Need to remake cone angles with half values
-    PennerConeMetric cone_metric = generate_cone_metric(_m, marked_metric_params);
+    PennerConeMetric cone_metric = generate_cone_metric_from_mesh(_m, marked_metric_params);
 
     // Get initial log length coordinates
     DiscreteMetric discrete_metric = generate_discrete_metric(_m);
@@ -643,6 +643,79 @@ std::tuple<int, int> add_optimal_cone_pair(MarkedPennerConeMetric& marked_metric
     marked_metric.Th_hat[marked_metric.v_rep[j]] -= angle_delta;
 
     return std::make_tuple(i, j);
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi, std::vector<int>, std::vector<std::pair<int, int>>>
+parametrize_seamless_metric(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const MarkedPennerConeMetric& marked_metric,
+    NewtonParameters alg_params)
+{
+    // Optimize metric
+    auto opt_marked_metric = optimize_metric_angles(marked_metric, alg_params);
+
+    VectorX opt_metric_coords = opt_marked_metric.get_metric_coordinates();
+    return parametrize_metric(V, F, marked_metric, opt_metric_coords);
+}
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXd, Eigen::MatrixXd>
+parametrize_seamless(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params,
+    NewtonParameters alg_params)
+{
+    MarkedMetricParameters marked_metric_params;
+    auto [reference_field, theta, kappa, period_jump] = generate_frame_field(V, F, field_params);
+    auto [V_r, F_r, uv_r, FT_r, reference_field_r, theta_r, kappa_r, period_jump_r] = generate_seamless_parametrization(
+        V,
+        F,
+        reference_field,
+        theta,
+        kappa,
+        period_jump,
+        alg_params);
+    auto [PD1, PD2] = Field::comb_frame_field(V_r, F_r, uv_r, FT_r, reference_field_r, theta_r, period_jump_r);
+    return std::make_tuple(V_r, F_r, uv_r, FT_r, PD1, PD2);
+
+}
+
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_seamless_parametrization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    NewtonParameters alg_params)
+{
+    MarkedMetricParameters marked_metric_params;
+    auto [marked_metric, vtx_reindex, rotation_form, Th_hat] = generate_metric_from_field(V, F, theta, kappa, period_jump, marked_metric_params);
+    auto [V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r] = parametrize_seamless_metric(V, F, marked_metric, alg_params);
+
+    auto [reference_field_r, theta_r, kappa_r, period_jump_r] = Field::refine_frame_field(
+        F_r,
+        FT_r,
+        fn_to_f_r,
+        endpoints_r,
+        F,
+        reference_field,
+        theta,
+        kappa,
+        period_jump);
+
+    return std::make_tuple(V_r, F_r, uv_r, FT_r, reference_field_r, theta_r, kappa_r, period_jump_r);
+
 }
 
 } // namespace Holonomy

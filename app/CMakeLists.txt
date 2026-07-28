@@ -38,13 +38,22 @@ target_link_libraries(parameterize_aligned PRIVATE
   ApplicationUtilLib
 )
 
-# add_executable(optimize_metric
-#   optimize_metric.cpp
-# )
-# target_link_libraries(optimize_metric PRIVATE
-#   PennerLib
-#   CLI11::CLI11
-# )
+add_executable(test_interface
+test_interface.cpp
+)
+target_link_libraries(test_interface PRIVATE
+  PennerLib
+  SymmetricDirichletLib
+  ApplicationUtilLib
+)
+
+add_executable(optimize_metric
+  optimize_metric.cpp
+)
+target_link_libraries(optimize_metric PRIVATE
+  PennerLib
+  CLI11::CLI11
+)
 
 # add_executable(optimize_shear
 #   optimize_shear.cpp

@@ -199,6 +199,7 @@ protected:
     // logging methods
     void initialize_logging();
     void initialize_metric_status_log(MarkedPennerConeMetric& marked_metric);
+    void close_metric_status_log();
 
     virtual void initialize_data_log();
     virtual void write_data_log_entry();

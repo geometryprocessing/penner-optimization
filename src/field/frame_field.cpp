@@ -12,6 +12,7 @@
 #include "util/vf_mesh.h"
 #include "util/map.h"
 
+#include <igl/facet_components.h>
 #include <igl/per_face_normals.h>
 #include <igl/local_basis.h>
 #include <igl/rotate_vectors.h>
@@ -184,8 +185,51 @@ Eigen::VectorXd rotate_vector(
     return norm*cos(a) * B1 + norm*sin(a) * B2;
 }
 
-std::tuple<int, int>
+std::tuple<std::vector<int>, std::vector<int>>
 find_u_aligned_edges(
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT)
+{
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(FT, TT, TTi);
+    Eigen::ArrayXX<bool> is_boundary_edge = (TT.array() < 0);
+
+    // get face components
+    int N = uv.rows();
+    Eigen::VectorXi C;
+    int num_components = igl::facet_components(FT, C);
+    spdlog::info("combing field on {} components", num_components);
+    std::vector<double> min_v_diffs(num_components, 1e10);
+    std::vector<int> min_faces(num_components, -1);
+    std::vector<int> min_edges(num_components, -1);
+
+    for (int fijk = 0; fijk < FT.rows(); ++fijk)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            if (!is_boundary_edge(fijk, i)) continue;
+            int ci = C[fijk];
+
+            int vi = FT(fijk, (i + 0) % 3);
+            int vj = FT(fijk, (i + 1) % 3);
+            double signed_u_diff = uv(vj, 0) - uv(vi, 0);
+            if (signed_u_diff < 0.) continue;
+
+            double v_diff = abs(uv(vj, 1) - uv(vi, 1));
+            if (v_diff < min_v_diffs[ci]) {
+                min_v_diffs[ci] = v_diff;
+                min_faces[ci] = fijk;
+                min_edges[ci] = i;
+            }
+        }
+    }
+
+    return std::make_tuple(min_faces, min_edges);
+
+}
+
+std::tuple<int, int>
+find_u_aligned_edge(
     const Eigen::MatrixXd& uv,
     const Eigen::MatrixXi& FT)
 {
@@ -228,11 +272,53 @@ std::tuple<Eigen::VectorXi, std::deque<int>, Eigen::VectorXi> initialize_matchin
     const Eigen::MatrixXd& B1,
     const Eigen::MatrixXd& B2)
 {   
+    Eigen::VectorXi matchings = Eigen::VectorXi::Constant(F.rows(), 0);
+    std::deque<int> d;
+    Eigen::VectorXi mark = Eigen::VectorXi::Constant(F.rows(), 0);
+
+    std::vector<int> min_faces, min_edges;
+    std::tie(min_faces, min_edges) = find_u_aligned_edges(uv, FT);
+    int num_components = min_edges.size();
+    for (int ci = 0; ci < num_components; ++ci)
+    {
+        int fijk = min_faces[ci];
+        int i = min_edges[ci];
+        int vi = F(fijk, (i + 0) % 3);
+        int vj = F(fijk, (i + 1) % 3);
+        Eigen::VectorXd dij = V.row(vj) - V.row(vi);
+        dij.normalize();
+        double min = (frame_field.row(fijk) - dij.transpose()).norm();
+        for (int i = 1; i < 4; ++i)
+        {
+            Eigen::VectorXd rot_dfijk = rotate_vector(frame_field.row(fijk), i * (igl::PI / 2.0), B1.row(fijk), B2.row(fijk));
+            double curr_diff = (rot_dfijk - dij).norm();
+            if (curr_diff < min)
+            {
+                min = curr_diff;
+                matchings[fijk] = i;
+            }
+        }
+        d.push_back(fijk);
+        mark[fijk] = 1;
+    }
+
+    return { matchings, d, mark };
+}
+
+std::tuple<Eigen::VectorXi, std::deque<int>, Eigen::VectorXi> _initialize_matchings(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& FT,
+    const Eigen::MatrixXd& frame_field, 
+    const Eigen::MatrixXd& B1,
+    const Eigen::MatrixXd& B2)
+{   
     Eigen::VectorXi matchings = Eigen::VectorXi::Constant(FT.rows(), 0);
     std::deque<int> d;
     Eigen::VectorXi mark = Eigen::VectorXi::Constant(FT.rows(), 0);
 
-    auto [fijk, i] = find_u_aligned_edges(uv, FT);
+    auto [fijk, i] = find_u_aligned_edge(uv, FT);
     int vi = F(fijk, (i + 0) % 3);
     int vj = F(fijk, (i + 1) % 3);
     Eigen::VectorXd dij = V.row(vj) - V.row(vi);
@@ -378,9 +464,9 @@ comb_frame_field(
     Eigen::MatrixXd PD1 = igl::rotate_vectors(frame_field, u_angles, B1, B2);
     Eigen::MatrixXd PD2 = igl::rotate_vectors(frame_field, v_angles, B1, B2);
 
-    auto [phase, PD1_r, PD2_r] = maximize_combed_frame_alignment(V, F, uv, FT, PD1, PD2);
+    //auto [phase, PD1_r, PD2_r] = maximize_combed_frame_alignment(V, F, uv, FT, PD1, PD2);
     
-    return {PD1_r, PD2_r};
+    return {PD1, PD2};
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> 
@@ -505,7 +591,7 @@ load_frame_field(const std::string& filename)
     return std::make_tuple(reference_field, theta, kappa, period_jump);
 }
 
-std::vector<Scalar> compute_cone_angle( 
+std::vector<Scalar> compute_frame_field_cones( 
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& kappa,

@@ -12,6 +12,12 @@ set(OptimizationUtilSrc
   util/shapes.cpp
 )
 
+if (USE_UV_OPTIMIZATION)
+list(APPEND MetricOptimizationSrc 
+  metric_optimization/uv_optimization.cpp
+)
+endif()
+
 add_library(PennerOptimizationLib
   interface.cpp
   pybind.cpp
@@ -22,6 +28,8 @@ target_include_directories(PennerOptimizationLib PUBLIC ../../include/optimizati
 target_link_libraries(PennerOptimizationLib PUBLIC
   PennerCoreLib
   ${PYBIND_LIBRARIES}
+  ${UV_OPT_LIBRARIES}
+
 )
 target_compile_definitions(PennerOptimizationLib PUBLIC
   SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

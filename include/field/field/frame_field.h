@@ -159,7 +159,7 @@ Eigen::VectorXd rotate_vector(
                     const Eigen::VectorXd& B1,
                     const Eigen::VectorXd& B2);
 
-std::vector<Scalar> compute_cone_angle( 
+std::vector<Scalar> compute_frame_field_cones( 
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& kappa,

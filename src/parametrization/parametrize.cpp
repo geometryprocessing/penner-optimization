@@ -8,12 +8,13 @@
 
 #include "parametrization/parametrize.h"
 
-#include "util/boundary.h"
 #include "metric/projection.h"
 #include "parametrization/interpolation.h"
 #include "parametrization/layout.h"
 #include "util/vector.h"
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
+#include "parametrization/refinement.h"
+#include "parametrization/error.h"
 
 /// FIXME Do cleaning pass
 
@@ -42,18 +43,14 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc,
-        std::string layout_output_path)
+        bool use_uniform_bc)
 {
     // Get metric target coordinates
     auto cone_metric = initial_cone_metric.set_metric_coordinates(reduced_metric_coords);
     VectorX metric_target = initial_cone_metric.get_metric_coordinates();
     VectorX metric_coords = cone_metric->get_metric_coordinates();
 
-    // Get boundary vertices
-    std::vector<bool> is_bd = compute_boundary_vertices(m);
-
-    // Fit conformal scale factors
+    // Optionally fit conformal scale factors for numerical stability
     VectorX metric_coords_scaled = metric_coords;
     VectorX scale_factors;
     scale_factors.setZero(initial_cone_metric.n_ind_vertices());
@@ -63,18 +60,6 @@ std::
         metric_coords_scaled = metric_coords - B * scale_factors;
     }
     VectorX metric_diff = metric_coords_scaled - metric_target;
-    SPDLOG_DEBUG(
-        "Scale factors in range [{}, {}]",
-        scale_factors.minCoeff(),
-        scale_factors.maxCoeff());
-    SPDLOG_DEBUG(
-        "Scaled metric coordinates in range [{}, {}]",
-        metric_coords_scaled.minCoeff(),
-        metric_coords_scaled.maxCoeff());
-    SPDLOG_DEBUG(
-        "Differences from target to optimized metric in range [{}, {}]",
-        metric_diff.minCoeff(),
-        metric_diff.maxCoeff());
 
     // Compute interpolation overlay mesh
     Eigen::MatrixXd V_overlay;
@@ -117,20 +102,16 @@ std::
     std::vector<int> vtx_reindex_mutable = vtx_reindex;
     std::vector<Scalar> u; // (m_o._m.Th_hat.size(), 0.0);
     convert_eigen_to_std_vector(scale_factors, u);
-    // auto parametrize_res = overlay_mesh_to_VL<Scalar>(V, F, Th_hat, m_o, u, V_overlay_vec,
     // vtx_reindex_mutable, endpoints, -1); FIXME
-    return consistent_overlay_mesh_to_VL<OverlayScalar>(
+    return layout_overlay_mesh<OverlayScalar>(
         m,
         m_o,
         vtx_reindex,
-        is_bd,
         u,
         V_overlay_vec,
-        endpoints,
         is_cut,
         {},
-        use_uniform_bc,
-        layout_output_path);
+        use_uniform_bc);
 }
 
 std::
@@ -162,6 +143,42 @@ std::
     return generate_VF_mesh_from_halfedge_metric<Scalar>(V, m, vtx_reindex, initial_cone_metric, reduced_metric_coords, cut_h, do_best_fit_scaling);
 }
 
+    std::tuple<
+        Eigen::MatrixXd, // V_o
+        Eigen::MatrixXi, // F_o
+        Eigen::MatrixXd, // uv_o
+        Eigen::MatrixXi, // FT_o
+        std::vector<int>, // Fn_to_F_o
+        std::vector<std::pair<int, int>>> // endpoints_o
+    parametrize_metric(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const DifferentiableConeMetric& initial_cone_metric,
+        const VectorX& reduced_metric_coords)
+{
+    // Get mesh with vertex reindexing
+    std::vector<Scalar> Th_hat(V.rows(), 0); // trivial cones
+    std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
+    Mesh<Scalar> m =
+        FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+    m.Th_hat = initial_cone_metric.Th_hat; // copy over angle constraints
+
+    std::vector<bool> cut_h = {};
+    auto vf_res = generate_VF_mesh_from_halfedge_metric<Scalar>(V, m, vtx_reindex, initial_cone_metric, reduced_metric_coords, cut_h);
+
+    // simplify the refined parametrization
+    Eigen::MatrixXd V_o = std::get<1>(vf_res);
+    Eigen::MatrixXi F_o = std::get<2>(vf_res);
+    Eigen::MatrixXd uv_o = std::get<3>(vf_res);
+    Eigen::MatrixXi FT_o = std::get<4>(vf_res);
+    std::vector<int> fn_to_f_o = std::get<7>(vf_res);
+    std::vector<std::pair<int, int>> endpoints_o = std::get<8>(vf_res);
+    RefinementMesh refinement_mesh(V_o, F_o, uv_o, FT_o, fn_to_f_o, endpoints_o);
+    refinement_mesh.refine_mesh();
+    refinement_mesh.simplify_mesh();
+    return refinement_mesh.get_VF_mesh();
+}
+
 std::
     tuple<
         Eigen::MatrixXd, // V_o
@@ -182,14 +199,11 @@ std::
     Mesh<Scalar> m =
         FV_to_double(V, F, V, F, Th_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
-    // Get boundary vertices
-    std::vector<bool> is_bd = compute_boundary_vertices(m);
-
     // Get layout topology from mesh
     std::vector<bool> is_cut = compute_layout_topology(m, cut_h);
 
     // Set metric for layout
-		DiscreteMetric discrete_metric(m, reduced_log_edge_lengths);
+    DiscreteMetric discrete_metric(m, reduced_log_edge_lengths);
 
     // Create trivial overlay mesh
     OverlayMesh<Scalar> m_o(discrete_metric);
@@ -204,21 +218,15 @@ std::
         }
     }
 
-    // Get endpoints
-    std::vector<std::pair<int, int>> endpoints;
-    find_origin_endpoints(m_o, endpoints);
-
-		// Compute layout
+    // Compute layout
     std::vector<Scalar> u_vec(m.n_ind_vertices(), 0.0);
     //std::vector<int> vtx_reindex_mutable = vtx_reindex;
-    auto layout_res = consistent_overlay_mesh_to_VL(
+    auto layout_res = layout_overlay_mesh(
         m,
         m_o,
         vtx_reindex,
-        is_bd,
         u_vec,
         V_overlay_vec,
-        endpoints,
         is_cut,
         {});
 
@@ -251,8 +259,7 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc,
-        std::string layout_output_path);
+        bool use_uniform_bc);
 
 #ifdef WITH_MPFR
 #ifndef MULTIPRECISION
@@ -278,8 +285,7 @@ std::
         const VectorX& reduced_metric_coords,
         std::vector<bool> cut_h,
         bool do_best_fit_scaling,
-        bool use_uniform_bc,
-        std::string layout_output_path);
+        bool use_uniform_bc);
 #endif
 #endif
   

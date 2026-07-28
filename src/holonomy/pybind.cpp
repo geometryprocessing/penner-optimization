@@ -14,6 +14,7 @@
 #include "holonomy/holonomy/marked_penner_cone_metric.h"
 #include "holonomy/holonomy/newton.h"
 #include "holonomy/holonomy/constraint.h"
+#include "holonomy/core/viewer.h"
 #include "field/rotation_form.h"
 #include "field/intrinsic_field.h"
 #include "field/frame_field.h"
@@ -42,8 +43,68 @@ void writeOBJ(
     igl::writeOBJ(str, V, F, CN, FN, TC, FTC);
 }
 
-
 void init_holonomy_pybind(pybind11::module& m)
+{
+    spdlog::set_level(spdlog::level::info);
+    pybind11::call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>
+        default_call_guard;
+
+    pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")
+        .def(pybind11::init<>())
+        .def_readwrite("output_dir", &NewtonParameters::output_dir)
+        .def_readwrite("error_log", &NewtonParameters::error_log)
+        .def_readwrite("reset_lambda", &NewtonParameters::reset_lambda)
+        .def_readwrite("do_reduction", &NewtonParameters::do_reduction)
+        .def_readwrite("lambda0", &NewtonParameters::lambda0)
+        .def_readwrite("error_eps", &NewtonParameters::error_eps)
+        .def_readwrite("bound_norm_thres", &NewtonParameters::bound_norm_thres)
+        .def_readwrite("max_itr", &NewtonParameters::max_itr)
+        .def_readwrite("max_time", &NewtonParameters::max_time)
+        .def_readwrite("min_lambda", &NewtonParameters::min_lambda)
+        .def_readwrite("solver", &NewtonParameters::solver)
+        .def_readwrite("log_level", &NewtonParameters::log_level);
+
+    pybind11::class_<MarkedMetricParameters, ConeMetricParameters>(
+        m,
+        "MarkedMetricParameters")
+        .def(pybind11::init<>())
+        .def_readwrite("remove_loop_constraints", &MarkedMetricParameters::remove_loop_constraints)
+        .def_readwrite("remove_trivial_torus", &MarkedMetricParameters::remove_trivial_torus)
+        .def_readwrite("weighting", &MarkedMetricParameters::weighting);
+
+    pybind11::class_<Field::FieldParameters, std::shared_ptr<Field::FieldParameters>>(m, "FieldParameters")
+        .def(pybind11::init<>())
+        .def_readwrite("min_cone", &Field::FieldParameters::min_cone)
+        .def_readwrite("fix_cone_pair", &Field::FieldParameters::fix_cone_pair)
+        .def_readwrite("use_principal_directions", &Field::FieldParameters::use_principal_directions);
+
+
+    pybind11::class_<MarkedPennerConeMetric, PennerConeMetric>(m, "MarkedPennerConeMetric")
+        .def(pybind11::init<
+            const Mesh<Scalar>&,
+            const VectorX&,
+            const std::vector<std::unique_ptr<DualLoop>>&,
+            const std::vector<Scalar>&
+        >())
+        .def_readwrite("kappa_hat", &MarkedPennerConeMetric::kappa_hat)
+        .def("change_metric", &MarkedPennerConeMetric::change_metric)
+        .def("reset_marked_metric", &MarkedPennerConeMetric::reset_marked_metric)
+        .def("n_homology_basis_loops", &MarkedPennerConeMetric::n_homology_basis_loops);
+
+    m.def("generate_marked_metric", &generate_marked_metric, default_call_guard);
+    m.def("generate_metric_from_field", &generate_metric_from_field, default_call_guard);
+    m.def("regularize_metric", &regularize_metric, default_call_guard);
+    m.def("optimize_metric_angles", &optimize_metric_angles, default_call_guard);
+
+    m.def("parametrize_seamless", &parametrize_seamless, default_call_guard);
+    m.def("parametrize_seamless_metric", &parametrize_seamless_metric, default_call_guard);
+    m.def("generate_seamless_parametrization", &generate_seamless_parametrization, default_call_guard);
+
+    m.def("view_cross_field", &view_cross_field, default_call_guard);
+    m.def("view_seamless_parameterization",  &view_seamless_parameterization, default_call_guard);
+}
+
+void init_additional_holonomy_pybind(pybind11::module& m)
 {
     spdlog::set_level(spdlog::level::info);
     pybind11::call_guard<pybind11::scoped_ostream_redirect, pybind11::scoped_estream_redirect>
@@ -80,60 +141,6 @@ void init_holonomy_pybind(pybind11::module& m)
         .def("fix_inconsistent_matchings", &Field::IntrinsicNRosyField::fix_inconsistent_matchings)
         .def("compute_rotation_form", &Field::IntrinsicNRosyField::compute_rotation_form);
 
-    pybind11::class_<NewtonParameters, std::shared_ptr<NewtonParameters>>(m, "NewtonParameters")
-        .def(pybind11::init<>())
-        .def_readwrite("output_dir", &NewtonParameters::output_dir)
-        .def_readwrite("error_log", &NewtonParameters::error_log)
-        .def_readwrite("reset_lambda", &NewtonParameters::reset_lambda)
-        .def_readwrite("do_reduction", &NewtonParameters::do_reduction)
-        .def_readwrite("lambda0", &NewtonParameters::lambda0)
-        .def_readwrite("error_eps", &NewtonParameters::error_eps)
-        .def_readwrite("bound_norm_thres", &NewtonParameters::bound_norm_thres)
-        .def_readwrite("max_itr", &NewtonParameters::max_itr)
-        .def_readwrite("max_time", &NewtonParameters::max_time)
-        .def_readwrite("min_lambda", &NewtonParameters::min_lambda)
-        .def_readwrite("solver", &NewtonParameters::solver)
-        .def_readwrite("log_level", &NewtonParameters::log_level);
-
-    pybind11::class_<MarkedMetricParameters, std::shared_ptr<MarkedMetricParameters>>(
-        m,
-        "MarkedMetricParameters")
-        .def(pybind11::init<>())
-        .def_readwrite("use_log_length", &MarkedMetricParameters::use_log_length)
-        .def_readwrite("use_initial_zero", &MarkedMetricParameters::use_initial_zero)
-        .def_readwrite("remove_loop_constraints", &MarkedMetricParameters::remove_loop_constraints)
-        .def_readwrite("remove_trivial_torus", &MarkedMetricParameters::remove_trivial_torus)
-        .def_readwrite("free_interior", &MarkedMetricParameters::free_interior)
-        .def_readwrite("weighting", &MarkedMetricParameters::weighting);
-
-    pybind11::class_<Field::FieldParameters, std::shared_ptr<Field::FieldParameters>>(m, "FieldParameters")
-        .def(pybind11::init<>())
-        .def_readwrite("min_cone", &Field::FieldParameters::min_cone);
-
-    pybind11::class_<MarkedPennerConeMetric, DifferentiableConeMetric>(m, "MarkedPennerConeMetric")
-        .def(pybind11::init<
-            const Mesh<Scalar>&,
-            const VectorX&,
-            const std::vector<std::unique_ptr<DualLoop>>&,
-            const std::vector<Scalar>&
-        >())
-        .def_readwrite("kappa_hat", &MarkedPennerConeMetric::kappa_hat)
-        .def("flip_ccw", &MarkedPennerConeMetric::flip_ccw)
-        .def("undo_flips", &MarkedPennerConeMetric::undo_flips)
-        .def("change_metric", &MarkedPennerConeMetric::change_metric)
-        .def("clone_cone_metric", &MarkedPennerConeMetric::clone_cone_metric)
-        .def("make_discrete_metric", &MarkedPennerConeMetric::make_discrete_metric)
-        .def("get_flip_sequence", &MarkedPennerConeMetric::get_flip_sequence)
-        .def("max_constraint_error", &MarkedPennerConeMetric::max_constraint_error)
-        .def("constraint", 
-                static_cast<VectorX (MarkedPennerConeMetric::*)(const VectorX&)>(&MarkedPennerConeMetric::constraint))
-        .def("constraint_jacobian", 
-                static_cast<MatrixX (MarkedPennerConeMetric::*)(const VectorX&)>(&MarkedPennerConeMetric::constraint_jacobian))
-        .def("n_vertices", &MarkedPennerConeMetric::n_vertices)
-        .def("n_edges", &MarkedPennerConeMetric::n_edges)
-        .def("n_faces", &MarkedPennerConeMetric::n_faces)
-        .def("n_homology_basis_loops", &MarkedPennerConeMetric::n_homology_basis_loops);
-
     pybind11::class_<DualLoop>(m, "DualLoop");
 
     pybind11::class_<CoordinateEnergy, Optimization::EnergyFunctor>(m, "CoordinateEnergy")
@@ -158,7 +165,6 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("build_reduced_matrix_rhs", &build_reduced_matrix_rhs, default_call_guard);
     m.def("compute_triangle_corner_angle_jacobian", &compute_triangle_corner_angle_jacobian, default_call_guard);
     m.def("FE_to_double", &FE_to_double<Scalar>, default_call_guard);
-    m.def("generate_marked_metric", &generate_marked_metric, default_call_guard);
     m.def("generate_marked_metric_from_mesh", &generate_marked_metric_from_mesh, default_call_guard);
     m.def("generate_refined_marked_metric", &generate_refined_marked_metric, default_call_guard);
     m.def("build_symmetric_matrix_system", &build_symmetric_matrix_system, default_call_guard);
@@ -172,7 +178,6 @@ void init_holonomy_pybind(pybind11::module& m)
         default_call_guard);
 
     m.def("optimize_subspace_metric_angles", &optimize_subspace_metric_angles, default_call_guard);
-    m.def("optimize_metric_angles", &optimize_metric_angles, default_call_guard);
     m.def(
         "generate_intrinsic_rotation_form",
         pybind11::
@@ -198,12 +203,10 @@ void init_holonomy_pybind(pybind11::module& m)
         &generate_penner_coordinates,
         default_call_guard);
 
-    m.def("load_frame_field", &Field::load_frame_field, default_call_guard);
-    m.def("write_frame_field", &Field::write_frame_field, default_call_guard);
-    m.def("refine_frame_field", &Field::refine_frame_field, default_call_guard);
     m.def("compute_loop_holonomy_matrix", &compute_loop_holonomy_matrix, default_call_guard);
-    m.def("compute_field_direction", &Field::compute_field_direction, default_call_guard);
     m.def("write_obj", writeOBJ, default_call_guard);
+
+    m.def("compute_field_direction", &Field::compute_field_direction, default_call_guard);
 
 }
 

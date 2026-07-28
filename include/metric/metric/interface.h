@@ -59,8 +59,6 @@ DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
  *
  * @param V: mesh vertices
  * @param F: mesh faces
- * @param uv: mesh metric vertices
- * @param F_uv: mesh metric faces
  * @param Th_hat: per-vertex cone angles
  * @param free_cones: list of cones to leave free
  * @param cone_metric_params: (optional) parameters for the cone mesh construction
@@ -70,8 +68,6 @@ DiscreteMetric generate_discrete_metric(const Mesh<Scalar>& m);
 std::tuple<PennerConeMetric, std::vector<int>> generate_cone_metric(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
-    const Eigen::MatrixXd& uv,
-    const Eigen::MatrixXi& F_uv,
     const std::vector<Scalar>& Th_hat,
     std::vector<int> free_cones,
     ConeMetricParameters cone_metric_params = ConeMetricParameters());
@@ -84,7 +80,7 @@ std::tuple<PennerConeMetric, std::vector<int>> generate_cone_metric(
  * @return marked cone metric
  * @return vertex reindexing from the halfedge to VF vertices
  */
-PennerConeMetric generate_cone_metric(
+PennerConeMetric generate_cone_metric_from_mesh(
     const Mesh<Scalar>& m,
     ConeMetricParameters cone_metric_params = ConeMetricParameters());
 

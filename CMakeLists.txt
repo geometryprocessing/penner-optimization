@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(PennerOptimization)
 
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
@@ -110,7 +111,13 @@ if (RENDER_TEXTURE)
 endif()
 if(USE_PYBIND)
   add_compile_definitions(PYBIND)
+  
+  # prefer conda environment OpenMP if building in a python environment
+  if(DEFINED ENV{CONDA_PREFIX} AND NOT DEFINED OpenMP_ROOT)
+    set(OpenMP_ROOT "$ENV{CONDA_PREFIX}" CACHE PATH "Root directory for OpenMP search")
+  endif()
 endif()
+
 # WARNING: This compile definition publicly links suitesparse into the
 # conformal ideal delaunay library
 if(USE_SUITESPARSE)
@@ -135,6 +142,9 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 if (USE_UV_OPTIMIZATION)
     add_compile_definitions(USE_UV_OPTIMIZATION)
     include(seamless-optimization)
+    set(UV_OPT_LIBRARIES
+      SymmetricDirichletLib
+    )
 else()
     include(json)
 endif()

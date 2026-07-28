@@ -39,6 +39,157 @@
 namespace Penner {
 namespace Feature {
 
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<VertexEdge>,
+    std::vector<VertexEdge>,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_feature_aligned_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params)
+{ 
+    // refine input mesh
+    auto [V_ref, F_ref, feature_edges, hard_feature_edges] = generate_refined_feature_mesh(V, F, false);
+
+    spdlog::info("optimizing field");
+    FeatureFinder feature_finder(V_ref, F_ref);
+    feature_finder.mark_features(feature_edges);
+    auto [V_cut, F_cut, V_map, F_is_feature] = feature_finder.generate_feature_cut_mesh();
+    auto [reference_field, theta, kappa, period_jump] = generate_refined_feature_field(V_cut, F_cut, V_map);
+
+    return std::make_tuple(V_ref, F_ref, feature_edges, hard_feature_edges, reference_field, theta, kappa, period_jump);
+}
+
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<VertexEdge>,
+    std::vector<VertexEdge>,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_feature_aligned_parameterization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<VertexEdge>& feature_edges,
+    const std::vector<VertexEdge>& hard_feature_edges,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    NewtonParameters alg_params)
+{
+    // use utility class
+    MarkedMetricParameters marked_metric_params;
+    AlignedMetricGenerator aligned_metric_generator(
+        V,
+        F,
+        feature_edges,
+        hard_feature_edges,
+        reference_field,
+        theta,
+        kappa,
+        period_jump,
+        marked_metric_params);
+
+    int max_itr = alg_params.max_itr;
+    alg_params.max_itr = 50;
+    aligned_metric_generator.optimize_full(alg_params);
+
+    alg_params.max_itr = max_itr;
+    aligned_metric_generator.optimize_relaxed(alg_params);
+    
+    auto [V_r, F_r, uv_r, FT_r, fn_to_f_r, endpoints_r] = aligned_metric_generator.get_parameterization();
+    auto [feature_face_edges, misaligned_edges] = aligned_metric_generator.get_refined_features();
+    auto feature_edges_r = compute_face_edge_endpoints(feature_face_edges, F_r);
+    auto misaligned_edges_r = compute_face_edge_endpoints(misaligned_edges, F_r);
+    auto [reference_field_r, theta_r, kappa_r, period_jump_r] = aligned_metric_generator.get_refined_field();
+
+    return std::make_tuple(
+        V_r, 
+        F_r,
+        uv_r,
+        FT_r,
+        feature_edges_r,
+        misaligned_edges_r,
+        reference_field_r,
+        theta_r,
+        kappa_r,
+        period_jump_r);
+}
+
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXi,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXd>
+parametrize_aligned(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params,
+    NewtonParameters alg_params)
+{
+    // find feature edges and refine mesh to allow for a well defined cross field
+    auto [V_ref, F_ref, feature_edges, hard_feature_edges, reference_field, theta, kappa, period_jump] = generate_feature_aligned_frame_field(V, F, field_params);
+
+    // parametrize with feature alignment constraints
+    auto param_data = generate_feature_aligned_parameterization(
+        V_ref,
+        F_ref,
+        feature_edges,
+        hard_feature_edges,
+        reference_field,
+        theta,
+        kappa,
+        period_jump,
+        alg_params);
+    auto V_r = std::get<0>(param_data);
+    auto F_r = std::get<1>(param_data);
+    auto uv_r = std::get<2>(param_data);
+    auto FT_r = std::get<3>(param_data);
+    auto feature_edges_r = std::get<4>(param_data);
+    auto misaligned_edges_r = std::get<5>(param_data);
+    auto reference_field_r = std::get<6>(param_data);
+    auto theta_r = std::get<7>(param_data);
+    auto kappa_r = std::get<8>(param_data);
+    auto period_jump_r = std::get<9>(param_data);
+
+    // get feature edges
+    int num_features = feature_edges_r.size();
+    Eigen::MatrixXi FE(num_features, 2);
+    for (int eij = 0; eij < num_features; ++eij)
+    {
+        FE(eij, 0) = feature_edges_r[eij][0];
+        FE(eij, 1) = feature_edges_r[eij][1];
+    }
+
+    // get misaliged edges
+    int num_misaligned = misaligned_edges_r.size();
+    Eigen::MatrixXi ME(num_misaligned, 2);
+    for (int eij = 0; eij < num_misaligned; ++eij)
+    {
+        ME(eij, 0) = misaligned_edges_r[eij][0];
+        ME(eij, 1) = misaligned_edges_r[eij][1];
+    }
+
+    // comb frame field
+    auto [PD1, PD2] = Field::comb_frame_field(V_r, F_r, uv_r, FT_r, reference_field_r, theta_r, period_jump_r);
+
+    return std::make_tuple(V_r, F_r, uv_r, FT_r, FE, ME, PD1, PD2);
+}
+
 std::tuple<DirichletPennerConeMetric, std::vector<int>> generate_dirichlet_metric(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
@@ -595,41 +746,6 @@ Eigen::MatrixXd generate_feature_aligned_metric(
     aligned_metric_generator.optimize_relaxed(alg_params);
     
     return aligned_metric_generator.get_metric();
-}
-
-std::tuple<
-    Eigen::MatrixXd,
-    Eigen::MatrixXi,
-    Eigen::MatrixXd,
-    Eigen::MatrixXi,
-    std::vector<int>,
-    std::vector<std::pair<int, int>>>
-generate_feature_aligned_parameterization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<VertexEdge>& feature_edges,
-    const std::vector<VertexEdge>& hard_feature_edges,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta,
-    const Eigen::MatrixXd& kappa,
-    const Eigen::MatrixXi& period_jump,
-    const NewtonParameters& alg_params)
-{
-    // use utility class
-    MarkedMetricParameters marked_metric_params;
-    AlignedMetricGenerator aligned_metric_generator(
-        V,
-        F,
-        feature_edges,
-        hard_feature_edges,
-        reference_field,
-        theta,
-        kappa,
-        period_jump,
-        marked_metric_params);
-    aligned_metric_generator.optimize_relaxed(alg_params);
-    
-    return aligned_metric_generator.get_parameterization();
 }
 
 

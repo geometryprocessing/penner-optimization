@@ -19,6 +19,107 @@ namespace Penner {
 namespace Feature {
 
 /**
+ * @brief Generate a parametrization satisfying feature alignment constraints inferred
+ * from dihedral angle based features and a smooth cross-field, optimized with a MIQ method 
+ * 
+ * The parametrization algorithm is based on a two-phase modified newton's method.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param field_params: (optional) parameters for field generation
+ * @param alg_params: (optional) parameters for modified Newton method
+ * @return parametrized VF mesh with uv coordinates
+ * @return aligned feature edges
+ * @return target feature edges that are not fully aligned
+ * @return refined frame field
+ */
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXi,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXd>
+parametrize_aligned(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params=Field::FieldParameters(),
+    NewtonParameters alg_params=NewtonParameters());
+
+/**
+ * @brief Generate feature edges and a feature aligned cross field for a mesh.
+ * 
+ * Generating a feature aligned field that can be parametrized may require some moderate
+ * refinement, so a refined mesh is also produced.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param field_params: (optional) parameters for cross field optimization
+ * @return refined mesh vertices
+ * @return refined mesh faces
+ * @return feature edges to softly align to coordinate axes
+ * @return feature edges to hard align to coordinate axes
+ * @return per-face reference tangent direction matrix
+ * @return offset angles of a representative cross field direction relative to the reference
+ * @return per-corner rotation angle of the reference direction field across the opposite edge
+ * @return per-corner period jump of the cross field across the opposite edge
+ */
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<VertexEdge>,
+    std::vector<VertexEdge>,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_feature_aligned_frame_field(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Field::FieldParameters field_params=Field::FieldParameters());
+
+/**
+ * @brief Generate a parameterization aligned to given features and a cross field.
+ * 
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param feature_edges: feature edges to softly align to coordinate axes
+ * @param hard_feature_edges: feature edges to hard align to coordinate axes
+ * @param reference_field: per-face reference tangent direction matrix
+ * @param theta: offset angles of a representative cross field direction relative to the reference
+ * @param kappa: per-corner rotation angle of the reference direction field across the opposite edge
+ * @param period_jump: per-corner period jump of the cross field across the opposite edge
+ * @param alg_params: parameters for Newton method
+ * @return parametrized VF mesh with uv coordinates
+ * @return aligned feature edges
+ * @return target feature edges that are not fully aligned
+ * @return refined frame field
+ */
+std::tuple<
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<VertexEdge>,
+    std::vector<VertexEdge>,
+    Eigen::MatrixXd,
+    Eigen::VectorXd,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi>
+generate_feature_aligned_parameterization(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<VertexEdge>& feature_edges,
+    const std::vector<VertexEdge>& hard_feature_edges,
+    const Eigen::MatrixXd& reference_field,
+    const Eigen::VectorXd& theta,
+    const Eigen::MatrixXd& kappa,
+    const Eigen::MatrixXi& period_jump,
+    NewtonParameters alg_params=NewtonParameters());
+
+/**
  * @brief Find features on a mesh with dihedral angle heuristics, and generate a refined
  * mesh suitable for seamless parameterization.
  * 
@@ -58,42 +159,6 @@ generate_refined_feature_field(
     const Eigen::VectorXi& V_map,
     bool collapse_cones=false);
 
-/**
- * @brief Generate a parameterization aligned to features and the given cross field.
- * 
- * @param V: mesh vertices
- * @param F: mesh faces
- * @param feature_edges: feature edges to softly align to coordinate axes
- * @param hard_feature_edges: feature edges to hard align to coordinate axes
- * @param reference_field: per-face reference tangent direction matrix
- * @param theta: offset angles of a representative cross field direction relative to the reference
- * @param kappa: per-corner rotation angle of the reference direction field across the opposite edge
- * @param period_jump: per-corner period jump of the cross field across the opposite edge
- * @param alg_params: parameters for Newton method
- * @return aligned mesh vertices
- * @return aligned mesh faces
- * @return aligned mesh uv vertices
- * @return aligned mesh uv faces
- * @return map from refined aligned mesh faces to original faces
- * @return map from refined aligned vertices to original edge endpoints
- */
-std::tuple<
-    Eigen::MatrixXd,
-    Eigen::MatrixXi,
-    Eigen::MatrixXd,
-    Eigen::MatrixXi,
-    std::vector<int>,
-    std::vector<std::pair<int, int>>>
-generate_feature_aligned_parameterization(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::vector<VertexEdge>& feature_edges,
-    const std::vector<VertexEdge>& hard_feature_edges,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& theta,
-    const Eigen::MatrixXd& kappa,
-    const Eigen::MatrixXi& period_jump,
-    const NewtonParameters& alg_params);
 
 /**
  * @brief Generate an intrinsic metric aligned to features and the given cross field.

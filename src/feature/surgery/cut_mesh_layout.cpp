@@ -115,8 +115,7 @@ parameterize_cut_mesh(
             component_metric.get_metric_coordinates(),
             is_cut,
             false,
-            use_uniform_bc,
-            "");
+            use_uniform_bc);
         OverlayMesh<OverlayScalar> m_o = std::get<0>(vf_res);
         Eigen::MatrixXd V_o = std::get<1>(vf_res);
         Eigen::MatrixXi F_o = std::get<2>(vf_res);

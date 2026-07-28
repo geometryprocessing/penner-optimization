@@ -586,7 +586,7 @@ void view_feature_cross_field(
     Eigen::MatrixXd V_disp = displace_cut_faces(V, F, displacement);
 
     // get cone angles
-    std::vector<Scalar> Th_hat = Field::compute_cone_angle(V, F, kappa, period_jump);
+    std::vector<Scalar> Th_hat = Field::compute_frame_field_cones(V, F, kappa, period_jump);
     auto [cone_positions, cone_values] = generate_cone_vertices(V_disp, Th_hat);
 
 

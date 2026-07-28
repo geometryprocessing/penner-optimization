@@ -75,6 +75,22 @@ bool DifferentiableConeMetric::constraint(
         only_free_vertices);
 }
 
+VectorX DifferentiableConeMetric::constraint() const
+{
+    VectorX cons;
+    MatrixX J_constraint;
+    bool need_jacobian = false;
+    bool only_free_vertices = true;
+    constraint(cons, J_constraint, need_jacobian, only_free_vertices);
+    return cons;
+}
+
+Scalar DifferentiableConeMetric::max_constraint_error() const
+{
+    VectorX cons = constraint();
+    return cons.cwiseAbs().maxCoeff();
+}
+
 void DifferentiableConeMetric::undo_flips()
 {
     std::vector<int> flip_seq = m_flip_seq;
@@ -137,6 +153,36 @@ MatrixX DifferentiableConeMetric::change_metric_to_reduced_coordinates(
     return halfedge_jacobian * J_transition;
 }
 
+void DifferentiableConeMetric::reset_connectivity(const Mesh<Scalar>& m)
+{
+    // Halfedge arrays
+    int num_halfedges = n_halfedges();
+    for (int h = 0; h < num_halfedges; ++h) {
+        n[h] = m.n[h];
+        to[h] = m.to[h];
+        f[h] = m.f[h];
+        l[h] = m.l[h];
+        type[h] = m.type[h];
+        R[h] = m.R[h];
+
+        // opp, he2e, e2he do not change
+    }
+
+    // Vertex arrays
+    int num_vertices = n_vertices();
+    for (int v = 0; v < num_vertices; ++v) {
+        out[v] = m.out[v];
+
+        // v_rep, Th_hat, fixed_dof do not change
+    }
+
+    // Face arrays
+    int num_faces = n_faces();
+    for (int f = 0; f < num_faces; ++f) {
+        h[f] = m.h[f];
+    }
+}
+
 PennerConeMetric::PennerConeMetric()
     : m_transition_jacobian_lol(0)
 {}
@@ -165,6 +211,35 @@ std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::set_metric_coordinat
     const VectorX& metric_coords) const
 {
     return std::make_unique<PennerConeMetric>(PennerConeMetric(*this, metric_coords));
+}
+
+void PennerConeMetric::change_metric(
+    const Mesh<Scalar>& m,
+    const VectorX& metric_coords,
+    bool need_jacobian,
+    bool do_repeat_flips)
+{
+    // get initial flip sequence
+    std::vector<int> flip_seq = m_flip_seq;
+
+    // Restore connectivity to that of m
+    reset_connectivity(m);
+
+    // Change metric coordinates
+    expand_metric_coordinates(metric_coords);
+
+    // reset flip data
+    m_is_discrete_metric = false;
+    m_need_jacobian = need_jacobian;
+    reset_flip_sequence();
+
+    // Flip back to current connectivity if flag set
+    if (do_repeat_flips) {
+        for (int h : flip_seq) {
+            flip_ccw(h);
+        }
+        spdlog::debug("{} flips performed", m_flip_seq.size());
+    }
 }
 
 bool PennerConeMetric::flip_ccw(int halfedge_index, bool Ptolemy)
@@ -253,7 +328,7 @@ MatrixX PennerConeMetric::get_transition_jacobian() const
     return m_identification * (transition_jacobian * m_projection);
 }
 
-void PennerConeMetric::reset()
+void PennerConeMetric::reset_flip_sequence()
 {
     // Initialize jacobian to the identity
     m_transition_jacobian_lol.reset();

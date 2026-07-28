@@ -38,6 +38,9 @@
 #include "parametrization/refinement.h"
 #include "parametrization/parametrize.h"
 
+// post process uv optimization
+#include "optimization/metric_optimization/uv_optimization.h"
+
 // cone validation
 #include "holonomy/holonomy/constraint.h"
 
@@ -49,111 +52,10 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 
-#if USE_UV_OPTIMIZATION 
-#include "ExtremeOpt.h"
-#include "MeshCutter.h"
-#include "main_helper.h"
-#endif
-
 using namespace Penner;
 using namespace Penner::Field;
+using namespace Penner::Optimization;
 using namespace Penner::Holonomy;
-
-
-Eigen::MatrixXd optimize_seamless_parameterization(
-    const Eigen::MatrixXd& V_init,
-    const Eigen::MatrixXi& F_init,
-    const Eigen::MatrixXd& uv_init,
-    const Eigen::MatrixXi& FT_init,
-    const Eigen::MatrixXd& reference_field,
-    const Eigen::VectorXd& thetas,
-    const Eigen::MatrixXi& period_jumps,
-    const nlohmann::json& config
-)
-{
-    Eigen::MatrixXd uv = uv_init;
-    Eigen::MatrixXi F = FT_init;
-    
-    SymDir::Parameters param;
-    param.max_iters = config["max_iters"]; // iterations
-    param.smooth_only_iters = config["smooth_only_iters"];
-    param.E_target = config["E_target"]; // Energy target
-    param.ls_iters = config["ls_iters"]; // param for linesearch in smoothing operation
-    param.do_newton = config["do_newton"]; // do newton/gd steps for smoothing operation
-    // do global/local smooth (local smooth does not optimize boundary vertices)
-    param.local_smooth = config["local_smooth"];
-    param.global_smooth = config["global_smooth"];
-    param.elen_alpha = config["elen_alpha"];
-    param.do_projection = config["do_projection"];
-    param.with_cons = config["with_cons"];
-    param.Lp = config["Lp"];
-    param.save_meshes = config["save_meshes"];
-    param.do_feature_alignment = config["do_feature_alignment"]; // align feature edges
-    param.symdir_weight = config["symdir_weight"];
-    param.alignment_weight = config["alignment_weight"];
-    param.fix_misaligned = config["fix_misaligned"];
-    param.use_rref = config["use_rref"];
-    param.model_name = config["model"];
-    param.percentage_target_converge = false;
-    param.use_worst_n_energy_in_ls = false;
-
-	MeshCutter meshcutter(V_init, uv, F_init, F);
-
-	auto [V, EE] = meshcutter.cut_mesh();
-
-    Eigen::MatrixXi FE_init;
-    Eigen::MatrixXi FE(0, 0);
-    Eigen::MatrixXi ME(0, 0);
-    if (param.do_feature_alignment)
-    {
-        // TODO
-        // Loading the feature edge constraints
-        //FE_init = meshcutter.load_feature_edges(input_file);
-        //FE = meshcutter.reindex_feature_edges(FE_init);
-        //if (param.fix_misaligned)
-        //{
-        //    std::string misaligned_file = input_dir + "/" + model + "_misaligned_edges";
-        //    ME = meshcutter.load_misaligned_edges(misaligned_file);
-        //}
-    }
-    
-    double cons_residual = check_constraints(EE, FE, uv, F);
-    spdlog::info("Initial constraints error {}", cons_residual);
-
-    Eigen::MatrixXi new_F;
-    Eigen::MatrixXd new_V, new_uv;
-    SymDir::ExtremeOpt extremeopt(V, F);
-    extremeopt.m_params = param;
-    
-    extremeopt.create_mesh(V, F, uv);
-
-    nlohmann::json opt_log;
-    opt_log["model_name"] = config["model"];
-    opt_log["args"] = config;
-
-    if (extremeopt.m_params.with_cons)
-    {
-        std::vector<std::vector<int>> EE_e = transform_EE(F, EE);
-        std::vector<std::vector<int>> FE_e;
-        if (extremeopt.m_params.do_feature_alignment) {
-            FE_e = transform_FE(F, FE);
-        }
-        extremeopt.init_constraints(EE_e);
-        extremeopt.EE = EE;
-        extremeopt.FE = FE;
-        extremeopt.ME = ME;
-    }
-    extremeopt.comb_matchings(reference_field, thetas, period_jumps);
-    extremeopt.do_optimization(opt_log);
-
-    extremeopt.export_mesh(V, F, uv);
-    cons_residual = check_constraints(EE, FE, uv, F);
-    spdlog::info("Final constraints error {}", cons_residual);
-
-    if (extremeopt.m_params.with_cons) extremeopt.export_EE(EE);
-
-    return uv;
-}
 
 
 int main(int argc, char* argv[])
@@ -328,7 +230,7 @@ int main(int argc, char* argv[])
     if (use_delaunay) {
         marked_metric.make_discrete_metric();
         flip_seq = marked_metric.get_flip_sequence();
-        marked_metric.reset();
+        marked_metric.reset_flip_sequence();
     }
 
     // Regularize
@@ -397,18 +299,23 @@ int main(int argc, char* argv[])
     // Optionally optimize parameterization 
     if (optimize)
     {
+#if USE_UV_OPTIMIZATION
         std::ifstream js_in(input_json);
         nlohmann::json config = nlohmann::json::parse(js_in);
         config["model"] = mesh;
+        SymDir::Parameters uv_param = read_parameters(config);
+        auto [Du, Dv] = comb_frame_field(V_r, F_r, uv_r, FT_r, reference_field_r, theta_r, period_jump_r);
         uv_r = optimize_seamless_parameterization(
             V_r,
             F_r, 
             uv_r,
             FT_r,
-            reference_field_r,
-            theta_r,
-            period_jump_r,
-            config);
+            Du,
+            Dv,
+            uv_param);
+#else
+    spdlog::warn("uv optimization disabled");
+#endif
     }
 
     //if (show_parameterization) view_triangulation(V_o, F_o, fn_to_f_o, endpoints_o, "refinement", false);

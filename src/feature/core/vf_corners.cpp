@@ -555,6 +555,8 @@ Eigen::MatrixXi compute_edge_matrix(const std::vector<VertexEdge>& edges)
             E(e, i) = edges[e][i];
         }
     }
+
+    return E;
 }
 
 } // namespace Feature
