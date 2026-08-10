@@ -47,7 +47,7 @@ std::vector<VertexEdge> load_feature_edges(const std::string& fe_filename) {
 	return feature_edges;
 }
 
-std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename) {
+std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename, std::string edge_label) {
     // try to open mesh
 	std::ifstream inf(fe_filename);
 	if (!inf) {
@@ -60,12 +60,12 @@ std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename) {
 	std::string line{};
 	std::getline(inf, line);
 	while (std::getline(inf, line)) {
-		char label;
+		std::string label;
 		std::istringstream iss(line);
 
         // make sure edge line
 		iss >> label;
-		if (label != 'l') 
+		if (label != edge_label) 
 			continue;
 
         // get edge vertices

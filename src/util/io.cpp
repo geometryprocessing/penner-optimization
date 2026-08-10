@@ -11,6 +11,8 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ostream_sink.h"
 #include <H5Cpp.h>
+
+#include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 
 #include "util/vector.h"
@@ -391,6 +393,47 @@ void read_hdf5_mesh_with_uv(const std::string& path,
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> FT_row_major(ft_dims[0], ft_dims[1]);
     ft_set.read(FT_row_major.data(), H5::PredType::NATIVE_INT);
     FT = FT_row_major;
+}
+
+
+void read_mesh(
+    const std::string& mesh_filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F)
+{
+    std::filesystem::path mesh_file = mesh_filename;
+    std::string file_format = mesh_file.extension();
+    if (file_format == ".obj")
+    {
+        Eigen::MatrixXd uv, N;
+        Eigen::MatrixXi FT, FN;
+        igl::readOBJ(mesh_filename, V, uv, N, F, FT, FN);
+    }
+    else if (file_format == ".h5")
+    {
+        read_hdf5_mesh(mesh_filename, V, F);
+    }
+}
+
+void read_mesh_with_uv(
+    const std::string& mesh_filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXd& uv,
+    Eigen::MatrixXi& FT)
+{
+    std::filesystem::path mesh_file = mesh_filename;
+    std::string file_format = mesh_file.extension();
+    if (file_format == ".obj")
+    {
+        Eigen::MatrixXd N;
+        Eigen::MatrixXi FN;
+        igl::readOBJ(mesh_filename, V, uv, N, F, FT, FN);
+    }
+    else if (file_format == ".h5")
+    {
+        read_hdf5_mesh_with_uv(mesh_filename, V, F, uv, FT);
+    }
 }
 
 void write_sparse_matrix(const MatrixX& matrix, const std::string& filename, std::string format)

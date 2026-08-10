@@ -57,9 +57,10 @@ void write_mesh_edges(
  * @brief Load edges from an obj file
  * 
  * @param fe_filename: filepath to obj mesh
+ * @param edge_label: (optional) label for edges in obj file (default is 'l')
  * @return list of edges
  */
-std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename);
+std::vector<VertexEdge> load_mesh_edges(const std::string& fe_filename, std::string edge_label="l");
 
 /**
  * @brief Write parameterization seams (that are not feature edges) to file

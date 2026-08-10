@@ -38,6 +38,7 @@ target_include_directories(PennerHolonomyLib PUBLIC
 target_link_libraries(PennerHolonomyLib PUBLIC
   PennerCoreLib
   PennerOptimizationLib
+  PennerFieldLib
   ${VISUALIZATION_LIBS}
 )
 target_link_libraries(PennerHolonomyLib PRIVATE

@@ -207,6 +207,33 @@ Eigen::MatrixXd read_hdf5_vector_field(const std::string& path,
                                    const std::string& name);
 Eigen::MatrixXi read_hdf5_integer_matrix(const std::string& path,
                                    const std::string& name);
+/**
+ * @brief Read mesh geometry from file. Supported formats are obj and h5.
+ * 
+ * @param mesh_filename: mesh file path (extension obj or h5)
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ */
+void read_mesh(
+    const std::string& mesh_filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F);
+
+/**
+ * @brief Read mesh geometry with uv coordinates from file. Supported formats are obj and h5.
+ * 
+ * @param mesh_filename: mesh file path (extension obj or h5)
+ * @param V: mesh vertices
+ * @param F: mesh faces
+ * @param uv: mesh uv vertices
+ * @param FT: mesh uv faces
+ */
+void read_mesh_with_uv(
+    const std::string& mesh_filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXd& uv,
+    Eigen::MatrixXi& FT);
 
 
 /// Write a sparse matrix to file in i,j,v format.

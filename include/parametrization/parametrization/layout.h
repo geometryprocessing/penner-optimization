@@ -131,6 +131,32 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
     const std::vector<Scalar>& u,
     std::vector<bool>& is_cut_h,
     int start_h = -1);
+    
+template <typename Scalar>
+Eigen::Matrix<Scalar, 1, 2> perp_l(Eigen::Matrix<Scalar, 1, 2> a) {
+    Eigen::Matrix<Scalar, 1, 2> b;
+    b[0] = -a[1];
+    b[1] = a[0];
+    return b;
+};
+
+template <typename Scalar>
+Scalar area_from_len_l(Scalar l1, Scalar l2, Scalar l3) {
+    auto s = 0.5 * (l1 + l2 + l3);
+    return sqrt(s * (s - l1) * (s - l2) * (s - l3));
+}
+
+template <typename Scalar>
+Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
+    const Eigen::Matrix<Scalar, 1, 2>& p1,
+    const Eigen::Matrix<Scalar, 1, 2>& p2,
+    Scalar l0,
+    Scalar l1,
+    Scalar l2)
+{
+    return p1 + (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 +
+                                    perp_l<Scalar>(p2 - p1) * 2 * area_from_len_l<Scalar>(1.0, l1 / l0, l2 / l0);
+}
 
 #ifdef PYBIND
 #endif

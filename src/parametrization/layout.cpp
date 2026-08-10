@@ -146,29 +146,6 @@ void trim_topology(const Mesh<Scalar>& m, const std::vector<bool>& is_cone, std:
   }
 }
 
-Eigen::Matrix<Scalar, 1, 2> perp_l(Eigen::Matrix<Scalar, 1, 2> a) {
-    Eigen::Matrix<Scalar, 1, 2> b;
-    b[0] = -a[1];
-    b[1] = a[0];
-    return b;
-};
-
-Scalar area_from_len_l(Scalar l1, Scalar l2, Scalar l3) {
-    auto s = 0.5 * (l1 + l2 + l3);
-    return sqrt(s * (s - l1) * (s - l2) * (s - l3));
-}
-
-Eigen::Matrix<Scalar, 1, 2> compute_layout_vertex(
-    const Eigen::Matrix<Scalar, 1, 2>& p1,
-    const Eigen::Matrix<Scalar, 1, 2>& p2,
-    Scalar l0,
-    Scalar l1,
-    Scalar l2)
-{
-    return p1 + (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 +
-                                    perp_l(p2 - p1) * 2 * area_from_len_l(1.0, l1 / l0, l2 / l0);
-}
-
 // FIXME Remove once fix halfedge origin
 template <typename Scalar>
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_layout_components(
@@ -256,7 +233,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> compute_
         Scalar l0 = Scalar(1.0);
         Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[hn] / m.l[h]);
         Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[hp] / m.l[h]);
-        Eigen::Matrix<Scalar, 1, 2> pn = compute_layout_vertex(p1, p2, l0, l1, l2);
+        Eigen::Matrix<Scalar, 1, 2> pn = compute_layout_vertex<Scalar>(p1, p2, l0, l1, l2);
 #ifdef CHECK_VALIDITY
         if (!float_equal((p1 - p2).norm(), m.l[h])) spdlog::error("inconsistent lengths {}, {}", (p1 - p2).norm(), m.l[h]);
         if (!float_equal((pn - p2).norm(), m.l[hn])) spdlog::error("inconsistent lengths {}, {}", (pn - p2).norm(), m.l[hn]);
