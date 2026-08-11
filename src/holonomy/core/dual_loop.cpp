@@ -8,6 +8,7 @@
 
 #include "holonomy/core/dual_loop.h"
 
+
 namespace Penner {
 namespace Holonomy {
 

@@ -16,7 +16,9 @@
 // post process uv optimization
 #include "optimization/metric_optimization/uv_optimization.h"
 
+#if ENABLE_VISUALIZATION
 #include "polyscope/surface_mesh.h"
+#endif
 
 using namespace Penner;
 using namespace Penner::Field;
@@ -127,6 +129,7 @@ Eigen::MatrixXi tag_cone_corners(
     bool show_uv_cones = false;
     if (show_uv_cones)
     {
+#if ENABLE_VISUALIZATION
         polyscope::init();
 
         // closed mesh
@@ -168,6 +171,7 @@ Eigen::MatrixXi tag_cone_corners(
             ->setEnabled(true);
 
         polyscope::show();
+#endif
     }
 
     return is_cone;

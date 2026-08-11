@@ -10,6 +10,8 @@
 
 #include "holonomy/core/dual_segment.h"
 
+#include <deque>
+
 /**
  * @brief Methods to manage dual loops on a surface. Includes classes to represent dual loops on a surface
  * and data structures to quickly query intersections of the loops with edges of the underlying mesh.

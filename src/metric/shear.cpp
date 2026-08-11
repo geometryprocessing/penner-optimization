@@ -14,6 +14,8 @@
 #include "metric/barycentric.h"
 #include "util/vector.h"
 
+#include <queue>
+
 /// FIXME Do cleaning pass
 
 namespace Penner {

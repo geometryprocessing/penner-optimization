@@ -12,8 +12,10 @@
 #include <igl/readOBJ.h>
 #include <CLI/CLI.hpp>
 
+#if ENABLE_VISUALIZATION
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
+#endif
 
 using namespace Penner;
 using namespace Penner::Field;
