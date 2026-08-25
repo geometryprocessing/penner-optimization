@@ -15,6 +15,9 @@
 #include "metric/projection.h"
 #include "metric/shear.h"
 
+// check triangle inequality
+#include "metric/constraint.h"
+
 // root mean square error computations
 #include "optimization/metric_optimization/energies.h"
 
@@ -453,6 +456,22 @@ void OptimizeNewton::perform_line_search(
     marked_metric.change_metric(initial_marked_metric, reduced_metric_coords, false, false);
     update_constraint(marked_metric);
 
+    // make sure initial line step satisfies triangle quality
+    bool check_triangle_inequality = false;
+    if (check_triangle_inequality)
+    {
+        while (!satisfies_triangle_inequality(marked_metric))
+        {
+            lambda /= 2;
+            reduced_metric_coords = reduced_metric_start + lambda * descent_direction;
+            marked_metric.change_metric(initial_marked_metric, reduced_metric_coords, false, false);
+            update_constraint(marked_metric);
+            spdlog::debug("Reducing lambda to {} to satisfy triangle inequality", lambda);
+            continue;
+        }
+    }
+
+
     // Line search until the constraint norm decreases and the projected constraint is
     // nonpositive We also allow the norm bound to be dropped or made approximate with some
     // relative term alpha
@@ -477,6 +496,13 @@ void OptimizeNewton::perform_line_search(
         reduced_metric_coords = reduced_metric_start + lambda * descent_direction;
         marked_metric.change_metric(initial_marked_metric, reduced_metric_coords, false, false);
         update_constraint(marked_metric);
+
+        // check triangle inequality
+        if (!satisfies_triangle_inequality(marked_metric))
+        {
+            spdlog::debug("reducing step due to triangle inequality issue");
+            continue;
+        }
 
         // Update squared constraint norm and projected constraint
         l2_c_sq = constraint.squaredNorm();

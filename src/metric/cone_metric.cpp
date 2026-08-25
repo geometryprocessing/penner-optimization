@@ -311,6 +311,20 @@ std::unique_ptr<DifferentiableConeMetric> PennerConeMetric::project_to_constrain
 
 void PennerConeMetric::make_discrete_metric()
 {
+    bool disable_flips = false;
+    if (disable_flips)
+    {
+        if (!satisfies_triangle_inequality(*this))
+        {
+            spdlog::error("triangle inequality not satisfied");
+            return;
+        }
+        else {
+            m_is_discrete_metric = true;
+            return;
+        }
+    }
+
     // Make the copied mesh Delaunay with Ptolemy flips
     VectorX u;
     u.setZero(n_ind_vertices());

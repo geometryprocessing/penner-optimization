@@ -485,8 +485,12 @@ AlignedMetricGenerator::AlignedMetricGenerator(
 
     // build an initial metric with Penner coordinates
     dirichlet_metric = embedding_metric;
-    VectorX metric_coords = generate_penner_coordinates(embedding_metric);
-    dirichlet_metric.change_metric(embedding_metric, metric_coords, true, false);
+    VectorX metric_coords = dirichlet_metric.get_metric_coordinates();
+    if (!marked_metric_params.use_log_length)
+    {
+        metric_coords = generate_penner_coordinates(embedding_metric);
+        dirichlet_metric.change_metric(embedding_metric, metric_coords, true, false);
+    }
 
     // build the relaxed constraints
     std::vector<std::pair<int, int>> relaxed_edges = compute_relaxed_edges(relaxed_corners, dirichlet_metric, vtx_reindex, V_map, F_cut);

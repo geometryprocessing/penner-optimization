@@ -75,9 +75,10 @@ parameterize_cut_mesh(
 
         // get initial and final metric coordinates
         VectorX metric_init = generate_penner_coordinates(embedding_component);
+        //VectorX metric_init(mesh_component.n_halfedges());
         VectorX metric_coords(mesh_component.n_halfedges());
         for (int i = 0; i < mesh_component.n_halfedges(); ++i) {
-        //    metric_init[i] = 2. * log(init_component.l[i]);
+            //metric_init[i] = 2. * log(init_component.l[i]);
             metric_coords[i] = 2. * log(mesh_component.l[i]);
         }
         PennerConeMetric component_init(mesh_component, metric_init);
