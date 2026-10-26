@@ -45,6 +45,36 @@ if (USE_UV_OPTIMIZATION)
   set ( SUITESPARSE_ENABLE_PROJECTS "${SUITESPARSE_ENABLE_PROJECTS};spqr;umfpack" CACHE STRING "" FORCE)
 endif()
 
+if(USE_OMP)
+    if(APPLE)
+        # Apple/macOS: use homebrew libomp
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_C_LIB_NAMES "omp")
+        set(OpenMP_CXX_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY "omp")
+        include_directories("/opt/homebrew/opt/libomp/include")
+        link_directories("/opt/homebrew/opt/libomp/lib")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/libomp")
+    else()
+        # Linux: use GNU OpenMP (libgomp)
+        set(OpenMP_C_FLAGS "-fopenmp")
+        set(OpenMP_CXX_FLAGS "-fopenmp")
+        set(OpenMP_C_LIB_NAMES "gomp")
+        set(OpenMP_CXX_LIB_NAMES "gomp")
+        # Explicitly set the libgomp library path for Linux
+        find_library(LIBGOMP NAMES gomp libgomp.so.1 PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib REQUIRED)
+        set(OpenMP_gomp_LIBRARY ${LIBGOMP})
+    endif()
+    
+    find_package(OpenMP REQUIRED)
+    find_package(BLAS REQUIRED)
+    set (OMP_LIBS
+        OpenMP::OpenMP_CXX
+    )
+    add_compile_definitions(USE_OMP)
+endif()
+
 include(eigen)
 
 include(boost)
@@ -180,6 +210,14 @@ if(USE_PYBIND)
   set(PYBIND_LIBRARIES
     pybind11::module
   )
+endif()
+
+if(USE_JXL)
+  add_compile_definitions(USE_JXL)
+endif()
+
+if(USE_EXR)
+  add_compile_definitions(USE_EXR)
 endif()
 
 # Install executables to bin directory

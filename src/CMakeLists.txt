@@ -72,6 +72,7 @@ add_subdirectory(field)
 add_subdirectory(optimization)
 add_subdirectory(holonomy)
 add_subdirectory(feature)
+add_subdirectory(resolution)
 
 add_library(PennerLib INTERFACE)
 target_link_libraries(PennerLib INTERFACE
