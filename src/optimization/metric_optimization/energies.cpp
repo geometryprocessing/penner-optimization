@@ -455,7 +455,7 @@ void second_invariant_vf(
     }
 }
 
-void symmetric_dirichlet_energy_vf(
+void symmetric_dirichlet_energy(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     const Eigen::MatrixXd& uv,

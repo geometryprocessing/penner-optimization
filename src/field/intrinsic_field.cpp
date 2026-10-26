@@ -1282,6 +1282,7 @@ void IntrinsicNRosyField::solve(const Mesh<Scalar>& m)
 #if USE_COMISO
     if (use_roundings)
     {
+        spdlog::info("Enabling rounding to avoid small cones");
         Rounder rounder(m, var2he, halfedge_var_id, base_cones, min_cones);
         ConeMISolver cs;
         cs.solve_cone_rounding(Acsc, x, gmm_b, var_edges, rounder);

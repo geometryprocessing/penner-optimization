@@ -23,6 +23,9 @@
 // used to visualize constraint error
 #include "holonomy/holonomy/constraint.h"
 
+// used to visualize per face parametrization distortion
+#include "optimization/metric_optimization/energies.h"
+
 // cross field generation for viewer
 #include "field/frame_field.h"
 #include "field/vector_field.h"
@@ -507,11 +510,14 @@ void view_seamless_parameterization(
     igl::doublearea(uv, FT, uv_area);
     VectorX corner_angles = compute_corner_angles(V_cut, FT);
     VectorX uv_corner_angles = compute_corner_angles(uv, FT);
+    VectorX symmetric_dirichlet;
+    Optimization::symmetric_dirichlet_energy(V_cut, FT, uv, FT, symmetric_dirichlet);
     spdlog::info("Max uv length error: {}", uv_length_error.maxCoeff());
     spdlog::info("Max uv angle error: {}", uv_angle_error.maxCoeff());
     spdlog::info("Min embedding area: {}", area.minCoeff());
     spdlog::info("Min uv area: {}", uv_area.minCoeff());
     spdlog::info("{} flipped faces", num_flipped);
+    spdlog::info("Max symmetric dirichlet energy: {}", symmetric_dirichlet.maxCoeff());
 
     // Generate cones
     VectorX cone_angles = compute_cone_angles(V, F, uv, FT);
@@ -546,6 +552,13 @@ void view_seamless_parameterization(
         ->addFaceScalarQuantity(
             "uv area",
             convert_scalar_to_double_vector(uv_area));
+    polyscope::getSurfaceMesh(mesh_handle)
+        ->addFaceScalarQuantity(
+            "symmetric dirichlet energy",
+            convert_scalar_to_double_vector(symmetric_dirichlet))
+        ->setColorMap("coolwarm")
+        ->setMapRange({4.0, symmetric_dirichlet.maxCoeff()})
+        ->setEnabled(true);
     polyscope::getSurfaceMesh(mesh_handle)
         ->addHalfedgeScalarQuantity(
             "uv length error",
