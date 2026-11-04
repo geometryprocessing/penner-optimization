@@ -39,7 +39,6 @@ set(ExperimentalSrc
 )
 
 add_library(PennerResolutionLib
-  pybind.cpp
   interface.cpp
   ${ResolutionCoreSrc}
   ${HierarchySrc}

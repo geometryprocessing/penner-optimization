@@ -1,4 +1,4 @@
-name: penner-optimization
+name: penner
 channels:
   - conda-forge
   - defaults

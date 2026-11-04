@@ -32,10 +32,8 @@
 #include <highfive/H5Easy.hpp>
 #endif
 
-#ifdef RENDER_TEXTURE
 #include "conformal_ideal_delaunay/ConformalInterface.hh"
 #include "conformal_ideal_delaunay/Sampling.hh"
-#endif
 
 namespace Penner {
 namespace Optimization {
@@ -208,11 +206,8 @@ void init_conformal_pybind(pybind11::module& m)
         &overlay_mesh_to_VL<Scalar>,
         pybind11::call_guard<pybind11::scoped_ostream_redirect,
                              pybind11::scoped_estream_redirect>());
-#ifdef RENDER_TEXTURE
-    m.def("cpp_viewer", &cpp_viewer, "viewer mesh in libigl gui");
     m.def("get_pt_mat", &get_pt_mat, "get pt_mat");
     m.def("get_edges", &get_edges, "get edges mesh");
-#endif
 }
 
 void init_energies_pybind(pybind11::module& m)

@@ -25,7 +25,6 @@ set(SimilaritySrc
 
 add_library(PennerHolonomyLib
   interface.cpp
-  pybind.cpp
   ${HolonomyCoreSrc}
   ${HolonomySrc}
   ${SimilaritySrc}

@@ -5,7 +5,10 @@ project(PennerOptimization)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-fPIC)
-add_compile_options(-Wno-register)
+
+# fix deprecated register usage in dependencies
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-register>)
+
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -24,7 +27,6 @@ if (PROJECT_IS_TOP_LEVEL)
 
   # Visualization options
   option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
-  option(RENDER_TEXTURE "Render results" ON)
 
   # Validity check options
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
@@ -36,6 +38,13 @@ if (PROJECT_IS_TOP_LEVEL)
   #set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
+
+# set Penner libraries to build
+set(PENNER_LIBS
+  "Field;Optimization;Holonomy;Feature"
+  CACHE STRING
+  "Libraries exposed through PennerLib; dependencies are added automatically"
+)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -121,12 +130,6 @@ if (USE_COMISO)
   )
 endif()
 
-# Set libigl options for rendering if enabled
-if (RENDER_TEXTURE)
-  option(LIBIGL_OPENGL "Use OpenGL" ON)
-  option(LIBIGL_GLFW "Use GLFW" ON)
-  option(LIBIGL_PNG "Use PNG" ON)
-endif()
 
 # Set compile definitions
 add_compile_definitions(_USE_MATH_DEFINES)
@@ -135,9 +138,6 @@ if(USE_MULTIPRECISION)
 endif()
 if(CHECK_VALIDITY)
   add_compile_definitions(CHECK_VALIDITY)
-endif()
-if (RENDER_TEXTURE)
-  add_compile_definitions(RENDER_TEXTURE)
 endif()
 if(USE_PYBIND)
   add_compile_definitions(PYBIND)
@@ -185,15 +185,6 @@ target_include_directories(DirectionalLib SYSTEM INTERFACE
   ${directional_SOURCE_DIR}/include
 )
 target_compile_features(DirectionalLib INTERFACE cxx_std_20)
-
-
-# Optionally create rendering library
-if(RENDER_TEXTURE)
-  set(RENDER_LIBRARIES
-    igl::glfw
-    plot
-  )
-endif()
 
 # Optionally enable polyscope visualization
 if(ENABLE_VISUALIZATION)

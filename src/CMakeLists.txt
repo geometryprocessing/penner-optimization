@@ -68,19 +68,44 @@ if ((NOT USE_MULTIPRECISION) AND (DEBUG_WARNINGS))
     )
 endif()
 
-add_subdirectory(field)
-add_subdirectory(optimization)
-add_subdirectory(holonomy)
-add_subdirectory(feature)
-add_subdirectory(resolution)
+# Must stay in dependency order
+set(PENNER_ALL_LIBS Field Optimization Holonomy Feature Resolution)
+set(PENNER_Holonomy_DEPS   Field Optimization)
+set(PENNER_Feature_DEPS    Field Optimization Holonomy)
+set(PENNER_Resolution_DEPS Field Optimization Holonomy Feature)
+
+foreach(lib IN LISTS PENNER_LIBS)
+  if(NOT lib IN_LIST PENNER_ALL_LIBS)
+    message(FATAL_ERROR "Unknown entry '${lib}' in PENNER_LIBS. Valid: ${PENNER_ALL_LIBS}")
+  endif()
+endforeach()
+
+# Add dependencies: walking in reverse order means one pass is enough
+set(PENNER_ENABLED_LIBS ${PENNER_LIBS})
+set(_reverse ${PENNER_ALL_LIBS})
+list(REVERSE _reverse)
+foreach(lib IN LISTS _reverse)
+  if(lib IN_LIST PENNER_ENABLED_LIBS)
+    list(APPEND PENNER_ENABLED_LIBS ${PENNER_${lib}_DEPS})
+  endif()
+endforeach()
+list(REMOVE_DUPLICATES PENNER_ENABLED_LIBS)
+message(STATUS "Penner libraries: requested [${PENNER_LIBS}], building [${PENNER_ENABLED_LIBS}]")
 
 add_library(PennerLib INTERFACE)
-target_link_libraries(PennerLib INTERFACE
-  PennerFieldLib
-  PennerOptimizationLib
-  PennerHolonomyLib
-  PennerFeatureLib
-)
+target_link_libraries(PennerLib INTERFACE PennerCoreLib)
+
+foreach(lib IN LISTS PENNER_ALL_LIBS)
+  if(lib IN_LIST PENNER_ENABLED_LIBS)
+    string(TOLOWER ${lib} dir)
+    string(TOUPPER ${lib} upper)
+    add_subdirectory(${dir})
+    target_compile_definitions(PennerLib INTERFACE PENNER_WITH_${upper})
+    if(lib IN_LIST PENNER_LIBS)
+      target_link_libraries(PennerLib INTERFACE Penner${lib}Lib)
+    endif()
+  endif()
+endforeach()
 
 if(USE_PYBIND)
   add_library(penner MODULE
@@ -91,6 +116,14 @@ if(USE_PYBIND)
   target_link_libraries(penner PUBLIC
     PennerLib
   )
+
+  # set sources for pybind
+  foreach(lib IN LISTS PENNER_ENABLED_LIBS)
+    string(TOLOWER ${lib} dir)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/pybind.cpp)
+      target_sources(penner PRIVATE ${dir}/pybind.cpp)
+    endif()
+  endforeach()
 
   # Set pybinding settings
   set_target_properties(penner PROPERTIES LIBRARY_OUTPUT_DIRECTORY

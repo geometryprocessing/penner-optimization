@@ -20,7 +20,6 @@ endif()
 
 add_library(PennerOptimizationLib
   interface.cpp
-  pybind.cpp
   ${MetricOptimizationSrc}
   ${OptimizationUtilSrc}
 )

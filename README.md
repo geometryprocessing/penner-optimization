@@ -32,12 +32,15 @@ To install this project on a Unix-based system, use the following standard CMake
 
 ```bash
 git clone https://github.com/geometryprocessing/penner-optimization.git
+conda env create -f environment.yml && conda activate penner
 cd penner-optimization
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j 4
 ```
+
+Note: the conda environment is needed for HDF5 C++ headers.
 
 ### Library Structure
 

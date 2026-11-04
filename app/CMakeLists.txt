@@ -4,56 +4,41 @@ target_link_libraries(ApplicationUtilLib INTERFACE
   CLI11::CLI11
 )
 
-add_executable(generate_field
-generate_field.cpp
-)
-target_link_libraries(generate_field PRIVATE
-  PennerLib
-  ApplicationUtilLib
-)
+function(penner_add_app name)
+  cmake_parse_arguments(ARG "" "" "SOURCES;REQUIRES;LIBS" ${ARGN})
+  foreach(dep IN LISTS ARG_REQUIRES)
+    if(NOT TARGET Penner${dep}Lib)
+      message(STATUS "Skipping ${name}: needs Penner${dep}Lib")
+      return()
+    endif()
+  endforeach()
+  add_executable(${name} ${ARG_SOURCES})
+  target_link_libraries(${name} PRIVATE PennerLib ApplicationUtilLib ${ARG_LIBS})
+endfunction()
 
-add_executable(generate_aligned_field
-generate_aligned_field.cpp
-)
-target_link_libraries(generate_aligned_field PRIVATE
-  PennerLib
-  ApplicationUtilLib
-)
+penner_add_app(generate_field
+  SOURCES generate_field.cpp
+  REQUIRES Field)
 
-add_executable(parametrize_seamless
-  parametrize_seamless.cpp
-)
-target_link_libraries(parametrize_seamless PRIVATE
-  PennerLib
-  SymmetricDirichletLib
-  CLI11::CLI11
-)
+penner_add_app(optimize_metric
+  SOURCES optimize_metric.cpp
+  REQUIRES Field Optimization)
 
-add_executable(parameterize_aligned
-parameterize_aligned.cpp
-)
-target_link_libraries(parameterize_aligned PRIVATE
-  PennerLib
-  SymmetricDirichletLib
-  ApplicationUtilLib
-)
+penner_add_app(parametrize_seamless
+  SOURCES parametrize_seamless.cpp
+  REQUIRES Holonomy)
 
-add_executable(test_interface
-test_interface.cpp
-)
-target_link_libraries(test_interface PRIVATE
-  PennerLib
-  SymmetricDirichletLib
-  ApplicationUtilLib
-)
+penner_add_app(generate_aligned_field
+  SOURCES generate_aligned_field.cpp
+  REQUIRES Feature)
 
-add_executable(optimize_metric
-  optimize_metric.cpp
-)
-target_link_libraries(optimize_metric PRIVATE
-  PennerLib
-  CLI11::CLI11
-)
+penner_add_app(parameterize_aligned
+  SOURCES parameterize_aligned.cpp
+  REQUIRES Feature)
+
+penner_add_app(test_interface
+  SOURCES test_interface.cpp
+  REQUIRES Feature)
 
 # add_executable(optimize_shear
 #   optimize_shear.cpp
@@ -64,22 +49,12 @@ target_link_libraries(optimize_metric PRIVATE
 # )
 
 # only build visualization executables if visualization enabled
-if (NOT USE_MULTIPRECISION)
-if (ENABLE_VISUALIZATION)
-    add_executable(view_quad_mesh
-    view_quad_mesh.cpp
-    )
-    target_link_libraries(view_quad_mesh PRIVATE
-      PennerLib
-      ApplicationUtilLib
-    )
+if (NOT USE_MULTIPRECISION AND ENABLE_VISUALIZATION)
+  penner_add_app(view_quad_mesh
+    SOURCES view_quad_mesh.cpp
+    REQUIRES Feature)
 
-    add_executable(view_seamless
-    view_seamless.cpp
-    )
-    target_link_libraries(view_seamless PRIVATE
-      PennerLib
-      ApplicationUtilLib
-    )
-endif()
+  penner_add_app(view_seamless
+    SOURCES view_seamless.cpp
+    REQUIRES Feature)
 endif()

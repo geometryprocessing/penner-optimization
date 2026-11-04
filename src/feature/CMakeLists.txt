@@ -31,7 +31,6 @@ set(SurgerySrc
 
 add_library(PennerFeatureLib
   interface.cpp
-  pybind.cpp
   ${FeatureCoreSrc}
   ${DirichletSrc}
   ${FeatureSrc}
@@ -59,20 +58,4 @@ if ((NOT USE_MULTIPRECISION) AND (USE_WARNINGS))
     )
 endif()
 
-if(USE_PYBIND)
-  add_library(feature_py MODULE
-    pybind.cpp
-  )
-
-  # Link libraries
-  target_link_libraries(feature_py PUBLIC
-    PennerFeatureLib
-    pybind11::module
-  )
-
-  # Set pybinding settings
-  set_target_properties(feature_py PROPERTIES PREFIX
-    "${PYTHON_MODULE_PREFIX}"
-  )
-endif()
 

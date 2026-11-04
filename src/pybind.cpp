@@ -11,19 +11,30 @@
 #include "metric/viewer.h"
 #include "parametrization/parametrize.h"
 
-#include "optimization/pybind.h"
-#include "holonomy/pybind.h"
-#include "holonomy/core/viewer.h"
-#include "feature/pybind.h"
+using namespace Penner;
 
+#ifdef PENNER_WITH_FIELD
 #include "field/frame_field.h"
 #include "field/cross_field.h"
-
-using namespace Penner;
-using namespace Optimization;
-using namespace Holonomy;
-using namespace Feature;
 using namespace Field;
+#endif
+
+#ifdef PENNER_WITH_OPTIMIZATION
+#include "optimization/pybind.h"
+using namespace Optimization;
+#endif
+
+#ifdef PENNER_WITH_HOLONOMY
+#include "holonomy/pybind.h"
+#include "holonomy/core/viewer.h"
+using namespace Holonomy;
+#endif
+
+#ifdef PENNER_WITH_FEATURE
+#include "feature/pybind.h"
+using namespace Feature;
+#endif
+
 
 #ifdef PYBIND
 #ifndef MULTIPRECISION
@@ -130,6 +141,8 @@ void init_metric_pybind(pybind11::module& m)
     m.def("view_parameterization", &view_parameterization, default_call_guard);
 }
 
+// TODO: move to field module
+#ifdef PENNER_WITH_FIELD
 void init_field_pybind(pybind11::module& m)
 {
     spdlog::set_level(spdlog::level::info);
@@ -143,16 +156,27 @@ void init_field_pybind(pybind11::module& m)
     m.def("compute_frame_field_cones", &compute_frame_field_cones, default_call_guard);
     m.def("refine_frame_field", &refine_frame_field, default_call_guard);
 }
+#endif
 
 // wrap as Python module
 PYBIND11_MODULE(penner, m)
 {
     m.doc() = "pybindings for penner methods";
     init_metric_pybind(m);
+
+#ifdef PENNER_WITH_FIELD
     init_field_pybind(m);
+#endif
+#ifdef PENNER_WITH_OPTIMIZATION
     init_optimization_pybind(m);
+#endif
+#ifdef PENNER_WITH_HOLONOMY
     init_holonomy_pybind(m);
+#endif
+#ifdef PENNER_WITH_FEATURE
     init_feature_pybind(m);
+#endif
+
 }
 
 #endif
