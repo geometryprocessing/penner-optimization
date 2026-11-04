@@ -18,13 +18,9 @@ if (PROJECT_IS_TOP_LEVEL)
   # Options to generate python bindings
   option(USE_PYBIND "Generate pybindings" ON)
 
-  # Alternative library options
+  # Use multiprecision instead of double precision, at high performance cost
   option(USE_MULTIPRECISION "Use high precision floating point" OFF)
-  option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
-  option(USE_COMISO "Use Comiso for field generation" ON)
   
-  option(USE_UV_OPTIMIZATION "Add uv optimization library" ON)
-
   # Visualization options
   option(ENABLE_VISUALIZATION "Generate viewers for visualization" ON)
 
@@ -32,12 +28,15 @@ if (PROJECT_IS_TOP_LEVEL)
   option(BUILD_CURVATURE_METRIC_TESTS "Build tests" ON)
   option(CHECK_VALIDITY "Check validity pre and post conditions" ON)
 
-
   # Set default libigl and suitesparse options
-  option(LIBIGL_PREDICATES "Use Predicates" ON)
   #set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
   option ( SUITESPARSE_USE_CUDA OFF )
 endif()
+
+option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
+option(USE_COMISO "Use Comiso for field generation" ON)
+option(USE_UV_OPTIMIZATION "Add uv optimization library" ON)
+option(LIBIGL_PREDICATES "Use Predicates" ON)
 
 # set Penner libraries to build
 set(PENNER_LIBS
