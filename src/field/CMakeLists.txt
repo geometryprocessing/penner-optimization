@@ -7,6 +7,7 @@ set(FieldSrc
   intrinsic_field.cpp
   rotation_form.cpp
   vector_field.cpp
+  viewer.cpp
 )
 
 add_library(PennerFieldLib
