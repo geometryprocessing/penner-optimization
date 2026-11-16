@@ -1,7 +1,6 @@
 add_library(ApplicationUtilLib INTERFACE)
 target_include_directories(ApplicationUtilLib INTERFACE .)
 target_link_libraries(ApplicationUtilLib INTERFACE
-  CLI11::CLI11
 )
 
 function(penner_add_app name)
@@ -20,6 +19,10 @@ penner_add_app(generate_field
   SOURCES generate_field.cpp
   REQUIRES Field)
 
+penner_add_app(view_field
+  SOURCES view_field.cpp
+  REQUIRES Field)
+
 penner_add_app(optimize_metric
   SOURCES optimize_metric.cpp
   REQUIRES Field Optimization)
@@ -35,6 +38,13 @@ penner_add_app(generate_aligned_field
 penner_add_app(parameterize_aligned
   SOURCES parameterize_aligned.cpp
   REQUIRES Feature)
+
+penner_add_app(parametrize_scalable
+  SOURCES parametrize_scalable.cpp
+  REQUIRES Resolution)
+
+penner_add_app(convert_mesh
+  SOURCES convert_mesh.cpp)
 
 penner_add_app(test_interface
   SOURCES test_interface.cpp

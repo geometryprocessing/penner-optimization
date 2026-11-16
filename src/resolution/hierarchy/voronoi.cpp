@@ -1143,7 +1143,7 @@ Eigen::MatrixXd VoronoiOverlayMesh::transfer_original_field_to_overlay() const
     if (view_sampled_field)
     {
         Eigen::MatrixXd frame_field_orig = Field::generate_vector_field(V_orig, F_orig, reference_field_orig, thetas_orig);
-        Holonomy::view_vector_field(V_orig, F_orig, frame_field_orig, "original");
+        Field::view_vector_field(V_orig, F_orig, frame_field_orig, "original");
 
         // generate frame field geometry from cross field
         Eigen::MatrixXd V_o = generate_overlay_vertices(V_orig, vtx_reindex_orig, orig);
@@ -1152,7 +1152,7 @@ Eigen::MatrixXd VoronoiOverlayMesh::transfer_original_field_to_overlay() const
         Eigen::MatrixXd reference_field_o = subset_vertices(reference_field, f_new2old);
         Eigen::MatrixXd theta_o = subset_vertices(thetas, f_new2old);
         Eigen::MatrixXd frame_field_o = Field::generate_vector_field(V_o, F_o, reference_field_o, theta_o);
-        Holonomy::view_vector_field(V_o, F_o, frame_field_o, "overaly");
+        Field::view_vector_field(V_o, F_o, frame_field_o, "overaly");
     }
 
     return field_direction;
@@ -1171,7 +1171,7 @@ VoronoiOverlayMesh::transfer_overlay_field_to_simplified(
     if (view_sampled_field)
     {
         // view coarse mesh 
-        Holonomy::view_vector_field(simplified_V, F_simp, PD1, "simplified");
+        Field::view_vector_field(simplified_V, F_simp, PD1, "simplified");
     }
 
     return std::make_tuple(PD1, PD2);

@@ -155,6 +155,7 @@ void init_field_pybind(pybind11::module& m)
     m.def("generate_frame_field", &generate_frame_field, default_call_guard);
     m.def("compute_frame_field_cones", &compute_frame_field_cones, default_call_guard);
     m.def("refine_frame_field", &refine_frame_field, default_call_guard);
+    m.def("view_cross_field", &view_cross_field, default_call_guard);
 }
 #endif
 

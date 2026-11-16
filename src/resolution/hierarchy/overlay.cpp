@@ -853,7 +853,12 @@ void SimplificationOverlayMesh::find_tutte_coordinates(OverlayStructure& overlay
         {
             spdlog::error("tutte solver failed");
             spdlog::error("minimum distance is {}", min_dist);
+#ifdef WITH_MPFR
             BaryMat bary_coords = solve_high_precision<mpfr::mpreal>(tutte_system, rhs).cast<Scalar>();
+#else
+            // MPFR not enabled (USE_MULTIPRECISION[_OVERLAY]=OFF): re-solve in long double
+            BaryMat bary_coords = solve_high_precision<long double>(tutte_system, rhs).cast<Scalar>();
+#endif
 
             int num_constants = boundary_face_vertices[fijk].size();
             int num_face_vertices = num_variables + num_constants;

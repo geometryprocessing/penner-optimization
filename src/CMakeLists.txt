@@ -50,6 +50,8 @@ target_link_libraries(PennerCoreLib PUBLIC
   spdlog::spdlog
   conformal_cpp
   HDF5::HDF5
+  CLI11::CLI11
+  nlohmann_json::nlohmann_json
   #CoMISo
   ${MPFR_LIBRARIES}
   ${RENDER_LIBRARIES}

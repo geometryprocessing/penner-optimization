@@ -40,7 +40,7 @@ option(LIBIGL_PREDICATES "Use Predicates" ON)
 
 # set Penner libraries to build
 set(PENNER_LIBS
-  "Field;Optimization;Holonomy;Feature"
+  "Field;Optimization;Holonomy;Feature;Resolution"
   CACHE STRING
   "Libraries exposed through PennerLib; dependencies are added automatically"
 )

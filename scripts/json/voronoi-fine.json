@@ -1,0 +1,14 @@
+{
+    "retrace_delaunay": true,
+    "use_geodesic_edges": true,
+    "use_geodesic_refinement": true,
+    "use_zero_lengths": false,
+    "use_uniform_overlay": true,
+    "use_harmonic_overlay": true,
+    "keep_all_refinement": false,
+    "simplify_param_overlay": false,
+    "use_intrinsic_lengths": true,
+    "use_layout": false,
+    "ratio": 0.25,
+    "dual_length_ratio": 0.1
+}

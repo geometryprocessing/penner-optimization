@@ -25,7 +25,7 @@ public:
   
   bool optimize_metric = false; // if true, use Penner coordinate optimization for the parametrization
   bool opt_iters = 0; // number of iterations for Penner optimization of the parametrization
-  bool use_harmonic_overlay_vertices = false; // solve for harmonic positions of 
+  bool use_harmonic_overlay_vertices = false; // solve for harmonic positions of inserted vertices
   bool use_uniform_overlay_edges = false; // use uniform spacing for splits of original edges
 
   // experimental: not recommended

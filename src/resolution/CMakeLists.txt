@@ -1,4 +1,8 @@
 find_package(PkgConfig REQUIRED)
+
+# PNG I/O uses stb directly instead of igl::png, which would pull in
+# igl::opengl + a loader-less glad that breaks polyscope's gladLoadGL().
+include(stb)
 if(USE_JXL)
   pkg_check_modules(JXL REQUIRED IMPORTED_TARGET libjxl libjxl_threads)
 endif()
@@ -52,12 +56,12 @@ target_link_libraries(PennerResolutionLib PUBLIC
   PennerFeatureLib
   ${MPFR_LIBRARIES}
   igl::core
-  igl::png
   Eigen3::Eigen
   geometry-central
   ${SUITESPARSE_LIBS}
   ${VISUALIZATION_LIBS}
 )
+target_link_libraries(PennerResolutionLib PRIVATE penner_stb)
 if (USE_JXL)
 target_link_libraries(PennerResolutionLib PUBLIC
   PkgConfig::JXL
@@ -74,7 +78,6 @@ target_link_libraries(PennerResolutionLib PUBLIC
 )
 else()
 target_link_libraries(PennerResolutionLib PRIVATE
-  nlohmann_json::nlohmann_json
 #  OpenMP::OpenMP_CXX
 )
 endif()

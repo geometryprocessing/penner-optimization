@@ -1,9 +1,17 @@
 #include "resolution/optimization/compression.h"
 
-
-#define IGL_STB_IMAGE_IMPLEMENTATION
-#include <igl/png/readPNG.h>
-#include <igl/png/writePNG.h>
+// stb is header-only (cmake/stb.cmake). Compile its implementation here with
+// internal linkage so it can't collide with polyscope's stbi_* symbols.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include <stb_image.h>
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <fstream>
@@ -677,11 +685,64 @@ GeometryData convert_image_to_geometry_data(const ImageData& X)
   return (X / 256).cast<Scalar>();
 }
 
+// PNG I/O via stb, matching igl::png::readPNG/writePNG layout exactly:
+// channel matrices are indexed (x, y) with y flipped (origin at bottom-left),
+// so files written before the switch from igl::png read back identically.
+static bool read_png_channels(
+  const std::string& image_path,
+  ImageData& R,
+  ImageData& G,
+  ImageData& B,
+  ImageData& A)
+{
+  int cols, rows, n;
+  unsigned char* data = stbi_load(image_path.c_str(), &cols, &rows, &n, 4);
+  if (data == nullptr) return false;
+  R.resize(cols, rows);
+  G.resize(cols, rows);
+  B.resize(cols, rows);
+  A.resize(cols, rows);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      const unsigned char* px = data + 4 * (j + cols * i);
+      R(j, rows - 1 - i) = px[0];
+      G(j, rows - 1 - i) = px[1];
+      B(j, rows - 1 - i) = px[2];
+      A(j, rows - 1 - i) = px[3];
+    }
+  }
+  stbi_image_free(data);
+  return true;
+}
+
+static bool write_png_channels(
+  const ImageData& R,
+  const ImageData& G,
+  const ImageData& B,
+  const ImageData& A,
+  const std::string& image_path)
+{
+  const int width = R.rows();
+  const int height = R.cols();
+  const int comp = 4;
+  std::vector<unsigned char> data(R.size() * comp, 0);
+  for (int i = 0; i < width; ++i) {
+    for (int j = 0; j < height; ++j) {
+      unsigned char* px = data.data() + comp * (j * width + i);
+      px[0] = R(i, height - 1 - j);
+      px[1] = G(i, height - 1 - j);
+      px[2] = B(i, height - 1 - j);
+      px[3] = A(i, height - 1 - j);
+    }
+  }
+  return stbi_write_png(image_path.c_str(), width, height, comp, data.data(), width * comp) != 0;
+}
+
 std::tuple<GeometryData, GeometryData, GeometryData> read_geometry_image_png(
   const std::string& image_path)
 {
     ImageData x, y, z, alpha;
-    igl::png::readPNG(image_path, x, y, z, alpha);
+    read_png_channels(image_path, x, y, z, alpha);
 
     GeometryData X, Y, Z;
     X = convert_image_to_geometry_data(x);
@@ -702,7 +763,7 @@ void write_geometry_image_png(
     Y = convert_geometry_to_image_data(y);
     Z = convert_geometry_to_image_data(z);
     ImageData A = ImageData::Constant(X.rows(), X.cols(), 255);
-    igl::png::writePNG(X, Y, Z, A, image_path);
+    write_png_channels(X, Y, Z, A, image_path);
 }
 
 std::tuple<GeometryData, GeometryData, GeometryData> read_geometry_image(

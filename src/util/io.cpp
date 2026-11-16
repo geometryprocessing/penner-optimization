@@ -466,4 +466,21 @@ void write_sparse_matrix(const MatrixX& matrix, const std::string& filename, std
     output_file.close();
 }
 
+void overwrite_json_with_cli(nlohmann::json& config, const CLI::App& app)
+{
+    for (const CLI::Option* opt : app.get_options()) {
+        if (opt->count() == 0 || opt->get_lnames().empty()) continue;
+        const std::string& key = opt->get_lnames()[0];
+        if (!config.contains(key)) continue;
+
+        const std::string& raw = opt->results().back();
+        nlohmann::json& value = config[key];
+        if (value.is_string()) { value = raw; continue; }
+        nlohmann::json parsed = nlohmann::json::parse(raw, nullptr, /*allow_exceptions=*/false);
+        if (parsed.is_discarded() || parsed.is_object() || parsed.is_array())
+            throw std::runtime_error("--" + key + ": cannot interpret '" + raw + "'");
+        value = parsed;
+    }
+}
+
 } // namespace Penner

@@ -18,6 +18,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <CLI/CLI.hpp>
+#include <nlohmann/json.hpp>
 
 namespace Penner {
 
@@ -245,5 +247,7 @@ void write_sparse_matrix(
     const MatrixX& matrix,
     const std::string& filename,
     std::string format = "csv");
+
+void overwrite_json_with_cli(nlohmann::json& config, const CLI::App& app);
 
 } // namespace Penner

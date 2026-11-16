@@ -100,7 +100,6 @@ void init_holonomy_pybind(pybind11::module& m)
     m.def("parametrize_seamless_metric", &parametrize_seamless_metric, default_call_guard);
     m.def("generate_seamless_parametrization", &generate_seamless_parametrization, default_call_guard);
 
-    m.def("view_cross_field", &view_cross_field, default_call_guard);
     m.def("view_seamless_parameterization",  &view_seamless_parameterization, default_call_guard);
 }
 
