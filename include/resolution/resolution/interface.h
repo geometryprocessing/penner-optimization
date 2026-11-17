@@ -111,6 +111,8 @@ public:
         const Eigen::MatrixXi& period_jump
     );
 
+    VoronoiOverlayMesh build_coarse_mesh(ScalableConfig coarse_params);
+
     void run(
         ScalableConfig coarse_params = default_coarse_config(),
         NewtonParameters alg_params = NewtonParameters());
@@ -144,6 +146,12 @@ private:
     Eigen::VectorXd theta;
     Eigen::MatrixXd kappa;
     Eigen::MatrixXi period_jump;
+
+    Mesh<Scalar> m;
+    MarkedPennerConeMetric marked_metric;
+    Eigen::VectorXd rotation_form;
+    std::vector<Scalar> Th_hat;
+    std::vector<int> vtx_reindex;
 
     Eigen::MatrixXd V_o;
     Eigen::MatrixXi F_o;

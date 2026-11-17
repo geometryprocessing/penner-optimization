@@ -55,7 +55,8 @@ ResolutionMetricGenerator::ResolutionMetricGenerator(
     : V(V_)
     , F(F_)
 {
-
+    std::vector<Scalar> Th_hat(V.rows(), 2 * PI);
+    std::tie(m, vtx_reindex) = Holonomy::generate_mesh(V, F, V, F, Th_hat);
 }
 
 void ResolutionMetricGenerator::set_field(
@@ -69,24 +70,20 @@ void ResolutionMetricGenerator::set_field(
     theta = theta_;
     kappa = kappa_;
     period_jump = period_jump_;
-}
-
-void ResolutionMetricGenerator::run(
-    ScalableConfig coarse_params,
-    NewtonParameters alg_params)
-{
-    igl::Timer timer, method_timer;
-    timer.start();
-    results["config"] = coarse_params;
 
     MarkedMetricParameters marked_metric_params;
     marked_metric_params.use_log_length = true;
     marked_metric_params.use_connectivity = true;
 
     // build metric with constraints
-    // TODO: instead build from already built mesh
     marked_metric_params.max_loop_constraints = 0;
-    auto [marked_metric, vtx_reindex, rotation_form, Th_hat] = generate_metric_from_field(V, F, theta, kappa, period_jump, marked_metric_params);
+    std::tie(marked_metric, vtx_reindex, rotation_form, Th_hat) = generate_metric_from_field(V, F, theta, kappa, period_jump, marked_metric_params);
+}
+
+VoronoiOverlayMesh ResolutionMetricGenerator::build_coarse_mesh(ScalableConfig coarse_params)
+{
+    igl::Timer method_timer;
+    results["config"] = coarse_params;
 
     // get initial cones
     std::vector<int> cones = {};
@@ -95,7 +92,7 @@ void ResolutionMetricGenerator::run(
         if (!float_equal(Th_hat[vtx_reindex[marked_metric.v_rep[vi]]], 2 * PI)) cones.push_back(vi);
     }
 
-    VoronoiOverlayMesh voronoi_mesh(V, vtx_reindex, marked_metric);
+    VoronoiOverlayMesh voronoi_mesh(V, vtx_reindex, m);
     voronoi_mesh.set_original_field(reference_field, theta, period_jump);
     voronoi_mesh.symdir_json = symdir_json;
     voronoi_mesh.use_geodesic_refinement = coarse_params.use_geodesic_edges;
@@ -159,6 +156,18 @@ void ResolutionMetricGenerator::run(
     }
     results["2-delaunay-faces"] = voronoi_mesh.count_faces();
     results["coarse-faces"] = voronoi_mesh.simp.m.n_faces();
+
+    return voronoi_mesh;
+}
+
+void ResolutionMetricGenerator::run(
+    ScalableConfig coarse_params,
+    NewtonParameters alg_params)
+{
+    igl::Timer timer, method_timer;
+    timer.start();
+    VoronoiOverlayMesh voronoi_mesh = build_coarse_mesh(coarse_params);
+ 
 
     // lift basis loops from marked metric to simplified mesh
     method_timer.start();
